@@ -22,11 +22,18 @@ def with_return(func):
         return l:ret
     endfunction
     ```
+
+    * May this decorator is used in module functions and 
+    called not locally, but globally.
+    In these cases, `l:` cannot be used, so `g:pytoy_return` is used
     """
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         ret = func(*args, **kwargs)
-        vim.command(f"let l:ret='{repr(ret)}'")
+        if isinstance(ret, str):
+            vim.command(f"let g:pytoy_return='{ret}'")
+        else:
+            vim.command(f"let g:pytoy_return='{repr(ret)}'")
 
         # May require modification... 
         #if isinstance(ret, str) or (ret is None):
@@ -42,7 +49,7 @@ class PytoyVimFunctions:
     """Wrappers of `python` functions for `vim` functions.
 
     Usecase
-    ------------------------------
+    -------------------------------------------------------
     As a callback function, `vim` functions may be required.
 
     Usage
@@ -73,13 +80,18 @@ class PytoyVimFunctions:
         vim_funcname = f"{prefix}_{name}_{id(name)}"
         vim.command(f"""function! {vim_funcname}(...) 
         python3 {__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}']()
-        if exists("l:ret")
-            return l:ret
+        if exists("g:pytoy_return")
+            return g:pytoy_return
         endif
         endfunction
         """)
         cls.FUNCTION_MAPS[vim_funcname] = func
+
         return vim_funcname 
+
+    @classmethod
+    def is_registered(cls, key):
+        return bool(key in cls.FUNCTION_MAPS or int(vim.eval(f"exists('{key}')")))
 
     @classmethod
     def deregister(cls, key):
