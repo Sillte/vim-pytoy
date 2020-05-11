@@ -6,25 +6,38 @@ from pytoy.debug_utils import reset_python
 from pytoy.func_utils import PytoyVimFunctions, with_return
 from pytoy.executor import BufferExecutor
 from pytoy.venv_utils import VenvManager
+from pytoy.lightline_utils import Lightline
 
 
 TERM_STDOUT = "__pystdout__" # TERIMINAL NAME of `stdout`.
 TERM_STDERR = "__pystderr__" # TERIMINAL NAME of `stderr`.
 PYTOY_EXECUTOR = "PYTOY_EXECUTOR"
 
+PREV_PATH = None  # Previously executed PATH. 
 
-def run():
+def run(path=None):
+    """Perform `python {path}`. 
+    """
+    if not path:
+        path = vim.current.buffer.name
     executor = PytoyExecutor(PYTOY_EXECUTOR)
     if executor.is_running:
         raise RuntimeError(f"Currently, {PYTOY_EXECUTOR} is running.")
 
-    path = vim.current.buffer.name
     command = f'python -u -X utf8 "{path}"'
     stdout_window = create_window(TERM_STDOUT, "vertical")
     stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
     init_buffer(stdout_window.buffer)
     init_buffer(stderr_window.buffer)
+    stdout_window.buffer[0] = f"`python {path}`"
+    global PREV_PATH
+    PREV_PATH = path
     executor.run(command, stdout_window.buffer, stderr_window.buffer)
+
+def rerun():
+    """Perform `python` with the previous `path`.
+    """
+    run(prev_path)
 
 def stop():
     executor = PytoyExecutor(PYTOY_EXECUTOR)
@@ -33,7 +46,7 @@ def stop():
 def is_running() -> int:
     executor = PytoyExecutor(PYTOY_EXECUTOR)
     ret =  executor.is_running
-    vim.command(f"let l:ret = {int(ret)}")
+    vim.command(f"let g:pytoy_return = {int(ret)}")
     return ret
 
 def activate():
@@ -44,11 +57,12 @@ def activate():
         name = None
     venv_manager = VenvManager()
     venv_manager.activate(name)
+    Lightline().register(venv_manager.name)
 
 def deactivate():
     venv_manager = VenvManager()
+    Lightline().deregister(venv_manager.name)
     venv_manager.deactivate()
-
 
 @with_return
 def envinfo():
@@ -117,6 +131,4 @@ def make_qflist(string):
 
 if __name__ == "__main__":
     print(__name__)
-
-
 

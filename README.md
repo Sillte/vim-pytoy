@@ -21,13 +21,13 @@ def func():
 ```
 
 #### Handling of the return.
-If `python` functions requires to return `value`,  
-then `l:ret` is used as a return value.
+If `python` functions needs to return value,  
+then `g:pytoy_return` is used as a return value.
 
 ```vim
 function! Func()
 py3 func()
-return l:ret
+return pytoy_:return
 endfunction
 ```
 

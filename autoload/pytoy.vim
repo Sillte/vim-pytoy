@@ -35,13 +35,17 @@ function! pytoy#run()
 python3 pytoy.run()
 endfunction
 
+function! pytoy#rerun()
+python3 pytoy.rerun()
+endfunction
+
 function! pytoy#stop()
 python3 pytoy.stop()
 endfunction
 
 function! pytoy#is_running()
 python3 pytoy.is_running()
-return l:ret
+return g:pytoy_return
 endfunction
 
 function! pytoy#reset()
@@ -59,10 +63,11 @@ endfunction
 
 function! pytoy#envinfo()
 python3 pytoy.envinfo()
-return l:ret 
+return g:pytoy_return
 endfunction
 
 
 " Mapping definition 
 nnoremap \p :call pytoy#run()<CR>
+nnoremap \P :call pytoy#rerun()<CR>
 nnoremap <expr><silent> <C-c> pytoy#is_running() ? pytoy#stop() : "\<C-c>"
