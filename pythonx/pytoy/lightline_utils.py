@@ -8,7 +8,8 @@ Policy
 
 Note
 ----------------
-This is inefficient wrapper...
+This is an inefficient wrapper, yet.
+
 
 Copyright of `lightline`.:
 
