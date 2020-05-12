@@ -27,7 +27,7 @@ then `g:pytoy_return` is used as a return value.
 ```vim
 function! Func()
 py3 func()
-return pytoy_:return
+return g:pytoy_return
 endfunction
 ```
 
@@ -36,5 +36,5 @@ def func():
     ...
     import vim
     ret = 3
-    vim.command(":let l:ret='{ret}'")
+    vim.command(":let g:pytoy_return='{ret}'")
 ```
