@@ -51,8 +51,7 @@ class _Lightline(UserDict):
         vim.command(f"let g:lightline={self.data}")
 
     def __setitem__(self, key, value):
-        # This is insufficient, since `self["active"]["invalid"] = "hoge"` is accpeted.
-        #
+        # This is insufficient, since `self["active"]["invalid"] = "hoge"` is accepted.
         if key not in self:
             raise ValueError(f"Invalid key. `{key}`")
         super().__setitem__(key, value)
@@ -293,20 +292,29 @@ class Lightline(_Lightline):
         """
         key = self._to_funcname(key)
         if key not in self._infos:
-            #return 
-            # Which is better? 
-            raise ValueError(f"`{key}` is not existent.")
+            if strict_error:
+                raise ValueError(f"`{key}` is not existent.")
+            else:
+                return 
 
         # Deregister about `name`.
         info = self._infos[key]
         name = info["name"]
         for mode in ("active", "inactive"):
             for direction in ("left", "right"):
-                self[mode][direction] = [elem for elem in self[mode][direction] if elem != name]
+                self[mode][direction] = [ [elem for elem in sub if elem != name] for sub in self[mode][direction]]
 
-        # Deregister about `component`.
-        c_type = info["component_type"]
+        # Deregister about `component` / `component_function`.
+        # Register about `component`.
+        if PytoyVimFunctions.is_registered(key):
+            c_type = "component_function"
+        else:
+            c_type = "component"
         del self[c_type][name]
+        print("self[c_type]", self[c_type])
+
+        # Deletion of `key`. 
+        del self._infos[key]
 
         self.update()
         self.enable()

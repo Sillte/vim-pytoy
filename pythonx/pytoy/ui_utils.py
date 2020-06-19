@@ -1,4 +1,5 @@
 import vim
+from contextlib import contextmanager
 
 def to_buffer_number(arg):
     """Convert To Number of Buffer.
@@ -23,13 +24,24 @@ def init_buffer(arg):
     if 0 < bufnum:
         vim.buffers[bufnum][:] = None
 
+@contextmanager
+def store_window():
+    """Current window is retrieved, at the end of context. 
+    """
+    winid = int(vim.eval(f'win_getid({vim.current.window.number})'))
+    try:
+        yield
+    except Exception as e:
+        vim.command(f':call win_gotoid({winid})')
+        raise e
+    else:
+        vim.command(f':call win_gotoid({winid})')
 
 def create_window(bufname, mode="vertical", base_window=None):
     """Append the specified `buffer` to `base_window` vertically or
     horizontally.
 
     """
-    import vim
     if base_window is None:
         base_window = vim.current.window
 
