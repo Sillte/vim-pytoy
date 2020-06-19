@@ -1,7 +1,7 @@
 import vim
 import subprocess
 import re
-from pytoy.ui_utils import to_buffer_number, init_buffer, create_window
+from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_window
 from pytoy.debug_utils import reset_python
 from pytoy.func_utils import PytoyVimFunctions, with_return
 from pytoy.executor import BufferExecutor
@@ -37,7 +37,7 @@ def run(path=None):
 def rerun():
     """Perform `python` with the previous `path`.
     """
-    run(prev_path)
+    run(PREV_PATH)
 
 def stop():
     executor = PytoyExecutor(PYTOY_EXECUTOR)
@@ -95,13 +95,19 @@ class PytoyExecutor(BufferExecutor):
             setloclist(self.win_id, qflist)  
         else:
             setloclist(self.win_id, [])  # Reset `LocationList`.
-            c_id = vim.eval("win_getid()")
-            vim.eval(f"win_gotoid({self.win_id})")
-            vim.command(f"lclose")
-            vim.eval(f"win_gotoid({c_id})")
+            with store_window():
+                vim.eval(f"win_gotoid({self.win_id})")
+                vim.command(f"lclose")
+
             nr = int(vim.eval(f'bufwinnr({self.stderr.number})'))
             if 0 <= nr:
                 vim.command(f':{nr}close')
+
+            # Scrolling output window
+            with store_window():
+                stdout_id = vim.eval(f"bufwinid({self.stdout.number})")
+                vim.command(f"call win_gotoid({stdout_id})")
+                vim.command(f"normal zb")
 
         # Unregister of Job.
         vim.command(f"unlet g:{self.jobname}")
