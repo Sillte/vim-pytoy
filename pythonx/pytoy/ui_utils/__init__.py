@@ -1,4 +1,5 @@
 import vim
+from typing import Dict
 from contextlib import contextmanager
 
 # Conversion to the number or id.

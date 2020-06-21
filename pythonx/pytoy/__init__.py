@@ -80,6 +80,12 @@ def reset():
         nr = int(vim.eval(f'bufwinnr("{term}")'))
         if 0 <= nr:
             vim.command(f':{nr}close')
+
+def goto():
+    """Go to the definition of the current word.
+    """
+    from pytoy import jedi_utils 
+    jedi_utils.goto()
     
 
 class PytoyExecutor(BufferExecutor):

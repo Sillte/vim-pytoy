@@ -67,6 +67,12 @@ return g:pytoy_return
 endfunction
 
 
+" Related to python module handling (jedi)
+function! pytoy#goto()
+python3 pytoy.goto()
+endfunction
+
+
 " Mapping definition 
 nnoremap \p :call pytoy#run()<CR>
 nnoremap \P :call pytoy#rerun()<CR>
