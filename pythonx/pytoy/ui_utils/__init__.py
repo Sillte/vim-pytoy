@@ -90,7 +90,7 @@ def is_leftwindow(window=None):
 
     return int(info["wincol"]) <= 1
 
-def sweep_windows(required_width=100):
+def sweep_windows(required_width=100, exclude=()):
     """ Sweep the windows of tabpage following to my rule.
     Namely, 
     1. if the `winrow` is smaller than `required_width`.
@@ -105,6 +105,8 @@ def sweep_windows(required_width=100):
     infos = get_wininfos()
     infos = [info for info in infos if _is_target(info)]
     winnrs = [int(info["winnr"]) for info in infos]
+    exclude = set(to_window_number(elem) for elem in exclude)
     for winnr in sorted(winnrs, reverse=True):
-        vim.command(f"{winnr}close")
+        if winnr not in exclude:
+            vim.command(f"{winnr}close")
 
