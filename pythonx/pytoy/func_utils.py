@@ -42,11 +42,6 @@ def with_return(func):
         else:
             vim.command(f"let g:pytoy_return='{_escape(repr(ret))}'")
 
-        # May require modification... 
-        #if isinstance(ret, str) or (ret is None):
-        #   vim.command(f"let l:ret='{ret}'")
-        #else:
-        #   vim.command(f"let l:ret={ret}")
         return ret
     return wrapped
 
