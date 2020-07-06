@@ -80,4 +80,8 @@ nnoremap <expr><silent> <C-c> pytoy#is_running() ? pytoy#stop() : "\<C-c>"
 
 " To solve collision with `jedi's original (recommended) key mapping.
 let g:jedi#goto_command="_\\d"
-nnoremap \d :call pytoy#goto()<CR>
+
+" For pytoy#goto, Vim8.2+ is required.
+if 802 <= v:version 
+    nnoremap \d :call pytoy#goto()<CR>
+endif 

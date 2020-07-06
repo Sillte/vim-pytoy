@@ -28,9 +28,13 @@ def search(
     """
 
     def _is_virtualenv(folder):
+        # Imagine Windows.
         if (folder / "Scripts/activate").exists():
             if (folder / "Lib").exists():
                 return True
+        # Imagine Linux.
+        if (folder / "bin/activate").exists():
+            return True
         return False
 
     if root_folder is None:
