@@ -78,6 +78,7 @@ class PytoyVimFunctions:
         if prefix is None:
             prefix = "Pytoy_VIMFUNC"
 
+        # For `__name__`'s reference ` pytoy.func_utils` access must be passed. 
         name = func.__name__
         vim_funcname = f"{prefix}_{name}_{id(name)}"
         vim.command(f"""function! {vim_funcname}(...) 
