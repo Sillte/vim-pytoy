@@ -66,6 +66,10 @@ python3 pytoy.envinfo()
 return g:pytoy_return
 endfunction
 
+function! pytoy#term()
+python3 pytoy.term()
+endfunction
+
 
 " Related to python module handling (jedi)
 function! pytoy#goto()
