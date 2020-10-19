@@ -75,6 +75,13 @@ def envinfo():
     print(info)
     return venv_manager.envinfo
 
+def term():
+    """Open the terminal window
+    with virtual environment.
+    """
+    venv_manager = VenvManager()
+    venv_manager.term_start()
+
 
 def reset():
     """Reset the state of windows. 
