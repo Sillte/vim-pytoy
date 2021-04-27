@@ -28,9 +28,13 @@ def search(
     """
 
     def _is_virtualenv(folder):
+        # Imagine Windows.
         if (folder / "Scripts/activate").exists():
             if (folder / "Lib").exists():
                 return True
+        # Imagine Linux.
+        if (folder / "bin/activate").exists():
+            return True
         return False
 
     if root_folder is None:
@@ -167,10 +171,10 @@ class VenvManager:
         if not self.is_activated:
             raise ValueError("Virtual Environment is not activated.")
 
-        if sys.platform != "win32":
-            raise NotImplementedError("Not yet implemented for `{sys.platform}`.")
-
-        bat_path = self.path / "Scripts" / "activate.bat"
+        if sys.platform == "win32":
+            activate_path = self.path / "Scripts" / "activate"
+        else:
+            activate_path = self.path / "bin" / "activate"
 
         try:
             import vim
@@ -178,11 +182,16 @@ class VenvManager:
             external = True
 
         if external: 
-            subprocess.run(["start", str(bat_path)], shell=True)
+            subprocess.run(["start", str(activate_path)], shell=True)
         else:
-            commands = ["start", bat_path]
-            options = {"term_name" : self.name}
-            vim.command(f":call term_start({command}, {options})")
+            number = vim.eval(rf'term_start(&shell)')
+            def _to_slash_path(path):
+                path = Path(path)
+                result = str(path).replace("\\", "/")
+                return result
+            path = _to_slash_path(activate_path)
+            keys = rf'{_to_slash_path(path)} \<CR>'
+            vim.eval(rf'term_sendkeys({number}, "{keys}")')
 
 # To omit the necessity of exclusive processings.
 VenvManager()

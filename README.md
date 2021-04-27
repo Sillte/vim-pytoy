@@ -1,6 +1,10 @@
 # vim-pytoy
 Miscellaneous python operations around me. (Personal practice for vim-plugin.)
 
+## Environment
+
+* Vim8.2+
+
 ## My Rules
 
 Policy of implementation, mainly for my personal memorandum.
