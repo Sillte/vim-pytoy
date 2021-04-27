@@ -3,6 +3,10 @@ import subprocess
 import re
 from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_window
 from pytoy.debug_utils import reset_python
+
+# This is required for `PytoyVimFunctions.register.vim.command.__name__` for Linux environment.
+from pytoy import func_utils 
+
 from pytoy.func_utils import PytoyVimFunctions, with_return
 from pytoy.executor import BufferExecutor
 from pytoy.venv_utils import VenvManager
@@ -72,8 +76,12 @@ def envinfo():
     return venv_manager.envinfo
 
 def term():
+    """Open the terminal window
+    with virtual environment.
+    """
     venv_manager = VenvManager()
     venv_manager.term_start()
+
 
 def reset():
     """Reset the state of windows. 

@@ -27,19 +27,21 @@ def with_return(func):
     called not locally, but globally.
     In these cases, `l:` cannot be used, so `g:pytoy_return` is used
     """
+    def _escape(s):
+        """Escape the single quotation for vim 
+        """
+        s = str(s)
+        return s.replace("'", "''")
+
+
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         ret = func(*args, **kwargs)
         if isinstance(ret, str):
-            vim.command(f"let g:pytoy_return='{ret}'")
+            vim.command(f"let g:pytoy_return='{_escape(ret)}'")
         else:
-            vim.command(f"let g:pytoy_return='{repr(ret)}'")
+            vim.command(f"let g:pytoy_return='{_escape(repr(ret))}'")
 
-        # May require modification... 
-        #if isinstance(ret, str) or (ret is None):
-        #   vim.command(f"let l:ret='{ret}'")
-        #else:
-        #   vim.command(f"let l:ret={ret}")
         return ret
     return wrapped
 
@@ -76,6 +78,7 @@ class PytoyVimFunctions:
         if prefix is None:
             prefix = "Pytoy_VIMFUNC"
 
+        # For `__name__`'s reference ` pytoy.func_utils` access must be passed. 
         name = func.__name__
         vim_funcname = f"{prefix}_{name}_{id(name)}"
         vim.command(f"""function! {vim_funcname}(...) 
