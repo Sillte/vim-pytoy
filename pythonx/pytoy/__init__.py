@@ -105,7 +105,10 @@ class PytoyExecutor(BufferExecutor):
         options["exit_cb"] = vimfunc_name
 
     def on_closed(self): 
-        setloclist = vim.Function("setloclist")
+        # vim.Function("setloclist") seems to more appropriate, 
+        # but it does not work correctly with Python 3.9. 
+        setloclist = vim.bindeval('function("setloclist")')
+
         error_msg = "\n".join(self.stderr)
         if error_msg:
             qflist = make_qflist(error_msg)
