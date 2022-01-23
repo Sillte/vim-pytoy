@@ -219,14 +219,27 @@ class IPythonConsole:
 
     def send_current_line(self):
         line = vim.current.line
-        self.send(line + "\n")
+        self.send("\n")
+        self.send(line)
+        self.send("\n")
 
     def send_current_range(self):
-        lines = ""
-        for line in vim.current.range:
-            lines += line
-        lines += "\n\n"   # It seems empty line is necessary.
+        # This does not work! why? 
+        # 
+        #print(vim.current.range.end, vim.current.range.start)
+        #lines = ""
+        #for line in vim.current.range:
+        #    lines += (line + "\n") 
+        #lines += "\n\n"   # It seems empty line is necessary.
+        start_line = int(vim.eval("line(\"'<\")"))
+        end_line = int(vim.eval("line(\"'>\")"))
+        buf = vim.current.buffer
+        lines = buf[start_line - 1:end_line]
+        lines = "\n".join(lines)
+        lines = lines.strip()
+        self.send("\n")
         self.send(lines)
+        self.send("\n")
 
 
     def kill(self):
