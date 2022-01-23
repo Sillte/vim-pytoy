@@ -1,6 +1,9 @@
 import vim
 import subprocess
 import re
+import time
+from threading import Thread
+
 from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_window
 from pytoy.debug_utils import reset_python
 
@@ -9,6 +12,7 @@ from pytoy import func_utils
 
 from pytoy.func_utils import PytoyVimFunctions, with_return
 from pytoy.executor import BufferExecutor
+from pytoy.sham_console import ShamConsole
 from pytoy.venv_utils import VenvManager
 from pytoy.lightline_utils import Lightline
 
@@ -18,6 +22,8 @@ TERM_STDERR = "__pystderr__" # TERIMINAL NAME of `stderr`.
 PYTOY_EXECUTOR = "PYTOY_EXECUTOR"
 
 PREV_PATH = None  # Previously executed PATH. 
+
+# Python Execution Interface
 
 def run(path=None):
     """Perform `python {path}`. 
@@ -53,6 +59,17 @@ def is_running() -> int:
     vim.command(f"let g:pytoy_return = {int(ret)}")
     return ret
 
+def reset():
+    """Reset the state of windows. 
+    """
+    vim.command(':lclose')
+    for term in (TERM_STDOUT, TERM_STDERR):
+        nr = int(vim.eval(f'bufwinnr("{term}")'))
+        if 0 <= nr:
+            vim.command(f':{nr}close')
+
+## Virtual Environment Interface
+
 def activate():
     args = vim.eval("a:000")
     if args:
@@ -83,20 +100,24 @@ def term():
     venv_manager.term_start()
 
 
-def reset():
-    """Reset the state of windows. 
-    """
-    vim.command(':lclose')
-    for term in (TERM_STDOUT, TERM_STDERR):
-        nr = int(vim.eval(f'bufwinnr("{term}")'))
-        if 0 <= nr:
-            vim.command(f':{nr}close')
+## Jedi Releated Interface.
 
 def goto():
     """Go to the definition of the current word.
     """
     from pytoy import jedi_utils 
     jedi_utils.goto()
+
+
+## IPython Interface. 
+
+def send_current_line():
+    console = IPythonConsole(TERM_STDOUT)
+    console.send_current_line()
+
+def send_current_range():
+    console = IPythonConsole(TERM_STDOUT)
+    console.send_current_range()
     
 
 class PytoyExecutor(BufferExecutor):
@@ -111,7 +132,7 @@ class PytoyExecutor(BufferExecutor):
 
         error_msg = "\n".join(self.stderr)
         if error_msg:
-            qflist = make_qflist(error_msg)
+            qflist = self._make_qflist(error_msg)
             setloclist(self.win_id, qflist)  
         else:
             setloclist(self.win_id, [])  # Reset `LocationList`.
@@ -132,27 +153,99 @@ class PytoyExecutor(BufferExecutor):
         # Unregister of Job.
         vim.command(f"unlet g:{self.jobname}")
 
-def make_qflist(string):
-    """From string, construct `list` of `dict` for QuickFix.
-    """
-    _pattern = re.compile(r'\s+File "(.+)", line (\d+)')
-    result = list()
-    lines = string.split("\n")
-    index = 0
-    while index < len(lines): 
-        infos = _pattern.findall(lines[index])
-        if infos:
-            filename, lnum = infos[0]
-            row = dict()
-            row["filename"] = filename
-            row["lnum"] = lnum
+    def _make_qflist(self, string):
+        _pattern = re.compile(r'\s+File "(.+)", line (\d+)')
+        result = list()
+        lines = string.split("\n")
+        index = 0
+        while index < len(lines): 
+            infos = _pattern.findall(lines[index])
+            if infos:
+                filename, lnum = infos[0]
+                row = dict()
+                row["filename"] = filename
+                row["lnum"] = lnum
+                index += 1
+                text = lines[index].strip()
+                row["text"] = text
+                result.append(row)
             index += 1
-            text = lines[index].strip()
-            row["text"] = text
-            result.append(row)
-        index += 1
-    result = list(reversed(result))
-    return result
+        result = list(reversed(result))
+        return result
+
+
+class IPythonConsole:
+    __cache = dict()
+    def __new__(cls, buf, display_interval=0.1):
+        """ Singleton,  
+        """
+        stdout_window = create_window(buf, "vertical")
+        buf = to_buffer_number(buf)
+        if buf in cls.__cache:
+            target = cls.__cache[buf]
+            target.display_interval = display_interval
+            return target
+        self = object.__new__(cls)
+        self._init_(buf, display_interval)
+        cls.__cache[buf] = self
+        return self
+
+    def _init_(self, buf, display_interval:float=0.1): 
+        # To prevent muptile calling of `__init__`, 
+        # you have to the processing inside `__new__`.
+        self.buffer_number = to_buffer_number(buf)
+        self.sham_console = ShamConsole()
+        self.sham_console.start()
+        self._is_alive = True
+        self.display_interval = display_interval
+        # I found that the order is important.
+        # If you perform `self._thread.start()` in prior to 
+        # the settings of member variables, with high probabilities
+        # it failed. 
+
+        # Here `daemon=True` seems to be necessary for the case  
+        # vim is stopped from users. 
+        self._thread = Thread(target=self._update, daemon=True)
+        self._thread.start()
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+
+    def send(self, text):
+        """Send the text to `ShameConsole`
+        """
+        self.sham_console.send(text)
+
+    def send_current_line(self):
+        line = vim.current.line
+        self.send(line + "\n")
+
+    def send_current_range(self):
+        lines = ""
+        for line in vim.current.range:
+            lines += line
+        lines += "\n\n"   # It seems empty line is necessary.
+        self.send(lines)
+
+
+    def kill(self):
+        self._is_alive = False
+        self.sham_console.kill()
+
+    def _update(self):
+        while self._is_alive:
+            time.sleep(self.display_interval)
+            try:
+                diff = self.sham_console.get_stdout()
+            except Exception as e:
+                diff = str(e)
+            else:
+                buf = vim.buffers[self.buffer_number]
+                if not diff.strip():
+                    continue
+                for line in diff.split("\n"):
+                    buf.append(line)
 
 
 if __name__ == "__main__":
