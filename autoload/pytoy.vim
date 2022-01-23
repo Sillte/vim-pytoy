@@ -77,6 +77,16 @@ function! pytoy#goto()
 python3 pytoy.goto()
 endfunction
 
+" Related to ipython handling
+function! pytoy#send_current_line()
+python3 pytoy.send_current_line()
+endfunction
+
+" Related to ipython handling
+function! pytoy#send_current_range()
+python3 pytoy.send_current_range()
+endfunction
+
 
 " Mapping definition 
 nnoremap \p :call pytoy#run()<CR>
