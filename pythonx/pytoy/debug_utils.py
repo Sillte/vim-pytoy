@@ -37,7 +37,8 @@ def reset_python(root_folder=None):
         raise ValueError(f"Cannot found ``__init__.py`` for `{root_folder}`")
 
     keys = get_module_keys(root_folder)
-    print("keys @ reload", keys)
+    # This function may called at initialization.
+    # print("keys @ reload", keys)
     for key in keys:
         del sys.modules[key]
 
