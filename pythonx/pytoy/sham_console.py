@@ -1,3 +1,10 @@
+"""
+This is currently not used (`2022/01/30`).
+Originally, this is intended to be used for `ipython`.  
+However, due to handling of `<ctrl-c>`, 
+vim's terminal is adopted  (See `ipython_terminal`.)
+"""
+
 import subprocess
 import time
 from subprocess import PIPE
