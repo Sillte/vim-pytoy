@@ -15,11 +15,13 @@ from pytoy.executor import BufferExecutor
 from pytoy.sham_console import ShamConsole
 from pytoy.venv_utils import VenvManager
 from pytoy.lightline_utils import Lightline
+from pytoy.ipython_terminal import IPythonTerminal
 
 
 TERM_STDOUT = "__pystdout__" # TERIMINAL NAME of `stdout`.
 TERM_STDERR = "__pystderr__" # TERIMINAL NAME of `stderr`.
 PYTOY_EXECUTOR = "PYTOY_EXECUTOR"
+IPYTHON_TERMINAL = None
 
 PREV_PATH = None  # Previously executed PATH. 
 
@@ -111,13 +113,25 @@ def goto():
 
 ## IPython Interface. 
 
-def send_current_line():
-    console = IPythonConsole(TERM_STDOUT)
-    console.send_current_line()
+def _get_ipython_terminal():
+    global IPYTHON_TERMINAL
+    if IPYTHON_TERMINAL is None:
+        IPYTHON_TERMINAL = IPythonTerminal(TERM_STDOUT)
+    IPYTHON_TERMINAL.assure_alive()
+    return IPYTHON_TERMINAL
 
-def send_current_range():
-    console = IPythonConsole(TERM_STDOUT)
-    console.send_current_range()
+def ipython_send_line():
+    term = _get_ipython_terminal()
+    term.send_current_line()
+
+def ipython_send_range():
+    term = _get_ipython_terminal()
+    term.send_current_range()
+
+def ipython_history():
+    # Transcript all the buffer to `output_buffer`.
+    term = _get_ipython_terminal()
+    term.transcript()
     
 
 class PytoyExecutor(BufferExecutor):
@@ -150,7 +164,7 @@ class PytoyExecutor(BufferExecutor):
                 vim.command(f"call win_gotoid({stdout_id})")
                 vim.command(f"normal zb")
 
-        # Unregister of Job.
+        # un-register of Job.
         vim.command(f"unlet g:{self.jobname}")
 
     def _make_qflist(self, string):
@@ -172,93 +186,6 @@ class PytoyExecutor(BufferExecutor):
             index += 1
         result = list(reversed(result))
         return result
-
-
-class IPythonConsole:
-    __cache = dict()
-    def __new__(cls, buf, display_interval=0.1):
-        """ Singleton,  
-        """
-        stdout_window = create_window(buf, "vertical")
-        buf = to_buffer_number(buf)
-        if buf in cls.__cache:
-            target = cls.__cache[buf]
-            target.display_interval = display_interval
-            return target
-        self = object.__new__(cls)
-        self._init_(buf, display_interval)
-        cls.__cache[buf] = self
-        return self
-
-    def _init_(self, buf, display_interval:float=0.1): 
-        # To prevent muptile calling of `__init__`, 
-        # you have to the processing inside `__new__`.
-        self.buffer_number = to_buffer_number(buf)
-        self.sham_console = ShamConsole()
-        self.sham_console.start()
-        self._is_alive = True
-        self.display_interval = display_interval
-        # I found that the order is important.
-        # If you perform `self._thread.start()` in prior to 
-        # the settings of member variables, with high probabilities
-        # it failed. 
-
-        # Here `daemon=True` seems to be necessary for the case  
-        # vim is stopped from users. 
-        self._thread = Thread(target=self._update, daemon=True)
-        self._thread.start()
-
-    def __init__(self, *args, **kwargs):
-        pass
-
-
-    def send(self, text):
-        """Send the text to `ShameConsole`
-        """
-        self.sham_console.send(text)
-
-    def send_current_line(self):
-        line = vim.current.line
-        self.send("\n")
-        self.send(line)
-        self.send("\n")
-
-    def send_current_range(self):
-        # This does not work! why? 
-        # 
-        #print(vim.current.range.end, vim.current.range.start)
-        #lines = ""
-        #for line in vim.current.range:
-        #    lines += (line + "\n") 
-        #lines += "\n\n"   # It seems empty line is necessary.
-        start_line = int(vim.eval("line(\"'<\")"))
-        end_line = int(vim.eval("line(\"'>\")"))
-        buf = vim.current.buffer
-        lines = buf[start_line - 1:end_line]
-        lines = "\n".join(lines)
-        lines = lines.strip()
-        self.send("\n")
-        self.send(lines)
-        self.send("\n")
-
-
-    def kill(self):
-        self._is_alive = False
-        self.sham_console.kill()
-
-    def _update(self):
-        while self._is_alive:
-            time.sleep(self.display_interval)
-            try:
-                diff = self.sham_console.get_stdout()
-            except Exception as e:
-                diff = str(e)
-            else:
-                buf = vim.buffers[self.buffer_number]
-                if not diff.strip():
-                    continue
-                for line in diff.split("\n"):
-                    buf.append(line)
 
 
 if __name__ == "__main__":

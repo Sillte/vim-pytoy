@@ -78,20 +78,20 @@ python3 pytoy.goto()
 endfunction
 
 " Related to ipython handling
-function! pytoy#send_current_line()
-python3 pytoy.send_current_line()
+function! pytoy#ipython_send_line()
+python3 pytoy.ipython_send_line()
 endfunction
 
-" Related to ipython handling
-function! pytoy#send_current_range()
-python3 pytoy.send_current_range()
+function! pytoy#ipython_send_range()
+python3 pytoy.ipython_send_range()
+endfunction
+
+function! pytoy#ipython_history()
+python3 pytoy.ipython_history()
 endfunction
 
 
-" Mapping definition 
-nnoremap \p :call pytoy#run()<CR>
-nnoremap \P :call pytoy#rerun()<CR>
-nnoremap <expr><silent> <C-c> pytoy#is_running() ? pytoy#stop() : "\<C-c>"
+" Mapping definition has performed at `plugins` folder.
 
 " For pytoy#goto, Vim8.2+ is required.
 if 802 <= v:version 
