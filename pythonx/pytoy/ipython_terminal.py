@@ -210,6 +210,8 @@ class IPythonTerminal:
         """Common processing of `cpaste`. 
         """
         self.v_sendkeys(self.term_buffer, "%cpaste -q\n")
+        # I do not know, however, 
+        # this `wait_time` seems important.
         time.sleep(wait_time)
         text = text.replace("\n", "\r")
         self.v_sendkeys(self.term_buffer, text)
@@ -271,9 +273,10 @@ class IPythonTerminal:
 
             # You should wait the sufficient time.  
             # However, the waiting mechanism 
-            # seem to be embedded in another `Thread`
-            # because `vim.buffers` are not updated. 
-            # this handling should be performed in another place.
+            # should be embedded in another `Thread`
+            # because `vim.buffers` are not updated until 
+            # this call returns. 
+            # See `_send_first` and `Thread`.
         return term_buffer
 
     def _try_fetch(self, term_name) ->int:
