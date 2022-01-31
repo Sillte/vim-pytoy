@@ -198,7 +198,9 @@ class IPythonTerminal:
             # `self.to_running`, however,  
             # this is not `MainThread` and `to_running` calls `daemon` Thread.
             # so `self.to_running` is not good. 
-            # self.to_running()
+            # (2022/02/01) I thonght above, however,  
+            # it seems not to cause problems.
+            self.to_running()
             self._cpaste(text)
 
         except Exception as e:
@@ -256,6 +258,7 @@ class IPythonTerminal:
         else:
             options = dict()
             options["term_name"] = term_name
+            options["term_kill"] = "quit"
             options["hidden"] = True
             term_buffer = self.v_start("ipython", options)
             self._is_first_execution = True
