@@ -31,11 +31,7 @@ class IPythonTerminal:
         self.in_pattern = re.compile(r"^In \[(\d+)\]:")
 
         # Whether the execution is first or not 
-        # affects what to do in terms of:
-        # 1) `ctrl-c` is send or not.
-        #
-        # Mainly, whether the terminal preparation is finishted or not  
-        # is very important point. 
+        # affects whether to wait for preparation of terminal. 
         self._is_first_execution = True
 
         if output_bufname is None:
@@ -51,6 +47,8 @@ class IPythonTerminal:
         # Thread related variables.
         self.running_thread = None
         self._running_terminate = False
+        
+
 
     def is_idle(self) -> bool:
         return self.running_thread is None
