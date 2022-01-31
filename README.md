@@ -4,10 +4,15 @@ Miscellaneous python operations around me. (Personal practice for vim-plugin.)
 ## Environment
 
 * Vim8.2+
+* python
+* ipython
 
 ## My Rules
 
 Policy of implementation, mainly for my personal memorandum.
+
+* `PYTHONIOENCODING=UTF-8`'s setting is desirable.  
+
 
 ### Calling python functions
 

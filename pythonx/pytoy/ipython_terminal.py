@@ -199,8 +199,8 @@ class IPythonTerminal:
             # this is not `MainThread` and `to_running` calls `daemon` Thread.
             # so `self.to_running` is not good. 
             # self.to_running()
-            
             self._cpaste(text)
+
         except Exception as e:
             print("Error _send_first", str(e))
 
