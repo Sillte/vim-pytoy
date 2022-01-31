@@ -21,7 +21,7 @@ from pytoy.ipython_terminal import IPythonTerminal
 TERM_STDOUT = "__pystdout__" # TERIMINAL NAME of `stdout`.
 TERM_STDERR = "__pystderr__" # TERIMINAL NAME of `stderr`.
 PYTOY_EXECUTOR = "PYTOY_EXECUTOR"
-IPYTHON_TERMINAL = None
+IPYTHON_TERMINAL = None  # TERMINAL MANAGER for `ipython`.
 
 PREV_PATH = None  # Previously executed PATH. 
 
