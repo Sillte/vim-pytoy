@@ -198,7 +198,7 @@ class IPythonTerminal:
             # `self.to_running`, however,  
             # this is not `MainThread` and `to_running` calls `daemon` Thread.
             # so `self.to_running` is not good. 
-            # (2022/02/01) I thonght above, however,  
+            # (2022/02/01) I thought above, however,  
             # it seems not to cause problems.
             self.to_running()
             self._cpaste(text)
@@ -264,8 +264,10 @@ class IPythonTerminal:
             self._is_first_execution = True
 
             # Though, mainly waiting is performed below,
-            # Experimentally, the wait here is important to prevent problem.
-            time.sleep(0.5)
+            # Experimentally, the wait here is important to prevent problem? 
+            # (2021/02/01): It seems unnecessary here. 
+            # However, the below processing seem mandatory.
+            #time.sleep(0.5)
 
             # You should wait the sufficient time.  
             # However, the waiting mechanism 
