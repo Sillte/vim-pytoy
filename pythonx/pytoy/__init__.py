@@ -128,6 +128,10 @@ def ipython_send_range():
     term = _get_ipython_terminal()
     term.send_current_range()
 
+def ipython_reset():
+    term = _get_ipython_terminal()
+    term.reset_term()
+
 def ipython_history():
     # Transcript all the buffer to `output_buffer`.
     term = _get_ipython_terminal()
