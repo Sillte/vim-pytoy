@@ -241,6 +241,13 @@ class IPythonTerminal:
     def assure_alive(self):
         if not self._is_term_alive():
             self.term_buffer = self._start_term(self.term_name)
+    
+    def reset_term(self):
+        """Reboot `terminal`. 
+        """
+        vim.command(f"bdelete! {self.term_buffer}")
+        self.assure_alive()
+
 
     def _is_term_alive(self):
         """Return whether the terminal is alive or not.

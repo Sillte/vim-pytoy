@@ -86,6 +86,10 @@ function! pytoy#ipython_send_range()
 python3 pytoy.ipython_send_range()
 endfunction
 
+function! pytoy#ipython_reset()
+python3 pytoy.ipython_reset()
+endfunction
+
 function! pytoy#ipython_history()
 python3 pytoy.ipython_history()
 endfunction
