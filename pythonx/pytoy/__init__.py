@@ -11,12 +11,11 @@ from pytoy.debug_utils import reset_python
 from pytoy import func_utils 
 
 from pytoy.func_utils import PytoyVimFunctions, with_return
-from pytoy.executor import BufferExecutor
-from pytoy.sham_console import ShamConsole
 from pytoy.venv_utils import VenvManager
 from pytoy.lightline_utils import Lightline
 from pytoy.ipython_terminal import IPythonTerminal
 
+from pytoy.python_executor import PythonExecutor
 
 TERM_STDOUT = "__pystdout__" # TERIMINAL NAME of `stdout`.
 TERM_STDERR = "__pystderr__" # TERIMINAL NAME of `stderr`.
@@ -32,7 +31,7 @@ def run(path=None):
     """
     if not path:
         path = vim.current.buffer.name
-    executor = PytoyExecutor(PYTOY_EXECUTOR)
+    executor = PythonExecutor(PYTOY_EXECUTOR)
     if executor.is_running:
         raise RuntimeError(f"Currently, {PYTOY_EXECUTOR} is running.")
 
@@ -52,11 +51,11 @@ def rerun():
     run(PREV_PATH)
 
 def stop():
-    executor = PytoyExecutor(PYTOY_EXECUTOR)
+    executor = PythonExecutor(PYTOY_EXECUTOR)
     executor.stop()
 
 def is_running() -> int:
-    executor = PytoyExecutor(PYTOY_EXECUTOR)
+    executor = PythonExecutor(PYTOY_EXECUTOR)
     ret =  executor.is_running
     vim.command(f"let g:pytoy_return = {int(ret)}")
     return ret
@@ -137,60 +136,6 @@ def ipython_history():
     term = _get_ipython_terminal()
     term.transcript()
     
-
-class PytoyExecutor(BufferExecutor):
-    def prepare(self, options) -> None:
-        vimfunc_name = PytoyVimFunctions.register(self.on_closed, prefix=f"{self.jobname}_VIMFUNC")
-        options["exit_cb"] = vimfunc_name
-
-    def on_closed(self): 
-        # vim.Function("setloclist") seems to more appropriate, 
-        # but it does not work correctly with Python 3.9. 
-        setloclist = vim.bindeval('function("setloclist")')
-
-        error_msg = "\n".join(self.stderr)
-        if error_msg:
-            qflist = self._make_qflist(error_msg)
-            setloclist(self.win_id, qflist)  
-        else:
-            setloclist(self.win_id, [])  # Reset `LocationList`.
-            with store_window():
-                vim.eval(f"win_gotoid({self.win_id})")
-                vim.command(f"lclose")
-
-            nr = int(vim.eval(f'bufwinnr({self.stderr.number})'))
-            if 0 <= nr:
-                vim.command(f':{nr}close')
-
-            # Scrolling output window
-            with store_window():
-                stdout_id = vim.eval(f"bufwinid({self.stdout.number})")
-                vim.command(f"call win_gotoid({stdout_id})")
-                vim.command(f"normal zb")
-
-        # un-register of Job.
-        vim.command(f"unlet g:{self.jobname}")
-
-    def _make_qflist(self, string):
-        _pattern = re.compile(r'\s+File "(.+)", line (\d+)')
-        result = list()
-        lines = string.split("\n")
-        index = 0
-        while index < len(lines): 
-            infos = _pattern.findall(lines[index])
-            if infos:
-                filename, lnum = infos[0]
-                row = dict()
-                row["filename"] = filename
-                row["lnum"] = lnum
-                index += 1
-                text = lines[index].strip()
-                row["text"] = text
-                result.append(row)
-            index += 1
-        result = list(reversed(result))
-        return result
-
 
 if __name__ == "__main__":
     print(__name__)
