@@ -117,6 +117,10 @@ class IPythonTerminal:
             time.sleep(0.5)
             #output_buf.append(f"_running_terminate {self._running_terminate}")
 
+            # (2022/02/06) I wonder whether it is effecive?
+            vim.command(f"redraw")
+
+
     def reset_output(self):
         """Reset the output_buffer.
         """

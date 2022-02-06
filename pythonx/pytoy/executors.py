@@ -134,6 +134,8 @@ class BufferExecutor:
         prepared_dict = self.prepare()
         if prepared_dict is None:
             prepared_dict = {}
+        if "exit_cb" in prepared_dict:
+            raise ValueError("Key `exit_cb` is not allowed. Use `on_closed`.")
         options.update(prepared_dict)
         return options
 

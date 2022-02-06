@@ -10,7 +10,17 @@ from pytoy.ui_utils import init_buffer, store_window
 class PythonExecutor(BufferExecutor):
     def run(self, path, stdout, stderr, *, cwd=None):
         """Execute `"""
-        self.prev_path = path
+        if cwd is None:
+            cwd = vim.Function("getcwd")()
+            # (2022/02/06) I cannot understand, but may `cwd` be bytes.
+            try:
+                cwd = cwd.decode("utf-8")
+            except:
+                pass
+        
+        # States of class. They are used at `prepare`.
+        self.run_path = path
+        self.run_cwd = cwd
 
         command = f'python -u -X utf8 "{path}"'
 
@@ -22,15 +32,15 @@ class PythonExecutor(BufferExecutor):
     def rerun(self, stdout, stderr):
         """Execute the previous `path`.  
         """
-        if not hasattr(self, "prev_path"):
+        if not hasattr(self, "run_path"):
             raise RuntimeError("Previous file is not existent.")
-        return self.run(self.prev_path, stdout, stderr)
+        cwd = self.run_cwd
+        return self.run(self.run_path, stdout, stderr, cwd=cwd)
 
     def prepare(self):
-        # I do not need to return any `dict` for customization.
-        # But, it requires `win_id` at `on_closed`.
         self.win_id = vim.eval("win_getid()")
-        return None
+        options = {"cwd": str(self.run_cwd)}
+        return options
 
     def on_closed(self):
         # vim.Function("setloclist") seems to more appropriate,
