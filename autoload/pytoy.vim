@@ -94,6 +94,11 @@ function! pytoy#ipython_history()
 python3 pytoy.ipython_history()
 endfunction
 
+" Related to ipython handling
+function! pytoy#pytest_runall()
+python3 pytoy.pytest_runall()
+endfunction 
+
 
 " Mapping definition has performed at `plugins` folder.
 

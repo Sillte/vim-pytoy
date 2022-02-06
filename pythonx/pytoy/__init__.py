@@ -7,7 +7,7 @@ from threading import Thread
 from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_window
 from pytoy.debug_utils import reset_python
 
-# This is required for `PytoyVimFunctions.register.vim.command.__name__` for Linux environment.
+# This `import` is required for `PytoyVimFunctions.register.vim.command.__name__` for Linux environment.
 from pytoy import func_utils 
 
 from pytoy.func_utils import PytoyVimFunctions, with_return
@@ -16,10 +16,10 @@ from pytoy.lightline_utils import Lightline
 from pytoy.ipython_terminal import IPythonTerminal
 
 from pytoy.python_executor import PythonExecutor
+from pytoy.pytest_executor import PytestExecutor
 
 TERM_STDOUT = "__pystdout__" # TERIMINAL NAME of `stdout`.
 TERM_STDERR = "__pystderr__" # TERIMINAL NAME of `stderr`.
-PYTOY_EXECUTOR = "PYTOY_EXECUTOR"
 IPYTHON_TERMINAL = None  # TERMINAL MANAGER for `ipython`.
 
 PREV_PATH = None  # Previously executed PATH. 
@@ -31,31 +31,28 @@ def run(path=None):
     """
     if not path:
         path = vim.current.buffer.name
-    executor = PythonExecutor(PYTOY_EXECUTOR)
+    executor = PythonExecutor()
     if executor.is_running:
-        raise RuntimeError(f"Currently, {PYTOY_EXECUTOR} is running.")
+        raise RuntimeError(f"Currently, `PythonExecutor` is running.")
 
-    command = f'python -u -X utf8 "{path}"'
     stdout_window = create_window(TERM_STDOUT, "vertical")
     stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
-    init_buffer(stdout_window.buffer)
-    init_buffer(stderr_window.buffer)
-    stdout_window.buffer[0] = f"`python {path}`"
-    global PREV_PATH
-    PREV_PATH = path
-    executor.run(command, stdout_window.buffer, stderr_window.buffer)
+    executor.run(path, stdout_window.buffer, stderr_window.buffer)
 
 def rerun():
     """Perform `python` with the previous `path`.
     """
-    run(PREV_PATH)
+    executor = PythonExecutor()
+    stdout_window = create_window(TERM_STDOUT, "vertical")
+    stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
+    executor.rerun(stdout_window.buffer, stderr_window.buffer)
 
 def stop():
-    executor = PythonExecutor(PYTOY_EXECUTOR)
+    executor = PythonExecutor()
     executor.stop()
 
 def is_running() -> int:
-    executor = PythonExecutor(PYTOY_EXECUTOR)
+    executor = PythonExecutor()
     ret =  executor.is_running
     vim.command(f"let g:pytoy_return = {int(ret)}")
     return ret
@@ -135,6 +132,13 @@ def ipython_history():
     # Transcript all the buffer to `output_buffer`.
     term = _get_ipython_terminal()
     term.transcript()
+
+## Pytest Interface. 
+
+def pytest_runall():
+    executor = PytestExecutor()
+    stdout_window = create_window(TERM_STDOUT, "vertical")
+    executor.runall(stdout_window.buffer)
     
 
 if __name__ == "__main__":
