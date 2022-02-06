@@ -94,9 +94,17 @@ function! pytoy#ipython_history()
 python3 pytoy.ipython_history()
 endfunction
 
-" Related to ipython handling
+" Related to pytest handling. 
 function! pytoy#pytest_runall()
 python3 pytoy.pytest_runall()
+endfunction 
+
+function! pytoy#pytest_runfile()
+python3 pytoy.pytest_runfile()
+endfunction 
+
+function! pytoy#pytest_runfunc()
+python3 pytoy.pytest_runfunc()
 endfunction 
 
 
