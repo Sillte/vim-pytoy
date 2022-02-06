@@ -36,6 +36,7 @@ class BufferExecutor:
             return cls.__cache[name]
         self = object.__new__(cls)
         self._init(name)
+        cls.__cache[name] = self
         return self
 
     def _init(self, name):
