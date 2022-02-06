@@ -8,7 +8,7 @@ from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_w
 from pytoy.debug_utils import reset_python
 
 # This `import` is required for `PytoyVimFunctions.register.vim.command.__name__` for Linux environment.
-from pytoy import func_utils 
+from pytoy import func_utils
 
 from pytoy.func_utils import PytoyVimFunctions, with_return
 from pytoy.venv_utils import VenvManager
@@ -18,17 +18,15 @@ from pytoy.ipython_terminal import IPythonTerminal
 from pytoy.python_executor import PythonExecutor
 from pytoy.pytest_executor import PytestExecutor
 
-TERM_STDOUT = "__pystdout__" # TERIMINAL NAME of `stdout`.
-TERM_STDERR = "__pystderr__" # TERIMINAL NAME of `stderr`.
+TERM_STDOUT = "__pystdout__"  # TERIMINAL NAME of `stdout`.
+TERM_STDERR = "__pystderr__"  # TERIMINAL NAME of `stderr`.
 IPYTHON_TERMINAL = None  # TERMINAL MANAGER for `ipython`.
-
-PREV_PATH = None  # Previously executed PATH. 
 
 # Python Execution Interface
 
+
 def run(path=None):
-    """Perform `python {path}`. 
-    """
+    """Perform `python {path}`."""
     if not path:
         path = vim.current.buffer.name
     executor = PythonExecutor()
@@ -39,49 +37,55 @@ def run(path=None):
     stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
     executor.run(path, stdout_window.buffer, stderr_window.buffer)
 
+
 def rerun():
-    """Perform `python` with the previous `path`.
-    """
+    """Perform `python` with the previous `path`."""
     executor = PythonExecutor()
     stdout_window = create_window(TERM_STDOUT, "vertical")
     stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
     executor.rerun(stdout_window.buffer, stderr_window.buffer)
 
+
 def stop():
     executor = PythonExecutor()
     executor.stop()
 
+
 def is_running() -> int:
     executor = PythonExecutor()
-    ret =  executor.is_running
+    ret = executor.is_running
     vim.command(f"let g:pytoy_return = {int(ret)}")
     return ret
 
+
 def reset():
-    """Reset the state of windows. 
-    """
-    vim.command(':lclose')
+    """Reset the state of windows."""
+    vim.command(":lclose")
     for term in (TERM_STDOUT, TERM_STDERR):
         nr = int(vim.eval(f'bufwinnr("{term}")'))
         if 0 <= nr:
-            vim.command(f':{nr}close')
+            vim.command(f":{nr}close")
+
 
 ## Virtual Environment Interface
+
 
 def activate():
     args = vim.eval("a:000")
     if args:
-        name = args[0] 
+        name = args[0]
     else:
         name = None
     venv_manager = VenvManager()
     venv_manager.activate(name)
     Lightline().register(venv_manager.name)
 
+
 def deactivate():
     venv_manager = VenvManager()
     Lightline().deregister(venv_manager.name)
     venv_manager.deactivate()
+
 
 @with_return
 def envinfo():
@@ -89,6 +93,7 @@ def envinfo():
     info = str(venv_manager.envinfo)
     print(info)
     return venv_manager.envinfo
+
 
 def term():
     """Open the terminal window
@@ -100,14 +105,16 @@ def term():
 
 ## Jedi Releated Interface.
 
+
 def goto():
-    """Go to the definition of the current word.
-    """
-    from pytoy import jedi_utils 
+    """Go to the definition of the current word."""
+    from pytoy import jedi_utils
+
     jedi_utils.goto()
 
 
-## IPython Interface. 
+## IPython Interface.
+
 
 def _get_ipython_terminal():
     global IPYTHON_TERMINAL
@@ -116,31 +123,51 @@ def _get_ipython_terminal():
     IPYTHON_TERMINAL.assure_alive()
     return IPYTHON_TERMINAL
 
+
 def ipython_send_line():
     term = _get_ipython_terminal()
     term.send_current_line()
+
 
 def ipython_send_range():
     term = _get_ipython_terminal()
     term.send_current_range()
 
+
 def ipython_reset():
     term = _get_ipython_terminal()
     term.reset_term()
+
 
 def ipython_history():
     # Transcript all the buffer to `output_buffer`.
     term = _get_ipython_terminal()
     term.transcript()
 
-## Pytest Interface. 
+
+## Pytest Interface.
+
 
 def pytest_runall():
     executor = PytestExecutor()
     stdout_window = create_window(TERM_STDOUT, "vertical")
     executor.runall(stdout_window.buffer)
-    
+
+
+def pytest_runfile():
+    executor = PytestExecutor()
+    path = vim.current.buffer.name
+    stdout_window = create_window(TERM_STDOUT, "vertical")
+    executor.runfile(path, stdout_window.buffer)
+
+
+def pytest_runfunc():
+    executor = PytestExecutor()
+    path = vim.current.buffer.name
+    line = vim.Function("line")(".")
+    stdout_window = create_window(TERM_STDOUT, "vertical")
+    executor.runfunc(path, line, stdout_window.buffer)
+
 
 if __name__ == "__main__":
     print(__name__)
-

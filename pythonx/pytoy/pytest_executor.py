@@ -6,7 +6,7 @@ import vim
 from pytoy.executors import BufferExecutor
 
 from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_window
-from pytoy.pytest_utils import PytestDecipher
+from pytoy.pytest_utils import PytestDecipher, ScriptDecipher
 
 class PytestExecutor(BufferExecutor):
 
@@ -16,6 +16,25 @@ class PytestExecutor(BufferExecutor):
         command = "pytest"
         init_buffer(stdout)
         return super().run(command, stdout)
+
+    def runfile(self, path, stdout):
+        """Execute `pytest` for only one file.
+        """
+        command = f'pytest "{path}"'
+        init_buffer(stdout)
+        return super().run(command, stdout)
+
+    def runfunc(self, path, line, stdout):
+        """Execute `pytest` for only one function. 
+        """
+        init_buffer(stdout)
+        instance = ScriptDecipher.from_path(path)
+        target = instance.pick(line)
+        if not target:
+            raise ValueError("Specified `path` and `line` is invalid in `PytestExecutor`.")
+        command = target.command
+        return super().run(command, stdout)
+
 
     def prepare(self):
         # I do not need to return any `dict` for customization.
