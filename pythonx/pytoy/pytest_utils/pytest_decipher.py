@@ -81,8 +81,13 @@ class PytestDecipher:
         """
         lines = item_text.split("\n")
         detail_specifier = re.compile(r"^E\s*(?P<reason>.+)$")
+
+        # As for `filename`, 2 pattern exist.
         summary_specifier = re.compile(
             r"(?P<filename>(.*)\.py):(?P<lnum>\d+)(:(?P<text>.*))?$"
+        )
+        summary_specifier2 = re.compile(
+            r'^E\s*File\s*"(?P<filename>.*)",\s*line\s*(?P<lnum>\d+)\s*$'
         )
         summaries = []
         details = []
@@ -90,6 +95,12 @@ class PytestDecipher:
             m = summary_specifier.match(line)
             if m:
                 summaries.append(m)
+                continue
+            m = summary_specifier2.match(line)
+            if m:
+                summaries.append(m)
+                continue
+
             m = detail_specifier.match(line)
             if m:
                 details.append(m)
