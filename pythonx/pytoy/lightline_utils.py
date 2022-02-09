@@ -184,7 +184,6 @@ Below, customization.
 """
 
 from pytoy.func_utils import PytoyVimFunctions, with_return
-import weakref
 
 class Lightline(_Lightline):
     """
