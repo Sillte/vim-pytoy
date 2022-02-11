@@ -17,7 +17,7 @@ class PytestDecipher:
     * Each item is `ERROR` or `FAILURE`.
     * The path and line are described in one line.
     * For 1 `ERROR` or `FAILURE` multiple `positions` correspond.
-        - This is because stacks may be described.
+        - This is because stack of exceptions may be described.
 
     """
 
