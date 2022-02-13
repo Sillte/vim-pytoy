@@ -90,6 +90,10 @@ function! pytoy#ipython_reset()
 python3 pytoy.ipython_reset()
 endfunction
 
+function! pytoy#ipython_stop()
+python3 pytoy.ipython_stop()
+endfunction
+
 function! pytoy#ipython_history()
 python3 pytoy.ipython_history()
 endfunction
