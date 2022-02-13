@@ -1,4 +1,8 @@
 """IPython Terminal 
+
+NOTE:
+    When you handle `vim.buffer`, you shoud be careful not to access at the same time.   
+    I wonder, they are not `thread-safe`?  
 """
 import vim
 import time 
@@ -28,6 +32,7 @@ class IPythonTerminal:
 
     def __init__(self, output_bufname=None):
         term_name = "__IPYTYON_TERM__"
+        self.maximum_line = 1000  # The maximum line for buffer.
         self.in_pattern = re.compile(r"^In \[(\d+)\]:")
 
         # Whether the execution is first or not 
@@ -49,6 +54,11 @@ class IPythonTerminal:
         self._running_terminate = False
         
 
+    def stop(self):
+        self.to_idle()
+        self.v_sendkeys(self.term_buffer, "\03")  # <ctrl-c>
+        # I do not know, however, the time-interval is mandatory to send the control code.
+        time.sleep(0.05)
 
     def is_idle(self) -> bool:
         return self.running_thread is None
@@ -63,7 +73,6 @@ class IPythonTerminal:
             self.running_thread = None
             return 
         self._running_terminate = True
-        #print("self.running_thread.join()")
         self.running_thread.join()
         self._running_terminate = False
         self.running_thread = None
@@ -102,8 +111,12 @@ class IPythonTerminal:
             term_buf: "buffer" = vim.buffers[self.term_buffer]
             output_buf: "buffer" = vim.buffers[self.output_buffer]
             while t_term_lines < len(term_buf):
-                output_buf.append(term_buf[t_term_lines])
-                t_term_lines += 1
+                if len(output_buf) < self.maximum_line:  
+                    output_buf.append(term_buf[t_term_lines])
+                    t_term_lines += 1
+                else:
+                    output_buf.append("`stdout` is full.")
+                    break
 
         while (not self._running_terminate):
             try:
@@ -112,13 +125,13 @@ class IPythonTerminal:
                 _transcript()
             except Exception as e:
                 output_buf.append(str(e))
-
                 self._running_terminate = True
             time.sleep(0.5)
             #output_buf.append(f"_running_terminate {self._running_terminate}")
 
             # (2022/02/06) I wonder whether it is effecive?
             vim.command(f"redraw")
+        vim.command(f"redraw")
 
 
     def reset_output(self):
@@ -145,16 +158,19 @@ class IPythonTerminal:
             out_buf.append(line)
 
     def send(self, text):
-        self.reset_output()
 
         # important to invoke this snippets before `sendkeys`.
         if self._is_first_execution:
+            self.reset_output()
             thread = Thread(target=self._send_first, args=(text, ), daemon=True)
             thread.start()
             self._is_first_execution = False
             return 
         else:
             self.to_idle()
+            # The position is important.
+            # Here, it is assured that another `Thread` does not modify the buffer. 
+            self.reset_output() 
             self.to_running()
             # The running codes are stopped.
             self.v_sendkeys(self.term_buffer, "\03")  # <ctrl-c>

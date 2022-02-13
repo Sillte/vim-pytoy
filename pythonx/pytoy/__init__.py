@@ -133,6 +133,10 @@ def ipython_send_range():
     term = _get_ipython_terminal()
     term.send_current_range()
 
+def ipython_stop():
+    term = _get_ipython_terminal()
+    term.stop()
+
 
 def ipython_reset():
     term = _get_ipython_terminal()
