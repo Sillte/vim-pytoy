@@ -8,6 +8,7 @@ from pytoy.ui_utils._converter import (
     to_window_number,
     to_tabpage_number,
     to_window_id,
+    to_buffer,
 )
 
 
