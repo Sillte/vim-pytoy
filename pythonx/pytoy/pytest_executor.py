@@ -5,7 +5,7 @@ import vim
 
 from pytoy.executors import BufferExecutor
 
-from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_window
+from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_window, to_buffer
 from pytoy.pytest_utils import PytestDecipher, ScriptDecipher
 
 class PytestExecutor(BufferExecutor):
@@ -33,6 +33,10 @@ class PytestExecutor(BufferExecutor):
         if not target:
             raise ValueError("Specified `path` and `line` is invalid in `PytestExecutor`.")
         command = target.command
+        # Options can be added to `command`. 
+        command = f"{command} --capture=no --quiet"
+        stdout = to_buffer(stdout)
+        stdout[0] = command
         return super().run(command, stdout)
 
 
