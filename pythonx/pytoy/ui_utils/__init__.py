@@ -11,6 +11,8 @@ from pytoy.ui_utils._converter import (
     to_buffer,
 )
 
+from pytoy.ui_utils.quickfix_utils import QuickFix
+
 
 def init_buffer(arg):
     """Empty the buffer."""
