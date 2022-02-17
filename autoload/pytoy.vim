@@ -112,6 +112,12 @@ python3 pytoy.pytest_runfunc()
 endfunction 
 
 
+" Related to Quickfix handling
+function! pytoy#quickfix_gitfilter()
+python3 pytoy.quickfix_gitfilter()
+endfunction 
+
+
 " Mapping definition has performed at `plugins` folder.
 
 " For pytoy#goto, Vim8.2+ is required.

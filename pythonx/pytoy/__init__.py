@@ -17,6 +17,7 @@ from pytoy.ipython_terminal import IPythonTerminal
 
 from pytoy.python_executor import PythonExecutor
 from pytoy.pytest_executor import PytestExecutor
+from pytoy.quickfix_handler import QuickFixFilter, QuickFixSorter
 
 TERM_STDOUT = "__pystdout__"  # TERIMINAL NAME of `stdout`.
 TERM_STDERR = "__pystderr__"  # TERIMINAL NAME of `stderr`.
@@ -115,7 +116,6 @@ def goto():
 
 ## IPython Interface.
 
-
 def _get_ipython_terminal():
     global IPYTHON_TERMINAL
     if IPYTHON_TERMINAL is None:
@@ -171,6 +171,12 @@ def pytest_runfunc():
     line = vim.Function("line")(".")
     stdout_window = create_window(TERM_STDOUT, "vertical")
     executor.runfunc(path, line, stdout_window.buffer)
+
+## QuickFix Interface.
+
+def quickfix_gitfilter():
+    fix_filter = QuickFixFilter()
+    fix_filter.restrict_on_git()
 
 
 if __name__ == "__main__":
