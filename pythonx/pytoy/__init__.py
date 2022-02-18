@@ -178,6 +178,10 @@ def quickfix_gitfilter():
     fix_filter = QuickFixFilter()
     fix_filter.restrict_on_git()
 
+def quickfix_timesort():
+    fix_sorter = QuickFixSorter()
+    fix_sorter.sort_by_time()
+
 
 if __name__ == "__main__":
     print(__name__)
