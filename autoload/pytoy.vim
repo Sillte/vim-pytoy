@@ -117,6 +117,11 @@ function! pytoy#quickfix_gitfilter()
 python3 pytoy.quickfix_gitfilter()
 endfunction 
 
+" Related to Quickfix handling
+function! pytoy#quickfix_timesort()
+python3 pytoy.quickfix_timesort()
+endfunction 
+
 
 " Mapping definition has performed at `plugins` folder.
 

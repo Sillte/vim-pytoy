@@ -1,5 +1,6 @@
 """Perform operations related to `Quickfix`. 
 """
+import os
 
 from pytoy.ui_utils import QuickFix
 from pytoy.git_utils.git_user import GitUser
@@ -10,6 +11,9 @@ import vim
 
 class QuickFixFilter:
     """Filter `QuickFix`'s contents based on `context`."""
+
+    def __init__(self, location=None):
+        self.location = location
 
     def restrict_on_git(self, cwd=None):
         if cwd is None:
@@ -30,20 +34,62 @@ class QuickFixFilter:
                 return True
             return False
 
-        # In default, this is applied to both of `location-window` and `quick-fix window`.
-        loc_fix = QuickFix(location=True)
-        records = loc_fix.read()
-        records = [record for record in records if _predicate(record)]
-        loc_fix.write(records)
+        self._from_predicate(_predicate)
 
-        win_fix = QuickFix(location=False)
-        records = loc_fix.read()
-        records = [record for record in records if _predicate(record)]
-        win_fix.write(records)
+    def _from_predicate(self, predicate):
+        """Apply the `filter` based on the `predicate`.
+        Here, the signature of `predicate` (record) -> bool.
+        """
+
+        def _filter(fix: QuickFix):
+            records = fix.read()
+            records = [record for record in records if predicate(record)]
+            fix.write(records)
+
+        if self.location is None:
+            loc_fix = QuickFix(location=True)
+            _filter(loc_fix)
+            win_fix = QuickFix(location=False)
+            _filter(win_fix)
+        else:
+            fix = QuickFix(location=self.location)
+            _filter(fix)
 
 
 class QuickFixSorter:
-    """Not yet implemented."""
+    """Sort `QuickFix` based on criteria."""
 
-    def __init__(self):
-        pass
+    def __init__(self, location=None):
+        self.location = location
+
+    def sort_by_time(self):
+        """Sort following to the modified time."""
+
+        def _key_func(record):
+            path = Path(record["filename"])
+            try:
+                if not path.exists():
+                    return 0
+            except:
+                return 0
+            return os.path.getmtime(path)
+
+        self._from_key(_key_func, reverse=True)
+
+    def _from_key(self, key, reverse=False):
+        """Apply `sort` from key function of `sorted`."""
+
+        def _inner(fix: QuickFix):
+            records = fix.read()
+            records = sorted(records, key=key, reverse=reverse)
+            fix.write(records)
+
+        # In default, this is applied to both of `location-window` and `quick-fix window`.
+        if self.location is None:
+            loc_fix = QuickFix(location=True)
+            _inner(loc_fix)
+            win_fix = QuickFix(location=False)
+            _inner(win_fix)
+        else:
+            fix = QuickFix(location=self.location)
+            _inner(fix)
