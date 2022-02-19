@@ -1,5 +1,5 @@
 import subprocess
-from typing import List, Dict
+from typing import List 
 from subprocess import PIPE 
 from pathlib import Path
 
@@ -24,7 +24,7 @@ class GitUser:
         """
         ret = self._run("git rev-parse --show-toplevel")
         if ret.returncode != 0:
-            raise ValueError(f"This is not `.git` folder.")
+            raise ValueError("This is not `.git` folder.")
         return Path(ret.stdout.strip())
 
     @property
@@ -39,7 +39,6 @@ class GitUser:
 
     @property
     def target_files(self) -> List[Path]:
-        initial_commit = self.initial_commit
         ret = self._run("git ls-files", cwd=self.toplevel)
         paths = []
         paths = [Path(line.strip()).absolute() for line in ret.stdout.split("\n")]
@@ -50,6 +49,7 @@ class GitUser:
         default["text"] = True
         default["cwd"] = self.cwd
         default["stdout"] = PIPE
+        default["shell"] = True  # To prevent flickering.
         default.update(kwargs)
         return subprocess.run(cmd, **default)
 
