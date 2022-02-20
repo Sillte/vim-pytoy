@@ -46,14 +46,8 @@ class QuickFixFilter:
             records = [record for record in records if predicate(record)]
             fix.write(records)
 
-        if self.location is None:
-            loc_fix = QuickFix(location=True)
-            _filter(loc_fix)
-            win_fix = QuickFix(location=False)
-            _filter(win_fix)
-        else:
-            fix = QuickFix(location=self.location)
-            _filter(fix)
+        fix = QuickFix(location=self.location)
+        _filter(fix)
 
 
 class QuickFixSorter:
@@ -84,14 +78,7 @@ class QuickFixSorter:
             records = sorted(records, key=key, reverse=reverse)
             fix.write(records)
 
-        # In default, this is applied to both of `location-window` and `quick-fix window`.
-        if self.location is None:
-            loc_fix = QuickFix(location=True)
-            _inner(loc_fix)
-            win_fix = QuickFix(location=False)
-            _inner(win_fix)
-        else:
-            fix = QuickFix(location=self.location)
-            _inner(fix)
+        fix = QuickFix(location=self.location)
+        _inner(fix)
 
 
