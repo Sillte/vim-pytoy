@@ -93,3 +93,5 @@ class QuickFixSorter:
         else:
             fix = QuickFix(location=self.location)
             _inner(fix)
+
+

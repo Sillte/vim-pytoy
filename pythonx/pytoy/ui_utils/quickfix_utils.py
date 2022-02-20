@@ -1,4 +1,4 @@
-from typing import Optional, Any, List, Dict
+from typing import Optional, Any, List, Dict, Union
 from pathlib import Path
 from pytoy.ui_utils._converter import to_window_id
 import vim
@@ -7,7 +7,7 @@ class QuickFix:
     """Handling `quickfix` and `locationlist`
 
     Args:
-        location: If `None`, it accesses `quickfix`.
+        location: If `False`, it accesses `quickfix`.
                   Otherwise, it is regarded as `window`. 
     Note
     -----
@@ -20,23 +20,30 @@ class QuickFix:
     v_setloclist = vim.bindeval('function("setloclist")')
 
     def __init__(self, location=None):
-        if location is False:
-            location = None
-        elif location is True:
+        if location is None:
+            current = self.v_getloclist(vim.current.window.number)
+            if len(current) == 0:
+                location = False
+            else:
+                location = True
+
+        if location is True:
             location = vim.current.window
 
-        if location is not None:
+
+        if location is not False:
             location = to_window_id(location)
-        self.location: Optional[int] = location
+
+        self.location: Optional[Union[int, bool]] = location
 
     def write(self, records: List[Dict[str, Any]]):
-        if self.location is None:
+        if self.location is False:
             self.v_setqflist(records)
         else:
             self.v_setloclist(self.location, records,)
 
     def read(self) -> List[Dict[str, Any]]:
-        if self.location is None:
+        if self.location is False:
             items = self.v_getqflist()
         else:
             items = self.v_getloclist(self.location)
@@ -52,6 +59,9 @@ class QuickFix:
             record["filename"] = vim.buffers[record["bufnr"]].name
         return records
 
+#  #Usage.
+#from pytoy.ui_utils.quickfix_utils import perform_sample
+#perform_sample(True)
 
 def perform_sample(location=None):
     """Sample usage for `QuickFix`.  
