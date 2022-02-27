@@ -1,42 +1,8 @@
 import inspect
 import functools
 
-class PyTestCommand:
-    name = "Pytest"
-    
-    def __call__(self, *args):
-        if not args:
-            command_type = "func"
-        else:
-            command_type = args[0]
-        from pytoy import pytest_runall, pytest_runfile, pytest_runfunc
-        if command_type == "func":
-            pytest_runfunc()
-        elif command_type == "file":
-            pytest_runfile()
-        elif command_type == "all":
-            pytest_runall()
-        else:
-            raise ValueError(f"Specified `command_type` is not valid.")
-
-    def customlist(self, arg_lead:str, cmd_line: str, cursor_pos:int):
-        candidates = ["func", "file", "all"]
-        valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
-        if valid_candidates:
-            return valid_candidates
-        return candidates
-        print("arg_lead", arg_lead)
-        print("cmd_line", cmd_line)
-        print("cursor_pos", cursor_pos)
-        return ["func", "file", "all"]
-
-
-# Objective. 
-# Command: Pytest func -> : Execute pytoy#pytest_runfunc() 
-# Pytest func
-
-from pytoy.func_utils import PytoyVimFunctions, with_return
 import vim
+from pytoy.func_utils import PytoyVimFunctions, with_return
 
 
 class CommandManager:
@@ -60,8 +26,9 @@ class CommandManager:
     Optional rules
     --------------
     * If `command` has it's name, it is used for defining `vim-function`.
-    * If `
-
+    * If `command` has `customlist`, `-complete=customlist` is used.
+    * If `command` has `custom` attribute, its used for `-complete` option.
+        - For details, please refer to `:h compand-complete`.
     """
     v_customlist_variable = "g:customlist_variable"
     _COMMANDS = dict()
@@ -95,7 +62,7 @@ class CommandManager:
             except AttributeError:
                 name = command.__name__
 
-        funcname = PytoyVimFunctions.register(command)
+        funcname = PytoyVimFunctions.register(command, prefix="__PytoyCommand")
 
         cls._COMMANDS[name] = command
         customlist = getattr(command, "customlist", kwargs.get("customlist", None))
@@ -110,7 +77,8 @@ class CommandManager:
     def _define_customlist_command(cls, name, funcname):
         """Define `customlist` and `command`.
         """
-        customlist_funcname = f"{funcname}_customlist"
+        customlist_funcname = f"__{funcname}_customlist"
+
         vim.command(f"""function! {customlist_funcname}(ArgLead, CmdLine, CursorPos) 
 python3 << EOF
 import vim
@@ -151,4 +119,8 @@ class DummyCommand():
     def customlist(self, arg_lead:str, cmd_line: str, cursor_pos:int):
         return []
 
+
+
+if __name__ == "__main__":
+    pass
 
