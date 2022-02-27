@@ -23,9 +23,11 @@ def with_return(func):
     endfunction
     ```
 
-    * May this decorator is used in module functions and 
+    * Maybe this decorator is used in module functions and 
     called not locally, but globally.
     In these cases, `l:` cannot be used, so `g:pytoy_return` is used
+
+    (2022/02/24) I wonder the mutual exclusion is all right? 
     """
     def _escape(s):
         """Escape the single quotation for vim 
@@ -40,7 +42,7 @@ def with_return(func):
         if isinstance(ret, str):
             vim.command(f"let g:pytoy_return='{_escape(ret)}'")
         else:
-            vim.command(f"let g:pytoy_return='{_escape(repr(ret))}'")
+            vim.command(f"let g:pytoy_return=eval('{_escape(repr(ret))}')")
 
         return ret
     return wrapped
@@ -79,15 +81,35 @@ class PytoyVimFunctions:
             prefix = "Pytoy_VIMFUNC"
 
         # For `__name__`'s reference ` pytoy.func_utils` access must be passed. 
-        name = func.__name__
+        try:
+            name = func.__name__
+        except AttributeError:
+            name = func.__class__.__name__  # For callable of classes.
+
         vim_funcname = f"{prefix}_{name}_{id(name)}"
+
+        # Depending of the number of parameters, change the 
+        # definition and calling of functions.
+        # Currently(2022/02/26), only `*args` and  `<f-args>` are dealt with. 
+        # Notice that `python3  << EOF` starts without `spaces`. 
+        sig = inspect.signature(func)
+        if len(sig.parameters) == 0:
+            procedures = f"python3 {__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}']()"
+        else:
+            procedures = f"""
+python3 << EOF
+args = vim.eval("a:000")
+{__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}'](*args)
+EOF
+    """.strip()
+
         vim.command(f"""function! {vim_funcname}(...) 
-        python3 {__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}']()
-        if exists("g:pytoy_return")
-            return g:pytoy_return
-        endif
-        endfunction
-        """)
+            {procedures}
+            if exists("g:pytoy_return")
+                return g:pytoy_return
+            endif
+            endfunction
+            """)
         cls.FUNCTION_MAPS[vim_funcname] = func
 
         return vim_funcname 

@@ -19,6 +19,7 @@ from pytoy.python_executor import PythonExecutor
 from pytoy.pytest_executor import PytestExecutor
 from pytoy.quickfix_handler import QuickFixFilter, QuickFixSorter
 
+
 TERM_STDOUT = "__pystdout__"  # TERIMINAL NAME of `stdout`.
 TERM_STDERR = "__pystderr__"  # TERIMINAL NAME of `stderr`.
 IPYTHON_TERMINAL = None  # TERMINAL MANAGER for `ipython`.
@@ -181,6 +182,13 @@ def quickfix_gitfilter():
 def quickfix_timesort():
     fix_sorter = QuickFixSorter()
     fix_sorter.sort_by_time()
+
+
+# Command definitions.
+# Maybe `Command` uses the public interfaces, 
+# Hence, `import`s are placed here. 
+from pytoy import commands 
+
 
 
 if __name__ == "__main__":
