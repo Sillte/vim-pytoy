@@ -46,17 +46,26 @@ class ScriptDecipher:
 
     @classmethod
     def _gather_test_funcs(cls, module, path):
+        def _to_target(node):
+            name = node.name.value
+            start_line = node.start_pos[0]
+            end_line = node.end_pos[0]
+            target = _TestTarget(
+                path=path, start_line=start_line, end_line=end_line, funcname=name
+            )
+            return target
         targets = []
         children = getattr(module, "children", [])
         for node in children:
             if node.type == "funcdef":
-                name = node.name.value
-                start_line = node.start_pos[0]
-                end_line = node.end_pos[0]
-                target = _TestTarget(
-                    path=path, start_line=start_line, end_line=end_line, funcname=name
-                )
+                target = _to_target(node)
                 targets.append(target)
+            if node.type == "decorated":
+                cands = getattr(node, "children", [])
+                for cand in cands:
+                    if cand.type == "funcdef":
+                        target = _to_target(cand)
+                        targets.append(target)
         return targets
 
     @classmethod
@@ -96,7 +105,7 @@ if __name__ == "__main__":
     from pathlib import Path
     module = parso.parse(Path(__file__).read_text())
     print(module)
-    interpreter = ScriptDechipher.from_path(__file__)
+    interpreter = ScriptDecipher.from_path(__file__)
     print(len(interpreter.targets))
     p = interpreter.pick(12)
 

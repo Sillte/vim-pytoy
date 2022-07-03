@@ -106,16 +106,32 @@ class IPythonTerminal:
             if self.in_pattern.match(last_line):
                 return True
             return False
+
+        def _appendbufline(buf, string):
+            # If you `buffer` is directly written, then problem occurs. 
+            # Hence, this function is prepared. 
+
+            # order is important.
+            # escape is required.
+            string = string.replace("\\", "\\\\")
+            string = string.replace(r'"', r'\"')
+            string = string.replace(r"'", r"''")
+            server = vim.eval("v:servername")
+            func = vim.Function("remote_expr")
+            v = func(server, rf'execute("call appendbufline({buf}, \'$\', \'{string}\')")')
+
         def _transcript():
             nonlocal t_term_lines
             term_buf: "buffer" = vim.buffers[self.term_buffer]
             output_buf: "buffer" = vim.buffers[self.output_buffer]
             while t_term_lines < len(term_buf):
                 if len(output_buf) < self.maximum_line:  
-                    output_buf.append(term_buf[t_term_lines])
+                    # output_buf.append(term_buf[t_term_lines])
+                    _appendbufline(self.output_buffer, term_buf[t_term_lines])
                     t_term_lines += 1
                 else:
-                    output_buf.append("`stdout` is full.")
+                    _appendbufline(self.output_buffer, "`stdout` is full.")
+                    # output_buf.append("`stdout` is full.")
                     break
 
         while (not self._running_terminate):
@@ -126,11 +142,14 @@ class IPythonTerminal:
             except Exception as e:
                 output_buf.append(str(e))
                 self._running_terminate = True
-            time.sleep(0.5)
-            #output_buf.append(f"_running_terminate {self._running_terminate}")
 
             # (2022/02/06) I wonder whether it is effecive?
+            time.sleep(0.5)   # It seems this is required.
             vim.command(f"redraw")
+            #output_buf.append(f"_running_terminate {self._running_terminate}")
+            
+        # (2022/07/03): This procedure seems 
+        time.sleep(0.5)
         vim.command(f"redraw")
 
 
