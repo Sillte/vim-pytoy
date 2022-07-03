@@ -148,7 +148,7 @@ class IPythonTerminal:
             vim.command(f"redraw")
             #output_buf.append(f"_running_terminate {self._running_terminate}")
             
-        # (2022/07/03): This procedure seems 
+        # (2022/07/03): This procedure seems required.
         time.sleep(0.5)
         vim.command(f"redraw")
 
