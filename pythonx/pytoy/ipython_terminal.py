@@ -202,7 +202,7 @@ class IPythonTerminal:
         """
         At first, it is uncertain that terminal buffer is available.   
         You have to check `vim.buffers`, but the update of it is not performed
-        until the processing is  returned to the caller of this class.  
+        until the processing is returned to the caller of this class.  
 
         Hence, this should be to called in another `Thread`.
         And this function perform as below. 
@@ -270,8 +270,18 @@ class IPythonTerminal:
         end_line = int(vim.eval("line(\"'>\")"))
         buf = vim.current.buffer
         lines = buf[start_line - 1:end_line]
+
+        # (2022/07/06) 
+        # You have to solve's indent problem. 
+        # Maybe the start of the line starts space. 
+        prev_space = re.match(r"\s*", lines[0]).end()
+        def _to_trim(line, trim_space):
+            s_space = re.match(r"\s*", line).end()
+            return line[min(s_space, trim_space):]
+        lines = [_to_trim(line, prev_space) for line in lines]
         lines = "\n".join(lines)
         lines = lines.strip()
+
         self.send(lines)
 
 
