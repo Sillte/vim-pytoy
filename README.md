@@ -6,6 +6,8 @@ Miscellaneous python operations around me. (Personal practice for vim-plugin.)
 * Vim8.2+
 * python
 * ipython
+* pytest
+* uv
 
 ## My Rules
 
