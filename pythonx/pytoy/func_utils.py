@@ -4,7 +4,7 @@ import inspect
 
 def with_return(func):
     """
-    Set the `return` value to `vim` funciton.
+    Set the `return` value to `vim` function.
     Specifically, to `l:ret`,  `value` is `set`.
  
     Note
@@ -28,6 +28,10 @@ def with_return(func):
     In these cases, `l:` cannot be used, so `g:pytoy_return` is used
 
     (2022/02/24) I wonder the mutual exclusion is all right? 
+    (2025/04/29) Hence, in this case, `Lock` mechanism must be required, 
+    to prevent the contamination of multi-threads. 
+    However, this seems daunting, so this utility function is used 
+    under the assumption that this mechanism is used in the single thread. 
     """
     def _escape(s):
         """Escape the single quotation for vim 

@@ -57,7 +57,7 @@ function! pytoy#reset()
 python3 pytoy.reset()
 endfunction
 
-" Virual Environment handling.
+" Virtual Environment handling.
 function! pytoy#activate(...)
 python3 pytoy.activate()
 endfunction
@@ -78,16 +78,16 @@ endfunction
 
 " Related to `uv` prioritization
 "
-function! pytoy#prioritize_uv()
-python3 pytoy.prioritize_uv()
+function! pytoy#uv_prioritize()
+python3 pytoy.uv_prioritize()
 endfunction
 
-function! pytoy#deprioritize_uv()
-python3 pytoy.deprioritize_uv()
+function! pytoy#uv_deprioritize()
+python3 pytoy.uv_deprioritize()
 endfunction
 
-function! pytoy#toggle_uv()
-python3 pytoy.toggle_uv()
+function! pytoy#uv_toggle()
+python3 pytoy.uv_toggle()
 endfunction
 
 
@@ -136,7 +136,6 @@ function! pytoy#quickfix_gitfilter()
 python3 pytoy.quickfix_gitfilter()
 endfunction 
 
-" Related to Quickfix handling
 function! pytoy#quickfix_timesort()
 python3 pytoy.quickfix_timesort()
 endfunction 
