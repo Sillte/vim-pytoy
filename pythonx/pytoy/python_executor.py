@@ -6,9 +6,12 @@ import re
 from pytoy.executors import BufferExecutor
 from pytoy.ui_utils import init_buffer, store_window
 
+# `set_default_execution_mode` is carried out only in `__init__.py`
+from pytoy_states import get_default_execution_mode, ExecutionMode
+
 
 class PythonExecutor(BufferExecutor):
-    def run(self, path, stdout, stderr, *, cwd=None):
+    def run(self, path, stdout, stderr, *, cwd=None, with_uv=None):
         """Execute `"""
         if cwd is None:
             cwd = vim.Function("getcwd")()
@@ -17,21 +20,32 @@ class PythonExecutor(BufferExecutor):
                 cwd = cwd.decode("utf-8")
             except:
                 pass
-        
+
+        if with_uv is None:
+            e_mode = get_default_execution_mode()
+            if e_mode == ExecutionMode.WITH_UV:
+                with_uv = True
+            else:
+                with_uv = False
+
         # States of class. They are used at `prepare`.
         self.run_path = path
         self.run_cwd = cwd
 
-        command = f'python -u -X utf8 "{path}"'
+        if with_uv is True:
+            command = f'uv run python -u -X utf8 "{path}"'
+            directive = f"`uv run python {path}`"
+        else:
+            command = f'python -u -X utf8 "{path}"'
+            directive = f"`python {path}`"
 
         init_buffer(stdout)
         init_buffer(stderr)
-        stdout[0] = f"`python {path}`"
+        stdout[0] = directive
         return super().run(command, stdout, stderr)
 
     def rerun(self, stdout, stderr):
-        """Execute the previous `path`.  
-        """
+        """Execute the previous `path`."""
         if not hasattr(self, "run_path"):
             raise RuntimeError("Previous file is not existent.")
         cwd = self.run_cwd

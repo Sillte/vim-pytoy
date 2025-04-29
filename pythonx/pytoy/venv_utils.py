@@ -82,7 +82,7 @@ def pick(name, root_folder: Optional[Path] = None, n_depth: int = 1) -> Path:
     folders = search(root_folder, n_depth, name=name)
     if folders:
         return folders[0]
-    raise ValueError(f"Cannot find `{name}` virtualenv")
+    raise ValueError(f"Cannot find `{name}` virtualenv: {n_depth=}.")
 
 
 class VenvManager:
@@ -122,7 +122,7 @@ class VenvManager:
         else:
             return (self.name, str(self.path))
 
-    def activate(self, name=None, path=None, root=None, n_depth=1):
+    def activate(self, name=None, path=None, root=None, n_depth=3):
         """Activate `name` virtualenv with `path`.
         """
         if name is None:
@@ -132,7 +132,7 @@ class VenvManager:
                     path = paths[0]
                     name = path.name
                 else:
-                    raise ValueError(f"`name` is not given, and cannot estimate.")
+                    raise ValueError(f"`name` is not given, and cannot estimate.({n_depth=})")
             else:
                 name = Path(path).name
         if path:
