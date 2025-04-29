@@ -1,3 +1,8 @@
+if &cp || exists("g:pytoy_loaded")
+    finish
+endif
+let g:pytoy_loaded = "v001"
+
 "Related to initialization.
 function! pytoy#init_python()
 " Solve the `import` libraries.
