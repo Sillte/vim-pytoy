@@ -106,14 +106,14 @@ def envinfo():
 
 def prioritize_uv():
     pytoy_states.set_default_execution_mode(ExecutionMode.WITH_UV)
-    Lightline().register("`uv`")
+    #Lightline().register("uv")
     print("Default execution_mode: `uv`")
 
 
 def deprioritize_uv():
     pytoy_states.set_default_execution_mode(ExecutionMode.NAIVE)
     print("Default execution_mode: `naive`")
-    Lightline().deregister("`uv`")
+    #Lightline().deregister("uv")
 
 
 def toggle_uv():
