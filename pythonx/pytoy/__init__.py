@@ -3,11 +3,10 @@ import vim
 from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_window
 from pytoy.debug_utils import reset_python
 from pytoy import pytoy_states
-
 # Only `set` is performed here, `get_mode` is carried out at necessity,
 # This is intended to perform the specified execution, if directly specified.
 # `ExecutionMode` only determines the behavior, no directives are given.
-from pytoy_states import set_default_execution_mode, ExecutionMode
+from pytoy.pytoy_states import set_default_execution_mode, ExecutionMode
 
 
 # This `import` is required for `PytoyVimFunctions.register.vim.command.__name__` for Linux environment.
@@ -118,7 +117,7 @@ def deprioritize_uv():
 
 
 def toggle_uv():
-    from pytoy_states import get_default_execution_mode
+    from pytoy.pytoy_states import get_default_execution_mode
 
     execution_mode = get_default_execution_mode()
     if execution_mode == ExecutionMode.WITH_UV:
