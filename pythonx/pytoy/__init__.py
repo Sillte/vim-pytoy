@@ -1,11 +1,14 @@
 import vim
-import subprocess
-import re
-import time
-from threading import Thread
 
 from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_window
 from pytoy.debug_utils import reset_python
+from pytoy import pytoy_states
+
+# Only `set` is performed here, `get_mode` is carried out at necessity,
+# This is intended to perform the specified execution, if directly specified.
+# `ExecutionMode` only determines the behavior, no directives are given.
+from pytoy_states import set_default_execution_mode, ExecutionMode
+
 
 # This `import` is required for `PytoyVimFunctions.register.vim.command.__name__` for Linux environment.
 from pytoy import func_utils
@@ -80,6 +83,7 @@ def activate():
         name = None
     venv_manager = VenvManager()
     venv_manager.activate(name)
+    pytoy_states.set_default_execution_mode(ExecutionMode.VENV)
     Lightline().register(venv_manager.name)
 
 
@@ -87,6 +91,7 @@ def deactivate():
     venv_manager = VenvManager()
     Lightline().deregister(venv_manager.name)
     venv_manager.deactivate()
+    pytoy_states.set_default_execution_mode(ExecutionMode.NAIVE)
 
 
 @with_return
@@ -95,6 +100,31 @@ def envinfo():
     info = str(venv_manager.envinfo)
     print(info)
     return venv_manager.envinfo
+
+
+## UV related configuration.
+
+
+def prioritize_uv():
+    pytoy_states.set_default_execution_mode(ExecutionMode.WITH_UV)
+    Lightline().register("`uv`")
+    print("Default execution_mode: `uv`")
+
+
+def deprioritize_uv():
+    pytoy_states.set_default_execution_mode(ExecutionMode.NAIVE)
+    print("Default execution_mode: `naive`")
+    Lightline().deregister("`uv`")
+
+
+def toggle_uv():
+    from pytoy_states import get_default_execution_mode
+
+    execution_mode = get_default_execution_mode()
+    if execution_mode == ExecutionMode.WITH_UV:
+        deprioritize_uv()
+    else:
+        prioritize_uv()
 
 
 def term():
@@ -117,6 +147,7 @@ def goto():
 
 ## IPython Interface.
 
+
 def _get_ipython_terminal():
     global IPYTHON_TERMINAL
     if IPYTHON_TERMINAL is None:
@@ -133,6 +164,7 @@ def ipython_send_line():
 def ipython_send_range():
     term = _get_ipython_terminal()
     term.send_current_range()
+
 
 def ipython_stop():
     term = _get_ipython_terminal()
@@ -173,11 +205,14 @@ def pytest_runfunc():
     stdout_window = create_window(TERM_STDOUT, "vertical")
     executor.runfunc(path, line, stdout_window.buffer)
 
+
 ## QuickFix Interface.
+
 
 def quickfix_gitfilter():
     fix_filter = QuickFixFilter()
     fix_filter.restrict_on_git()
+
 
 def quickfix_timesort():
     fix_sorter = QuickFixSorter()
@@ -185,11 +220,9 @@ def quickfix_timesort():
 
 
 # Command definitions.
-# Maybe `Command` uses the public interfaces, 
-# Hence, `import`s are placed here. 
-from pytoy import commands 
-
-
+# Maybe `Command` uses the public interfaces,
+# Hence, `import`s are placed here.
+from pytoy import commands
 
 if __name__ == "__main__":
     print(__name__)

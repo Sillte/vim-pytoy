@@ -71,6 +71,20 @@ function! pytoy#term()
 python3 pytoy.term()
 endfunction
 
+" Related to `uv` prioritization
+"
+function! pytoy#prioritize_uv()
+python3 pytoy.prioritize_uv()
+endfunction
+
+function! pytoy#deprioritize_uv()
+python3 pytoy.deprioritize_uv()
+endfunction
+
+function! pytoy#toggle_uv()
+python3 pytoy.toggle_uv()
+endfunction
+
 
 " Related to python module handling (jedi)
 function! pytoy#goto()
