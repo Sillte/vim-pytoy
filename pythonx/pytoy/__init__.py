@@ -29,7 +29,7 @@ IPYTHON_TERMINAL = None  # TERMINAL MANAGER for `ipython`.
 # Python Execution Interface
 
 
-def run(path=None):
+def run(path=None, with_uv=None):
     """Perform `python {path}`."""
     if not path:
         path = vim.current.buffer.name
@@ -39,15 +39,15 @@ def run(path=None):
 
     stdout_window = create_window(TERM_STDOUT, "vertical")
     stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
-    executor.run(path, stdout_window.buffer, stderr_window.buffer)
+    executor.run(path, stdout_window.buffer, stderr_window.buffer, with_uv=with_uv)
 
 
-def rerun():
+def rerun(with_uv=None):
     """Perform `python` with the previous `path`."""
     executor = PythonExecutor()
     stdout_window = create_window(TERM_STDOUT, "vertical")
     stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
-    executor.rerun(stdout_window.buffer, stderr_window.buffer)
+    executor.rerun(stdout_window.buffer, stderr_window.buffer, with_uv=with_uv)
 
 
 def stop():
@@ -104,26 +104,25 @@ def envinfo():
 ## UV related configuration.
 
 
-def prioritize_uv():
+def uv_prioritize():
     pytoy_states.set_default_execution_mode(ExecutionMode.WITH_UV)
     #Lightline().register("uv")
     print("Default execution_mode: `uv`")
 
 
-def deprioritize_uv():
+def uv_deprioritize():
     pytoy_states.set_default_execution_mode(ExecutionMode.NAIVE)
     print("Default execution_mode: `naive`")
     #Lightline().deregister("uv")
 
 
-def toggle_uv():
+def uv_toggle():
     from pytoy.pytoy_states import get_default_execution_mode
-
     execution_mode = get_default_execution_mode()
     if execution_mode == ExecutionMode.WITH_UV:
-        deprioritize_uv()
+        uv_deprioritize()
     else:
-        prioritize_uv()
+        uv_prioritize()
 
 
 def term():
@@ -134,7 +133,7 @@ def term():
     venv_manager.term_start()
 
 
-## Jedi Releated Interface.
+## Jedi Related Interface.
 
 
 def goto():
@@ -184,21 +183,21 @@ def ipython_history():
 ## Pytest Interface.
 
 
-def pytest_runall():
-    executor = PytestExecutor()
+def pytest_runall(with_uv=None):
+    executor = PytestExecutor(with_uv=None)
     stdout_window = create_window(TERM_STDOUT, "vertical")
     executor.runall(stdout_window.buffer)
 
 
 def pytest_runfile():
-    executor = PytestExecutor()
+    executor = PytestExecutor(with_uv=None)
     path = vim.current.buffer.name
     stdout_window = create_window(TERM_STDOUT, "vertical")
     executor.runfile(path, stdout_window.buffer)
 
 
 def pytest_runfunc():
-    executor = PytestExecutor()
+    executor = PytestExecutor(with_uv=None)
     path = vim.current.buffer.name
     line = vim.Function("line")(".")
     stdout_window = create_window(TERM_STDOUT, "vertical")

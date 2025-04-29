@@ -44,10 +44,17 @@ class PythonExecutor(BufferExecutor):
         stdout[0] = directive
         return super().run(command, stdout, stderr)
 
-    def rerun(self, stdout, stderr):
+    def rerun(self, stdout, stderr, with_uv=None):
         """Execute the previous `path`."""
         if not hasattr(self, "run_path"):
             raise RuntimeError("Previous file is not existent.")
+
+        if with_uv is None:
+            e_mode = get_default_execution_mode()
+            if e_mode == ExecutionMode.WITH_UV:
+                with_uv = True
+            else:
+                with_uv = False
         cwd = self.run_cwd
         return self.run(self.run_path, stdout, stderr, cwd=cwd)
 
