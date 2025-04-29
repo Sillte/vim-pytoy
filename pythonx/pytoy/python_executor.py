@@ -7,7 +7,7 @@ from pytoy.executors import BufferExecutor
 from pytoy.ui_utils import init_buffer, store_window
 
 # `set_default_execution_mode` is carried out only in `__init__.py`
-from pytoy_states import get_default_execution_mode, ExecutionMode
+from pytoy.pytoy_states import get_default_execution_mode, ExecutionMode
 
 
 class PythonExecutor(BufferExecutor):
