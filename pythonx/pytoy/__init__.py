@@ -106,14 +106,14 @@ def envinfo():
 
 def uv_prioritize():
     pytoy_states.set_default_execution_mode(ExecutionMode.WITH_UV)
-    #Lightline().register("uv")
-    print("Default execution_mode: `uv`")
+    Lightline().register("uv-mode")
+    #print("Default execution_mode: `uv`")
 
 
 def uv_deprioritize():
     pytoy_states.set_default_execution_mode(ExecutionMode.NAIVE)
-    print("Default execution_mode: `naive`")
-    #Lightline().deregister("uv")
+    #print("Default execution_mode: `naive`")
+    Lightline().deregister("uv-mode")
 
 
 def uv_toggle():

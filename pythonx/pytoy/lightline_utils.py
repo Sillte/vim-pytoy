@@ -16,7 +16,7 @@ Copyright of `lightline`.:
 * https://github.com/itchyny/lightline.vim
 * Copyright: Copyright (c) 2013-2020 itchyny
 
-Thank you for great plugin! 
+Thank you for the great plugin! 
 """
 
 import vim
@@ -310,7 +310,7 @@ class Lightline(_Lightline):
         else:
             c_type = "component"
         del self[c_type][name]
-        print("self[c_type]", self[c_type])
+        #print("self[c_type]", self[c_type])
 
         # Deletion of `key`. 
         del self._infos[key]
