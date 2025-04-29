@@ -18,17 +18,30 @@ class ExecutionMode(Enum):
     WITH_UV: str = "WITH_UV"  # Use
 
 
+class _ExecutionModeManager:
+
+    mode = ExecutionMode.NAIVE
+
+    @classmethod
+    def get_mode(cls):
+        return cls.mode
+
+    @classmethod
+    def set_mode(cls, mode: ExecutionMode):
+        cls.mode = mode
+
+
 _DEFAULT_EXECUTION_MODE = ExecutionMode.NAIVE
 
 
 def get_default_execution_mode():
-    return _DEFAULT_EXECUTION_MODE
+    return _ExecutionModeManager.get_mode()
 
 
 def set_default_execution_mode(mode: ExecutionMode):
-    _DEFAULT_EXECUTION_MODE = mode
+    _ExecutionModeManager.set_mode(mode)
 
 
 if __name__ == "__main__":
-    pass
-    _
+    set_default_execution_mode(ExecutionMode.WITH_UV)
+    assert get_default_execution_mode() == ExecutionMode.WITH_UV
