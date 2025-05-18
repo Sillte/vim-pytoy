@@ -138,9 +138,9 @@ def term():
 
 def goto():
     """Go to the definition of the current word."""
-    from pytoy import jedi_utils
+    from pytoy import coc_utils
 
-    jedi_utils.goto()
+    coc_utils.goto()
 
 
 ## IPython Interface.

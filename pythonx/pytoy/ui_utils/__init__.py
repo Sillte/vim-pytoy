@@ -24,7 +24,7 @@ def init_buffer(arg):
 @contextmanager
 def store_window():
     """Current window is retrieved, at the end of context."""
-    winid = int(vim.eval(f"win_getid({vim.current.window.number})"))
+    winid = int(vim.eval("win_getid()"))
     try:
         yield
     except Exception as e:
