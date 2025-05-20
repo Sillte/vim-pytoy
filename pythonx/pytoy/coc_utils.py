@@ -8,9 +8,8 @@ def goto():
 
 
     if ui_utils.is_leftwindow():
-        with ui_utils.store_window():
-            vim.command("rightbelow vsplit | wincmd l")
-            vim.command("call CocAction('jumpDefinition')")
+        vim.command("rightbelow vsplit | wincmd l")
+        vim.command("call CocAction('jumpDefinition')")
     else:
         vim.command("call CocAction('jumpDefinition')")
 
