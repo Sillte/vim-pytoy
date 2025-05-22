@@ -2,6 +2,7 @@ import vim
 import functools
 import inspect
 
+
 def with_return(func):
     """
     Set the `return` value to `vim` function.
