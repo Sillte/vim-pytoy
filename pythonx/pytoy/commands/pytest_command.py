@@ -1,8 +1,6 @@
 """PyTestCommand
 """
 
-import inspect
-import functools
 from pytoy.command_utils import CommandManager
 
 @CommandManager.register(name="Pytest")

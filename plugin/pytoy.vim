@@ -9,3 +9,4 @@ nnoremap <leader>t :<c-u>call pytoy#pytest_runfunc()<CR>
 nnoremap <F12> :<c-u>call pytoy#uv_toggle()<CR>
 
 call pytoy#init_python()
+
