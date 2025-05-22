@@ -1,4 +1,4 @@
-"""In this subpackage, the configuration of   
+"""In this subpackage, the configuration of execution 
 
 """
 
@@ -13,9 +13,9 @@ class ExecutionMode(Enum):
     environment, hence, this execution mode is only applicable in `python` and `pytest`.
     """
 
-    NAIVE: str = "NAIVE"
-    VENV: str = "VENV"
-    WITH_UV: str = "WITH_UV"  # Use
+    NAIVE = "NAIVE"
+    VENV = "VENV"
+    WITH_UV = "WITH_UV"  # Use
 
 
 class _ExecutionModeManager:
