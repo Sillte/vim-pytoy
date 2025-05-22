@@ -1,0 +1,4 @@
+{
+  "include": ["pythonx/pytoy"],
+  "extraPaths": ["typings"]
+}
