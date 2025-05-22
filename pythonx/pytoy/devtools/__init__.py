@@ -1,2 +1,2 @@
 
-from pytoy.vimplugin_package import VimPluginPackage
+from pytoy.devtools.vimplugin_package import VimPluginPackage  #NOQA
