@@ -14,35 +14,23 @@ from pytoy.pytoy_states import get_default_execution_mode, ExecutionMode
 
 
 class PytestExecutor(BufferExecutor):
-    def __new__(cls, name=None, with_uv=None):
-        if with_uv is None:
-            e_mode = get_default_execution_mode()
-            if e_mode == ExecutionMode.WITH_UV:
-                with_uv = True
-            else:
-                with_uv = False
-        self = super().__new__(cls, name)
-        self.with_uv = with_uv
-        return self
-
-
-    def runall(self, stdout):
+    def runall(self, stdout, with_uv: bool  | None = None):
         """Execute `naive`, `pytest`."""
         command = "pytest"
-        if self.with_uv:
+        if self._solve_uv(with_uv):
             command = f"uv run {command}"
         init_buffer(stdout)
         return super().run(command, stdout)
 
-    def runfile(self, path, stdout):
+    def runfile(self, path, stdout, with_uv: bool | None = None):
         """Execute `pytest` for only one file."""
         command = f'pytest "{path}"'
-        if self.with_uv:
+        if self._solve_uv(with_uv):
             command = f"uv run {command}"
         init_buffer(stdout)
         return super().run(command, stdout)
 
-    def runfunc(self, path, line, stdout):
+    def runfunc(self, path, line, stdout, with_uv: bool | None=None):
         """Execute `pytest` for only one function."""
         init_buffer(stdout)
         instance = ScriptDecipher.from_path(path)
@@ -54,7 +42,7 @@ class PytestExecutor(BufferExecutor):
         command = target.command
         # Options can be added to `command`.
         command = f"{command} --capture=no --quiet"
-        if self.with_uv:
+        if self._solve_uv(with_uv):
             command = f"uv run {command}"
         stdout = to_buffer(stdout)
         stdout[0] = command
@@ -64,12 +52,13 @@ class PytestExecutor(BufferExecutor):
         # I do not need to return any `dict` for customization.
         # But, it requires `win_id` at `on_closed`.
         self.win_id = vim.eval("win_getid()")
-        return None
+        return {}
 
     def on_closed(self):
         # vim.Function("setloclist") seems to more appropriate,
         # but it does not work correctly with Python 3.9?
         setloclist = vim.bindeval('function("setloclist")')
+        assert self.stdout is not None
         messages = "\n".join(line for line in self.stdout)
         qflist = self._make_qflist(messages)
         if qflist:
@@ -81,6 +70,7 @@ class PytestExecutor(BufferExecutor):
 
         # Scrolling output window
         with store_window():
+            assert self.stdout is not None
             stdout_id = vim.eval(f"bufwinid({self.stdout.number})")
             vim.command(f"call win_gotoid({stdout_id})")
             vim.command(f"normal zb")
@@ -88,6 +78,12 @@ class PytestExecutor(BufferExecutor):
     def _make_qflist(self, string):
         records = PytestDecipher(string).records
         return records
+
+    def _solve_uv(self, with_uv: bool | None):
+        if with_uv is not None:
+            return with_uv
+        e_mode = get_default_execution_mode()
+        return e_mode == ExecutionMode.WITH_UV
 
 
 class MypyExecutor(BufferExecutor):
@@ -99,9 +95,11 @@ class MypyExecutor(BufferExecutor):
             else:
                 with_uv = False
         self = super().__new__(cls, name)
+        return self
+
+    def __init__(self, with_uv):
         self.with_uv = with_uv
         self._pattern = re.compile(r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<_type>(.+)):(?P<text>(.+))")
-        return self
 
     def runfile(self, path, stdout):
         """Execute `pytest` for only one file."""

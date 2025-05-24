@@ -80,5 +80,3 @@ class QuickFixSorter:
 
         fix = QuickFix(location=self.location)
         _inner(fix)
-
-

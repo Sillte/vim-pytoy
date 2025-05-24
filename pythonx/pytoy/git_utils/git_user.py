@@ -55,7 +55,8 @@ class GitUser:
 
 
 if __name__ == "__main__":
-    target_folder = r"C:\Library\myvimrc"
+    from pathlib import Path
+    target_folder = Path().cwd()
     user = GitUser(cwd=target_folder)
     print(user.toplevel)
     print(user.branch)
