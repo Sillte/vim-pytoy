@@ -76,20 +76,6 @@ function! pytoy#term()
 python3 pytoy.term()
 endfunction
 
-" Related to `uv` prioritization
-"
-function! pytoy#uv_prioritize()
-python3 pytoy.uv_prioritize()
-endfunction
-
-function! pytoy#uv_deprioritize()
-python3 pytoy.uv_deprioritize()
-endfunction
-
-function! pytoy#uv_toggle()
-python3 pytoy.uv_toggle()
-endfunction
-
 
 " Related to python module handling (jedi)
 function! pytoy#goto()
@@ -116,19 +102,6 @@ endfunction
 function! pytoy#ipython_history()
 python3 pytoy.ipython_history()
 endfunction
-
-" Related to pytest handling. 
-function! pytoy#pytest_runall()
-python3 pytoy.pytest_runall()
-endfunction 
-
-function! pytoy#pytest_runfile()
-python3 pytoy.pytest_runfile()
-endfunction 
-
-function! pytoy#pytest_runfunc()
-python3 pytoy.pytest_runfunc()
-endfunction 
 
 
 " Related to Quickfix handling
