@@ -8,5 +8,9 @@ nnoremap <leader>h :<c-u>call pytoy#ipython_history()<CR>
 nnoremap <leader>t :<c-u>Pytest<CR>
 nnoremap <F12> :<c-u>call pytoy#uv_toggle()<CR>
 
+inoremap <F12> :<c-u>call pytoy#uv_toggle()<CR>
+nnoremap <leader>d :GotoDefinition<CR>
+
+
 call pytoy#init_python()
 

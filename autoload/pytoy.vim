@@ -77,11 +77,6 @@ python3 pytoy.term()
 endfunction
 
 
-" Related to python module handling (jedi)
-function! pytoy#goto()
-python3 pytoy.goto()
-endfunction
-
 " Related to ipython handling
 function! pytoy#ipython_send_line()
 python3 pytoy.ipython_send_line()
@@ -113,12 +108,3 @@ function! pytoy#quickfix_timesort()
 python3 pytoy.quickfix_timesort()
 endfunction 
 
-
-" Mapping definition has performed at `plugins` folder.
-
-" For pytoy#goto, Vim8.2+ is required.
-if 802 <= v:version 
-    " To solve collision with `jedi's original (recommended) key mapping.
-    let g:jedi#goto_command="_\\d"
-    nnoremap \d :call pytoy#goto()<CR>
-endif 

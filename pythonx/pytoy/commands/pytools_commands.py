@@ -2,6 +2,7 @@
 """
 from pytoy.command_utils import CommandManager
 from pytoy.ui_utils import create_window
+from pytoy import ui_utils
 
 
 @CommandManager.register(name="Pytest")
@@ -51,5 +52,52 @@ class MypyCommand:
         executor = MypyExecutor()
         stdout_window = create_window(TERM_STDOUT, "vertical")
         executor.runfile(path, stdout_window.buffer)
+
+
+@CommandManager.register(name="GotoDefinition")
+class GotoDefinitionCommand:
+    def __call__(self, *args):
+        if args:
+            arg = args[0]
+        if arg.lower() == "jedi":
+            self._go_to_by_jedi()
+        elif arg.lower() == "coc":
+            self._go_to_by_coc()
+        else:
+            try:
+                self._go_to_by_jedi()
+                return
+            except Exception as e:
+                print(e)
+            try:
+                self._go_to_by_coc()
+            except Exception as e:
+                print(e)
+
+    def _go_to_by_coc(self):
+        ui_utils.sweep_windows(exclude=[vim.current.window])
+
+        if ui_utils.is_leftwindow():
+            vim.command("rightbelow vsplit | wincmd l")
+            vim.command("call CocAction('jumpDefinition')")
+        else:
+            vim.command("call CocAction('jumpDefinition')")
+
+    def _go_to_by_jedi(self):
+        """
+        Utility function to handle `jedi-vim`.
+        * https://github.com/davidhalter/jedi-vim
+        """
+        ui_utils.sweep_windows(exclude=[vim.current.window])
+        v = vim.eval("g:jedi#use_splits_not_buffers")
+        if ui_utils.is_leftwindow():
+            vim.command(f"let g:jedi#use_splits_not_buffers='right'")
+        else:
+            vim.command(f"let g:jedi#use_splits_not_buffers=''")
+
+        vim.command(f"call g:jedi#goto()")
+        vim.command(f"let g:jedi#use_splits_not_buffers='{v}'")
+
+
 
 

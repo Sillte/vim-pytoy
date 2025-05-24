@@ -79,7 +79,6 @@ def activate():
         name = None
     venv_manager = VenvManager()
     venv_manager.activate(name)
-    pytoy_states.set_default_execution_mode(ExecutionMode.VENV)
     Lightline().register(venv_manager.name)
 
 
@@ -87,7 +86,6 @@ def deactivate():
     venv_manager = VenvManager()
     Lightline().deregister(venv_manager.name)
     venv_manager.deactivate()
-    pytoy_states.set_default_execution_mode(ExecutionMode.NAIVE)
 
 
 @with_return
@@ -97,29 +95,6 @@ def envinfo():
     print(info)
     return venv_manager.envinfo
 
-## UV related configuration.
-
-
-def uv_prioritize():
-    pytoy_states.set_default_execution_mode(ExecutionMode.WITH_UV)
-    Lightline().register("uv-mode")
-    #print("Default execution_mode: `uv`")
-
-
-def uv_deprioritize():
-    pytoy_states.set_default_execution_mode(ExecutionMode.NAIVE)
-    #print("Default execution_mode: `naive`")
-    Lightline().deregister("uv-mode")
-
-
-def uv_toggle():
-    from pytoy.pytoy_states import get_default_execution_mode
-    execution_mode = get_default_execution_mode()
-    if execution_mode == ExecutionMode.WITH_UV:
-        uv_deprioritize()
-    else:
-        uv_prioritize()
-
 
 def term():
     """Open the terminal window
@@ -127,16 +102,6 @@ def term():
     """
     venv_manager = VenvManager()
     venv_manager.term_start()
-
-
-## Jedi Related Interface.
-
-
-def goto():
-    """Go to the definition of the current word."""
-    from pytoy import coc_utils
-
-    coc_utils.goto()
 
 
 ## IPython Interface.

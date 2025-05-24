@@ -2,8 +2,6 @@
 """
 
 import vim
-from contextlib import contextmanager
-from typing import Dict
 
 
 def to_buffer_number(arg) -> int:
@@ -75,7 +73,7 @@ def to_window_id(arg) -> int:
 
 
 # Not yet thoroughly tested (2020/02/06)
-def to_buffer(arg) -> "buffer":
+def to_buffer(arg) -> "vim.buffer":
     def _is_buffer(arg):
         if hasattr(arg, "vars"):
             return True
