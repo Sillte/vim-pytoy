@@ -59,6 +59,8 @@ class GotoDefinitionCommand:
     def __call__(self, *args):
         if args:
             arg = args[0]
+        else:
+            arg = "try_both"
         if arg.lower() == "jedi":
             self._go_to_by_jedi()
         elif arg.lower() == "coc":
@@ -73,6 +75,13 @@ class GotoDefinitionCommand:
                 self._go_to_by_coc()
             except Exception as e:
                 print(e)
+
+    def customlist(self, arg_lead:str, cmd_line: str, cursor_pos:int):
+        candidates = ["jedi", "coc"]
+        valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
+        if valid_candidates:
+            return valid_candidates
+        return candidates
 
     def _go_to_by_coc(self):
         ui_utils.sweep_windows(exclude=[vim.current.window])
@@ -97,7 +106,4 @@ class GotoDefinitionCommand:
 
         vim.command(f"call g:jedi#goto()")
         vim.command(f"let g:jedi#use_splits_not_buffers='{v}'")
-
-
-
 
