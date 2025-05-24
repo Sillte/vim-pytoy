@@ -1,6 +1,6 @@
 """In this submodule, `commands` 
 """
 # Registration of commands
-from pytoy.commands.pytest_command import PyTestCommand  # NOQA
+from pytoy.commands.pytools_commands import PyTestCommand, MypyCommand  # NOQA
 from pytoy.commands.devtools_commands import VimReboot  # NOQA
 

@@ -1,24 +1,21 @@
 import vim
 
-from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_window
-from pytoy.debug_utils import reset_python
+from pytoy.ui_utils import create_window
 from pytoy import pytoy_states
 # Only `set` is performed here, `get_mode` is carried out at necessity,
 # This is intended to perform the specified execution, if directly specified.
 # `ExecutionMode` only determines the behavior, no directives are given.
-from pytoy.pytoy_states import set_default_execution_mode, ExecutionMode
+from pytoy.pytoy_states import ExecutionMode
 
 
 # This `import` is required for `PytoyVimFunctions.register.vim.command.__name__` for Linux environment.
-from pytoy import func_utils
 
-from pytoy.func_utils import PytoyVimFunctions, with_return
+from pytoy.func_utils import with_return
 from pytoy.venv_utils import VenvManager
 from pytoy.lightline_utils import Lightline
 from pytoy.ipython_terminal import IPythonTerminal
 
 from pytoy.python_executor import PythonExecutor
-from pytoy.pytest_executor import PytestExecutor
 from pytoy.quickfix_handler import QuickFixFilter, QuickFixSorter
 
 
@@ -72,8 +69,6 @@ def reset():
 
 
 ## Virtual Environment Interface
-
-
 def activate():
     args = vim.eval("a:000")
     if args:
@@ -99,7 +94,6 @@ def envinfo():
     info = str(venv_manager.envinfo)
     print(info)
     return venv_manager.envinfo
-
 
 ## UV related configuration.
 
@@ -180,32 +174,7 @@ def ipython_history():
     term.transcript()
 
 
-## Pytest Interface.
-
-
-def pytest_runall(with_uv=None):
-    executor = PytestExecutor(with_uv=None)
-    stdout_window = create_window(TERM_STDOUT, "vertical")
-    executor.runall(stdout_window.buffer)
-
-
-def pytest_runfile():
-    executor = PytestExecutor(with_uv=None)
-    path = vim.current.buffer.name
-    stdout_window = create_window(TERM_STDOUT, "vertical")
-    executor.runfile(path, stdout_window.buffer)
-
-
-def pytest_runfunc():
-    executor = PytestExecutor(with_uv=None)
-    path = vim.current.buffer.name
-    line = vim.Function("line")(".")
-    stdout_window = create_window(TERM_STDOUT, "vertical")
-    executor.runfunc(path, line, stdout_window.buffer)
-
-
 ## QuickFix Interface.
-
 
 def quickfix_gitfilter():
     fix_filter = QuickFixFilter()

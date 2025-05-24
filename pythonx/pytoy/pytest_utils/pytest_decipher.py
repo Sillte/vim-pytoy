@@ -120,8 +120,8 @@ class PytestDecipher:
 
 if __name__ == "__main__":
     # makeshift test.
-    import subprocess
-    from subprocess import PIPE
+    #import subprocess
+    #from subprocess import PIPE
 
     # proc = subprocess.run("pytest", stdout=PIPE, shell=True, text=True)
     # instance = PytestDecipher(proc.stdout)
