@@ -1,12 +1,11 @@
 import vim
 
 from pytoy.ui_utils import create_window
-from pytoy import pytoy_states
+
 # Only `set` is performed here, `get_mode` is carried out at necessity,
 # This is intended to perform the specified execution, if directly specified.
 # `ExecutionMode` only determines the behavior, no directives are given.
-from pytoy.pytoy_states import ExecutionMode
-from pytoy.environment_manager import EnvironmentManager 
+from pytoy.environment_manager import EnvironmentManager
 
 
 # This `import` is required for `PytoyVimFunctions.register.vim.command.__name__` for Linux environment.
@@ -25,7 +24,6 @@ TERM_STDERR = "__pystderr__"  # TERIMINAL NAME of `stderr`.
 IPYTHON_TERMINAL = None  # TERMINAL MANAGER for `ipython`.
 
 # Python Execution Interface
- 
 
 
 def run(path=None):
@@ -142,6 +140,7 @@ def ipython_history():
 
 
 ## QuickFix Interface.
+
 
 def quickfix_gitfilter():
     fix_filter = QuickFixFilter()
