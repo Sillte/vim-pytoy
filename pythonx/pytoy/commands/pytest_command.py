@@ -33,3 +33,25 @@ class PyTestCommand:
         print("cmd_line", cmd_line)
         print("cursor_pos", cursor_pos)
         return ["func", "file", "all"]
+
+
+@CommandManager.register(name="Mypy")
+class MypyCommand:
+    def __call__(self, *args):
+        from pytoy.pytest_executor import MypyExecutor
+        from pytoy import TERM_STDOUT
+        import vim
+
+        from pytoy.ui_utils import create_window
+        path = vim.current.buffer.name
+        executor = MypyExecutor()
+        stdout_window = create_window(TERM_STDOUT, "vertical")
+        executor.runfile(path, stdout_window.buffer)
+
+
+#    def customlist(self, arg_lead:str, cmd_line: str, cursor_pos:int):
+#        candidates = ["func", "file", "all"]
+#        valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
+#        if valid_candidates:
+#            return valid_candidates
+#        return candidates
