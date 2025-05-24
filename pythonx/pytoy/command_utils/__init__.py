@@ -2,7 +2,7 @@ import inspect
 import functools
 
 import vim
-from pytoy.func_utils import PytoyVimFunctions, with_return
+from pytoy.func_utils import PytoyVimFunctions
 
 
 class CommandManager:

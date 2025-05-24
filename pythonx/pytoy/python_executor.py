@@ -7,11 +7,11 @@ from pytoy.executors import BufferExecutor
 from pytoy.ui_utils import init_buffer, store_window
 
 # `set_default_execution_mode` is carried out only in `__init__.py`
-from pytoy.pytoy_states import get_default_execution_mode, ExecutionMode
+from pytoy.environment_manager import EnvironmentManager
 
 
 class PythonExecutor(BufferExecutor):
-    def run(self, path, stdout, stderr, *, cwd=None, with_uv=None):
+    def run(self, path, stdout, stderr, *, cwd=None, force_uv=None):
         """Execute `"""
         if cwd is None:
             cwd = vim.Function("getcwd")()
@@ -21,42 +21,28 @@ class PythonExecutor(BufferExecutor):
             except:
                 pass
 
-        if with_uv is None:
-            e_mode = get_default_execution_mode()
-            if e_mode == ExecutionMode.WITH_UV:
-                with_uv = True
-            else:
-                with_uv = False
-
         # States of class. They are used at `prepare`.
         self.run_path = path
         self.run_cwd = cwd
 
-        if with_uv is True:
-            command = f'uv run python -u -X utf8 "{path}"'
-            directive = f"`uv run python {path}`"
-        else:
-            command = f'python -u -X utf8 "{path}"'
-            directive = f"`python {path}`"
+        command = f'python -u -X utf8 "{path}"'
+        directive = f"`python {path}`"
+
+        wrapper = EnvironmentManager().get_command_wrapper(force_uv=force_uv)
+        command = wrapper(command)
+        directive = wrapper(directive)
 
         init_buffer(stdout)
         init_buffer(stderr)
         stdout[0] = directive
         return super().run(command, stdout, stderr)
 
-    def rerun(self, stdout, stderr, with_uv=None):
+    def rerun(self, stdout, stderr, force_uv=None):
         """Execute the previous `path`."""
         if not hasattr(self, "run_path"):
             raise RuntimeError("Previous file is not existent.")
-
-        if with_uv is None:
-            e_mode = get_default_execution_mode()
-            if e_mode == ExecutionMode.WITH_UV:
-                with_uv = True
-            else:
-                with_uv = False
         cwd = self.run_cwd
-        return self.run(self.run_path, stdout, stderr, cwd=cwd)
+        return self.run(self.run_path, stdout, stderr, cwd=cwd, force_uv=force_uv)
 
     def prepare(self):
         self.win_id = vim.eval("win_getid()")
@@ -66,9 +52,14 @@ class PythonExecutor(BufferExecutor):
     def on_closed(self):
         # vim.Function("setloclist") seems to more appropriate,
         # but it does not work correctly with Python 3.9.
+        assert self.stdout is not None 
+        assert self.stderr is not None 
         setloclist = vim.bindeval('function("setloclist")')
 
-        error_msg = "\n".join(self.stderr)
+        if self.stderr:
+            error_msg = "\n".join(self.stderr)
+        else:
+            error_msg = "Implementation Error"
         if error_msg:
             qflist = self._make_qflist(error_msg)
             setloclist(self.win_id, qflist)
@@ -77,6 +68,7 @@ class PythonExecutor(BufferExecutor):
             with store_window():
                 vim.eval(f"win_gotoid({self.win_id})")
                 vim.command(f"lclose")
+
 
             nr = int(vim.eval(f"bufwinnr({self.stderr.number})"))
             if 0 <= nr:

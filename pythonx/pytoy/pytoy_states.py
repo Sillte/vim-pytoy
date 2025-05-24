@@ -42,6 +42,9 @@ def set_default_execution_mode(mode: ExecutionMode):
     _ExecutionModeManager.set_mode(mode)
 
 
+
 if __name__ == "__main__":
     set_default_execution_mode(ExecutionMode.WITH_UV)
     assert get_default_execution_mode() == ExecutionMode.WITH_UV
+    print("HEEEO")
+
