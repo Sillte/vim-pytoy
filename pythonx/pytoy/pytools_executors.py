@@ -11,7 +11,6 @@ from pytoy.ui_utils import (
 from pytoy.pytools_utils import PytestDecipher, ScriptDecipher
 
 from pytoy.environment_manager import EnvironmentManager
-from pytoy.pytoy_states import get_default_execution_mode, ExecutionMode
 
 
 class PytestExecutor(BufferExecutor):
@@ -45,8 +44,7 @@ class PytestExecutor(BufferExecutor):
         # Options can be added to `command`.
         command = f"{command} --capture=no --quiet"
         init_buffer(stdout)
-        if self._solve_uv(with_uv):
-            command = f"uv run {command}"
+
         stdout = to_buffer(stdout)
         stdout[0] = command
         return super().run(command, stdout, command_wrapper=command_wrapper)
@@ -82,11 +80,6 @@ class PytestExecutor(BufferExecutor):
         records = PytestDecipher(string).records
         return records
 
-    def _solve_uv(self, with_uv: bool | None):
-        if with_uv is not None:
-            return with_uv
-        e_mode = get_default_execution_mode()
-        return e_mode == ExecutionMode.WITH_UV
 
 
 class MypyExecutor(BufferExecutor):
