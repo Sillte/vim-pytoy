@@ -8,31 +8,33 @@ from pytoy.ui_utils import (
     store_window,
     to_buffer,
 )
-from pytoy.pytest_utils import PytestDecipher, ScriptDecipher
+from pytoy.pytools_utils import PytestDecipher, ScriptDecipher
 
+from pytoy.environment_manager import EnvironmentManager
 from pytoy.pytoy_states import get_default_execution_mode, ExecutionMode
 
 
 class PytestExecutor(BufferExecutor):
-    def runall(self, stdout, with_uv: bool  | None = None):
+    def runall(self, stdout, command_wrapper=None):
         """Execute `naive`, `pytest`."""
+        if command_wrapper is None:
+            command_wrapper = EnvironmentManager().get_command_wrapper()
         command = "pytest"
-        if self._solve_uv(with_uv):
-            command = f"uv run {command}"
         init_buffer(stdout)
-        return super().run(command, stdout)
+        return super().run(command, stdout, command_wrapper=command_wrapper)
 
-    def runfile(self, path, stdout, with_uv: bool | None = None):
+    def runfile(self, path, stdout, command_wrapper=None):
         """Execute `pytest` for only one file."""
+        if command_wrapper is None:
+            command_wrapper = EnvironmentManager().get_command_wrapper()
         command = f'pytest "{path}"'
-        if self._solve_uv(with_uv):
-            command = f"uv run {command}"
         init_buffer(stdout)
-        return super().run(command, stdout)
+        return super().run(command, stdout, command_wrapper=command_wrapper)
 
-    def runfunc(self, path, line, stdout, with_uv: bool | None=None):
+    def runfunc(self, path, line, stdout, command_wrapper=None):
         """Execute `pytest` for only one function."""
-        init_buffer(stdout)
+        if command_wrapper is None:
+            command_wrapper = EnvironmentManager().get_command_wrapper()
         instance = ScriptDecipher.from_path(path)
         target = instance.pick(line)
         if not target:
@@ -42,11 +44,12 @@ class PytestExecutor(BufferExecutor):
         command = target.command
         # Options can be added to `command`.
         command = f"{command} --capture=no --quiet"
+        init_buffer(stdout)
         if self._solve_uv(with_uv):
             command = f"uv run {command}"
         stdout = to_buffer(stdout)
         stdout[0] = command
-        return super().run(command, stdout)
+        return super().run(command, stdout, command_wrapper=command_wrapper)
 
     def prepare(self):
         # I do not need to return any `dict` for customization.
@@ -87,29 +90,20 @@ class PytestExecutor(BufferExecutor):
 
 
 class MypyExecutor(BufferExecutor):
-    def __new__(cls, name=None, with_uv=None):
-        if with_uv is None:
-            e_mode = get_default_execution_mode()
-            if e_mode == ExecutionMode.WITH_UV:
-                with_uv = True
-            else:
-                with_uv = False
-        self = super().__new__(cls, name)
-        return self
-
-    def __init__(self, with_uv):
-        self.with_uv = with_uv
+    """Execute Mypy.
+    """
+    def __init__(self):
         self._pattern = re.compile(r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<_type>(.+)):(?P<text>(.+))")
 
-    def runfile(self, path, stdout):
+    def runfile(self, path, stdout, command_wrapper=None):
         """Execute `pytest` for only one file."""
+        if command_wrapper is None:
+            command_wrapper = EnvironmentManager().get_command_wrapper()
         command = f'mypy --show-traceback --show-column-numbers "{path}"'
-        if self.with_uv:
-            command = f"uv run {command}"
         stdout = to_buffer(stdout)
         init_buffer(stdout)
         #stdout[0] = command
-        return super().run(command, stdout)
+        return super().run(command, stdout, command_wrapper=command_wrapper)
 
     def prepare(self):
         # I do not need to return any `dict` for customization.
@@ -120,6 +114,7 @@ class MypyExecutor(BufferExecutor):
     def on_closed(self):
         # vim.Function("setloclist") seems to more appropriate,
         # but it does not work correctly with Python 3.9?
+        assert self.stdout is not None
         setloclist = vim.bindeval('function("setloclist")')
         messages = "\n".join(line for line in self.stdout)
         qflist = self._make_qflist(messages)

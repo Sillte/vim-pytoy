@@ -26,14 +26,16 @@ class _Lightline(UserDict):
     """ This class is intended to be a wrapper for `g:lightline`.
     """
     _instance = None
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, arg=None, **kwargs):
         if cls._instance is None:
             self = object.__new__(cls)
+            self._init(arg, **kwargs)
+            cls._instance = self
         else:
             self = cls._instance
         return self
 
-    def __init__(self, arg=None, **kwargs):
+    def _init(self, arg, **kwargs):
         if arg is None:
             arg = dict()
         self.data = _G_LIGHTLINE
@@ -199,9 +201,10 @@ class Lightline(_Lightline):
     _infos = dict()
 
     def __init__(self, arg=None, initialize=False, **kwargs):
-        super().__init__(arg, **kwargs)
-        if initialize is True:
-            self.default()
+        pass
+        #super().__init__(arg, **kwargs)
+        #if initialize is True:
+        #    self.default()
 
     def default(self):
         """To my default state.

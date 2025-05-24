@@ -1,8 +1,23 @@
 import vim
-from typing import Optional, Dict
+from typing import Optional
 
-from pytoy.ui_utils import to_buffer_number, store_window
-from pytoy.func_utils import PytoyVimFunctions, with_return
+from pytoy.func_utils import PytoyVimFunctions
+
+
+class CommandWrapper:
+    """Callable. modify the command you execute.
+    Sometimes, we would like to change the environment
+    where the command is executed.
+    * not naive python, but the python of virtual environment.
+    * not naive invocation, but with `uv run`.
+    `CommandWrapper` handles this kind of request with depndency injection.
+    """
+
+    def __call__(self, cmd: str) -> str:
+        return cmd
+
+
+naive_wrapper = CommandWrapper()
 
 
 class BufferExecutor:
@@ -16,7 +31,7 @@ class BufferExecutor:
     2. At invoking, call `self.run`.
 
     Additionally, if you would like to store state while execution,
-    please use `self.prepare`.  
+    please use `self.prepare`.
 
     Implementation murmurs.
     ------------------------------------------
@@ -50,15 +65,15 @@ class BufferExecutor:
         return self._name
 
     @property
-    def stdout(self) -> Optional["Buffer"]:
+    def stdout(self) -> Optional["vim.buffer"]:
         return self._stdout
 
     @property
-    def stderr(self) -> Optional["Buffer"]:
+    def stderr(self) -> Optional["vim.buffer"]:
         return self._stderr
 
     @property
-    def command(self) -> str:
+    def command(self) -> str | None:
         return self._command
 
     @property
@@ -66,12 +81,22 @@ class BufferExecutor:
         cls_name = self.__class__.__name__
         return f"__{cls_name}_{self.name}"
 
-    def run(self, command: "str", stdout: "Buffer", stderr: Optional["Buffer"] = None):
+    def run(
+        self,
+        command: str | list[str],
+        stdout: Optional["Buffer"] = None,
+        stderr: Optional["Buffer"] = None,
+        command_wrapper: CommandWrapper | None =naive_wrapper,
+    ):
         """Run the `command`.
 
         Args:
             command: `str`:
         """
+        if not isinstance(command, str):
+            command = " ".join(command)
+        if command_wrapper is None:
+            command_wrapper = naive_wrapper
         self._command = command
         self._stdout = stdout
         self._stderr = stderr
@@ -87,8 +112,7 @@ class BufferExecutor:
 
         options = self._flow_on_preparation(options)
 
-        if not isinstance(command, str):
-            command = " ".join(command)
+        command = command_wrapper(command)
         # Register of `Job`.
         vim.command(f"let g:{self.jobname} = job_start('{command}', {options})")
 
@@ -107,7 +131,7 @@ class BufferExecutor:
         else:
             print(f"Already, `{self.jobname}` is stopped.")
 
-    def prepare(self) -> Dict:
+    def prepare(self) -> dict | None:
         """Prepare setting of `options` and others.
 
         * You can modify the options of `job-options` here.
@@ -118,13 +142,13 @@ class BufferExecutor:
         """
         return {}
 
-    def on_closed(self):
+    def on_closed(self) -> None:
         """Function when the terminal ends.
         Typically, the processing of the output result is performed.
         """
         pass
 
-    def _flow_on_preparation(self, options) -> Dict:
+    def _flow_on_preparation(self, options) -> dict:
         """Flow at just before `run`."""
         vimfunc_name = PytoyVimFunctions.register(
             self._flow_on_closed, prefix=f"{self.jobname}_VIMFUNC"
@@ -139,7 +163,7 @@ class BufferExecutor:
         options.update(prepared_dict)
         return options
 
-    def _flow_on_closed(self):
+    def _flow_on_closed(self) -> None:
         """Perform the processings when the execution is finished.
 
         1. User-defined closing function (`self.on_closed`) is performed.

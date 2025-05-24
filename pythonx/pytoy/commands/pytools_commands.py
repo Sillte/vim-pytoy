@@ -22,12 +22,12 @@ class PyTestCommand:
         if command_type == "func":
             path = vim.current.buffer.name
             line = vim.Function("line")(".")
-            executor.runfunc(path, line, stdout_window.buffer, with_uv=None)
+            executor.runfunc(path, line, stdout_window.buffer)
         elif command_type == "file":
             path = vim.current.buffer.name
-            executor.runfile(path, stdout_window.buffer, with_uv=None)
+            executor.runfile(path, stdout_window.buffer)
         elif command_type == "all":
-            executor.runall(stdout_window.buffer, with_uv=None)
+            executor.runall(stdout_window.buffer)
         else:
             raise ValueError(f"Specified `command_type` is not valid.")
 
@@ -51,4 +51,5 @@ class MypyCommand:
         executor = MypyExecutor()
         stdout_window = create_window(TERM_STDOUT, "vertical")
         executor.runfile(path, stdout_window.buffer)
+
 

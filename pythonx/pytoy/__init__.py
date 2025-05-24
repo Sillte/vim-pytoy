@@ -6,6 +6,7 @@ from pytoy import pytoy_states
 # This is intended to perform the specified execution, if directly specified.
 # `ExecutionMode` only determines the behavior, no directives are given.
 from pytoy.pytoy_states import ExecutionMode
+from pytoy.environment_manager import EnvironmentManager 
 
 
 # This `import` is required for `PytoyVimFunctions.register.vim.command.__name__` for Linux environment.
@@ -24,9 +25,10 @@ TERM_STDERR = "__pystderr__"  # TERIMINAL NAME of `stderr`.
 IPYTHON_TERMINAL = None  # TERMINAL MANAGER for `ipython`.
 
 # Python Execution Interface
+ 
 
 
-def run(path=None, with_uv=None):
+def run(path=None):
     """Perform `python {path}`."""
     if not path:
         path = vim.current.buffer.name
@@ -36,15 +38,15 @@ def run(path=None, with_uv=None):
 
     stdout_window = create_window(TERM_STDOUT, "vertical")
     stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
-    executor.run(path, stdout_window.buffer, stderr_window.buffer, with_uv=with_uv)
+    executor.run(path, stdout_window.buffer, stderr_window.buffer)
 
 
-def rerun(with_uv=None):
+def rerun():
     """Perform `python` with the previous `path`."""
     executor = PythonExecutor()
     stdout_window = create_window(TERM_STDOUT, "vertical")
     stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
-    executor.rerun(stdout_window.buffer, stderr_window.buffer, with_uv=with_uv)
+    executor.rerun(stdout_window.buffer, stderr_window.bufferv)
 
 
 def stop():
