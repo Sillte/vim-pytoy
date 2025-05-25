@@ -1,7 +1,7 @@
 """PyTestCommand
 """
 import vim
-from pytoy.command_utils import CommandManager
+from pytoy.command import CommandManager
 from pytoy.ui_utils import create_window
 from pytoy import ui_utils
 

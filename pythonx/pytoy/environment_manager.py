@@ -135,10 +135,6 @@ class EnvironmentManager:
         else:
             return self.set_uv_mode(UvMode.ON)
 
-from pytoy.command_utils import CommandManager
-@CommandManager.register(name="Test")
-def func():
-    print(EnvironmentManager().get_uv_venv())
 
 if __name__ == "__main__":
     manager = EnvironmentManager()

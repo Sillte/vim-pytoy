@@ -1,4 +1,4 @@
-from pytoy.command_utils import CommandManager
+from pytoy.command import CommandManager
 
 
 @CommandManager.register(name="UVToggle")
