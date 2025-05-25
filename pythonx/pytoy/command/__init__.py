@@ -57,6 +57,8 @@ class CommandManager:
         vim_funcname = f"PytoyFunc_FOR_COMMAND_{name}"
         if name in cls.COMMAND_MAPS:
             raise ValueError("The same `command` is already registered.")
+        if vim_funcname in cls.FUNCTION_MAPS:
+            raise ValueError("Already `FUNCTION` is defined? (Very rare situation.), {vim_funcname}")
 
         if range_count_option is None:
             range_count_option = RangeCountOption()
@@ -82,11 +84,12 @@ EOF""".strip()
             endfunction
             """
         )
-        assert vim_funcname not in cls.FUNCTION_MAPS, "Duplicated Command"
-        cls.FUNCTION_MAPS[vim_funcname] = func
 
         command = cls._make_command(nargs, name, vim_funcname, rc_opt, complete, addr)
+        #print("command", command)
         vim.command(command)
+        assert vim_funcname not in cls.FUNCTION_MAPS, "Duplicated Command"
+        cls.FUNCTION_MAPS[vim_funcname] = func
         cls.COMMAND_MAPS[name] = command
 
         return func
@@ -158,8 +161,8 @@ EOF""".strip()
             parameters += ["<line1>", "<line2>"]
         elif type_ == RangeCountType.COUNT:
             parameters.append("<count>")
-        else:
-            parameters.append("<q-args>")
+
+        parameters.append("<q-args>")
 
         result += f"({','.join(parameters)})"
         return result

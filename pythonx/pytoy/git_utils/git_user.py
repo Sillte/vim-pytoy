@@ -61,7 +61,7 @@ def get_git_info(local_filepath) -> dict[str, str]:
     cwd = str(local_filepath.parent)
 
     def _run_git(args):
-        return subprocess.check_output(["git"] + args, cwd=cwd).decode().strip()
+        return subprocess.check_output(["git"] + args, cwd=cwd, shell=True).decode().strip()
 
     result = dict()
     result["rootpath"] = _run_git(["rev-parse", "--show-toplevel"])
