@@ -12,7 +12,7 @@ class GitUser:
         cwd: current_directory.
     """
 
-    def __init__(self, cwd: Path = None):
+    def __init__(self, cwd: None | Path = None):
         if cwd is None:
             cwd = Path.cwd().absolute()
         self.cwd = Path(cwd)
@@ -74,7 +74,7 @@ def get_git_info(local_filepath) -> dict[str, str]:
     return result
 
 
-REMOTE_TO_MAKER: dict[str, Callable[[dict[str, str]], str]] = dict()
+REMOTE_TO_MAKER: dict[str, Callable[[dict[str, str], dict[str, str]], str]] = dict()
 
 
 def _to_github_address(info: dict[str, str], options: dict[str, Any]):
