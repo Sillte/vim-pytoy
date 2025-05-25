@@ -1,5 +1,6 @@
 """PyTestCommand
 """
+import vim
 from pytoy.command_utils import CommandManager
 from pytoy.ui_utils import create_window
 from pytoy import ui_utils
@@ -8,12 +9,7 @@ from pytoy import ui_utils
 @CommandManager.register(name="Pytest")
 class PyTestCommand:
     name = "Pytest"
-    def __call__(self, *args):
-        if not args:
-            command_type = "func"
-        else:
-            command_type = args[0]
-
+    def __call__(self, command_type: str="func"):
         import vim
         from pytoy.pytools_executors import PytestExecutor
         from pytoy import TERM_STDOUT
@@ -42,7 +38,7 @@ class PyTestCommand:
 
 @CommandManager.register(name="Mypy")
 class MypyCommand:
-    def __call__(self, *args):
+    def __call__(self):
         from pytoy.pytools_executors import MypyExecutor
         from pytoy import TERM_STDOUT
         import vim
@@ -56,11 +52,8 @@ class MypyCommand:
 
 @CommandManager.register(name="GotoDefinition")
 class GotoDefinitionCommand:
-    def __call__(self, *args):
-        if args:
-            arg = args[0]
-        else:
-            arg = "try_both"
+    def __call__(self, arg: str="try_both"):
+
         if arg.lower() == "jedi":
             self._go_to_by_jedi()
         elif arg.lower() == "coc":

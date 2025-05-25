@@ -5,7 +5,7 @@ from pytoy.command_utils import CommandManager
 class UvToggle:
     """Switch the UVMode.
     """
-    def __call__(self, *args):
+    def __call__(self):
         from pytoy.environment_manager import EnvironmentManager
         manager = EnvironmentManager()
         manager.toggle_uv_mode()
