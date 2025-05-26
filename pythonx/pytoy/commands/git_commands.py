@@ -12,10 +12,6 @@ def get_gitaddress(opts: dict):
     vim.current.buffer.name
     remote_link = get_remote_link(filepath, line1)
     vim.command(f'let @c="{remote_link}"')
+    print("@c", remote_link)
     return remote_link
-
-
-
-
-
 

@@ -94,17 +94,17 @@ def _to_azure_address(info: dict[str, str], options: dict[str, Any]):
     remote = info["remote"]
     branch = info["branch"]
     relpath = info["relpath"].strip("/")
-    if remote.startswith("https://dev.azure.com/"):
-        m = re.match(r"https://dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)", remote)
+    if remote.find("https:") != -1:
+        m = re.match(r"https://([^/]*)@dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)", remote)
         if not m:
             raise ValueError(f"Invalid Azure Address {remote=}")
     elif remote.startswith("git@ssh.dev.azure.com:"):
-        m = re.match(r"git@ssh\.dev\.azure\.com:v3/([^/]+)/([^/]+)/([^/]+)", remote)
+        m = re.match(r"git@([^/]*)ssh\.dev\.azure\.com:v3/([^/]+)/([^/]+)/([^/]+)", remote)
         if not m:
             raise ValueError("Invalid Azure Address {remote=}")
     else:
         raise ValueError("Invalid Azure Address {remote=}")
-    org, project, repo = m.groups()
+    _, org, project, repo = m.groups()
 
     url = (
         f"https://dev.azure.com/{org}/{project}/_git/{repo}"
