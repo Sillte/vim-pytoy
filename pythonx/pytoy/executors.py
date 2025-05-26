@@ -1,4 +1,5 @@
 import vim
+from pathlib import Path
 from typing import Optional
 
 from pytoy.func_utils import PytoyVimFunctions
@@ -86,7 +87,10 @@ class BufferExecutor:
         command: str | list[str],
         stdout: Optional["Buffer"] = None,
         stderr: Optional["Buffer"] = None,
-        command_wrapper: CommandWrapper | None =naive_wrapper,
+        command_wrapper: CommandWrapper | None = naive_wrapper,
+        *,
+        env : dict[str, str] | None = None, 
+        cwd : str | Path | None = None, 
     ):
         """Run the `command`.
 
@@ -109,6 +113,11 @@ class BufferExecutor:
         if self.stderr is not None:
             options["err_io"] = "buffer"
             options["err_buf"] = self.stderr.number
+
+        if env is not None:
+            options["env"] = env
+        if cwd is not None:
+            options["cwd"] = Path(cwd).as_posix()
 
         options = self._flow_on_preparation(options)
 

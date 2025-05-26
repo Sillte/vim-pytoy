@@ -100,3 +100,40 @@ class GotoDefinitionCommand:
         vim.command(f"call g:jedi#goto()")
         vim.command(f"let g:jedi#use_splits_not_buffers='{v}'")
 
+@CommandManager.register(name="CSpell")
+class CSpellCommand:
+    def __call__(self):
+        import vim
+        import re
+
+        from pathlib import Path
+        from pytoy import TERM_STDOUT
+        import subprocess 
+        path = vim.current.buffer.name
+        command = f'cspell "{path}"'
+        cwd = Path(path).parent
+        ret = subprocess.run(command, text=True, stdout=subprocess.PIPE, cwd=cwd, shell=True)
+
+        # venv_utils.py:25:53 - Unknown word (proximities)
+        records = []
+        pattern = re.compile(r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+).*\((?P<text>(.+))\)")
+        lines = ret.stdout.split("\n")
+        for line in lines:
+            m = pattern.match(line)
+            if m:
+                record = m.groupdict()
+                records.append(record)
+
+        setloclist = vim.bindeval('function("setloclist")')
+
+        win_id = vim.eval("win_getid()")
+        if records:
+            setloclist(win_id, records)
+        vim.command("lopen")
+
+        #executor = CSpellExecutor()
+        #stdout_window = create_window(TERM_STDOUT, "vertical")
+        #path = vim.current.buffer.name
+        #executor.runfile(path, stdout_window.buffer)
+
+
