@@ -2,14 +2,15 @@
 """
 import vim
 from pytoy.command import CommandManager
-from pytoy.ui_utils import create_window
+from pytoy.ui_utils import create_window, store_window
 from pytoy import ui_utils
 
 
 @CommandManager.register(name="Pytest")
 class PyTestCommand:
     name = "Pytest"
-    def __call__(self, command_type: str="func"):
+
+    def __call__(self, command_type: str = "func"):
         import vim
         from pytoy.pytools_executors import PytestExecutor
         from pytoy import TERM_STDOUT
@@ -28,13 +29,13 @@ class PyTestCommand:
         else:
             raise ValueError(f"Specified `command_type` is not valid.")
 
-    def customlist(self, arg_lead:str, cmd_line: str, cursor_pos:int):
+    def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         candidates = ["func", "file", "all"]
         valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
         if valid_candidates:
             return valid_candidates
         return candidates
-        
+
 
 @CommandManager.register(name="Mypy")
 class MypyCommand:
@@ -44,6 +45,7 @@ class MypyCommand:
         import vim
 
         from pytoy.ui_utils import create_window
+
         path = vim.current.buffer.name
         executor = MypyExecutor()
         stdout_window = create_window(TERM_STDOUT, "vertical")
@@ -52,8 +54,7 @@ class MypyCommand:
 
 @CommandManager.register(name="GotoDefinition")
 class GotoDefinitionCommand:
-    def __call__(self, arg: str="try_both"):
-
+    def __call__(self, arg: str = "try_both"):
         if arg.lower() == "jedi":
             self._go_to_by_jedi()
         elif arg.lower() == "coc":
@@ -69,7 +70,7 @@ class GotoDefinitionCommand:
             except Exception as e:
                 print(e)
 
-    def customlist(self, arg_lead:str, cmd_line: str, cursor_pos:int):
+    def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         candidates = ["jedi", "coc"]
         valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
         if valid_candidates:
@@ -100,24 +101,28 @@ class GotoDefinitionCommand:
         vim.command(f"call g:jedi#goto()")
         vim.command(f"let g:jedi#use_splits_not_buffers='{v}'")
 
+
 @CommandManager.register(name="CSpell")
 class CSpellCommand:
     def __call__(self):
-        import vim
         import re
 
         from pathlib import Path
         from pytoy import TERM_STDOUT
-        import subprocess 
-        path = vim.current.buffer.name
-        command = f'cspell "{path}"'
-        cwd = Path(path).parent
-        ret = subprocess.run(command, text=True, stdout=subprocess.PIPE, cwd=cwd, shell=True)
+        from pytoy.pytools_utils.cspell_utils import CSpellOneFileChecker
 
-        # venv_utils.py:25:53 - Unknown word (proximities)
+        path = vim.current.buffer.name
+        if Path(path).suffix == ".py":
+            checker = CSpellOneFileChecker(only_python_string=True)
+        else:
+            checker = CSpellOneFileChecker(only_python_string=False)
+        output = checker(path)
+
         records = []
-        pattern = re.compile(r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+).*\((?P<text>(.+))\)")
-        lines = ret.stdout.split("\n")
+        pattern = re.compile(
+            r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+).*\((?P<text>(.+))\)"
+        )
+        lines = output.split("\n")
         for line in lines:
             m = pattern.match(line)
             if m:
@@ -129,11 +134,13 @@ class CSpellCommand:
         win_id = vim.eval("win_getid()")
         if records:
             setloclist(win_id, records)
-        vim.command("lopen")
+            unknow_words = list(set(str(item["text"]) for item in records))
+            with store_window():
+                vim.command("lopen")
 
-        #executor = CSpellExecutor()
-        #stdout_window = create_window(TERM_STDOUT, "vertical")
-        #path = vim.current.buffer.name
-        #executor.runfile(path, stdout_window.buffer)
-
-
+            stdout_window = create_window(TERM_STDOUT, "vertical")
+            stdout_window.buffer[:] = []
+            stdout_window.buffer.append(f"**UNKNOWN WORDS**")
+            stdout_window.buffer.append(f"{unknow_words}")
+        else:
+            print("No unknown words.")
