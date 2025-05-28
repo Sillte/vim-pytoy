@@ -44,7 +44,7 @@ def rerun():
     executor = PythonExecutor()
     stdout_window = create_window(TERM_STDOUT, "vertical")
     stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
-    executor.rerun(stdout_window.buffer, stderr_window.bufferv)
+    executor.rerun(stdout_window.buffer, stderr_window.buffer)
 
 
 def stop():
