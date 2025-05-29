@@ -1,6 +1,6 @@
 import vim
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Callable
 
 from pytoy.func_utils import PytoyVimFunctions
 
@@ -85,9 +85,9 @@ class BufferExecutor:
     def run(
         self,
         command: str | list[str],
-        stdout: Optional["Buffer"] = None,
-        stderr: Optional["Buffer"] = None,
-        command_wrapper: CommandWrapper | None = naive_wrapper,
+        stdout: Optional["vim.buffer"] = None,
+        stderr: Optional["vim.buffer"] = None,
+        command_wrapper: Callable[[str], str] | None = naive_wrapper,
         *,
         env : dict[str, str] | None = None, 
         cwd : str | Path | None = None, 

@@ -3,6 +3,7 @@ import re
 from typing import List, Callable, Any
 from subprocess import PIPE
 from pathlib import Path
+from urllib import parse 
 
 
 class GitUser:
@@ -84,7 +85,7 @@ def _to_github_address(info: dict[str, str], options: dict[str, Any]):
     remote = remote.replace(".git", "").replace(
         "git@github.com:", "https://github.com/"
     )
-    path = f"{remote}/blob/{branch}/{relpath}"
+    path = f"{remote}/blob/{parse.quote(branch)}/{parse.quote(relpath)}"
     if "line" in options:
         path += f"#L{options['line']}"
     return path
@@ -108,7 +109,7 @@ def _to_azure_address(info: dict[str, str], options: dict[str, Any]):
 
     url = (
         f"https://dev.azure.com/{org}/{project}/_git/{repo}"
-        f"?path=/{relpath}&version=GB{branch}"
+        f"?path=/{parse.quote(relpath)}&version=GB{parse.quote(branch)}"
     )
 
     queries = dict()
