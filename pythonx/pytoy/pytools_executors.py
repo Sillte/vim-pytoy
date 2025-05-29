@@ -2,7 +2,7 @@ import vim
 import re 
 from pathlib import Path
 
-from pytoy.executors import BufferExecutor, CommandWrapper
+from pytoy.executors import BufferExecutor
 
 from pytoy.ui_utils import (
     init_buffer,
@@ -21,7 +21,7 @@ class PytestExecutor(BufferExecutor):
             command_wrapper = EnvironmentManager().get_command_wrapper()
         command = "pytest"
         init_buffer(stdout)
-        return super().run(command, stdout, command_wrapper=command_wrapper)
+        return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def runfile(self, path, stdout, command_wrapper=None):
         """Execute `pytest` for only one file."""
@@ -29,7 +29,7 @@ class PytestExecutor(BufferExecutor):
             command_wrapper = EnvironmentManager().get_command_wrapper()
         command = f'pytest "{path}"'
         init_buffer(stdout)
-        return super().run(command, stdout, command_wrapper=command_wrapper)
+        return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def runfunc(self, path, line, stdout, command_wrapper=None):
         """Execute `pytest` for only one function."""
@@ -48,7 +48,7 @@ class PytestExecutor(BufferExecutor):
 
         stdout = to_buffer(stdout)
         stdout[0] = command
-        return super().run(command, stdout, command_wrapper=command_wrapper)
+        return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def prepare(self):
         # I do not need to return any `dict` for customization.
@@ -97,7 +97,7 @@ class MypyExecutor(BufferExecutor):
         stdout = to_buffer(stdout)
         init_buffer(stdout)
         #stdout[0] = command
-        return super().run(command, stdout, command_wrapper=command_wrapper)
+        return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def prepare(self):
         # I do not need to return any `dict` for customization.
@@ -136,6 +136,5 @@ class MypyExecutor(BufferExecutor):
             record["type"] = record["_type"].strip(" ")[0].upper()
             records.append(record)
         return records
-
 
 

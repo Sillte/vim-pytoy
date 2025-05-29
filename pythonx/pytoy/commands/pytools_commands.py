@@ -91,6 +91,7 @@ class GotoDefinitionCommand:
         Utility function to handle `jedi-vim`.
         * https://github.com/davidhalter/jedi-vim
         """
+        import jedi_vim
         ui_utils.sweep_windows(exclude=[vim.current.window])
         v = vim.eval("g:jedi#use_splits_not_buffers")
         if ui_utils.is_leftwindow():
@@ -98,8 +99,11 @@ class GotoDefinitionCommand:
         else:
             vim.command(f"let g:jedi#use_splits_not_buffers=''")
 
-        vim.command(f"call g:jedi#goto()")
+        names = jedi_vim.goto(mode="goto")
         vim.command(f"let g:jedi#use_splits_not_buffers='{v}'")
+        if not names:
+            raise ValueError("Cannot use `jedi_vim.goto`")
+
 
 
 @CommandManager.register(name="CSpell")
