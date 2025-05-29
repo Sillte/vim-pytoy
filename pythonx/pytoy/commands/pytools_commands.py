@@ -105,6 +105,19 @@ class GotoDefinitionCommand:
             raise ValueError("Cannot use `jedi_vim.goto`")
 
 
+@CommandManager.register(name="RuffCheck")
+class RuffChecker:
+    def __call__(self):
+        from pathlib import Path
+        from pytoy import TERM_STDOUT
+        from pytoy.pytools_executors import RuffExecutor
+
+        path = vim.current.buffer.name
+        stdout_window = create_window(TERM_STDOUT, "vertical")
+        executor = RuffExecutor()
+        executor.check_file(Path(path), stdout_window.buffer) 
+
+
 
 @CommandManager.register(name="CSpell")
 class CSpellCommand:
