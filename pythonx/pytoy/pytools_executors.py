@@ -1,6 +1,5 @@
 import vim
 import re 
-from pathlib import Path
 
 from pytoy.executors import BufferExecutor
 
@@ -68,14 +67,13 @@ class PytestExecutor(BufferExecutor):
         else:
             with store_window():
                 vim.eval(f"win_gotoid({self.win_id})")
-                vim.command(f"lclose")
+                vim.command("lclose")
 
         # Scrolling output window
         with store_window():
             assert self.stdout is not None
-            stdout_id = vim.eval(f"bufwinid({self.stdout.number})")
-            vim.command(f"call win_gotoid({stdout_id})")
-            vim.command(f"normal zb")
+            vim.command("call win_gotoid({stdout_id})")
+            vim.command("normal zb")
 
     def _make_qflist(self, string):
         records = PytestDecipher(string).records
@@ -117,13 +115,13 @@ class MypyExecutor(BufferExecutor):
         else:
             with store_window():
                 vim.eval(f"win_gotoid({self.win_id})")
-                vim.command(f"lclose")
+                vim.command("lclose")
 
         # Scrolling output window
         with store_window():
             stdout_id = vim.eval(f"bufwinid({self.stdout.number})")
             vim.command(f"call win_gotoid({stdout_id})")
-            vim.command(f"normal zb")
+            vim.command("normal zb")
 
     def _make_qflist(self, string):
         # Record of `mypy`. 
@@ -137,4 +135,52 @@ class MypyExecutor(BufferExecutor):
             records.append(record)
         return records
 
+
+class RuffExecutor(BufferExecutor):
+    """Execute Ruff.
+    """
+    def __init__(self):
+        self._pattern = re.compile(r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<text>(.+))")
+
+    def check_file(self, path, stdout, command_wrapper=None):
+        if command_wrapper is None:
+            command_wrapper = EnvironmentManager().get_command_wrapper()
+        command = f'ruff check "{path}"'
+        stdout = to_buffer(stdout)
+        init_buffer(stdout)
+        stdout[0] = command
+        return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
+
+    def prepare(self):
+        # I do not need to return any `dict` for customization.
+        # But, it requires `win_id` at `on_closed`.
+        self.win_id = vim.eval("win_getid()")
+        return None
+
+    def on_closed(self):
+        # vim.Function("setloclist") seems to more appropriate,
+        # but it does not work correctly with Python 3.9?
+        assert self.stdout is not None
+        setloclist = vim.bindeval('function("setloclist")')
+        messages = "\n".join(line for line in self.stdout)
+        qflist = self._make_qflist(messages)
+        if qflist:
+            setloclist(self.win_id, qflist)
+            vim.eval(f"win_gotoid({self.win_id})")
+            vim.command("lopen")
+        else:
+            with store_window():
+                vim.eval(f"win_gotoid({self.win_id})")
+                vim.command("lclose")
+
+    def _make_qflist(self, string):
+        # Record of `mypy`. 
+        records = []
+        for line in string.split("\n"):
+            match = self._pattern.match(line.strip())
+            if not match:
+                continue
+            record = match.groupdict()
+            records.append(record)
+        return records
 
