@@ -123,7 +123,7 @@ class BufferExecutor:
 
         command = command_wrapper(command)
         # Register of `Job`.
-        if int(vim.eval("nvim")):
+        if int(vim.eval("has('nvim')")):
             vim.command(f"let g:{self.jobname} = jobstart('{command}', {options})")
         else:
             vim.command(f"let g:{self.jobname} = job_start('{command}', {options})")
