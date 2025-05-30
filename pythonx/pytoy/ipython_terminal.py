@@ -13,9 +13,28 @@ from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_w
     
 class IPythonTerminal:
     # vim functions. 
-    v_sendkeys = vim.Function("term_sendkeys")
-    v_start = vim.Function("term_start")
-    v_status = vim.Function("term_getstatus")
+    def v_sendkeys(self, buffer: int, content: str, naive: bool = True):
+        import shlex
+        if naive:
+            vim.command(f"call term_sendkeys({buffer}, '{content}')")
+        else:
+            content = shlex.quote(content)
+            content = json.dumps(content)
+            vim.command(f"call term_sendkeys({buffer}, json_decode({content}))")
+
+    def v_start(self, command, options):
+        import json 
+        import shlex
+        safe_json = json.dumps(options) 
+        safe_json = shlex.quote(safe_json)
+        vim.command(f"call term_start('{command}', json_decode({safe_json}))")
+
+    def v_status(self, buffer: int):
+        ret = vim.eval(f"term_getstatus({buffer})")
+        if isinstance(ret, bytes):
+            return ret.decode()
+        return str(ret)
+
 
     # ## Special handling as for first execution. 
     # * The first activation must be performed specially.
@@ -56,7 +75,7 @@ class IPythonTerminal:
 
     def stop(self):
         self.to_idle()
-        self.v_sendkeys(self.term_buffer, "\03")  # <ctrl-c>
+        self.v_sendkeys(self.term_buffer, "\03", naive=True)  # <ctrl-c>
         # I do not know, however, the time-interval is mandatory to send the control code.
         time.sleep(0.05)
 
@@ -192,7 +211,7 @@ class IPythonTerminal:
             self.reset_output() 
             self.to_running()
             # The running codes are stopped.
-            self.v_sendkeys(self.term_buffer, "\03")  # <ctrl-c>
+            self.v_sendkeys(self.term_buffer, "\03", naive=True)  # <ctrl-c>
             # I do not know, however, the time-interval is mandatory to send the control code.
             time.sleep(0.02)
 
@@ -248,13 +267,13 @@ class IPythonTerminal:
     def _cpaste(self, text, wait_time=0.1):
         """Common processing of `cpaste`. 
         """
-        self.v_sendkeys(self.term_buffer, "%cpaste -q\n")
+        self.v_sendkeys(self.term_buffer, "%cpaste -q\n", naive=True)
         # I do not know, however, 
         # this `wait_time` seems important.
         time.sleep(wait_time)
         text = text.replace("\n", "\r")
-        self.v_sendkeys(self.term_buffer, text)
-        self.v_sendkeys(self.term_buffer, "\r--\r")
+        self.v_sendkeys(self.term_buffer, text, naive=True)
+        self.v_sendkeys(self.term_buffer, "\r--\r", naive=True)
 
 
     def send_current_line(self):
@@ -304,7 +323,7 @@ class IPythonTerminal:
         if self.term_buffer is None:
             return False
         status = self.v_status(self.term_buffer)
-        return status.decode() == "running"
+        return status == "running"
 
     def _start_term(self, term_name:str) -> int:
         """Start the terminal.
@@ -339,6 +358,7 @@ class IPythonTerminal:
         bufno = int(vim.eval(f'bufnr("{term_name}")'))
         if 0 < bufno:
             status = self.v_status(bufno)
-            if status.decode() == "running":
+            print("status", status)
+            if status == "running":
                 return bufno
         return None
