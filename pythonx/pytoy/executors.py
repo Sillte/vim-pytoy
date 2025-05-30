@@ -1,6 +1,6 @@
 import vim
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Optional, Callable, Protocol
 
 from pytoy.func_utils import PytoyVimFunctions
 
@@ -19,6 +19,87 @@ class CommandWrapper:
 
 
 naive_wrapper = CommandWrapper()
+
+
+class BufferJobProtocol(Protocol):
+    def __init__(self, name: str, stdout=None, stderr=None, *, env=None, cwd=None):
+        ...
+
+    def job_start(
+        self, command: str, on_start_callable: Callable, on_closed_callable: Callable
+    ) -> None:
+        ...
+
+    @property
+    def is_running(self) -> bool:
+        ...
+
+
+    def stop(self) -> None:
+        ...
+
+
+
+class VimBufferJob(BufferJobProtocol):
+    def __init__(self, name: str, stdout=None, stderr=None, *, env=None, cwd=None):
+        self.name = name
+        self.stdout = stdout
+        self.stderr = stderr
+        self.env = env
+        self.cwd = cwd
+
+    def job_start(
+        self, command: str, on_start_callable: Callable, on_closed_callable: Callable
+    ):
+        options = dict()
+        if self.stdout is not None:
+            options["out_io"] = "buffer"
+            options["out_buf"] = self.stdout.number
+
+        if self.stderr is not None:
+            options["err_io"] = "buffer"
+            options["err_buf"] = self.stderr.number
+
+        if self.env is not None:
+            options["env"] = self.env
+        if self.cwd is not None:
+            options["cwd"] = Path(self.cwd).as_posix()
+
+        def wrapped_on_closed():
+            on_closed_callable()
+            vim.command(f"unlet g:{self.jobname}")
+
+        vimfunc_name = PytoyVimFunctions.register(
+            wrapped_on_closed, prefix=f"{self.jobname}_VIMFUNC"
+        )
+        options["exit_cb"] = vimfunc_name
+
+        prepared_dict = on_start_callable()
+        if prepared_dict is None:
+            prepared_dict = {}
+        options.update(prepared_dict)
+
+        # Register of `Job`.
+        vim.command(f"let g:{self.jobname} = job_start('{command}', {options})")
+
+    @property
+    def jobname(self) -> str:
+        cls_name = self.__class__.__name__
+        return f"__{cls_name}_{self.name}"
+
+    @property
+    def is_running(self):
+        if not int(vim.eval(f"exists('g:{self.jobname}')")):
+            return False
+        status = vim.eval(f"job_status(g:{self.jobname})")
+        return status == "run"
+
+    def stop(self):
+        """Stop `Executor`."""
+        if int(vim.eval(f"exists('g:{self.jobname}')")):
+            vim.command(f":call job_stop(g:{self.jobname})")
+        else:
+            print(f"Already, `{self.jobname}` is stopped.")
 
 
 class BufferExecutor:
@@ -60,27 +141,33 @@ class BufferExecutor:
         self._stdout = None
         self._stderr = None
         self._command = None
+        self._buffer_job = None
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
     def stdout(self) -> Optional["vim.buffer"]:
-        return self._stdout
+        if not self._buffer_job:
+            return None
+        return self._buffer_job.stdout
 
     @property
     def stderr(self) -> Optional["vim.buffer"]:
-        return self._stderr
+        if not self._buffer_job:
+            return None
+        return self._buffer_job.stderr
 
     @property
     def command(self) -> str | None:
         return self._command
 
     @property
-    def jobname(self) -> str:
-        cls_name = self.__class__.__name__
-        return f"__{cls_name}_{self.name}"
+    def buffer_job(self) -> BufferJobProtocol | None:
+        if not self._buffer_job:
+            return None
+        return self._buffer_job
 
     def run(
         self,
@@ -89,8 +176,8 @@ class BufferExecutor:
         stderr: Optional["vim.buffer"] = None,
         command_wrapper: Callable[[str], str] | None = naive_wrapper,
         *,
-        env : dict[str, str] | None = None, 
-        cwd : str | Path | None = None, 
+        env: dict[str, str] | None = None,
+        cwd: str | Path | None = None,
     ):
         """Run the `command`.
 
@@ -102,46 +189,25 @@ class BufferExecutor:
         if command_wrapper is None:
             command_wrapper = naive_wrapper
         self._command = command
-        self._stdout = stdout
-        self._stderr = stderr
 
-        options = dict()
-        if self.stdout is not None:
-            options["out_io"] = "buffer"
-            options["out_buf"] = self.stdout.number
-
-        if self.stderr is not None:
-            options["err_io"] = "buffer"
-            options["err_buf"] = self.stderr.number
-
-        if env is not None:
-            options["env"] = env
-        if cwd is not None:
-            options["cwd"] = Path(cwd).as_posix()
-
-        options = self._flow_on_preparation(options)
-
+        self._buffer_job = VimBufferJob(
+            name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd
+        )
         command = command_wrapper(command)
-        # Register of `Job`.
-        if int(vim.eval("has('nvim')")):
-            vim.command(f"let g:{self.jobname} = jobstart('{command}', {options})")
-        else:
-            vim.command(f"let g:{self.jobname} = job_start('{command}', {options})")
+        self._buffer_job.job_start(command, self.prepare, self.on_closed)
 
     @property
     def is_running(self):
-        """Return whether"""
-        if not int(vim.eval(f"exists('g:{self.jobname}')")):
+        """Return whether the job is running"""
+        if not self.buffer_job:
             return False
-        status = vim.eval(f"job_status(g:{self.jobname})")
-        return status == "run"
+        return self.buffer_job.is_running
 
     def stop(self):
-        """Stop `Executor`."""
-        if int(vim.eval(f"exists('g:{self.jobname}')")):
-            vim.command(f":call job_stop(g:{self.jobname})")
-        else:
-            print(f"Already, `{self.jobname}` is stopped.")
+        if not self.buffer_job:
+            print(f"Already, stopped, {self.__class__}")
+            return
+        self.buffer_job.stop()
 
     def prepare(self) -> dict | None:
         """Prepare setting of `options` and others.
@@ -160,27 +226,6 @@ class BufferExecutor:
         """
         pass
 
-    def _flow_on_preparation(self, options) -> dict:
-        """Flow at just before `run`."""
-        vimfunc_name = PytoyVimFunctions.register(
-            self._flow_on_closed, prefix=f"{self.jobname}_VIMFUNC"
-        )
-        options["exit_cb"] = vimfunc_name
 
-        prepared_dict = self.prepare()
-        if prepared_dict is None:
-            prepared_dict = {}
-        if "exit_cb" in prepared_dict:
-            raise ValueError("Key `exit_cb` is not allowed. Use `on_closed`.")
-        options.update(prepared_dict)
-        return options
-
-    def _flow_on_closed(self) -> None:
-        """Perform the processings when the execution is finished.
-
-        1. User-defined closing function (`self.on_closed`) is performed.
-        2. De-register of the `job` is performed.
-        """
-        self.on_closed()
-        # de-register of Job.
-        vim.command(f"unlet g:{self.jobname}")
+if __name__ == "__main__":
+    pass
