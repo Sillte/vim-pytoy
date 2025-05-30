@@ -1,7 +1,9 @@
 """Exectuor for `Python`. 
 """
 import vim
+import json
 import re
+from shlex import quote
 
 from pytoy.executors import BufferExecutor
 from pytoy.ui_utils import init_buffer, store_window
@@ -14,7 +16,7 @@ class PythonExecutor(BufferExecutor):
     def run(self, path, stdout, stderr, *, cwd=None, force_uv=None):
         """Execute `"""
         if cwd is None:
-            cwd = vim.Function("getcwd")()
+            cwd = vim.eval("getcwd()")
             # (2022/02/06) I cannot understand, but may `cwd` be bytes.
             try:
                 cwd = cwd.decode("utf-8")
@@ -50,11 +52,13 @@ class PythonExecutor(BufferExecutor):
         return options
 
     def on_closed(self):
-        # vim.Function("setloclist") seems to more appropriate,
-        # but it does not work correctly with Python 3.9.
         assert self.stdout is not None 
         assert self.stderr is not None 
-        setloclist = vim.bindeval('function("setloclist")')
+        def _setloclist(win_id: int, records: list[dict]):
+            import json 
+            from shlex import quote
+            safe_json = quote(json.dumps(records))
+            vim.command(f"call setloclist({win_id}, eval({safe_json}))")
 
         if self.stderr:
             error_msg = "\n".join(self.stderr)
@@ -62,9 +66,9 @@ class PythonExecutor(BufferExecutor):
             error_msg = "Implementation Error"
         if error_msg:
             qflist = self._make_qflist(error_msg)
-            setloclist(self.win_id, qflist)
+            _setloclist(self.win_id, qflist)
         else:
-            setloclist(self.win_id, [])  # Reset `LocationList`.
+            _setloclist(self.win_id, [])  # Reset `LocationList`.
             with store_window():
                 vim.eval(f"win_gotoid({self.win_id})")
                 vim.command(f"lclose")

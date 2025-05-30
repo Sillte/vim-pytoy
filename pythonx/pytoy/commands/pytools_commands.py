@@ -19,7 +19,7 @@ class PyTestCommand:
         stdout_window = create_window(TERM_STDOUT, "vertical")
         if command_type == "func":
             path = vim.current.buffer.name
-            line = vim.Function("line")(".")
+            line = int(vim.eval("line(.)"))
             executor.runfunc(path, line, stdout_window.buffer)
         elif command_type == "file":
             path = vim.current.buffer.name
