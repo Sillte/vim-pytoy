@@ -12,6 +12,12 @@ from pytoy.pytools_utils import PytestDecipher, ScriptDecipher
 
 from pytoy.environment_manager import EnvironmentManager
 
+def _setloclist(win_id: int, records: list[dict]):
+    import json 
+    from shlex import quote
+    safe_json = quote(json.dumps(records))
+    vim.command(f"call setloclist({win_id}, eval({safe_json}))")
+
 
 class PytestExecutor(BufferExecutor):
     def runall(self, stdout, command_wrapper=None):
@@ -56,14 +62,11 @@ class PytestExecutor(BufferExecutor):
         return {}
 
     def on_closed(self):
-        # vim.Function("setloclist") seems to more appropriate,
-        # but it does not work correctly with Python 3.9?
-        setloclist = vim.bindeval('function("setloclist")')
         assert self.stdout is not None
         messages = "\n".join(line for line in self.stdout)
         qflist = self._make_qflist(messages)
         if qflist:
-            setloclist(self.win_id, qflist)
+            _setloclist(self.win_id, qflist)
         else:
             with store_window():
                 vim.eval(f"win_gotoid({self.win_id})")
@@ -104,14 +107,11 @@ class MypyExecutor(BufferExecutor):
         return None
 
     def on_closed(self):
-        # vim.Function("setloclist") seems to more appropriate,
-        # but it does not work correctly with Python 3.9?
         assert self.stdout is not None
-        setloclist = vim.bindeval('function("setloclist")')
         messages = "\n".join(line for line in self.stdout)
         qflist = self._make_qflist(messages)
         if qflist:
-            setloclist(self.win_id, qflist)
+            _setloclist(self.win_id, qflist)
         else:
             with store_window():
                 vim.eval(f"win_gotoid({self.win_id})")
@@ -158,14 +158,11 @@ class RuffExecutor(BufferExecutor):
         return None
 
     def on_closed(self):
-        # vim.Function("setloclist") seems to more appropriate,
-        # but it does not work correctly with Python 3.9?
         assert self.stdout is not None
-        setloclist = vim.bindeval('function("setloclist")')
         messages = "\n".join(line for line in self.stdout)
         qflist = self._make_qflist(messages)
         if qflist:
-            setloclist(self.win_id, qflist)
+            _setloclist(self.win_id, qflist)
             vim.eval(f"win_gotoid({self.win_id})")
             vim.command("lopen")
         else:
