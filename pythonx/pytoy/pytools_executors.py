@@ -16,7 +16,7 @@ def _setloclist(win_id: int, records: list[dict]):
     import json 
     from shlex import quote
     safe_json = quote(json.dumps(records))
-    vim.command(f"call setloclist({win_id}, eval({safe_json}))")
+    vim.command(f"call setloclist({win_id}, json_decode({safe_json}))")
 
 
 class PytestExecutor(BufferExecutor):
