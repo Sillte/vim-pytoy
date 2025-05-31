@@ -28,7 +28,7 @@ class TimerTaskManager:
             name = f"AUTONAME{cls.counter}"
 
         vim_funcname = f"LoopTask_{name}_{id(func)}"
-        if "__name__" in locals():
+        if __name__ != "__main__":
             prefix = f"{__name__}."
             import_prefix = f"from {__name__} import TimerTaskManager; "
         else:
@@ -62,6 +62,11 @@ class TimerTaskManager:
         del cls.TIMER_MAP[name]
         del cls.VIMFUNCNAME_MAP[name]
         del cls.FUNCTION_MAP[name]
+
+    @classmethod
+    def is_registered(cls, name: str):
+        return name in cls.TIMER_MAP
+
 
 if  __name__ == "__main__":
     def hello():
