@@ -56,7 +56,7 @@ class CommandManager:
     ) -> Callable:
         vim_funcname = f"PytoyFunc_FOR_COMMAND_{name}"
         if name in cls.COMMAND_MAPS:
-            raise ValueError("The same `command` is already registered.")
+            raise ValueError(f"The same `command` is already registered. `{name=}`")
         if vim_funcname in cls.FUNCTION_MAPS:
             raise ValueError("Already `FUNCTION` is defined? (Very rare situation.), {vim_funcname}")
 
