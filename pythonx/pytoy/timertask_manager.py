@@ -30,10 +30,12 @@ class TimerTaskManager:
         vim_funcname = f"LoopTask_{name}_{id(func)}"
         if "__name__" in locals():
             prefix = f"{__name__}."
+            import_prefix = f"from {__name__} import TimerTaskManager; "
         else:
             prefix = "" 
+            import_prefix = f" "
         
-        procedures = f"python3 {prefix}TimerTaskManager.FUNCTION_MAP['{name}']()"
+        procedures = f"python3 {import_prefix} {prefix}TimerTaskManager.FUNCTION_MAP['{name}']()"
 
         vim.command(f"""function! {vim_funcname}(timer) 
             {procedures}
@@ -62,4 +64,7 @@ class TimerTaskManager:
         del cls.FUNCTION_MAP[name]
 
 if  __name__ == "__main__":
+    def hello():
+        print("H")
+    TimerTaskManager.register(hello)
     pass
