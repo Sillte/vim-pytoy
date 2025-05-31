@@ -61,7 +61,9 @@ class PythonExecutor(BufferExecutor):
             vim.command(f"call setloclist({win_id}, json_decode({safe_json}))")
 
         if self.stderr:
-            error_msg = "\n".join(self.stderr)
+            error_msg = vim.eval("join(getbufline({}, 1, '$'), '\n')".format(self.stderr.number))
+            #print("error_msg", error_msg)
+            #error_msg = "\n".join(self.stderr)
         else:
             error_msg = "Implementation Error"
         if error_msg:
