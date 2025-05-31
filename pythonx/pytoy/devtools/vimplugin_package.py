@@ -149,6 +149,7 @@ def _start_vim_detached(cmd):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             creationflags=DETACHED_PROCESS,
+            shell=True,
         )
     else:
         subprocess.Popen(
@@ -156,6 +157,7 @@ def _start_vim_detached(cmd):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             preexec_fn=os.setpgrp,
+            shell=True,
         )
 
 if __name__ == "__main__":
