@@ -313,6 +313,8 @@ class BufferExecutor:
                 name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd
             )
         command = command_wrapper(command)
+        if self.is_running:
+            raise ValueError(f"`{self.name=}` is already running")
         self._buffer_job.job_start(command, self.prepare, self.on_closed)
 
     @property
