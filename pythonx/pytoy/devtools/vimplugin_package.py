@@ -34,7 +34,7 @@ class VimPluginPackage:
         return self._root_folder
 
     def restart(self, with_vimrc=True, kill_myprocess: bool = True):
-        """Save the current session and restart Vim/GVim with this plugin loaded.
+        """Save the current session and restart Vim/GVim/nvim with this plugin loaded.
 
         Args:
             with_vimrc (bool): 
@@ -60,8 +60,11 @@ class VimPluginPackage:
             app = "gvim"
             is_gui = True
         else:
-            app = "vim"
             is_gui = False
+            if int(vim.eval("has('nvim')")):
+                app = "nvim"
+            else:
+                app = "vim"
 
         if with_vimrc:
             commands = f'{app} --cmd "let &runtimepath=\'{self.root_folder.as_posix()},\' . &runtimepath " -S "{session_file.as_posix()}" '
