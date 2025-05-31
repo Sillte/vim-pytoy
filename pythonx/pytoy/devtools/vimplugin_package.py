@@ -151,7 +151,7 @@ class _VimRebooter:
                 app = "nvim"
             else:
                 app = "vim"
-        commands = [app, "--cmd", "let g:pytoy_reboot='{self.root_folder.as_posix()}'"]
+        commands = [app, "--cmd", f"let g:pytoy_reboot='{self.root_folder.as_posix()}'"]
         if with_vimrc:
             commands += ["--cmd" ,f"let &runtimepath='{self.root_folder.as_posix()},' . &runtimepath"]
         else:
