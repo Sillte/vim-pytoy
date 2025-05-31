@@ -75,7 +75,8 @@ class PytestExecutor(BufferExecutor):
         # Scrolling output window
         with store_window():
             assert self.stdout is not None
-            vim.command("call win_gotoid({stdout_id})")
+            stdout_id = vim.eval(f"bufwinid({self.stdout.number})")
+            vim.command(f"call win_gotoid({stdout_id})")
             vim.command("normal zb")
 
     def _make_qflist(self, string):
