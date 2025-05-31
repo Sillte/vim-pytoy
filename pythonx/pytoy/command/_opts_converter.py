@@ -19,8 +19,15 @@ whle the Role 2 is is carried out at the definition time of the Command.
 import inspect
 from inspect import _empty as empty
 from inspect import Signature
-from typing import Type
+from typing import Type, Callable
 from pytoy.command.range_count_option import RangeCountOption
+
+def _signature(target):
+    if isinstance(target, staticmethod):
+        func = target.__func__
+    else:
+        func = target
+    return inspect.signature(func)
 
 
 class _OptsConverter:
@@ -48,14 +55,14 @@ class _OptsConverter:
     def nargs(self) -> str | int:
         return self._nargs
 
-    def _decide_converter(self, target, nargs, rc_opt, providers):
+    def _decide_converter(self, target: Callable | classmethod | staticmethod, nargs, rc_opt, providers):
         """
         * Decide how to convert `opts` to the parameters of python.
             - Selection of `nargs` are mandatory.
         * If the options of `Command` is not given, infer them.
             - If contradiction exists, raise Exception.
         """
-        sig = inspect.signature(target)
+        sig = _signature(target)
         for provider in providers:
             flag, nargs, rc_opt = provider.condition(sig, nargs, rc_opt)
             if flag:
@@ -63,7 +70,7 @@ class _OptsConverter:
                 self.range_count_option = rc_opt
                 return provider
         raise NotImplementedError(
-            "Currently, cannnot handle the signature provided in Python."
+            f"Currently, cannnot handle the signature provided in {sig.parameters=}, {target=}, {nargs=}"
         )
 
     def __call__(self, opts: dict) -> tuple[tuple, dict]:

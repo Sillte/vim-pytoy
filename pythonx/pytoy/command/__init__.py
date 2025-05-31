@@ -21,8 +21,13 @@ class CommandManager:
         def _inner(target):
             nonlocal complete
 
-            if inspect.isfunction(target):
-                if inspect.isfunction(complete):
+            def _is_function_target(target):
+                return inspect.isfunction(target) or isinstance(target, staticmethod)
+            if isinstance(target, classmethod):
+                raise ValueError(f"Classmethod cannot be registered, {target=}, {name=}")
+
+            if _is_function_target(target):
+                if _is_function_target(complete):
                     c_vimfunc_name = _CustomListManager.register(name, complete)
                     complete = f"customlist,{c_vimfunc_name}"
 
