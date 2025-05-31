@@ -14,6 +14,12 @@ class VimReboot:
             package.restart(with_vimrc=True, kill_myprocess=True)
 
 
+@CommandManager.register(name="DebugInfo")
+def debug_info():
+    import pytoy
+    print(f"pytoy_location: `{pytoy.__file__}`")
+
+
 class TimerTaskManagerDebug:
     taskname = "TimerTaskManagerDebug"
 
