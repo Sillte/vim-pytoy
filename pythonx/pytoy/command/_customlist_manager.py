@@ -3,6 +3,14 @@ import vim
 import json
 from typing import Callable 
 
+def _signature(target):
+    if isinstance(target, (staticmethod, classmethod)):
+        func = target.__func__
+    else:
+        func = target
+    return inspect.signature(func)
+
+
 class _CustomListManager:
     """This class handles python complete function with custom-list settings. 
     """
@@ -19,13 +27,13 @@ class _CustomListManager:
     V_CUSTOMLIST_VARIABLE = "g:customlist_manager_result"
 
     @classmethod
-    def register(cls, name: str, target: Callable) -> str:
+    def register(cls, name: str, target: Callable | staticmethod) -> str:
         """Return `vimfunc_name` which is used for `completion`.
         """
         if name in cls.FUNCTION_MAP:
             raise ValueError(f"Already `{name=}`  is registered.")
         vimfunc_name = f"CustomList_Manager__PYTOY__{name}"
-        sig = inspect.signature(target)
+        sig = _signature(target)
         if len(sig.parameters) != 3:
             raise ValueError(f"{target} must take 3 parameters.")
 

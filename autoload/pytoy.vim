@@ -16,7 +16,9 @@ if library_folder not in sys.path:
 try:
     import pytoy
 except Exception as e:
-    print("Failed to Import.", e)
+    import traceback
+    s = traceback.format_exc()
+    print("[pytoy]: Failed to Import.", e, s, flush=True)
     raise e
 else:
     vim.command("let s:init_python=1")
