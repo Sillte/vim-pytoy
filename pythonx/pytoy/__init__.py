@@ -158,4 +158,4 @@ def quickfix_timesort():
 from pytoy import commands
 
 if __name__ == "__main__":
-    print(__name__)
+    print("__name__", __name__)
