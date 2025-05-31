@@ -6,7 +6,7 @@ from pathlib import Path
 class VimPluginPackage:
     """Utility class for managing and developing Vim plugins.
 
-    This class helps detect the root directory of a Vim plugin
+    This class helps to detect the root directory of a Vim plugin
     and provides tools to restart Vim with the plugin correctly loaded.
     It supports automatic session saving and reinitialization during development.
 
@@ -48,43 +48,8 @@ class VimPluginPackage:
             This is useful when reinitializing plugin state during development,
             especially when changes affect runtime behavior or require a clean environment.
         """
-        import vim
+        _VimRebooter(self.root_folder)(with_vimrc=with_vimrc, kill_myprocess=kill_myprocess)
 
-        cache_folder = Path.home() / ".cache/vim"
-        if not cache_folder.exists():
-            cache_folder.mkdir(parents=True)
-        session_file = cache_folder / "devplugin.vim"
-        vim.command(f"mksession! {session_file.as_posix()}")
-
-        if int(vim.eval("&term == 'builtin_gui'")):
-            app = "gvim"
-            is_gui = True
-        else:
-            is_gui = False
-            if int(vim.eval("has('nvim')")):
-                app = "nvim"
-            else:
-                app = "vim"
-
-        if with_vimrc:
-            commands = f'{app} --cmd "let &runtimepath=\'{self.root_folder.as_posix()},\' . &runtimepath " -S "{session_file.as_posix()}" '
-        else:
-            commands = f'{app} --cmd "let &runtimepath=\'{self.root_folder.as_posix()}\' -u NONE -S "{session_file.as_posix()}" '
-
-        if not is_gui:
-            if sys.platform.startswith("win"):
-                console = "start cmd /k "
-            elif sys.platform.startswith("linux"):
-                console = "x-terminal-emulator -e "
-            else:
-                raise RuntimeError("Unrecognized platform")
-            commands = f"{console} {commands}"
-
-        #print("commands", commands)
-        _start_vim_detached(commands)
-
-        if kill_myprocess:
-            vim.command("qall!")
 
     def _find_plugin_root(self, start_folder: Path | None =None):
         """Search upward from the given folder to locate the plugin root.
@@ -142,6 +107,71 @@ class VimPluginPackage:
         except StopIteration:
             return False
         return True
+
+
+class _VimRebooter:
+    """Perform rebooting of `vim/nvim/gvim`.
+
+    When the activation is carried out via this function.
+    `g:pytoy_reboot = 1` is added for the spawned (n/g) vim.
+
+    [NOTE]: (with_vimrc=True)
+        Sometimes, plugin loaders `prepend` their configuration path 
+        to the first `rtp` / `runtimepath`.  
+        If the plugin loader uses this kind of mechanism, 
+        the idea the path is prepended as the initialization of `(n/g)vim` fails.   
+        To curcumvent this situation please use the defined variable
+        `g:pytoy_reboot=1` to notify the plugin manager, and it does not 
+        override the prepended path.  
+        
+    * `debug`: Please see `scriptnames` / `echo &runtimepath`.
+    """
+
+    def __init__(self, root_folder: Path):
+        self.root_folder = Path(root_folder)
+
+    def __call__(self, with_vimrc: bool = True, kill_myprocess: bool = True):
+        """
+        When `with_vimrc` = True, please refer to the docstring of the class.
+        """
+        import vim 
+        cache_folder = Path.home() / ".cache/vim"
+
+        if not cache_folder.exists():
+            cache_folder.mkdir(parents=True)
+        session_file = cache_folder / "devplugin.vim"
+        vim.command(f"mksession! {session_file.as_posix()}")
+
+        if int(vim.eval("&term == 'builtin_gui'")):
+            app = "gvim"
+            is_gui = True
+        else:
+            is_gui = False
+            if int(vim.eval("has('nvim')")):
+                app = "nvim"
+            else:
+                app = "vim"
+        commands = [app, "--cmd", "let g:pytoy_reboot=1"]
+        if with_vimrc:
+            commands += ["--cmd" ,f"let &runtimepath=\'{self.root_folder.as_posix()},\' . &runtimepath"]
+        else:
+            commands += ["-u", "NONE"]
+        commands += ["-S", f"{session_file.as_posix()}"]
+
+
+        if not is_gui:
+            if sys.platform.startswith("win"):
+                consoles = ["start", "cmd", "/k"]
+            elif sys.platform.startswith("linux"):
+                consoles = ["x-terminal-emulator",  "-e"]
+            else:
+                raise RuntimeError("Unrecognized platform")
+            commands = consoles + commands
+
+        _start_vim_detached(commands)
+
+        if kill_myprocess:
+            vim.command("qall!")
 
 
 def _start_vim_detached(cmd):
