@@ -114,9 +114,11 @@ class NVimBufferJob(BufferJobProtocol):
         def wrapped_on_closed():
             on_closed_callable()
             if self.stdout:
-                vim.command(f"unlet g:{self._on_stdout_name}")
+                TimerTaskManager.deregister(self._on_stdout_name)
+                self._on_stdout_name = None
             if self.stderr:
-                vim.command(f"unlet g:{self._on_stderr_name}")
+                TimerTaskManager.deregister(self._on_stderr_name)
+                self._on_stderr_name = None
             vim.command(f"unlet g:{self.jobname}")
 
         vimfunc_name = PytoyVimFunctions.register(
