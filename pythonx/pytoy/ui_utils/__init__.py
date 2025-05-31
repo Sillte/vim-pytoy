@@ -11,7 +11,7 @@ from pytoy.ui_utils._converter import (
     to_buffer,
 )
 
-from pytoy.ui_utils.quickfix_utils import QuickFix
+from pytoy.ui_utils.quickfix_utils import QuickFix  # NOQA
 
 
 def init_buffer(arg):
