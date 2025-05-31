@@ -58,13 +58,25 @@ class VimPluginPackage:
 
         if int(vim.eval("&term == 'builtin_gui'")):
             app = "gvim"
+            is_gui = True
         else:
             app = "vim"
+            is_gui = False
 
         if with_vimrc:
             commands = f'{app} --cmd "let &runtimepath=\'{self.root_folder.as_posix()},\' . &runtimepath " -S "{session_file.as_posix()}" '
         else:
             commands = f'{app} --cmd "let &runtimepath=\'{self.root_folder.as_posix()}\' -u NONE -S "{session_file.as_posix()}" '
+
+        if not is_gui:
+            if sys.platform.startswith("win"):
+                console = "start cmd /k "
+            elif sys.platform.startswith("linux"):
+                console = "x-terminal-emulator -e "
+            else:
+                raise RuntimeError("Unrecognized platform")
+            commands = f"{console} {commands}"
+
         #print("commands", commands)
         _start_vim_detached(commands)
 
