@@ -12,8 +12,10 @@ from pytoy.ui_utils import init_buffer, store_window
 from pytoy.environment_manager import EnvironmentManager
 
 
+from pytoy.ui_pytoy import PytoyBuffer
+
 class PythonExecutor(BufferExecutor):
-    def run(self, path, stdout, stderr, *, cwd=None, force_uv=None):
+    def run(self, path, stdout: PytoyBuffer, stderr: PytoyBuffer, *, cwd=None, env=None, force_uv=None):
         """Execute `"""
         if cwd is None:
             cwd = vim.eval("getcwd()")
@@ -28,16 +30,9 @@ class PythonExecutor(BufferExecutor):
         self.run_cwd = cwd
 
         command = f'python -u -X utf8 "{path}"'
-        directive = f"`python {path}`"
-
         wrapper = EnvironmentManager().get_command_wrapper(force_uv=force_uv)
-        command = wrapper(command)
-        directive = wrapper(directive)
 
-        init_buffer(stdout)
-        init_buffer(stderr)
-        stdout[0] = directive
-        return super().run(command, stdout, stderr)
+        return super().run(command, stdout, stderr, command_wrapper=wrapper, env=env)
 
     def rerun(self, stdout, stderr, force_uv=None):
         """Execute the previous `path`."""
@@ -60,14 +55,10 @@ class PythonExecutor(BufferExecutor):
             safe_json = quote(json.dumps(records))
             vim.command(f"call setloclist({win_id}, json_decode({safe_json}))")
 
-        if self.stderr:
-            error_msg = vim.eval("join(getbufline({}, 1, '$'), '\n')".format(self.stderr.number))
-            #print("error_msg", error_msg)
-            #error_msg = "\n".join(self.stderr)
-        else:
-            error_msg = "Implementation Error"
-        if error_msg:
-            qflist = self._make_qflist(error_msg)
+        error_msg = self.stderr.content.strip()
+        qflist = self._make_qflist(error_msg)
+
+        if qflist:
             _setloclist(self.win_id, qflist)
         else:
             _setloclist(self.win_id, [])  # Reset `LocationList`.
@@ -75,15 +66,11 @@ class PythonExecutor(BufferExecutor):
                 vim.eval(f"win_gotoid({self.win_id})")
                 vim.command(f"lclose")
 
+            self.stderr.hide()
 
-            nr = int(vim.eval(f"bufwinnr({self.stderr.number})"))
-            if 0 <= nr:
-                vim.command(f":{nr}close")
-
-            # Scrolling output window
+            ## Scrolling output window
             with store_window():
-                stdout_id = vim.eval(f"bufwinid({self.stdout.number})")
-                vim.command(f"call win_gotoid({stdout_id})")
+                self.stdout.focus()
                 vim.command(f"normal zb")
 
     def _make_qflist(self, string):

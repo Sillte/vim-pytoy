@@ -9,15 +9,23 @@ from typing import Callable, Protocol
 
 from pytoy.func_utils import PytoyVimFunctions
 
+from pytoy.ui_pytoy import PytoyBuffer
 from pytoy.executors.command_wrapper import CommandWrapper
-
 
 
 naive_wrapper = CommandWrapper()
 
 
 class BufferJobProtocol(Protocol):
-    def __init__(self, name: str, stdout=None, stderr=None, *, env=None, cwd=None):
+    def __init__(
+        self,
+        name: str,
+        stdout=PytoyBuffer | None,
+        stderr=PytoyBuffer | None,
+        *,
+        env=None,
+        cwd=None,
+    ):
         ...
 
     def job_start(
@@ -33,9 +41,16 @@ class BufferJobProtocol(Protocol):
         ...
 
 
-
 class NVimBufferJob(BufferJobProtocol):
-    def __init__(self, name: str, stdout=None, stderr=None, *, env=None, cwd=None):
+    def __init__(
+        self,
+        name: str,
+        stdout=PytoyBuffer | None,
+        stderr=PytoyBuffer | None,
+        *,
+        env=None,
+        cwd=None,
+    ):
         self.name = name
         self.stdout = stdout
         self.stderr = stderr
@@ -52,8 +67,6 @@ class NVimBufferJob(BufferJobProtocol):
 
         stdout_drained = True
         if self.stdout is not None:
-            # options["out_io"] = "buffer"
-            # options["out_buf"] = self.stdout.number
             stdout_queue = Queue()
             stdout_drained = False
 
@@ -83,11 +96,11 @@ class NVimBufferJob(BufferJobProtocol):
 
             TimerTaskManager.register(_update_stdout, name=self._on_stdout_name)
 
-
         stderr_drained = True
         if self.stderr is not None:
             stderr_drained = False
             stderr_queue = Queue()
+
             def _on_stderr(job_id, data, event):
                 nonlocal stderr_drained
                 _ = job_id = event
@@ -103,6 +116,7 @@ class NVimBufferJob(BufferJobProtocol):
             options["on_stderr"] = self._on_stderr_name
 
             def _update_stderr():
+                assert self.stderr is not None
                 while stderr_queue.qsize():
                     try:
                         lines = stderr_queue.get_nowait()
@@ -170,7 +184,15 @@ class NVimBufferJob(BufferJobProtocol):
 
 
 class VimBufferJob(BufferJobProtocol):
-    def __init__(self, name: str, stdout=None, stderr=None, *, env=None, cwd=None):
+    def __init__(
+        self,
+        name: str,
+        stdout: None | PytoyBuffer = None,
+        stderr: None | PytoyBuffer = None,
+        *,
+        env=None,
+        cwd=None,
+    ):
         self.name = name
         self.stdout = stdout
         self.stderr = stderr
@@ -183,11 +205,11 @@ class VimBufferJob(BufferJobProtocol):
         options = dict()
         if self.stdout is not None:
             options["out_io"] = "buffer"
-            options["out_buf"] = self.stdout.number
+            options["out_buf"] = self.stdout.identifier
 
         if self.stderr is not None:
             options["err_io"] = "buffer"
-            options["err_buf"] = self.stderr.number
+            options["err_buf"] = self.stderr.identifier
 
         if self.env is not None:
             options["env"] = self.env
@@ -230,9 +252,11 @@ class VimBufferJob(BufferJobProtocol):
         else:
             print(f"Already, `{self.jobname}` is stopped.")
 
-if __name__  == "__main__":
+
+if __name__ == "__main__":
     pass
     import time
+
     time.sleep(3)
     print("fafa")
     raise ValueError("AFAFA")

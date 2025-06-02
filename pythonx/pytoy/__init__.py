@@ -34,17 +34,24 @@ def run(path=None):
     if executor.is_running:
         raise RuntimeError(f"Currently, `PythonExecutor` is running.")
 
-    stdout_window = create_window(TERM_STDOUT, "vertical")
-    stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
-    executor.run(path, stdout_window.buffer, stderr_window.buffer)
+    from pytoy.ui_pytoy import make_duo_buffers, PytoyBuffer
+    stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
+
+    executor.run(path, stdout_buffer, stderr_buffer)
+
+    #executor.run(path, stdout_window.buffer, stderr_window.buffer)
 
 
 def rerun():
     """Perform `python` with the previous `path`."""
     executor = PythonExecutor()
-    stdout_window = create_window(TERM_STDOUT, "vertical")
-    stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
-    executor.rerun(stdout_window.buffer, stderr_window.buffer)
+
+    from pytoy.ui_pytoy import make_duo_buffers, PytoyBuffer
+    stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
+
+    #stdout_window = create_window(TERM_STDOUT, "vertical")
+    #stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
+    executor.rerun(stdout_buffer, stderr_buffer)
 
 
 def stop():
