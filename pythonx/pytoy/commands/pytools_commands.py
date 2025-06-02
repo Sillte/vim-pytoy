@@ -1,8 +1,10 @@
 """PyTestCommand
 """
+
 import vim
 from pytoy.command import CommandManager
 from pytoy.ui_utils import create_window, store_window
+from pytoy.ui_pytoy import PytoyBuffer, make_buffer
 from pytoy import ui_utils
 
 
@@ -16,16 +18,16 @@ class PyTestCommand:
         from pytoy import TERM_STDOUT
 
         executor = PytestExecutor()
-        stdout_window = create_window(TERM_STDOUT, "vertical")
+        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
         if command_type == "func":
             path = vim.current.buffer.name
             line = int(vim.eval("line('.')"))
-            executor.runfunc(path, line, stdout_window.buffer)
+            executor.runfunc(path, line, pytoy_buffer)
         elif command_type == "file":
             path = vim.current.buffer.name
-            executor.runfile(path, stdout_window.buffer)
+            executor.runfile(path, pytoy_buffer)
         elif command_type == "all":
-            executor.runall(stdout_window.buffer)
+            executor.runall(pytoy_buffer)
         else:
             raise ValueError(f"Specified `command_type` is not valid.")
 
@@ -43,13 +45,10 @@ class MypyCommand:
         from pytoy.pytools_executors import MypyExecutor
         from pytoy import TERM_STDOUT
         import vim
-
-        from pytoy.ui_utils import create_window
-
         path = vim.current.buffer.name
         executor = MypyExecutor()
-        stdout_window = create_window(TERM_STDOUT, "vertical")
-        executor.runfile(path, stdout_window.buffer)
+        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
+        executor.runfile(path, pytoy_buffer)
 
 
 @CommandManager.register(name="GotoDefinition")
@@ -113,9 +112,9 @@ class RuffChecker:
         from pytoy.pytools_executors import RuffExecutor
 
         path = vim.current.buffer.name
-        stdout_window = create_window(TERM_STDOUT, "vertical")
+        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
         executor = RuffExecutor()
-        executor.check_file(Path(path), stdout_window.buffer) 
+        executor.check_file(Path(path), pytoy_buffer) 
 
 
 
@@ -146,6 +145,7 @@ class CSpellCommand:
                 record = m.groupdict()
                 records.append(record)
 
+        # [TODO]: It cannot be used in nvim.
         setloclist = vim.bindeval('function("setloclist")')
 
         win_id = vim.eval("win_getid()")
@@ -155,9 +155,9 @@ class CSpellCommand:
             with store_window():
                 vim.command("lopen")
 
-            stdout_window = create_window(TERM_STDOUT, "vertical")
-            stdout_window.buffer[:] = []
-            stdout_window.buffer.append(f"**UNKNOWN WORDS**")
-            stdout_window.buffer.append(f"{unknow_words}")
+            buffer = make_buffer(TERM_STDOUT, "vertical")
+            buffer.init_buffer()
+            buffer.append(f"**UNKNOWN WORDS**")
+            buffer.append(f"{unknow_words}")
         else:
             print("No unknown words.")

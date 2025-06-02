@@ -10,6 +10,8 @@ from typing import Optional, Callable, Protocol
 
 from pytoy.func_utils import PytoyVimFunctions
 
+from pytoy.ui_pytoy import PytoyBuffer
+
 from pytoy.executors.command_wrapper import CommandWrapper
 from pytoy.executors.buffer_job import BufferJobProtocol, VimBufferJob, NVimBufferJob
 
@@ -62,13 +64,13 @@ class BufferExecutor:
         return self._name
 
     @property
-    def stdout(self) -> Optional["vim.buffer"]:
+    def stdout(self) -> Optional[PytoyBuffer]:
         if not self._buffer_job:
             return None
         return self._buffer_job.stdout
 
     @property
-    def stderr(self) -> Optional["vim.buffer"]:
+    def stderr(self) -> Optional[PytoyBuffer]:
         if not self._buffer_job:
             return None
         return self._buffer_job.stderr
@@ -86,8 +88,8 @@ class BufferExecutor:
     def run(
         self,
         command: str | list[str],
-        stdout: Optional["vim.buffer"] = None,
-        stderr: Optional["vim.buffer"] = None,
+        stdout: Optional[PytoyBuffer] = None,
+        stderr: Optional[PytoyBuffer] = None,
         command_wrapper: Callable[[str], str] | None = naive_wrapper,
         *,
         env: dict[str, str] | None = None,
@@ -104,6 +106,7 @@ class BufferExecutor:
             command_wrapper = naive_wrapper
         self._command = command
 
+
         if int(vim.eval("has('nvim')")):
             self._buffer_job = NVimBufferJob(
                 name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd
@@ -114,6 +117,12 @@ class BufferExecutor:
                 name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd
             )
         command = command_wrapper(command)
+
+        if stdout is not None:
+            stdout.init_buffer(command)
+        if stderr is not None:
+            stderr.init_buffer()
+
         if self.is_running:
             raise ValueError(f"`{self.name=}` is already running")
         self._buffer_job.job_start(command, self.prepare, self.on_closed)

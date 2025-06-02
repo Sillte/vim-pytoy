@@ -11,6 +11,7 @@ from pytoy.ui_utils import (
 from pytoy.pytools_utils import PytestDecipher, ScriptDecipher
 
 from pytoy.environment_manager import EnvironmentManager
+from pytoy.ui_pytoy import PytoyBuffer
 
 def _setloclist(win_id: int, records: list[dict]):
     import json 
@@ -20,12 +21,12 @@ def _setloclist(win_id: int, records: list[dict]):
 
 
 class PytestExecutor(BufferExecutor):
-    def runall(self, stdout, command_wrapper=None):
+    def runall(self, stdout: PytoyBuffer, command_wrapper=None):
         """Execute `naive`, `pytest`."""
         if command_wrapper is None:
             command_wrapper = EnvironmentManager().get_command_wrapper()
         command = "pytest"
-        init_buffer(stdout)
+
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def runfile(self, path, stdout, command_wrapper=None):
@@ -33,7 +34,6 @@ class PytestExecutor(BufferExecutor):
         if command_wrapper is None:
             command_wrapper = EnvironmentManager().get_command_wrapper()
         command = f'pytest "{path}"'
-        init_buffer(stdout)
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def runfunc(self, path, line, stdout, command_wrapper=None):
@@ -49,10 +49,7 @@ class PytestExecutor(BufferExecutor):
         command = target.command
         # Options can be added to `command`.
         command = f"{command} --capture=no --quiet"
-        init_buffer(stdout)
 
-        stdout = to_buffer(stdout)
-        stdout[0] = command
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def prepare(self):
@@ -63,7 +60,7 @@ class PytestExecutor(BufferExecutor):
 
     def on_closed(self):
         assert self.stdout is not None
-        messages = "\n".join(line for line in self.stdout)
+        messages = self.stdout.content
         qflist = self._make_qflist(messages)
         if qflist:
             _setloclist(self.win_id, qflist)
@@ -75,8 +72,7 @@ class PytestExecutor(BufferExecutor):
         # Scrolling output window
         with store_window():
             assert self.stdout is not None
-            stdout_id = vim.eval(f"bufwinid({self.stdout.number})")
-            vim.command(f"call win_gotoid({stdout_id})")
+            self.stdout.focus()
             vim.command("normal zb")
 
     def _make_qflist(self, string):
@@ -96,8 +92,6 @@ class MypyExecutor(BufferExecutor):
         if command_wrapper is None:
             command_wrapper = EnvironmentManager().get_command_wrapper()
         command = f'mypy --show-traceback --show-column-numbers "{path}"'
-        stdout = to_buffer(stdout)
-        init_buffer(stdout)
         #stdout[0] = command
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
@@ -109,7 +103,7 @@ class MypyExecutor(BufferExecutor):
 
     def on_closed(self):
         assert self.stdout is not None
-        messages = "\n".join(line for line in self.stdout)
+        messages = self.stdout.content
         qflist = self._make_qflist(messages)
         if qflist:
             _setloclist(self.win_id, qflist)
@@ -120,8 +114,7 @@ class MypyExecutor(BufferExecutor):
 
         # Scrolling output window
         with store_window():
-            stdout_id = vim.eval(f"bufwinid({self.stdout.number})")
-            vim.command(f"call win_gotoid({stdout_id})")
+            self.stdout.focus()
             vim.command("normal zb")
 
     def _make_qflist(self, string):
@@ -147,9 +140,6 @@ class RuffExecutor(BufferExecutor):
         if command_wrapper is None:
             command_wrapper = EnvironmentManager().get_command_wrapper()
         command = f'ruff check "{path}"'
-        stdout = to_buffer(stdout)
-        init_buffer(stdout)
-        stdout[0] = command
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def prepare(self):
@@ -160,7 +150,7 @@ class RuffExecutor(BufferExecutor):
 
     def on_closed(self):
         assert self.stdout is not None
-        messages = "\n".join(line for line in self.stdout)
+        messages = self.stdout.content
         qflist = self._make_qflist(messages)
         if qflist:
             _setloclist(self.win_id, qflist)
