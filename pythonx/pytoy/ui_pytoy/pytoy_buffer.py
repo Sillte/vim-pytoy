@@ -1,0 +1,176 @@
+"""
+
+This module is intended to provide the common interface for bufffer.
+
+* vim
+* neovim
+* neovim+vscode
+
+Usage: executors:
+
+"""
+
+import vim
+from typing import Protocol, Any, Type
+from pytoy.ui_pytoy.ui_enum import UIEnum, get_ui_enum
+
+
+class PytoyBufferProtocol(Protocol):
+    @classmethod
+    def fetch_or_create(cls, specifier: str, **kwargs) -> "PytoyBufferProtocol":
+        ...
+        """Assure that the specifier `Buffer` exist in the UI.
+        """
+
+    def init_buffer(self, content: str = "") -> None:
+        """Set the content of buffer"""
+
+    def append(self, content: str) -> None:
+        ...
+
+    @property
+    def content(self) -> str:
+        ...
+
+    @property
+    def identifier(self) -> Any:
+        ...
+
+    def focus(self):
+        ...
+
+    def hide(self):
+        ...
+
+
+
+class PytoyBufferVim(PytoyBufferProtocol):
+    def __init__(self, buffer: "vim.Buffer"):
+        self.buffer = buffer
+
+    @classmethod
+    def fetch_or_create(
+        cls,
+        specifier: str,
+        direction: str = "vertical",
+        basewindow: Type["vim.Window"] | None = None,
+        **kwargs
+    ) -> "PytoyBufferVim":
+        """Assure that the specifier `Buffer` exist in the UI."""
+        from pytoy.ui_utils import create_window
+
+        direction = kwargs.get("direction", "vertical")
+        basewindow = kwargs.get("basewindow")
+
+        window = create_window(specifier, direction, basewindow)
+        return PytoyBufferVim(window.buffer)
+
+    @property
+    def identifier(self) -> int:
+        """ """
+        return self.buffer.number
+
+    def init_buffer(self, content: str = "") -> None:
+        """Set the content of buffer"""
+        self.buffer[:] = content.split("\n")
+
+    def append(self, content: str) -> None:
+        lines = content.split("\n")
+        for line in lines:
+            self.buffer.append(line)
+        return None
+
+    @property
+    def content(self) -> str:
+        return vim.eval("join(getbufline({}, 1, '$'), '\n')".format(self.buffer.number))
+
+
+    def focus(self):
+        bufnr = self.buffer.number
+        winid = int(vim.eval(f"bufwinid({bufnr})"))
+        if winid != -1:
+            vim.command(f"call win_gotoid({winid})")
+        else:
+            vim.command(f"buffer {bufnr}")
+
+    def hide(self):
+        nr = int(vim.eval(f"bufwinnr({self.buffer.number})"))
+        if 0 <= nr:
+            vim.command(f":{nr}close")
+
+
+class PytoyBufferVSCode(PytoyBufferProtocol):
+    @classmethod
+    def fetch_or_create(cls, specifier: str, **kwargs) -> "PytoyBufferVSCode":
+        """Assure that the specifier `Buffer` exist in the UI."""
+        assert False
+
+
+class PytoyBuffer:
+    def __init__(
+        self, impl: PytoyBufferProtocol | None = None, *, specifier: None | str = None
+    ):
+        if impl is None:
+            assert specifier is not None
+            ui_enum = get_ui_enum()
+            if ui_enum == UIEnum.VSCODE:
+                impl = PytoyBufferVSCode.fetch_or_create(specifier)
+            else:
+                impl = PytoyBufferVim.fetch_or_create(specifier)
+        self._impl: PytoyBufferProtocol = impl
+
+    def init_buffer(self, content: str = ""):
+        self._impl.init_buffer(content)
+
+    def append(self, content: str) -> None:
+        self._impl.append(content)
+
+    @property
+    def identifier(self) -> Any:
+        """ """
+        return self._impl.identifier
+
+    @property
+    def content(self) -> str:
+        return self._impl.content
+
+    @property
+    def focus(self):
+        return self._impl.focus
+
+    @property
+    def hide(self):
+        return self._impl.hide
+
+
+def make_buffer(stdout_name: str, mode: str = "vertical"):
+    ui_enum = get_ui_enum()
+    from pytoy.ui_utils import create_window
+
+    if ui_enum == UIEnum.VSCODE:
+        assert False, "NotImplemented"
+    else:
+        stdout_window = create_window(stdout_name, mode)
+        stdout_impl = PytoyBufferVim(stdout_window.buffer)
+        return PytoyBuffer(stdout_impl)
+
+def make_duo_buffers(
+    stdout_name: str, stderr_name: str
+) -> tuple[PytoyBuffer, PytoyBuffer]:
+    """Create 2 buffers, which is intended to """
+    ui_enum = get_ui_enum()
+    from pytoy.ui_utils import create_window
+
+    if ui_enum == UIEnum.VSCODE:
+        assert False, "NotImplemented"
+    else:
+        stdout_window = create_window(stdout_name, "vertical")
+        stderr_window = create_window(stderr_name, "horizontal", stdout_window)
+        stdout_impl = PytoyBufferVim(stdout_window.buffer)
+        stderr_impl = PytoyBufferVim(stderr_window.buffer)
+
+        return (PytoyBuffer(stdout_impl), PytoyBuffer(stderr_impl))
+
+
+if __name__ == "__main__":
+    pass
