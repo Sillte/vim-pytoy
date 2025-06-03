@@ -8,7 +8,7 @@ class PytoyQuickFix:
     def setlist(cls, records: list[dict], request_win_id: int | None = None): 
         """ 
         1. When `win_id` is None it is regarded as `quickfix`.
-        2. When `records` is empty,  
+        2. When `records` is empty, it is closed.  
         """
 
         win_id = cls._solve_winid(request_win_id)
@@ -16,7 +16,9 @@ class PytoyQuickFix:
         if not records:
             cls.close(win_id)
 
-        # [TODO]: this escape is really ok...?
+        # If the json string does not include single quotations, 
+        # it is easy for `quote` to do the work by surrounding the string
+        # one pair of `single` quote. 
         records = [{key: str(value).replace("'", '"') for key, value in row.items()} for row in records]
         safe_json = quote(json.dumps(records))
         if win_id is None:
@@ -72,4 +74,4 @@ class PytoyQuickFix:
         else:
             win_id = request_win_id
         return win_id
-            
+   
