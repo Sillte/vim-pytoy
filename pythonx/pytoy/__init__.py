@@ -37,9 +37,7 @@ def run(path=None):
     from pytoy.ui_pytoy import make_duo_buffers, PytoyBuffer
     stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
 
-    executor.run(path, stdout_buffer, stderr_buffer)
-
-    #executor.run(path, stdout_window.buffer, stderr_window.buffer)
+    executor.runfile(path, stdout_buffer, stderr_buffer)
 
 
 def rerun():

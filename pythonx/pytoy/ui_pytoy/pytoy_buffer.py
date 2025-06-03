@@ -134,16 +134,14 @@ class PytoyBuffer:
     def content(self) -> str:
         return self._impl.content
 
-    @property
     def focus(self):
-        return self._impl.focus
+        return self._impl.focus()
 
-    @property
     def hide(self):
-        return self._impl.hide
+        return self._impl.hide()
 
 
-def make_buffer(stdout_name: str, mode: str = "vertical"):
+def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
     ui_enum = get_ui_enum()
     from pytoy.ui_utils import create_window
 

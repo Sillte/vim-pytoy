@@ -4,20 +4,21 @@ import re
 from pytoy.executors import BufferExecutor
 
 from pytoy.ui_utils import (
-    init_buffer,
     store_window,
-    to_buffer,
 )
 from pytoy.pytools_utils import PytestDecipher, ScriptDecipher
 
 from pytoy.environment_manager import EnvironmentManager
-from pytoy.ui_pytoy import PytoyBuffer
+from pytoy.ui_pytoy import PytoyBuffer, PytoyQuickFix
 
-def _setloclist(win_id: int, records: list[dict]):
-    import json 
-    from shlex import quote
-    safe_json = quote(json.dumps(records))
-    vim.command(f"call setloclist({win_id}, json_decode({safe_json}))")
+
+def _handle_loclist(win_id, records: list[dict], is_open: bool):
+    if records:
+        PytoyQuickFix.setlist(records, win_id)
+        if is_open:
+            PytoyQuickFix.open(win_id)
+    else:
+        PytoyQuickFix.close(win_id)
 
 
 class PytestExecutor(BufferExecutor):
@@ -62,12 +63,7 @@ class PytestExecutor(BufferExecutor):
         assert self.stdout is not None
         messages = self.stdout.content
         qflist = self._make_qflist(messages)
-        if qflist:
-            _setloclist(self.win_id, qflist)
-        else:
-            with store_window():
-                vim.eval(f"win_gotoid({self.win_id})")
-                vim.command("lclose")
+        _handle_loclist(self.win_id, qflist, is_open=True)
 
         # Scrolling output window
         with store_window():
@@ -104,13 +100,9 @@ class MypyExecutor(BufferExecutor):
     def on_closed(self):
         assert self.stdout is not None
         messages = self.stdout.content
+
         qflist = self._make_qflist(messages)
-        if qflist:
-            _setloclist(self.win_id, qflist)
-        else:
-            with store_window():
-                vim.eval(f"win_gotoid({self.win_id})")
-                vim.command("lclose")
+        _handle_loclist(self.win_id, qflist, is_open=True)
 
         # Scrolling output window
         with store_window():
@@ -152,14 +144,9 @@ class RuffExecutor(BufferExecutor):
         assert self.stdout is not None
         messages = self.stdout.content
         qflist = self._make_qflist(messages)
-        if qflist:
-            _setloclist(self.win_id, qflist)
-            vim.eval(f"win_gotoid({self.win_id})")
-            vim.command("lopen")
-        else:
-            with store_window():
-                vim.eval(f"win_gotoid({self.win_id})")
-                vim.command("lclose")
+
+        _handle_loclist(self.win_id, qflist, is_open=True)
+
 
     def _make_qflist(self, string):
         # Record of `mypy`. 
