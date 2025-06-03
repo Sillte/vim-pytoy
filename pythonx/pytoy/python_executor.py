@@ -49,7 +49,7 @@ class PythonExecutor(BufferExecutor):
         if qflist:
             PytoyQuickFix.setlist(qflist, self.win_id)
         else:
-            PytoyQuickFix.reset(self.win_id)
+            PytoyQuickFix.close(self.win_id)
             self.stderr.hide()
 
             ## Scrolling output window
