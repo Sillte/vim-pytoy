@@ -1,14 +1,7 @@
 import vim
-from threading import Thread
-from queue import Queue
-from queue import Empty
-from pytoy.timertask_manager import TimerTaskManager
-
 
 from pathlib import Path
-from typing import Optional, Callable, Protocol
-
-from pytoy.func_utils import PytoyVimFunctions
+from typing import Optional, Callable
 
 from pytoy.ui_pytoy import PytoyBuffer
 
@@ -118,10 +111,13 @@ class BufferExecutor:
             )
         command = command_wrapper(command)
 
-        if stdout is not None:
-            stdout.init_buffer(command)
         if stderr is not None:
             stderr.init_buffer()
+
+        # Maybe `stdout` and `stderr` are the same.
+        if stdout is not None:
+            stdout.init_buffer(command)
+
 
         if self.is_running:
             raise ValueError(f"`{self.name=}` is already running")

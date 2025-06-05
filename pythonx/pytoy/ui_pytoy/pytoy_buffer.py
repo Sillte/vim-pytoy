@@ -77,10 +77,15 @@ class PytoyBufferVim(PytoyBufferProtocol):
         self.buffer[:] = content.split("\n")
 
     def append(self, content: str) -> None:
+        if not content:
+            return 
         lines = content.split("\n")
-        for line in lines:
+        if self._is_empty():
+            self.buffer[:] = lines[0]
+        else:
+            self.buffer.append(lines[0])
+        for line in lines[1:]:
             self.buffer.append(line)
-        return None
 
     @property
     def content(self) -> str:
@@ -99,6 +104,13 @@ class PytoyBufferVim(PytoyBufferProtocol):
         nr = int(vim.eval(f"bufwinnr({self.buffer.number})"))
         if 0 <= nr:
             vim.command(f":{nr}close")
+
+    def _is_empty(self) -> bool:
+        if len(self.buffer) == 0:
+            return True
+        if len(self.buffer) == 1 and self.buffer[0] == "":
+            return True
+        return False
 
 
 class PytoyBufferVSCode(PytoyBufferProtocol):
