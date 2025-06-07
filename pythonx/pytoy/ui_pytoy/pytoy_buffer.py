@@ -1,5 +1,4 @@
 """
-
 This module is intended to provide the common interface for bufffer.
 
 * vim
@@ -99,7 +98,6 @@ class PytoyBufferVim(PytoyBufferProtocol):
             vim.command(f"buffer {bufnr}")
 
     def hide(self):
-        pass
         nr = int(vim.eval(f"bufwinnr({self.buffer.number})"))
         if 0 <= nr:
             vim.command(f":{nr}close")
@@ -136,10 +134,16 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
 
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
+        if content and content[-1] != "\n":
+            content += "\n"
         self.document.content = content
 
+
     def append(self, content: str) -> None:
+        if not content:
+            return 
         self.document.append(content)
+
 
     @property
     def content(self) -> str:
@@ -194,7 +198,8 @@ def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
         from pytoy.ui_pytoy.vscode.document_user import make_document, sweep_editors
         from pytoy.ui_pytoy.vscode.focus_controller import store_focus
         sweep_editors()
-        uri = make_document(stdout_name)
+        with store_focus():
+            uri = make_document(stdout_name)
         document = Document(uri=uri) 
         stdout_impl = PytoyBufferVSCode(document)
     else:

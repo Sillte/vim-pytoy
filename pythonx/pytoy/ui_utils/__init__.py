@@ -1,5 +1,5 @@
 import vim
-from typing import Dict
+import time
 from contextlib import contextmanager
 
 # Conversion to the number or id.
@@ -72,7 +72,7 @@ def create_window(bufname, mode="vertical", base_window=None):
     return window
 
 
-def get_wininfos(tabnr=None) -> Dict:
+def get_wininfos(tabnr=None) -> list:
     """Return informations of window
     Args:
         tabnr (tabpage).
@@ -122,7 +122,7 @@ def sweep_windows(required_width=100, exclude=()):
             vim.command(f"{winnr}close")
 
 
-def create_buffer(bufname: str, options=None) -> "buffer":
+def create_buffer(bufname: str, options=None) -> "vim.Buffer":
     # It seems the generation of `buffer` may fail
     # due to interruption.
     # hence, retry mechanism is prepared.

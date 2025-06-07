@@ -90,7 +90,7 @@ class NVimBufferJob(BufferJobProtocol):
                         lines = stdout_queue.get_nowait()
                         for line in lines:
                             line = line.strip("\r")
-                            self.stdout.append(line)
+                            self.stdout.append(line) # type: ignore
                     except Empty:
                         break
 
@@ -122,7 +122,7 @@ class NVimBufferJob(BufferJobProtocol):
                         lines = stderr_queue.get_nowait()
                         for line in lines:
                             line = line.strip("\r")
-                            self.stderr.append(line)
+                            self.stderr.append(line) # type: ignore
                     except Empty:
                         break
 
@@ -142,7 +142,7 @@ class NVimBufferJob(BufferJobProtocol):
                     break
             if self.stdout:
                 _update_stdout()
-                TimerTaskManager.deregister(self._on_stdout_name)
+                TimerTaskManager.deregister(self._on_stdout_name) 
                 self._on_stdout_name = None
             if self.stderr:
                 _update_stderr()
@@ -255,8 +255,3 @@ class VimBufferJob(BufferJobProtocol):
 
 if __name__ == "__main__":
     pass
-    import time
-
-    time.sleep(3)
-    print("fafa")
-    raise ValueError("AFAFA")

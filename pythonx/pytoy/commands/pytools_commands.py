@@ -3,7 +3,7 @@
 
 import vim
 from pytoy.command import CommandManager
-from pytoy.ui_utils import create_window, store_window
+from pytoy.ui_utils import store_window
 from pytoy.ui_pytoy import PytoyBuffer, make_buffer
 from pytoy import ui_utils
 
@@ -154,7 +154,6 @@ class CSpellCommand:
             unknow_words = list(set(str(item["text"]) for item in records))
             with store_window():
                 vim.command("lopen")
-
             buffer = make_buffer(TERM_STDOUT, "vertical")
             buffer.init_buffer()
             buffer.append(f"**UNKNOWN WORDS**")

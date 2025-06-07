@@ -3,13 +3,11 @@ import re
 
 from pytoy.executors import BufferExecutor
 
-from pytoy.ui_utils import (
-    store_window,
-)
+
 from pytoy.pytools_utils import PytestDecipher, ScriptDecipher
 
 from pytoy.environment_manager import EnvironmentManager
-from pytoy.ui_pytoy import PytoyBuffer, PytoyQuickFix
+from pytoy.ui_pytoy import PytoyBuffer, PytoyQuickFix, store_cursor
 
 
 def _handle_loclist(win_id, records: list[dict], is_open: bool):
@@ -66,7 +64,7 @@ class PytestExecutor(BufferExecutor):
         _handle_loclist(self.win_id, qflist, is_open=True)
 
         # Scrolling output window
-        with store_window():
+        with store_cursor():
             assert self.stdout is not None
             self.stdout.focus()
             vim.command("normal zb")
@@ -105,7 +103,7 @@ class MypyExecutor(BufferExecutor):
         _handle_loclist(self.win_id, qflist, is_open=True)
 
         # Scrolling output window
-        with store_window():
+        with store_cursor():
             self.stdout.focus()
             vim.command("normal zb")
 
