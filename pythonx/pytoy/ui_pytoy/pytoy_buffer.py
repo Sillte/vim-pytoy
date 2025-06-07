@@ -44,7 +44,6 @@ class PytoyBufferProtocol(Protocol):
         ...
 
 
-
 class PytoyBufferVim(PytoyBufferProtocol):
     def __init__(self, buffer: "vim.Buffer"):
         self.buffer = buffer
