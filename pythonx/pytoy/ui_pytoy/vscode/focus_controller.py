@@ -1,0 +1,85 @@
+import vim
+
+from pytoy.ui_pytoy.vscode.api import Api
+from pytoy.ui_pytoy.vscode.document import Api
+from pytoy.ui_pytoy.vscode.document import BufferURISolver, Uri
+from contextlib import contextmanager
+
+
+def get_active_viewcolumn() -> int | None:
+    api = Api()
+    try:
+        active_column = api.eval_with_return(
+            "vscode.window.activeTextEditor.viewColumn", with_await=False
+        )
+    except Exception as e:
+        print(e)
+        return None
+    return active_column
+
+
+def set_active_viewcolumn(viewcolumn: int):
+    api = Api()
+    jscode = """
+    (async (column) => {
+  function getEditorInColumn(column) {
+    return vscode.window.visibleTextEditors.find(e => e.viewColumn === column);
+  }
+
+  async function focusEditor(editor) {
+    await vscode.window.showTextDocument(editor.document,  {
+      viewColumn: editor.viewColumn,
+      preserveFocus: false,
+      preview: false
+    });
+  }
+  async function focusEditorByColumn(column) {
+    const editor = getEditorInColumn(column);
+    if (editor) {
+      await focusEditor(editor);
+    }
+    else {
+        await vscode.window.showInformationMessage('NOT Existing!');
+    }
+  }
+      return await focusEditorByColumn(column);
+    })(args.column)
+    """
+    args = {"args": {"column": int(viewcolumn)}}
+    api.eval_with_return(jscode, with_await=True, args=args)
+
+
+def get_active_uri() -> Uri | None:
+    api = Api()
+    try:
+        uri = api.eval_with_return(
+            "vscode.window.activeTextEditor.document.uri", with_await=False
+        )
+    except Exception as e:
+        return None
+    return Uri(**uri)
+
+
+@contextmanager
+def store_focus():
+    viewcolumn = get_active_viewcolumn()
+    uri = get_active_uri()
+
+    def _revert_focus():
+        if viewcolumn is not None:
+            set_active_viewcolumn(viewcolumn)
+        else:
+            print("Viewcolumn is None.")
+        if uri:
+            bufnr = BufferURISolver.get_bufnr(uri)
+            vim.command(f"buffer {bufnr}")
+        else:
+            print("uri is None.")
+
+    try:
+        yield (viewcolumn, uri)
+    except Exception as e:
+        _revert_focus()
+        raise e
+    else:
+        _revert_focus()
