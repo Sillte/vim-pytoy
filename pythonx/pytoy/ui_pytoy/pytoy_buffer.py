@@ -6,15 +6,14 @@ This module is intended to provide the common interface for bufffer.
 * neovim
 * neovim+vscode
 
-Usage: executors:
+Usage: executors / 
 
 """
 
 import vim
 from typing import Protocol, Any, Type
 from pytoy.ui_pytoy.ui_enum import UIEnum, get_ui_enum
-
-from pytoy.ui_pytoy.vscode.api import Document
+from pytoy.ui_pytoy.vscode.document import Document
 
 
 class PytoyBufferProtocol(Protocol):
@@ -101,6 +100,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
             vim.command(f"buffer {bufnr}")
 
     def hide(self):
+        pass
         nr = int(vim.eval(f"bufwinnr({self.buffer.number})"))
         if 0 <= nr:
             vim.command(f":{nr}close")
@@ -137,7 +137,7 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
 
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
-        self.document.append(content)
+        self.document.content = content
 
     def append(self, content: str) -> None:
         self.document.append(content)
@@ -190,12 +190,16 @@ class PytoyBuffer:
 
 def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
     ui_enum = get_ui_enum()
-    from pytoy.ui_utils import create_window
-
+    
     if ui_enum == UIEnum.VSCODE:
-        document = Document.create()
+        from pytoy.ui_pytoy.vscode.document_user import make_document, sweep_editors
+        from pytoy.ui_pytoy.vscode.focus_controller import store_focus
+        sweep_editors()
+        uri = make_document(stdout_name)
+        document = Document(uri=uri) 
         stdout_impl = PytoyBufferVSCode(document)
     else:
+        from pytoy.ui_utils import create_window
         stdout_window = create_window(stdout_name, mode)
         stdout_impl = PytoyBufferVim(stdout_window.buffer)
     return PytoyBuffer(stdout_impl)
@@ -203,16 +207,21 @@ def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
 def make_duo_buffers(
     stdout_name: str, stderr_name: str
 ) -> tuple[PytoyBuffer, PytoyBuffer]:
-    """Create 2 buffers, which is intended to """
+    """Create 2 buffers, which is intended to `STDOUT` and `STDERR`. """
     ui_enum = get_ui_enum()
-    from pytoy.ui_utils import create_window
 
     if ui_enum == UIEnum.VSCODE:
-        doc1 = Document.create()
+        from pytoy.ui_pytoy.vscode.document_user import make_duo_documents, sweep_editors
+        from pytoy.ui_pytoy.vscode.focus_controller import store_focus
+        sweep_editors()
+        with store_focus():
+            uri1, uri2 = make_duo_documents(stdout_name, stderr_name)
+        doc1 = Document(uri=uri1)
+        doc2 = Document(uri=uri2)
         stdout_impl = PytoyBufferVSCode(doc1)
-        doc2 = Document.create()
         stderr_impl = PytoyBufferVSCode(doc2)
     else:
+        from pytoy.ui_utils import create_window
         stdout_window = create_window(stdout_name, "vertical")
         stderr_window = create_window(stderr_name, "horizontal", stdout_window)
         stdout_impl = PytoyBufferVim(stdout_window.buffer)
