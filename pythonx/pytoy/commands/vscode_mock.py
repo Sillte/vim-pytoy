@@ -23,6 +23,10 @@ def script():
 
 @CommandManager.register(name="NAIVE")
 def func_naive():
+    api = Api()
+
+    #vscode-neovim.restart
+
     #QuickFixController.go()
     #TimerTaskManager.execute_oneshot(f, 100)
     QuickFixController.next()
@@ -60,7 +64,6 @@ def Qprev():
 def QQ():
     #await vscode.commands.executeCommand('workbench.action.focusNextGroup');
     QuickFixController.go()
-
 
 
 @CommandManager.register(name="OnlyThisEditor")
