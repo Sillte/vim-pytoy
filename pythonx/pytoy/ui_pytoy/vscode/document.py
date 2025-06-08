@@ -156,22 +156,25 @@ class Document(BaseModel):
     def show(self):
       api = Api()
       js_code = """
-      (async () => {
-      const path = args.path;
+  (async (uri) => {
+  async function showDocumentIfVisibleOrOpen(uri) {
+    const visibleEditor = vscode.window.visibleTextEditors.find(
+      editor => editor.document.uri.toString() === uri.toString()
+    );
 
-      const doc = vscode.workspace.textDocuments.find(
-        d => d.uri.path == path
-      );
-
-      if (!doc) {
-        return { success: false, message: "Untitled document not found." };
+    if (visibleEditor) {
+      return await vscode.window.showTextDocument(visibleEditor.document, {
+        viewColumn: visibleEditor.viewColumn,
+        preserveFocus: false,
+        preview: false
+      });
       }
-
-      await vscode.window.showTextDocument(doc, { preview: false });
-      return { success: true, message: "Untitled document shown." };
-    })()
+    return null;
+    }
+    return await showDocumentIfVisibleOrOpen(uri);
+    })(args.uri)
       """
-      args = {"args": {"path": self.uri.path}}
+      args = {"args": {"uri": dict(self.uri)}}
 
       result = api.eval_with_return(js_code, with_await=True, args=args)
       return result 

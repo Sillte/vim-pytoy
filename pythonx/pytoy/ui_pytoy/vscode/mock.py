@@ -3,7 +3,7 @@
 import vim
 from pathlib import Path
 from pytoy.ui_pytoy.vscode.api import Api
-from pytoy.ui_pytoy.vscode.document import Api, get_uris, delete_untitles
+from pytoy.ui_pytoy.vscode.document import Api
 from pytoy.ui_pytoy.vscode.document import Document, BufferURISolver, Uri
 from pytoy.ui_pytoy.vscode.utils import  wait_until_true
 
