@@ -3,6 +3,8 @@ import vim
 
 import json
 from pytoy.ui_pytoy.ui_enum import get_ui_enum, UIEnum
+from pytoy.timertask_manager import TimerTaskManager
+
 from shlex import quote
 
 class PytoyQuickFix:
@@ -63,11 +65,18 @@ class PytoyQuickFix:
             vim.command(f"call setloclist({win_id}, [])")
             with store_window(): 
                 vim.eval(f"win_gotoid({win_id})")
-                vim.command(f"lclose")
+                vim.command("lclose")
 
     @classmethod
     def open(cls, request_win_id: int | None = None):
         win_id = cls._solve_winid(request_win_id)
+        
+        if get_ui_enum() == UIEnum.VSCODE:
+            assert win_id is None, "No locationlist for VSCode."
+            records = vim.eval("getqflist()")
+            if not records:
+                print("Empty QuickFix List, Skipped the open the window", flush=True)
+                return 
 
         if win_id is None: 
             vim.command("copen")
@@ -122,5 +131,80 @@ class PytoyQuickFix:
         abs_files = [_absolute_path_or_none(record) for record in records]
         records = [ _resolve_path(record, abs_path) for record, abs_path in zip(records, abs_files)]
         return records
+    
 
-   
+class QuickFixController:
+    """
+    When UIEnum.VSCODE, it should work...
+    """
+    @classmethod
+    def go(cls):
+        if get_ui_enum() in {UIEnum.VIM, UIEnum.NVIM}:
+            is_location  = cls._is_location()
+            if is_location:
+                vim.command("ll")
+            else:
+                vim.command("cc")
+            return 
+
+        # VSCODE:
+        records = vim.eval("getqflist()")
+        if not records:
+            print("Empty QuickFix List, Skipped the open the window", flush=True)
+            return 
+        idx = int(vim.eval("getqflist({'idx': 0}).idx"))
+        record = records[idx - 1]
+        bufnr = record.get("bufnr", 0)
+        if bufnr:
+            vim.command("cc")
+        else: 
+            vim.command("cc")
+            def func():
+                vim.command("cc")
+            TimerTaskManager.execute_oneshot(func, 300)
+
+    @classmethod
+    def next(cls, is_location: bool | None = None):
+        if get_ui_enum() in {UIEnum.VIM, UIEnum.NVIM}:
+            return cls._command("next", is_location=is_location)
+
+        # In case of VS, we have to consider syncronization of Editor and buffer.
+        is_location = False
+        #vim.command("cnext | call timer_start(50, { -> execute('cc') })")  # I assume this i also ok.
+        vim.command("cnext")
+        def func():
+            vim.command("cc")
+        TimerTaskManager.execute_oneshot(func, 500)
+
+
+    @classmethod
+    def prev(cls, is_location: bool | None = None):
+        if get_ui_enum() in {UIEnum.VIM, UIEnum.NVIM}:
+            return cls._command("next", is_location=is_location)
+
+        is_location = False
+        vim.command("cprev")
+        def func():
+            vim.command("cc")
+        TimerTaskManager.execute_oneshot(func, 500)
+
+    
+    @classmethod
+    def _is_location(cls) -> bool:
+        if get_ui_enum() == UIEnum.VSCODE:
+            return False
+        records = vim.eval("getloclist(0)")
+        if records:
+            return True
+        return False
+    
+    @classmethod
+    def _command(cls, cmd: str, is_location: bool | None= None):  
+        if is_location is None:
+            is_location = cls._is_location()
+        if is_location:
+            cmd = f"l{cmd}"
+        else:
+            cmd = f"c{cmd}"
+        vim.command(cmd)
+

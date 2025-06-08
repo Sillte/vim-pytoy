@@ -6,12 +6,11 @@ class TimerTaskManager:
     executed in VIM main loop. 
     Especially, it is expected to use updating UI of VIM.
 
-    [NOTE]: In the future, it may be a good strategy to  
-    prepare the onetime-shot function. 
+
     """
     FUNCTION_MAP = dict() # name -> function
     TIMER_MAP = dict()  # name -> timer-id 
-    VIMFUNCNAME_MAP = dict() # name -> vimfunc_name
+    VIMFUNCNAME_MAP = dict() # name -> vim_funcname
 
     counter = 0
 
@@ -56,8 +55,8 @@ class TimerTaskManager:
 
         timer_id = cls.TIMER_MAP[name]
         vim.eval(f"timer_stop({timer_id})")
-        vimfunc_name = cls.VIMFUNCNAME_MAP[name]
-        vim.command(f"delfunction! {vimfunc_name}")
+        vim_funcname = cls.VIMFUNCNAME_MAP[name]
+        vim.command(f"delfunction! {vim_funcname}")
 
         del cls.TIMER_MAP[name]
         del cls.VIMFUNCNAME_MAP[name]
@@ -67,9 +66,43 @@ class TimerTaskManager:
     def is_registered(cls, name: str):
         return name in cls.TIMER_MAP
 
+    @classmethod
+    def execute_oneshot(cls, func, interval:int=100, name: str | None= None):
+        """Execute the function only one time
+        """
+        interval = int(interval)
+        sig = inspect.signature(func)
+        if len(sig.parameters) != 0:
+            raise ValueError("Callback must be without parameters.")
+        
+        if name is None:
+            name = f"ONESHOT_AUTONAME{cls.counter}"
+        cls.counter += 1
+
+        vim_funcname = f"OneShotTask_{name}_{id(func)}"
+
+        procedures = f"""
+python3 << EOF
+from {__name__} import TimerTaskManager
+TimerTaskManager.FUNCTION_MAP['{name}']()
+del TimerTaskManager.FUNCTION_MAP['{name}']
+del TimerTaskManager.VIMFUNCNAME_MAP['{name}']
+EOF
+    """.strip()
+
+        vim.command(f"""function! {vim_funcname}(timer) 
+            {procedures}
+            call timer_start(10, {{ -> execute('delfunction! {vim_funcname}') }})
+            endfunction
+            """)
+
+        cls.FUNCTION_MAP[name] = func
+        cls.VIMFUNCNAME_MAP[name] = vim_funcname
+        timer_id = int(vim.eval(f"timer_start({interval}, '{vim_funcname}', {{'repeat': 1}})"))
+        return timer_id
+
 
 if  __name__ == "__main__":
     def hello():
         print("H")
     TimerTaskManager.register(hello)
-    pass
