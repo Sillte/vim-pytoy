@@ -72,7 +72,10 @@ def store_focus():
             print("Viewcolumn is None.")
         if uri:
             bufnr = BufferURISolver.get_bufnr(uri)
-            vim.command(f"buffer {bufnr}")
+            if bufnr is not None:
+                vim.command(f"buffer {bufnr}")
+            else:
+                print("`bufnr` is not exist, so it fails to revert focus.")
         else:
             print("uri is None.")
 
