@@ -1,17 +1,37 @@
+from pathlib import Path
+import time
+import json
+import vim
 from pytoy.command import CommandManager
 from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.timertask_manager import TimerTaskManager
+from pytoy.ui_pytoy import get_ui_enum, UIEnum
+from pytoy.ui_pytoy.vscode.api import Api
 
 @CommandManager.register(name="VimReboot")
 class VimReboot:
     name = "VimReboot"
     def __call__(self):
-        try:
-            package = VimPluginPackage()
-        except ValueError as e:
-            print("Current folder is not within a plugin folder.", e)
-        else:
-            package.restart(with_vimrc=True, kill_myprocess=True)
+        if get_ui_enum() in {UIEnum.VIM, UIEnum.NVIM}:
+            try:
+                package = VimPluginPackage()
+            except ValueError as e:
+                print("Current folder is not within a plugin folder.", e)
+            else:
+                package.restart(with_vimrc=True, kill_myprocess=True)
+        elif get_ui_enum() == UIEnum.VSCODE:
+            try:
+                package = VimPluginPackage()
+                plugin_folder = package.root_folder.as_posix()
+            except ValueError as e:
+                plugin_folder = None
+            path = Path(vim.eval("stdpath('cache')")) / "vscode_restarted.json"
+            data = {"plugin_folder": plugin_folder, 
+                    "time": time.time()}
+            path.write_text(json.dumps(data, indent=4))
+
+            api = Api()
+            api.action("vscode-neovim.restart")
 
 
 @CommandManager.register(name="DebugInfo")
