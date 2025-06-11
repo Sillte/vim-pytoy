@@ -1,5 +1,11 @@
+"""2025/6/11: Currently, Quickfix does not work correctly `neovim` + `vscode`, so  
+it takes workaround. 
+Due to specification, In case of VSCode, only quickfix-like code is used.  
+"""
+
 from pathlib import Path
 import vim
+import copy
 
 import json
 from pytoy.ui_pytoy.ui_enum import get_ui_enum, UIEnum
@@ -7,188 +13,179 @@ from pytoy.timertask_manager import TimerTaskManager
 
 from shlex import quote
 
-class PytoyQuickFix:
+
+class PytoyQuickFixNormal:
     @classmethod
-    def setlist(cls, records: list[dict], request_win_id: int | None = None): 
-        """ 
-        1. When `win_id` is None it is regarded as `quickfix`.
-        2. When `records` is empty, it is closed.  
-        """
-                    
-        win_id = cls._solve_winid(request_win_id)
-
-        if not records:
-            cls.close(win_id)
-            return 
-
-        if win_id != request_win_id and win_id is None:
-            # setloc -> setqf
-            lcd = Path(vim.eval(f"getcwd({request_win_id})"))
-            cd = Path(vim.eval(f"getcwd()"))
-            records = cls._solve_cwd(records, lcd, cd)
-
-        # If the json string does not include single quotations, 
-        # it is easy for `quote` to do the work by surrounding the string
-        # one pair of `single` quote. 
-        records = [{key: str(value).replace("'", '"') for key, value in row.items()} for row in records]
+    def setlist(cls, records: list[dict], win_id: int | None = None):
+        # This is NOT smart code,
+        # If `value` is `complex` type, it may cause inconsistency of the data type.
+        records = [
+            {
+                key: str(value).replace("'", '"')
+                for key, value in row.items()
+                if isinstance(value, str)
+            }
+            for row in records
+        ]
         safe_json = quote(json.dumps(records))
         if win_id is None:
             vim.command(f"call setqflist(json_decode({safe_json}))")
         else:
-            vim.command(f'call setloclist({win_id}, json_decode({safe_json}))')
+            vim.command(f"call setloclist({win_id}, json_decode({safe_json}))")
 
     @classmethod
-    def getlist(cls, request_win_id: int | None = None): 
-        """ 
-        1. When `win_id` is None it is regarded as `quickfix`.
-        2. When `records` is empty,  
+    def getlist(cls, win_id: int | None = None):
         """
-
-        win_id = cls._solve_winid(request_win_id)
-
+        1. When `win_id` is None it is regarded as `quickfix`.
+        2. When `records` is empty,
+        """
         if win_id is None:
-            return vim.command("call getqflist()")
+            return vim.eval("call getqflist()")
         else:
-            return vim.command(f"call getloclist({win_id})")
+            return vim.eval(f"call getloclist({win_id})")
 
     @classmethod
-    def close(cls, request_win_id: int | None = None):
-        win_id = cls._solve_winid(request_win_id)
-
+    def close(cls, win_id: int | None = None):
         if win_id is None:
             vim.command("cclose")
             vim.command("call setqflist([])")
-            return 
         else:
-            # This should not be called in neovim+vscode 
             from pytoy.ui_utils import store_window
+
             vim.command(f"call setloclist({win_id}, [])")
-            with store_window(): 
-                vim.eval(f"win_gotoid({win_id})")
+            with store_window():
                 vim.command("lclose")
 
     @classmethod
-    def open(cls, request_win_id: int | None = None):
-        win_id = cls._solve_winid(request_win_id)
-        
-        if get_ui_enum() == UIEnum.VSCODE:
-            assert win_id is None, "No locationlist for VSCode."
-            records = vim.eval("getqflist()")
-            if not records:
-                print("Empty QuickFix List, Skipped the open the window", flush=True)
-                return 
-
-        if win_id is None: 
+    def open(cls, win_id: int | None = None):
+        if win_id is None:
             vim.command("copen")
         else:
             vim.eval(f"win_gotoid({win_id})")
             vim.command("lopen")
 
 
+class PytoyQuickFixVSCode:
+    records: list[dict] = []
+    current_idx: int | None = None  # It starts from 1.
+
     @classmethod
-    def _solve_winid(cls, request_win_id: int | None = None): 
-        if get_ui_enum() == UIEnum.VSCODE:
-            win_id = None
+    def setlist(cls, records: list[dict], win_id: int | None = None):
+        if win_id is None:
+            basepath = Path(vim.eval(f"getcwd()"))
         else:
-            win_id = request_win_id
-        return win_id
+            basepath = Path(vim.eval(f"getcwd({win_id})"))
 
-    @classmethod
-    def _solve_cwd(cls, records: list[dict], in_origin: Path, out_origin: Path | None): 
-        """If records include `filename` and they are regarded
-        as relative paths, then, these filename are converted from ones
-        whose start is `in_origin` to `output_origin`. 
-
-        When `out_origin` is specified, `filename` becomes the relative path, 
-        if not, it becomes the absolute path.
-        """
-        def _absolute_path_or_none(record: dict) -> Path | None:
-            if "filename" in record:
-                path = Path(record["filename"])
-                if path.is_absolute():
-                    return path
-                else:
-                    try:
-                        return (in_origin / path).resolve()
-                    except Exception:
-                        return path
-            return None
-       
-        def _resolve_path(record: dict, abs_path:Path | None) -> dict:
-            if not abs_path:
-                return record
-            if out_origin:
-                try:
-                    rel = abs_path.relative_to(out_origin)
-                except ValueError:
-                    rel = abs_path
-                filename = rel.as_posix()
+        def _convert_filename(record: dict):
+            filename = record.get("filename")
+            if not filename:
+                filename = basepath
+            filename = Path(filename)
+            if filename.is_absolute():
+                record["filename"] = filename.as_posix()
             else:
-                filename = abs_path.as_posix()
-            record["filename"] = filename
+                record["filename"] = (basepath / filename).resolve().as_posix()
             return record
 
-        abs_files = [_absolute_path_or_none(record) for record in records]
-        records = [ _resolve_path(record, abs_path) for record, abs_path in zip(records, abs_files)]
-        return records
-    
+        for record in records:
+            _convert_filename(record)
+
+        cls.records = records
+        if not records:
+            cls.current_idx = None
+        else:
+            cls.current_idx = 1
+
+    @classmethod
+    def getlist(cls, win_id: int | None = None):
+        return copy.deepcopy(cls.records)
+
+    @classmethod
+    def close(cls, win_id: int | None = None):
+        cls.records = []
+        cls.current_idx = None
+
+    @classmethod
+    def open(cls, win_id: int | None = None):
+        pass
+
+
+class PytoyQuickFix:
+    @classmethod
+    def setlist(cls, records: list[dict], win_id: int | None = None):
+        if get_ui_enum() == UIEnum.VSCODE:
+            return PytoyQuickFixVSCode.setlist(records, win_id)
+        else:
+            return PytoyQuickFixNormal.setlist(records, win_id)
+
+    @classmethod
+    def getlist(cls, win_id: int | None = None):
+        if get_ui_enum() == UIEnum.VSCODE:
+            return PytoyQuickFixVSCode.getlist(win_id)
+        else:
+            return PytoyQuickFixNormal.getlist(win_id)
+
+    @classmethod
+    def close(cls, win_id: int | None = None):
+        if get_ui_enum() == UIEnum.VSCODE:
+            return PytoyQuickFixVSCode.close(win_id)
+        else:
+            return PytoyQuickFixNormal.close(win_id)
+
+    @classmethod
+    def open(cls, win_id: int | None = None):
+        if get_ui_enum() == UIEnum.VSCODE:
+            return PytoyQuickFixVSCode.open(win_id)
+        else:
+            return PytoyQuickFixNormal.open(win_id)
+
 
 class QuickFixController:
     """
     When UIEnum.VSCODE, it should work...
     """
+
+    @classmethod
+    def go(cls):
+        if get_ui_enum() == UIEnum.VSCODE:
+            QuickFixControllerVSCode.go()
+        else:
+            QuickFixControllerNormal.go()
+
+    @classmethod
+    def next(cls, is_location: bool | None = None):
+        if get_ui_enum() == UIEnum.VSCODE:
+            QuickFixControllerVSCode.next()
+        else:
+            QuickFixControllerNormal.next()
+
+    @classmethod
+    def prev(cls, is_location: bool | None = None):
+        if get_ui_enum() == UIEnum.VSCODE:
+            QuickFixControllerVSCode.prev()
+        else:
+            QuickFixControllerNormal.prev()
+
+
+class QuickFixControllerNormal:
     @classmethod
     def go(cls):
         if get_ui_enum() in {UIEnum.VIM, UIEnum.NVIM}:
-            is_location  = cls._is_location()
+            is_location = cls._is_location()
             if is_location:
                 vim.command("ll")
             else:
                 vim.command("cc")
-            return 
-
-        # VSCODE:
-        records = vim.eval("getqflist()")
-        if not records:
-            print("Empty QuickFix List, Skipped the open the window", flush=True)
-            return 
-        idx = int(vim.eval("getqflist({'idx': 0}).idx"))
-        record = records[idx - 1]
-        bufnr = record.get("bufnr", 0)
-        if bufnr:
-            vim.command("cc")
-        else: 
-            vim.command("cc")
-            def func():
-                vim.command("cc")
-            TimerTaskManager.execute_oneshot(func, 300)
+            return
 
     @classmethod
     def next(cls, is_location: bool | None = None):
-        if get_ui_enum() in {UIEnum.VIM, UIEnum.NVIM}:
-            return cls._command("next", is_location=is_location)
-
-        # In case of VS, we have to consider syncronization of Editor and buffer.
-        is_location = False
-        #vim.command("cnext | call timer_start(50, { -> execute('cc') })")  # I assume this i also ok.
-        vim.command("cnext")
-        def func():
-            vim.command("cc")
-        TimerTaskManager.execute_oneshot(func, 500)
-
+        return cls._command("next", is_location=is_location)
 
     @classmethod
     def prev(cls, is_location: bool | None = None):
-        if get_ui_enum() in {UIEnum.VIM, UIEnum.NVIM}:
-            return cls._command("next", is_location=is_location)
+        return cls._command("prev", is_location=is_location)
 
-        is_location = False
-        vim.command("cprev")
-        def func():
-            vim.command("cc")
-        TimerTaskManager.execute_oneshot(func, 500)
-
-    
     @classmethod
     def _is_location(cls) -> bool:
         if get_ui_enum() == UIEnum.VSCODE:
@@ -197,9 +194,9 @@ class QuickFixController:
         if records:
             return True
         return False
-    
+
     @classmethod
-    def _command(cls, cmd: str, is_location: bool | None= None):  
+    def _command(cls, cmd: str, is_location: bool | None = None):
         if is_location is None:
             is_location = cls._is_location()
         if is_location:
@@ -208,3 +205,76 @@ class QuickFixController:
             cmd = f"c{cmd}"
         vim.command(cmd)
 
+
+class QuickFixControllerVSCode:
+    @classmethod
+    def go(cls):
+        if PytoyQuickFixVSCode.current_idx is None:
+            print("QuickFix is not SET.")
+            return
+        cls._update_cursor(diff_idx=0)
+
+    @classmethod
+    def next(cls, is_location: bool | None = None):
+        if PytoyQuickFixVSCode.current_idx is None:
+            print("QuickFix is not SET.")
+            return
+        cls._update_cursor(diff_idx=+1)
+
+    @classmethod
+    def prev(cls, is_location: bool | None = None):
+        if PytoyQuickFixVSCode.current_idx is None:
+            print("QuickFix is not SET.")
+            return
+        cls._update_cursor(diff_idx=-1)
+
+    @classmethod
+    def _move_idx(
+        cls, diff_idx: int = 0, *, fixed_idx: int | None = None
+    ) -> dict | None:
+        """
+        1. Move `idx` of Quicklist per `diff_idx`.
+        2. If fixed_idx is set, this number is set to
+        3. Return the `record` of the moved `idx`.
+        """
+        records = PytoyQuickFixVSCode.records
+        length = len(records)
+        if not length:
+            return None
+
+        current_idx = PytoyQuickFixVSCode.current_idx
+        assert current_idx is not None
+
+        current_idx += diff_idx
+        if fixed_idx is not None:
+            current_idx = fixed_idx
+        if 1 < length:
+            current_idx = (current_idx - 1) % length + 1
+        else:
+            current_idx = 1
+
+        PytoyQuickFixVSCode.current_idx = current_idx
+
+        record = records[current_idx - 1]
+        return record
+
+    @classmethod
+    def _update_cursor(cls, diff_idx: int = 0, *, fixed_idx: int | None = None):
+        """For VSCODE, this is the unified interface for `next`, `prev` and `go`"""
+        record = cls._move_idx(diff_idx=diff_idx, fixed_idx=fixed_idx)
+        if not record:
+            print("No record in QuickFix.")
+            return
+        path = Path(record["filename"])
+        vim.command(f"Edit {path.as_posix()}")
+        lnum, col = int(record["lnum"]), int(record["col"])
+
+        length = len(PytoyQuickFixVSCode.records)
+        idx = PytoyQuickFixVSCode.current_idx
+        text = record.get("text", "")
+
+        def func():
+            print(f"({idx}/{length}):{text}", flush=True)
+            vim.command(f"call cursor({lnum}, {col})")
+
+        TimerTaskManager.execute_oneshot(func, 300)
