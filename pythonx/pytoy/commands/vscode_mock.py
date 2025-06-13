@@ -3,7 +3,6 @@ from pytoy.command import CommandManager
 from pytoy.ui_pytoy.vscode.api import Api
 from pytoy.ui_pytoy.vscode.document import Api, Uri, Document, get_uris
 from pytoy.ui_pytoy.vscode.document_user import sweep_editors
-from pytoy.ui_pytoy.pytoy_quickfix import QuickFixController
 from pytoy.timertask_manager import TimerTaskManager  
 
 import vim
@@ -23,7 +22,6 @@ def script():
 @CommandManager.register(name="NAIVE")
 def func_naive():
     api = Api()
-    QuickFixController.next()
     return 
 
 
@@ -45,17 +43,7 @@ def func_naive():
 
         pass
 
-#@CommandManager.register(name="Qnext")
-#def q_next():
-#    QuickFixController.next()
-#
-#@CommandManager.register(name="Qprev")
-#def q_prev():
-#    QuickFixController.prev()
-#
-#@CommandManager.register(name="QQ")
-#def QQ():
-#    QuickFixController.go()
+
 #
 #
 #@CommandManager.register(name="OnlyThisEditor")
