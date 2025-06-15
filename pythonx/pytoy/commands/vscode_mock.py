@@ -4,7 +4,6 @@ from pytoy.ui_pytoy.vscode.api import Api
 from pytoy.ui_pytoy.vscode.document import Api, Uri, Document, get_uris
 from pytoy.ui_pytoy.vscode.document_user import sweep_editors
 from pytoy.timertask_manager import TimerTaskManager  
-
 import vim
 
 
@@ -19,38 +18,48 @@ def script():
     return jscode
     pass
 
-@CommandManager.register(name="NAIVE")
-def func_naive():
-    api = Api()
-    return 
 
+@CommandManager.register(name="CMD")
+class CommandFunctionClass:
+    name = "CMD"
+    def __call__(self, cmd: str):
+        from pytoy.executors import BufferExecutor
+        from pytoy import TERM_STDOUT
+        import os
+        from pathlib import Path
+        from pytoy.environment_manager import EnvironmentManager
+        env = dict(os.environ)
 
-    from pytoy.ui_pytoy.vscode.focus_controller  import Api, get_active_viewcolumn, store_focus
-    from pytoy.ui_pytoy.vscode.focus_controller  import set_active_viewcolumn
+        executor = BufferExecutor(name="CMD")
+        cwd = str(vim.eval("getcwd()"))
 
-    api = Api()
+        from pytoy.ui_pytoy import make_buffer
+        
+        if cmd.find("'") != -1:
+            raise ValueError("This is yet mock, so `'` is not handled correctly.")
 
-    import time
-    set_active_viewcolumn(2)
-    time.sleep(1.0)
-    set_active_viewcolumn(1)
-    active_column = api.eval_with_return("vscode.window.activeTextEditor.viewColumn",
-                                         with_await=False)
-    active_column = get_active_viewcolumn()
-    print("ret_active_view", active_column, type(active_column))
-    with store_focus():
-        #api.action("workbench.action.focusNextGroup")
+        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
 
-        pass
+        in_cmd = (
+            "python -X utf8 -c \"import subprocess; "
+            rf"print(subprocess.run('cmd /c {cmd} ', stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding=\"cp932\").stdout)"
+            "\""
+        )
+        command = in_cmd.replace("'", "''")
 
+        def init_buffers(wrapped, stdout, stderr):
+            line = f"""$$$-------------------------------------------------------------------
+{Path(cwd).as_posix()}
+{cmd}
+-------------------------------------------------------------------
+""".strip()
+            _ = command 
+            _ = stderr
+            stdout.append(line)
 
-#
-#
-#@CommandManager.register(name="OnlyThisEditor")
-#def only_this_editor():
-#    #await vscode.commands.executeCommand('workbench.action.focusNextGroup');
-#    api = Api()
-#    sweep_editors() 
-#
-#
+        executor.init_buffers = init_buffers
+
+        wrapper = EnvironmentManager().get_command_wrapper(force_uv=False)
+        executor.run(command, pytoy_buffer, pytoy_buffer, command_wrapper=wrapper, cwd=cwd, env=env)
+
 
