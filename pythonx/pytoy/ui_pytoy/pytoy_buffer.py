@@ -78,7 +78,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
             return 
         lines = content.split("\n")
         if self._is_empty():
-            self.buffer[:] = lines[0]
+            self.buffer[:] = [lines[0]]
         else:
             self.buffer.append(lines[0])
         for line in lines[1:]:

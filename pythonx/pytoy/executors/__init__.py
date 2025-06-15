@@ -109,19 +109,15 @@ class BufferExecutor:
             self._buffer_job = VimBufferJob(
                 name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd
             )
+
         command = command_wrapper(command)
 
-        if stderr is not None:
-            stderr.init_buffer()
-
-        # Maybe `stdout` and `stderr` are the same.
-        if stdout is not None:
-            stdout.init_buffer(command)
-
+        self.init_buffers(command, stdout, stderr)
 
         if self.is_running:
             raise ValueError(f"`{self.name=}` is already running")
         self._buffer_job.job_start(command, self.prepare, self.on_closed)
+        
 
     @property
     def is_running(self):
@@ -135,6 +131,18 @@ class BufferExecutor:
             print(f"Already, stopped, {self.__class__}")
             return
         self.buffer_job.stop()
+
+
+    def init_buffers(self, wrapped_command: str, 
+                          stdout: PytoyBuffer | None = None,
+                          stderr: PytoyBuffer | None = None,
+                          ):
+        if stderr is not None:
+            stderr.init_buffer()
+
+        # Maybe `stdout` and `stderr` are the same.
+        if stdout is not None:
+            stdout.init_buffer(wrapped_command)
 
     def prepare(self) -> dict | None:
         """Prepare setting of `options` and others.
