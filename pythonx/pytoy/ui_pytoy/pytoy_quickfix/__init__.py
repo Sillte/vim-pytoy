@@ -230,7 +230,7 @@ class PytoyQuickFixVSCode:
             return
         path = Path(record["filename"])
         vim.command(f"Edit {path.as_posix()}")
-        lnum, col = int(record["lnum"]), int(record["col"])
+        lnum, col = int(record.get("lnum", 1)), int(record.get("col", 1))
 
         length = len(PytoyQuickFixVSCode.records)
         idx = cls.current_idx

@@ -1,7 +1,7 @@
 from pathlib import Path
 import vim
 from pytoy.ui_pytoy.vscode.api import Api
-from pytoy.ui_pytoy.vscode.document import Uri, BufferURISolver
+from pytoy.ui_pytoy.vscode.document import Uri, BufferURISolver, Document
 from pytoy.ui_pytoy.vscode.utils import wait_until_true
 
 def _current_uri_check(name) -> bool:
@@ -14,7 +14,7 @@ def _current_uri_check(name) -> bool:
         return Path(Uri(**uri).path).name == name
     return False
   
-def make_document(name: str) -> Uri:
+def make_document(name: str) -> Document:
   """
   """
   api = Api()
@@ -29,10 +29,10 @@ def make_document(name: str) -> Uri:
   uri = Uri(**uri)
   wait_until_true(lambda:  BufferURISolver.get_bufnr(uri) != None, timeout=0.3)
   vim.command("Tabonly")
-  return uri
+  return Document(uri=uri)
 
 
-def make_duo_documents(name1: str, name2: str) -> tuple[Uri, Uri]:
+def make_duo_documents(name1: str, name2: str) -> tuple[Document, Document]:
     api = Api()
     vim.command("Vsplit")
     vim.command(f"Edit {name1}")
@@ -55,7 +55,7 @@ def make_duo_documents(name1: str, name2: str) -> tuple[Uri, Uri]:
     uri2 = Uri(**uri2)
     vim.command("Tabonly")
 
-    return (uri1, uri2)
+    return (Document(uri=uri1), Document(uri=uri2))
 
 
 def sweep_editors(names = None):

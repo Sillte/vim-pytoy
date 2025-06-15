@@ -2,7 +2,8 @@ from pytoy.command import CommandManager, OptsArgument
 
 from pytoy.ui_pytoy.vscode.api import Api
 from pytoy.ui_pytoy.vscode.document import Api, Uri, Document, get_uris
-from pytoy.ui_pytoy.vscode.document_user import sweep_editors
+from pytoy.ui_pytoy.vscode.document_user import sweep_editors, make_document
+from pytoy.ui_pytoy.pytoy_buffer import PytoyBuffer, PytoyBufferVSCode
 from pytoy.timertask_manager import TimerTaskManager  
 import vim
 import os
@@ -17,8 +18,9 @@ from pytoy.ui_pytoy import make_buffer
 def script():
     jscode = """
     (async () => {
-    await vscode.commands.executeCommand('workbench.action.focusNextGroup');
-    const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time));
+    return vscode.commands.getCommands(true)
+    //await vscode.commands.executeCommand('workbench.action.focusNextGroup');
+    //const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time));
     //await sleep(10)
     })()
     """
@@ -28,39 +30,20 @@ def script():
 @CommandManager.register(name="MOCK", range=True)
 class CommandFunctionClass:
     def __call__(self, opts: OptsArgument):
-        cmd = opts.args
-        line1, line2 = opts.line1, opts.line2
-        if not cmd.strip():
-            cmd = vim.eval(f"getline({line1})")
+        api = Api()
+        commands = api.eval_with_return(script())
+        uri = make_document(TERM_STDOUT)
+        doc = Document(uri=uri)
+        impl = PytoyBufferVSCode(doc)
+        buffer = PytoyBuffer(impl)
+        buffer.init_buffer()
+        buffer.append("\n".join(commands))
+        # return 
 
 
-        env = dict(os.environ)
-
-        executor = BufferExecutor(name="CMD")
-        cwd = str(vim.eval("getcwd()"))
-        
-        if cmd.find("'") != -1:
-            raise ValueError("This is yet mock, so `'` is not handled correctly.")
-        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
-
-        in_cmd = (
-            "python -X utf8 -c \"import subprocess; "
-            rf"print(subprocess.run('{cmd}', stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding=\"cp932\", shell=True).stdout)"
-            "\""
-        )
-        command = in_cmd.replace("'", "''")
-
-        def init_buffers(wrapped, stdout, stderr):
-            line = f"""###-------------------------------------------------------------------
-{Path(cwd).as_posix()}
-{cmd}
--------------------------------------------------------------------
-""".strip()
-            _ = command 
-            _ = stderr
-            stdout.append(line)
-
-        executor.init_buffers = init_buffers
-
-        wrapper = EnvironmentManager().get_command_wrapper(force_uv=False)
-        executor.run(command, pytoy_buffer, pytoy_buffer, command_wrapper=wrapper, cwd=cwd, env=env)
+@CommandManager.register(name="MOCKA", range=True)
+class CommandFunctionClass:
+    def __call__(self, opts: OptsArgument):
+        api = Api()
+        commands = api.eval_with_return("vscode.commands.executeCommand('github.copilot.chat.explain');", with_await=True)
+        print(commands)
