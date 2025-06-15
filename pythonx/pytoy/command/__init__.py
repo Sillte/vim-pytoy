@@ -6,6 +6,8 @@ from pytoy.command.range_count_option import RangeCountOption, RangeCountType
 from pytoy.command._opts_converter import _OptsConverter  
 from pytoy.command._customlist_manager import _CustomListManager  
 
+from pytoy.command._opts_converter import OptsArgument # NOQA
+
 
 class CommandManager:
     FUNCTION_MAPS = dict()
@@ -143,12 +145,12 @@ EOF""".strip()
 
         type_, value = range_count_option.pair
         if type_ == RangeCountType.RANGE:
-            if value:
+            if value and (value is not True):
                 result += f" -range={value} "
             else:
                 result += " -range"
         elif type_ == RangeCountType.COUNT:
-            if value:
+            if value and (value is not True):
                 result += f" -count={value} "
             else:
                 result += " -count "

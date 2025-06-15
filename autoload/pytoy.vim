@@ -18,7 +18,9 @@ try:
 except Exception as e:
     import traceback
     s = traceback.format_exc()
-    print("[pytoy]: Failed to Import.", e, s, flush=True)
+    msg = "[pytoy]: Failed to import pytoy.\n{}".format(s.replace('"', "'"))
+    vim.command('echohl ErrorMsg | echom "{}" | echohl None'.format(msg))
+    print(msg)
     raise e
 else:
     vim.command("let s:init_python=1")

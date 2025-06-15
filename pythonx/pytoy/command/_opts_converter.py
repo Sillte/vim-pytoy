@@ -128,7 +128,7 @@ class NoArgumentConverter(_ConverterProvider):
 
 @_OptsConverter.register
 class OptArgumentConverter(_ConverterProvider):
-    """Basically, give the opt naively."""
+    """Basically, give the opt as dict naively."""
 
     def condition(
         self,
@@ -180,6 +180,41 @@ class OneStringArgumentConverter(_ConverterProvider):
             return (opts["args"],), {}
         else:
             return tuple(), {}
+
+from dataclasses import dataclass
+@dataclass
+class OptsArgument:
+    """This is a naive wrapper of `dict` as `opts`. 
+    """
+    args: str
+    fargs: list  
+    count: int | None = None
+    line1: int | None = None
+    line2: int | None = None
+    range: int | None = None
+
+@_OptsConverter.register
+class OpsDataclassArgumentConverter(_ConverterProvider):
+    def condition(
+        self,
+        signature: Signature,
+        nargs: str | int | None,
+        range_count_option: RangeCountOption,
+    ) -> tuple[bool, str | int, RangeCountOption]:
+        parameters = signature.parameters
+        if len(parameters) != 1:
+            return False, "*", range_count_option
+        first_parameter = list(parameters.values())[0]
+        if issubclass(first_parameter.annotation, OptsArgument):
+            if nargs is None:
+                nargs = "*"
+            return True, nargs, range_count_option
+        return False, "*", range_count_option
+
+    def __call__(self, opts: dict) -> tuple[tuple, dict]:
+        opts_argument = OptsArgument(**opts)
+        return (opts_argument,), {}
+
 
 
 if __name__ == "__main__":
