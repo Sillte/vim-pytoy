@@ -199,8 +199,7 @@ def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
         from pytoy.ui_pytoy.vscode.focus_controller import store_focus
         sweep_editors()
         with store_focus():
-            uri = make_document(stdout_name)
-        document = Document(uri=uri) 
+            document = make_document(stdout_name)
         stdout_impl = PytoyBufferVSCode(document)
     else:
         from pytoy.ui_utils import create_window
@@ -219,9 +218,7 @@ def make_duo_buffers(
         from pytoy.ui_pytoy.vscode.focus_controller import store_focus
         sweep_editors()
         with store_focus():
-            uri1, uri2 = make_duo_documents(stdout_name, stderr_name)
-        doc1 = Document(uri=uri1)
-        doc2 = Document(uri=uri2)
+            doc1, doc2 = make_duo_documents(stdout_name, stderr_name)
         stdout_impl = PytoyBufferVSCode(doc1)
         stderr_impl = PytoyBufferVSCode(doc2)
     else:
