@@ -1,31 +1,15 @@
-from pytoy.command import CommandManager, OptsArgument 
-
-from pytoy.ui_pytoy.vscode.api import Api
-from pytoy.ui_pytoy.vscode.document import Api, Uri, Document, get_uris
-from pytoy.ui_pytoy.vscode.document_user import sweep_editors
-from pytoy.timertask_manager import TimerTaskManager  
 import vim
 import os
-from pytoy.executors import BufferExecutor
-from pytoy import TERM_STDOUT
 from pathlib import Path
 from pytoy.environment_manager import EnvironmentManager
 from pytoy.ui_pytoy import make_buffer
+from pytoy.command import CommandManager, OptsArgument 
+
+from pytoy.executors import BufferExecutor
+from pytoy import TERM_STDOUT
 
 
-
-def script():
-    jscode = """
-    (async () => {
-    await vscode.commands.executeCommand('workbench.action.focusNextGroup');
-    const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time));
-    //await sleep(10)
-    })()
-    """
-    return jscode
-
-
-@CommandManager.register(name="MOCK", range=True)
+@CommandManager.register(name="CMD", range=True)
 class CommandFunctionClass:
     def __call__(self, opts: OptsArgument):
         cmd = opts.args
