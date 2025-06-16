@@ -15,7 +15,7 @@ def _current_uri_check(name) -> bool:
     return False
   
 def make_document(name: str) -> Document:
-  """
+  """Making a document from name.
   """
   api = Api()
   vim.command("Vsplit")
