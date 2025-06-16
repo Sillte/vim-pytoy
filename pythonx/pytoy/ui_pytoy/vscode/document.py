@@ -11,7 +11,24 @@ class Uri(BaseModel):
     scheme: str
     fsPath: str | None = None
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", frozen=True)
+
+    def __eq__(self, other):
+        if isinstance(other, Uri):
+            if self.scheme == "file":
+                return (self._norm_filepath(self.path), self.scheme) == (self._norm_filepath(other.path), other.scheme)
+            else:
+                return (self.path, self.scheme) == (other.path, other.scheme)
+        return False
+
+    def __hash__(self):
+        if self.scheme == "file":
+            return hash((self._norm_filepath(self.path), self.scheme))
+        else:
+            return hash((self.path, self.scheme))
+
+    def _norm_filepath(self, filepath: str) -> str:
+        return Path(filepath.strip("/")).resolve().as_posix()
     
 
 class Document(BaseModel):
@@ -251,6 +268,12 @@ class BufferURISolver:
         keys = key_to_number.keys() & key_to_uri.keys()
         result =  {key_to_number[key] : key_to_uri[key] for key in keys}
         return result
+
+    @classmethod
+    def get_uri_to_bufnr(cls) -> dict[Uri, int]:
+        # [NOTE]: This class is not throughly checked.
+        return {cls._to_uri(buf.name): buf.number for buf in vim.buffers}
+
 
     @classmethod
     def get_bufnr(cls, uri: Uri) -> int | None:

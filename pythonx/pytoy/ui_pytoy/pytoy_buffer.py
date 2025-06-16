@@ -12,7 +12,7 @@ Usage: executors /
 import vim
 from typing import Protocol, Any, Type
 from pytoy.ui_pytoy.ui_enum import UIEnum, get_ui_enum
-from pytoy.ui_pytoy.vscode.document import Document
+from pytoy.ui_pytoy.vscode.document import Document, Uri
 
 
 class PytoyBufferProtocol(Protocol):
@@ -196,10 +196,16 @@ def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
     
     if ui_enum == UIEnum.VSCODE:
         from pytoy.ui_pytoy.vscode.document_user import make_document, sweep_editors
-        from pytoy.ui_pytoy.vscode.focus_controller import store_focus
-        sweep_editors()
-        with store_focus():
-            document = make_document(stdout_name)
+        from pytoy.ui_pytoy.vscode.focus_controller import store_focus, get_uri_to_views
+        # sweep_editors()
+        # [NOTE]: As of 2025/06/16, the method of initialization is different
+        # in `make_buffer` and `make_duo_buffers`. 
+        uri = Uri(path=stdout_name, scheme="untitled")
+        if uri in get_uri_to_views():
+            document = Document(uri=uri)
+        else:
+            with store_focus():
+                document = make_document(stdout_name)
         stdout_impl = PytoyBufferVSCode(document)
     else:
         from pytoy.ui_utils import create_window

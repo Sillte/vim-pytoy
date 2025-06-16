@@ -1,9 +1,36 @@
 import vim
 
 from pytoy.ui_pytoy.vscode.api import Api
-from pytoy.ui_pytoy.vscode.document import Api
 from pytoy.ui_pytoy.vscode.document import BufferURISolver, Uri
 from contextlib import contextmanager
+
+
+
+def get_uri_to_views(only_displayed: bool = False, with_buffer: bool =True) -> dict[Uri, int | None]:
+    """Return the pair of `Uri` of document and `int` as view number. 
+    """
+    jscode = """
+    (async () => {
+      const editors = vscode.window.visibleTextEditors;
+      const pairs = editors.map((editor) => {
+        const doc = editor.document;
+        const viewCol = editor.viewColumn;
+        return [doc.uri, viewCol];
+      });
+      return pairs;
+    })()
+    """
+    api = Api()
+    pairs = api.eval_with_return(jscode, with_await=True)
+    pairs = [(Uri(**pair[0]), pair[1]) for pair in pairs]
+    if only_displayed:  # In case of dispaly, `view` is not None.
+        pairs = [pair for pair in pairs if pair[1]]
+
+    uris = set(BufferURISolver.get_uri_to_bufnr().keys())
+    uri_to_views = {pair[0]: pair[1] for pair in pairs}
+    if with_buffer:
+        uri_to_views = {key: value for key, value in uri_to_views.items() if key in uris}
+    return uri_to_views
 
 
 def get_active_viewcolumn() -> int | None:
@@ -86,3 +113,5 @@ def store_focus():
         raise e
     else:
         _revert_focus()
+
+

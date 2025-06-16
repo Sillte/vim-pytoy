@@ -1,8 +1,9 @@
 from pytoy.command import CommandManager, OptsArgument 
 
 from pytoy.ui_pytoy.vscode.api import Api
-from pytoy.ui_pytoy.vscode.document import Api, Uri, Document, get_uris
+from pytoy.ui_pytoy.vscode.document import Api, Uri, Document, get_uris, BufferURISolver
 from pytoy.ui_pytoy.vscode.document_user import sweep_editors, make_document
+from pytoy.ui_pytoy.vscode.focus_controller import get_uri_to_views
 from pytoy.ui_pytoy.pytoy_buffer import PytoyBuffer, PytoyBufferVSCode
 from pytoy.timertask_manager import TimerTaskManager  
 import vim
@@ -27,17 +28,29 @@ def script():
     return jscode
 
 
+
+
 @CommandManager.register(name="MOCK", range=True)
 class CommandFunctionClass:
     def __call__(self, opts: OptsArgument):
-        api = Api()
-        commands = api.eval_with_return(script())
-        uri = make_document(TERM_STDOUT)
-        doc = Document(uri=uri)
-        impl = PytoyBufferVSCode(doc)
-        buffer = PytoyBuffer(impl)
-        buffer.init_buffer()
-        buffer.append("\n".join(commands))
+        # api = Api()
+        scheme = "untitled"
+        
+        uri = Uri(path=TERM_STDOUT, scheme="untitled")
+        uri_to_views = get_uri_to_views()
+        if uri in uri_to_views:
+            doc = Document(uri=uri)
+        else:
+            pass
+            
+
+        #commands = api.eval_with_return(script())
+        #uri = make_document(TERM_STDOUT)
+        #doc = Document(uri=uri)
+        #impl = PytoyBufferVSCode(doc)
+        #buffer = PytoyBuffer(impl)
+        #buffer.init_buffer()
+        #buffer.append("\n".join(commands))
         # return 
 
 
