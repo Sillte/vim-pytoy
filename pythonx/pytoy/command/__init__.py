@@ -1,12 +1,14 @@
 import shlex
-from typing import Callable  
-import inspect 
+from typing import Callable
+import inspect
 
-from pytoy.command.range_count_option import RangeCountOption, RangeCountType  
-from pytoy.command._opts_converter import _OptsConverter  
-from pytoy.command._customlist_manager import _CustomListManager  
+import vim
 
-from pytoy.command._opts_converter import OptsArgument # NOQA
+from pytoy.command.range_count_option import RangeCountOption, RangeCountType
+from pytoy.command._opts_converter import _OptsConverter
+from pytoy.command._customlist_manager import _CustomListManager
+
+from pytoy.command._opts_converter import OptsArgument  # NOQA
 
 
 class CommandManager:
@@ -16,8 +18,18 @@ class CommandManager:
 
     @classmethod
     def register(
-        cls, name: str, nargs=None, range=None, count=None, complete=None, addr=None
+        cls,
+        name: str,
+        nargs=None,
+        range=None,
+        count=None,
+        complete=None,
+        addr=None,
+        *,
+        exist_ok: bool = False,
     ):
+        """Register the commands
+        """
         rc_opt = RangeCountOption(range, count)
 
         def _inner(target):
@@ -25,34 +37,73 @@ class CommandManager:
 
             def _is_function_target(target):
                 return inspect.isfunction(target) or isinstance(target, staticmethod)
+
             if isinstance(target, classmethod):
-                raise ValueError(f"Classmethod cannot be registered, {target=}, {name=}")
+                raise ValueError(
+                    f"Classmethod cannot be registered, {target=}, {name=}"
+                )
 
             if _is_function_target(target):
+                cls._handle_existent_command(name=name, exist_ok=exist_ok)
                 if _is_function_target(complete):
                     c_vimfunc_name = _CustomListManager.register(name, complete)
                     complete = f"customlist,{c_vimfunc_name}"
 
-                return cls.register_for_func(
-                    target, name, nargs, range_count_option=rc_opt, complete=complete, addr=addr
+                return cls._register_for_func(
+                    target,
+                    name,
+                    nargs,
+                    range_count_option=rc_opt,
+                    complete=complete,
+                    addr=addr,
                 )
             elif inspect.isclass(target):
                 instance = target()
                 assert callable(instance), "CommandClass must implement `__call__`"
 
+                # [NOTE]: I am wondering whether we should be whether we should be able
+                # to get `name` from `instance property`.
+                cls._handle_existent_command(name=name, exist_ok=exist_ok)
+
                 if complete is None and hasattr(instance, "customlist"):
-                    c_vimfunc_name = _CustomListManager.register(name, getattr(instance, "customlist"))
+                    c_vimfunc_name = _CustomListManager.register(
+                        name, getattr(instance, "customlist")
+                    )
                     complete = f"customlist,{c_vimfunc_name}"
 
-                return cls.register_for_func(
-                    instance, name, nargs, range_count_option=rc_opt, complete=complete, addr=addr
+                return cls._register_for_func(
+                    instance,
+                    name,
+                    nargs,
+                    range_count_option=rc_opt,
+                    complete=complete,
+                    addr=addr,
                 )
             else:
                 raise ValueError("The object of registration is illegal.")
+
         return _inner
 
+
     @classmethod
-    def register_for_func(
+    def deregister(cls, name: str, no_exist_ok: bool = True):
+        """De-register the `name` commmand.
+        """
+        if not name in cls.COMMAND_MAPS:
+            if no_exist_ok:
+                return
+            else:
+                raise ValueError(f"The `command` is NOT registered. `{name=}`")
+        _CustomListManager.deregister(name)
+        cls._deregister_for_func(name)
+
+    @classmethod
+    def is_exist(cls, name: str) -> bool:
+        """Return whether the given `name` is already registered or not."""
+        return name in cls.COMMAND_MAPS
+
+    @classmethod
+    def _register_for_func(
         cls,
         func: Callable,
         name: str,
@@ -61,23 +112,25 @@ class CommandManager:
         complete=None,
         addr=None,
     ) -> Callable:
-        vim_funcname = f"PytoyFunc_FOR_COMMAND_{name}"
+        # vim_funcname = f"PytoyFunc_FOR_COMMAND_{name}"
+        vim_funcname = cls.to_vimfunc_name(name)
         if name in cls.COMMAND_MAPS:
             raise ValueError(f"The same `command` is already registered. `{name=}`")
         if vim_funcname in cls.FUNCTION_MAPS:
-            raise ValueError("Already `FUNCTION` is defined? (Very rare situation.), {vim_funcname}")
+            raise ValueError(
+                "Already `FUNCTION` is defined? (Very rare situation.), {vim_funcname}"
+            )
 
         if range_count_option is None:
             range_count_option = RangeCountOption()
 
         converter = _OptsConverter(func, nargs, range_count_option)
         # Note that `OptsConverter` verifies and infers the options.
-        # Hence, at this juncture, the command options is resolved.  
+        # Hence, at this juncture, the command options is resolved.
         cls.CONVERTER_MAPS[name] = converter
         nargs = converter.nargs
         rc_opt = converter.range_count_option
 
-        import vim
         class_uri = cls.get_class_uri()
         # `procedure` is inside the function.
         procedure = f"""python3 << EOF
@@ -93,7 +146,7 @@ EOF""".strip()
         )
 
         command = cls._make_command(nargs, name, vim_funcname, rc_opt, complete, addr)
-        #print("command", command)
+        # print("command", command)
         vim.command(command)
         assert vim_funcname not in cls.FUNCTION_MAPS, "Duplicated Command"
         cls.FUNCTION_MAPS[vim_funcname] = func
@@ -190,8 +243,6 @@ EOF""".strip()
         # This function is very closedly connected to `_make_command`.
         # Especially, for the number of arguments of `vim_function` .
         """
-        import vim
-
         opts = dict()
 
         opts["args"] = vim.eval("a:q_args")
@@ -221,6 +272,30 @@ EOF""".strip()
             prefix = ""
         return f"{prefix}CommandManager"
 
+    @classmethod
+    def to_vimfunc_name(cls, name: str) -> str:
+        vim_funcname = f"PytoyFunc_FOR_COMMAND_{name}"
+        return vim_funcname
+
+    @classmethod
+    def _deregister_for_func(cls, name: str):
+        vim_funcname = cls.to_vimfunc_name(name)
+        vim.command(f"delfunction {vim_funcname}")
+        vim.command(f"delcommand {name}")
+
+        del cls.FUNCTION_MAPS[vim_funcname]
+        del cls.COMMAND_MAPS[name]
+        del cls.CONVERTER_MAPS[name]
+
+    @classmethod
+    def _handle_existent_command(cls, name: str, exist_ok: bool):
+        if cls.is_exist(name):
+            if exist_ok:
+                cls.deregister(name=name, no_exist_ok=False)
+            else:
+                raise ValueError(f"The same `command` is already registered. `{name=}`")
+
+
 if __name__ == "__main__":
     # Below are the test functions.
     pass
@@ -229,39 +304,34 @@ if __name__ == "__main__":
     def mock_command():
         print("Hellomock")
 
-
     @CommandManager.register(name="MockCommandDictArg")
     def mock_command(opts: dict):
         print("Hellomock", opts)
 
-
     def crude(a, b, c):
         return [str(a), str(b), str(c), "curud"]
 
-    @CommandManager.register(name="MockCommandStrArg", complete=lambda a, b, c: [str(a), str(b), str(c)])
+    @CommandManager.register(
+        name="MockCommandStrArg", complete=lambda a, b, c: [str(a), str(b), str(c)]
+    )
     def mock_command(s: str):
         print("HelloStr", s)
-
-
-    @CommandManager.register(name="MockCommandStrArgA")
-    def mock_command(s: str = "optional"):
-        print("HelloStrA", s)
 
     @CommandManager.register(name="MockClass")
     class Mock:
         def __call__(self, s: str = "optional"):
             print("HelloStrACLASS", s)
 
-
     @CommandManager.register(name="MockTarget")
     class Target:
         def __call__(self, s: str = "optional"):
             print(s)
 
-        def customlist(self, arg_lead:str, cmd_line: str, cursor_pos:int):
+        def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
             candidates = ['"DAFA"', "'AAAC'", "'AABC'"]
-            valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
+            valid_candidates = [
+                elem for elem in candidates if elem.startswith(arg_lead)
+            ]
             if valid_candidates:
                 return valid_candidates
             return candidates
-

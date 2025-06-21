@@ -31,8 +31,9 @@ class _CustomListManager:
         """Return `vimfunc_name` which is used for `completion`.
         """
         if name in cls.FUNCTION_MAP:
-            raise ValueError(f"Already `{name=}`  is registered.")
-        vimfunc_name = f"CustomList_Manager__PYTOY__{name}"
+            cls.deregister(name)
+
+        vimfunc_name = cls.to_vimfunc_name(name)
         sig = _signature(target)
         if len(sig.parameters) != 3:
             raise ValueError(f"{target} must take 3 parameters.")
@@ -63,4 +64,18 @@ endfunction
         result = target(arg_lead, cmd_line, cursor_pos)
         result = json.dumps(result)
         vim.command(f"let {cls.V_CUSTOMLIST_VARIABLE}={result}")
+
+    @classmethod
+    def to_vimfunc_name(cls, name: str) -> str:
+        vimfunc_name = f"CustomList_Manager__PYTOY__{name}"
+        return vimfunc_name
+
+    @classmethod
+    def deregister(cls, name: str) -> None:
+        if name not in cls.VIMFUNC_TABLE:
+            return 
+        vimfunc_name = cls.VIMFUNC_TABLE[name]
+        vim.command(f"delfunction {vimfunc_name}")
+        del cls.VIMFUNC_TABLE[name]
+        del cls.FUNCTION_MAP[name]
 
