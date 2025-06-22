@@ -63,9 +63,6 @@ EOF
         vim.command(
             f"""function! {vim_funcname}(...) 
             {procedures}
-            if exists("g:pytoy_return")
-                return g:pytoy_return
-            endif
             endfunction
             """
         )
