@@ -5,9 +5,9 @@ from pytoy.ui_utils import create_window
 from pytoy.environment_manager import EnvironmentManager
 from pytoy.environment_manager.venv_utils import VenvManager
 from pytoy.lightline_utils import Lightline
-from pytoy.ipython_terminal import IPythonTerminal
+from pytoy.executors.ipython_terminal import IPythonTerminal
 
-from pytoy.python_executor import PythonExecutor
+from pytoy.executors.python_executor import PythonExecutor
 
 
 TERM_STDOUT = "__pystdout__"  # TERIMINAL NAME of `stdout`.
