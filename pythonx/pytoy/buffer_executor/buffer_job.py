@@ -10,7 +10,7 @@ from typing import Callable, Protocol
 from pytoy.func_utils import PytoyVimFunctions
 
 from pytoy.ui_pytoy import PytoyBuffer
-from pytoy.executors.command_wrapper import CommandWrapper
+from pytoy.buffer_executor.command_wrapper import CommandWrapper
 
 
 naive_wrapper = CommandWrapper()
