@@ -1,4 +1,4 @@
-from pytoy.command import CommandManager
+from pytoy.command_manager import CommandManager
 
 @CommandManager.register(name="Qnext")
 def q_next():

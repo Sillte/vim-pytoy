@@ -4,11 +4,11 @@ import inspect
 
 import vim
 
-from pytoy.command.range_count_option import RangeCountOption, RangeCountType
-from pytoy.command._opts_converter import _OptsConverter
-from pytoy.command._customlist_manager import _CustomListManager
+from pytoy.command_manager.range_count_option import RangeCountOption, RangeCountType
+from pytoy.command_manager._opts_converter import _OptsConverter
+from pytoy.command_manager._customlist_manager import _CustomListManager
 
-from pytoy.command._opts_converter import OptsArgument  # NOQA
+from pytoy.command_manager._opts_converter import OptsArgument  # NOQA
 
 
 class CommandManager:

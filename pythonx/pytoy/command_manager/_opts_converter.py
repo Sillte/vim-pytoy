@@ -20,7 +20,7 @@ import inspect
 from inspect import _empty as empty
 from inspect import Signature
 from typing import Type, Callable
-from pytoy.command.range_count_option import RangeCountOption
+from pytoy.command_manager.range_count_option import RangeCountOption
 
 def _signature(target):
     if isinstance(target, staticmethod):

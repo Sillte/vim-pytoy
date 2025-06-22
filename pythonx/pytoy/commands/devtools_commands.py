@@ -2,7 +2,7 @@ from pathlib import Path
 import time
 import json
 import vim
-from pytoy.command import CommandManager
+from pytoy.command_manager import CommandManager
 from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.timertask_manager import TimerTaskManager
 from pytoy.ui_pytoy import get_ui_enum, UIEnum
