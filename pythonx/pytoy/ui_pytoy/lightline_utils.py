@@ -222,8 +222,6 @@ class Lightline(_Lightline):
             vimfunc_name = func
         return vimfunc_name
 
-    def _is_func_registered(self, func):
-        vimfunc_name = self._to_funcname(func)
 
     def register(self, func, mode="active", direction="left", level=-1, index=None, name=None):
         """Register `func`. 

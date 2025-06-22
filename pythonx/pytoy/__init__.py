@@ -4,7 +4,7 @@ from pytoy.ui_utils import create_window
 
 from pytoy.environment_manager import EnvironmentManager
 from pytoy.environment_manager.venv_utils import VenvManager
-from pytoy.lightline_utils import Lightline
+from pytoy.ui_pytoy.lightline_utils import Lightline
 from pytoy.executors.ipython_terminal import IPythonTerminal
 
 from pytoy.executors.python_executor import PythonExecutor
