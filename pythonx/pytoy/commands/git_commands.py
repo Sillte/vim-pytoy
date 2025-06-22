@@ -2,7 +2,7 @@
 """
 import vim 
 from pathlib import Path
-from pytoy.command import CommandManager
+from pytoy.command_manager import CommandManager
 from pytoy.git_utils import get_remote_link
 
 @CommandManager.register(name="GitAddress", range="")
