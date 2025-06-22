@@ -4,7 +4,7 @@
 import vim
 from pytoy.command import CommandManager
 from pytoy.ui_utils import store_window
-from pytoy.ui_pytoy import PytoyBuffer, make_buffer
+from pytoy.ui_pytoy import make_buffer
 from pytoy import ui_utils
 
 
@@ -29,7 +29,7 @@ class PyTestCommand:
         elif command_type == "all":
             executor.runall(pytoy_buffer)
         else:
-            raise ValueError(f"Specified `command_type` is not valid.")
+            raise ValueError("Specified `command_type` is not valid.")
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         candidates = ["func", "file", "all"]
@@ -94,9 +94,9 @@ class GotoDefinitionCommand:
         ui_utils.sweep_windows(exclude=[vim.current.window])
         v = vim.eval("g:jedi#use_splits_not_buffers")
         if ui_utils.is_leftwindow():
-            vim.command(f"let g:jedi#use_splits_not_buffers='right'")
+            vim.command("let g:jedi#use_splits_not_buffers='right'")
         else:
-            vim.command(f"let g:jedi#use_splits_not_buffers=''")
+            vim.command("let g:jedi#use_splits_not_buffers=''")
 
         names = jedi_vim.goto(mode="goto")
         vim.command(f"let g:jedi#use_splits_not_buffers='{v}'")
@@ -106,15 +106,37 @@ class GotoDefinitionCommand:
 
 @CommandManager.register(name="RuffCheck")
 class RuffChecker:
-    def __call__(self):
-        from pathlib import Path
+    def __call__(self, opts: dict):
         from pytoy import TERM_STDOUT
         from pytoy.pytools_executors import RuffExecutor
+        from pytoy.environment_manager import EnvironmentManager
+        fargs = opts["fargs"]
+        if "workspace" in fargs:
+            # This is using the knowledge that 
+            # `The parent of virtualenv folder is the root of the project`.
+            venv_folder = EnvironmentManager().get_uv_venv()
+            if not venv_folder: 
+                raise ValueError("This is not under UV workspace.")
+            root_folder = venv_folder.parent
+            path = root_folder
+            fargs.remove("workspace")
+            fargs.append(path)
 
-        path = vim.current.buffer.name
-        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
+        arguments = [elem for elem in fargs if not elem.startswith("-")] 
+        if not arguments:
+            path = vim.current.buffer.name
+            fargs.append(path)
+            
         executor = RuffExecutor()
-        executor.check_file(Path(path), pytoy_buffer) 
+        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
+        executor.check(fargs, pytoy_buffer) 
+
+    def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
+        candidates = ["workspace", "--fix"]
+        valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
+        if valid_candidates:
+            return valid_candidates
+        return candidates
 
 
 
@@ -156,7 +178,7 @@ class CSpellCommand:
                 vim.command("lopen")
             buffer = make_buffer(TERM_STDOUT, "vertical")
             buffer.init_buffer()
-            buffer.append(f"**UNKNOWN WORDS**")
+            buffer.append("**UNKNOWN WORDS**")
             buffer.append(f"{unknow_words}")
         else:
             print("No unknown words.")

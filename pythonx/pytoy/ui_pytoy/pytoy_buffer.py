@@ -53,7 +53,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
         specifier: str,
         direction: str = "vertical",
         basewindow: Type["vim.Window"] | None = None,
-        **kwargs
+        **kwargs,
     ) -> "PytoyBufferVim":
         """Assure that the specifier `Buffer` exist in the UI."""
         from pytoy.ui_utils import create_window
@@ -75,7 +75,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
 
     def append(self, content: str) -> None:
         if not content:
-            return 
+            return
         lines = content.split("\n")
         if self._is_empty():
             self.buffer[:] = [lines[0]]
@@ -87,7 +87,6 @@ class PytoyBufferVim(PytoyBufferProtocol):
     @property
     def content(self) -> str:
         return vim.eval("join(getbufline({}, 1, '$'), '\n')".format(self.buffer.number))
-
 
     def focus(self):
         bufnr = self.buffer.number
@@ -111,7 +110,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
 
 
 class PytoyBufferVSCode(PytoyBufferProtocol):
-    def __init__(self, document: Document): 
+    def __init__(self, document: Document):
         self.document = document
 
     @classmethod
@@ -120,10 +119,10 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         specifier: str,
         direction: str = "vertical",
         basewindow: Type["vim.Window"] | None = None,
-        **kwargs
+        **kwargs,
     ) -> "PytoyBufferVSCode":
         """Assure that the specifier `Buffer` exist in the UI."""
-        
+
         document = Document.create(specifier)
         return PytoyBufferVSCode(document)
 
@@ -138,12 +137,10 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
             content += "\n"
         self.document.content = content
 
-
     def append(self, content: str) -> None:
         if not content:
-            return 
+            return
         self.document.append(content)
-
 
     @property
     def content(self) -> str:
@@ -153,6 +150,8 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         self.document.show()
 
     def hide(self):
+        # [NOTE]: Due to the difference of management of window and `Editor` in vscode
+        # this it not implemented.
         pass
 
 
@@ -193,13 +192,14 @@ class PytoyBuffer:
 
 def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
     ui_enum = get_ui_enum()
-    
+
     if ui_enum == UIEnum.VSCODE:
         from pytoy.ui_pytoy.vscode.document_user import make_document, sweep_editors
         from pytoy.ui_pytoy.vscode.focus_controller import store_focus, get_uri_to_views
+
         # sweep_editors()
         # [NOTE]: As of 2025/06/16, the method of initialization is different
-        # in `make_buffer` and `make_duo_buffers`. 
+        # in `make_buffer` and `make_duo_buffers`.
         uri = Uri(path=stdout_name, scheme="untitled")
         if uri in get_uri_to_views():
             document = Document(uri=uri)
@@ -209,19 +209,25 @@ def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
         stdout_impl = PytoyBufferVSCode(document)
     else:
         from pytoy.ui_utils import create_window
+
         stdout_window = create_window(stdout_name, mode)
         stdout_impl = PytoyBufferVim(stdout_window.buffer)
     return PytoyBuffer(stdout_impl)
 
+
 def make_duo_buffers(
     stdout_name: str, stderr_name: str
 ) -> tuple[PytoyBuffer, PytoyBuffer]:
-    """Create 2 buffers, which is intended to `STDOUT` and `STDERR`. """
+    """Create 2 buffers, which is intended to `STDOUT` and `STDERR`."""
     ui_enum = get_ui_enum()
 
     if ui_enum == UIEnum.VSCODE:
-        from pytoy.ui_pytoy.vscode.document_user import make_duo_documents, sweep_editors
+        from pytoy.ui_pytoy.vscode.document_user import (
+            make_duo_documents,
+            sweep_editors,
+        )
         from pytoy.ui_pytoy.vscode.focus_controller import store_focus
+
         sweep_editors()
         with store_focus():
             doc1, doc2 = make_duo_documents(stdout_name, stderr_name)
@@ -229,6 +235,7 @@ def make_duo_buffers(
         stderr_impl = PytoyBufferVSCode(doc2)
     else:
         from pytoy.ui_utils import create_window
+
         stdout_window = create_window(stdout_name, "vertical")
         stderr_window = create_window(stderr_name, "horizontal", stdout_window)
         stdout_impl = PytoyBufferVim(stdout_window.buffer)
