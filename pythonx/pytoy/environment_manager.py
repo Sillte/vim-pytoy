@@ -33,7 +33,7 @@ class EnvironmentManager:
         self._prev_venv_path = None
 
     def get_uv_venv(self, path: str | Path | None = None) -> Path | None:
-        """Return `uv run` has enviroments
+        """Return the environment `uv run` uses if it has virtual envrinment. 
 
         # [TODO] handling of `--package`.
         """
@@ -49,7 +49,7 @@ class EnvironmentManager:
             shell=True,
         )
         try:
-            python_path = Path(ret.stdout)
+            python_path = Path(ret.stdout.strip())
         except Exception as e: 
             print(e)
             return None

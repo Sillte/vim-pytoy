@@ -1,5 +1,5 @@
 import vim
-import re 
+import re
 
 from pytoy.executors import BufferExecutor
 
@@ -7,7 +7,31 @@ from pytoy.executors import BufferExecutor
 from pytoy.pytools_utils import PytestDecipher, ScriptDecipher
 
 from pytoy.environment_manager import EnvironmentManager
-from pytoy.ui_pytoy import PytoyBuffer, PytoyQuickFix, store_cursor
+from pytoy.ui_pytoy import PytoyBuffer, PytoyQuickFix
+
+# def _set_focus(win_id: int, topline: int | None = None):
+#    height = int(vim.eval(f"winheight({win_id})"))
+#    if topline is None:
+#        import json
+#        info = json.loads(vim.eval(f"json_encode(getwininfo({win_id}))"))
+#        topline = int(info[0]["topline"])
+#    if topline <= 0:
+#        topline = 1
+#    centerline = topline + height // 2
+#    vim.command(f"call win_execute({win_id}, 'call cursor({centerline},1)')")
+#
+# This kind of function should be implemented `PytoyBuffer`.
+# 
+
+
+def _to_quickfix_winid(win_id: int, is_location: bool | None = None) -> int | None:
+    if is_location is None:
+        is_location = False  # Default behavior.
+
+    if is_location:
+        return win_id
+    else:
+        return None
 
 
 def _handle_loclist(win_id, records: list[dict], is_open: bool):
@@ -61,32 +85,29 @@ class PytestExecutor(BufferExecutor):
         assert self.stdout is not None
         messages = self.stdout.content
         qflist = self._make_qflist(messages)
-        _handle_loclist(self.win_id, qflist, is_open=True)
 
-        # Scrolling output window
-        with store_cursor():
-            assert self.stdout is not None
-            self.stdout.focus()
-            vim.command("normal zb")
+        q_winid = _to_quickfix_winid(self.win_id)
+        _handle_loclist(q_winid, qflist, is_open=True)
 
     def _make_qflist(self, string):
         records = PytestDecipher(string).records
         return records
 
 
-
 class MypyExecutor(BufferExecutor):
-    """Execute Mypy.
-    """
+    """Execute Mypy."""
+
     def __init__(self):
-        self._pattern = re.compile(r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<_type>(.+)):(?P<text>(.+))")
+        self._pattern = re.compile(
+            r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<_type>(.+)):(?P<text>(.+))"
+        )
 
     def runfile(self, path, stdout, command_wrapper=None):
         """Execute `pytest` for only one file."""
         if command_wrapper is None:
             command_wrapper = EnvironmentManager().get_command_wrapper()
         command = f'mypy --show-traceback --show-column-numbers "{path}"'
-        #stdout[0] = command
+        # stdout[0] = command
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def prepare(self):
@@ -100,15 +121,17 @@ class MypyExecutor(BufferExecutor):
         messages = self.stdout.content
 
         qflist = self._make_qflist(messages)
-        _handle_loclist(self.win_id, qflist, is_open=True)
+        q_winid = _to_quickfix_winid(self.win_id)
+        _handle_loclist(q_winid, qflist, is_open=True)
 
         # Scrolling output window
-        with store_cursor():
-            self.stdout.focus()
-            vim.command("normal zb")
+        # [NOTE ](2025/06/22): I feel this function is not necessary.
+        # with store_cursor():
+        #    self.stdout.focus()
+        #    vim.command("normal zb")
 
     def _make_qflist(self, string):
-        # Record of `mypy`. 
+        # Record of `mypy`.
         records = []
         for line in string.split("\n"):
             match = self._pattern.match(line.strip())
@@ -121,15 +144,20 @@ class MypyExecutor(BufferExecutor):
 
 
 class RuffExecutor(BufferExecutor):
-    """Execute Ruff.
-    """
-    def __init__(self):
-        self._pattern = re.compile(r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<text>(.+))")
+    """Execute Ruff."""
 
-    def check_file(self, path, stdout, command_wrapper=None):
+    def __init__(self):
+        self._pattern = re.compile(
+            r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<text>(.+))"
+        )
+
+    def check(self, args: str | list, stdout, command_wrapper=None):
         if command_wrapper is None:
             command_wrapper = EnvironmentManager().get_command_wrapper()
-        command = f'ruff check "{path}"'
+
+        if isinstance(args, list): 
+            args = " ".join(args)
+        command = f'ruff check {args}'
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def prepare(self):
@@ -142,12 +170,10 @@ class RuffExecutor(BufferExecutor):
         assert self.stdout is not None
         messages = self.stdout.content
         qflist = self._make_qflist(messages)
-
-        _handle_loclist(self.win_id, qflist, is_open=True)
-
+        q_winid = _to_quickfix_winid(self.win_id)
+        _handle_loclist(q_winid, qflist, is_open=True)
 
     def _make_qflist(self, string):
-        # Record of `mypy`. 
         records = []
         for line in string.split("\n"):
             match = self._pattern.match(line.strip())
@@ -156,4 +182,3 @@ class RuffExecutor(BufferExecutor):
             record = match.groupdict()
             records.append(record)
         return records
-
