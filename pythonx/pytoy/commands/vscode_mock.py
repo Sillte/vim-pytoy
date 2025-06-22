@@ -8,7 +8,7 @@ from pytoy.ui_pytoy.pytoy_buffer import PytoyBuffer, PytoyBufferVSCode
 from pytoy.timertask_manager import TimerTaskManager  
 import vim
 import os
-from pytoy.executors import BufferExecutor
+from pytoy.buffer_executor import BufferExecutor
 from pytoy import TERM_STDOUT
 from pathlib import Path
 from pytoy.environment_manager import EnvironmentManager

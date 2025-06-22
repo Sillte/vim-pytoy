@@ -1,7 +1,7 @@
 import vim
 import re
 
-from pytoy.executors import BufferExecutor
+from pytoy.buffer_executor import BufferExecutor
 
 
 from pytoy.pytools_utils import PytestDecipher, ScriptDecipher

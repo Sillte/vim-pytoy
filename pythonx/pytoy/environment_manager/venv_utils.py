@@ -254,7 +254,8 @@ def activate(env):
 def deactivate():
     global prev_syspath
     try:
-        sys.path[:] = prev_syspath
+        if prev_syspath:
+            sys.path[:] = prev_syspath
         prev_syspath = None
     except:
         pass

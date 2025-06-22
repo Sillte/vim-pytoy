@@ -5,7 +5,7 @@ import json
 import re
 from shlex import quote
 
-from pytoy.executors import BufferExecutor
+from pytoy.buffer_executor import BufferExecutor
 from pytoy.ui_utils import init_buffer, store_window
 
 # `set_default_execution_mode` is carried out only in `__init__.py`
