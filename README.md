@@ -7,6 +7,7 @@ Miscellaneous python operations around me. (Personal practice for vim-plugin.)
 * uv
 * python
 * pytest
+* lightline
 
 ## My Rules
 
