@@ -51,7 +51,7 @@ class PytoyVimFunctions:
         # Notice that `python3  << EOF` starts without `spaces`.
         sig = inspect.signature(func)
         if len(sig.parameters) == 0:
-            procedures = f"python3 {__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}']()"
+            procedures = f"python3 {__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}']()"  #NOQA
         else:
             procedures = f"""
 python3 << EOF
@@ -61,7 +61,7 @@ EOF
     """.strip()
 
         vim.command(
-            f"""function! {vim_funcname}(...) 
+            f"""function! {vim_funcname}(...)
             {procedures}
             endfunction
             """
