@@ -2,21 +2,14 @@ import vim
 
 from pytoy.ui_utils import create_window
 
-# Only `set` is performed here, `get_mode` is carried out at necessity,
-# This is intended to perform the specified execution, if directly specified.
-# `ExecutionMode` only determines the behavior, no directives are given.
 from pytoy.environment_manager import EnvironmentManager
 
 
-# This `import` is required for `PytoyVimFunctions.register.vim.command.__name__` for Linux environment.
-
-from pytoy.func_utils import with_return
 from pytoy.venv_utils import VenvManager
 from pytoy.lightline_utils import Lightline
 from pytoy.ipython_terminal import IPythonTerminal
 
 from pytoy.python_executor import PythonExecutor
-from pytoy.quickfix_handler import QuickFixFilter, QuickFixSorter
 
 
 TERM_STDOUT = "__pystdout__"  # TERIMINAL NAME of `stdout`.
@@ -35,6 +28,7 @@ def run(path=None):
         raise RuntimeError(f"Currently, `PythonExecutor` is running.")
 
     from pytoy.ui_pytoy import make_duo_buffers, PytoyBuffer
+
     stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
 
     executor.runfile(path, stdout_buffer, stderr_buffer)
@@ -45,10 +39,11 @@ def rerun():
     executor = PythonExecutor()
 
     from pytoy.ui_pytoy import make_duo_buffers, PytoyBuffer
+
     stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
 
-    #stdout_window = create_window(TERM_STDOUT, "vertical")
-    #stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
+    # stdout_window = create_window(TERM_STDOUT, "vertical")
+    # stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
     executor.rerun(stdout_buffer, stderr_buffer)
 
 
@@ -91,7 +86,6 @@ def deactivate():
     venv_manager.deactivate()
 
 
-@with_return
 def envinfo():
     venv_manager = VenvManager()
     info = str(venv_manager.envinfo)
@@ -144,23 +138,10 @@ def ipython_history():
     term.transcript()
 
 
-## QuickFix Interface.
-
-
-def quickfix_gitfilter():
-    fix_filter = QuickFixFilter()
-    fix_filter.restrict_on_git()
-
-
-def quickfix_timesort():
-    fix_sorter = QuickFixSorter()
-    fix_sorter.sort_by_time()
-
-
 # Command definitions.
 # Maybe `Command` uses the public interfaces,
 # Hence, `import`s are placed here.
-from pytoy import commands
+from pytoy import commands  # NOQA
 
 if __name__ == "__main__":
     print("__name__", __name__)
