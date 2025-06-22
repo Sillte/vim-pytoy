@@ -15,7 +15,12 @@ class Buffer:
     @property
     def number(self) -> int: ...
 
+    @property
+    def name(self) -> int: ...
+
     def append(self, line: str): ...
+
+
 
 
 class Window:
