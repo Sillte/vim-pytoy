@@ -7,7 +7,7 @@ from pytoy.timertask_manager import TimerTaskManager
 from pathlib import Path
 from typing import Callable, Protocol
 
-from pytoy.func_utils import PytoyVimFunctions
+from pytoy.function_manager import PytoyVimFunctions
 
 from pytoy.ui_pytoy import PytoyBuffer
 from pytoy.buffer_executor.command_wrapper import CommandWrapper
