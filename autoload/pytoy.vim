@@ -54,7 +54,6 @@ endfunction
 
 function! pytoy#is_running()
 python3 pytoy.is_running()
-return g:pytoy_return
 endfunction
 
 function! pytoy#reset()
@@ -72,7 +71,6 @@ endfunction
 
 function! pytoy#envinfo()
 python3 pytoy.envinfo()
-return g:pytoy_return
 endfunction
 
 " Open Terminal with the specified virtual environment.
@@ -101,14 +99,3 @@ endfunction
 function! pytoy#ipython_history()
 python3 pytoy.ipython_history()
 endfunction
-
-
-" Related to Quickfix handling
-function! pytoy#quickfix_gitfilter()
-python3 pytoy.quickfix_gitfilter()
-endfunction 
-
-function! pytoy#quickfix_timesort()
-python3 pytoy.quickfix_timesort()
-endfunction 
-
