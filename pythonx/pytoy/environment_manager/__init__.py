@@ -2,6 +2,7 @@
 # This class handles the properties regaled to the `env` parameters of `subprocess`.
 # As of 2025/05, this class handles `uv` and `virtualenv`.
 # """
+
 import os
 from pathlib import Path
 from typing import Callable
@@ -139,4 +140,4 @@ class EnvironmentManager:
 if __name__ == "__main__":
     manager = EnvironmentManager()
     print(manager.get_command_wrapper()("cmd"))
-    print(manager.get_uv_venv())
+    p
