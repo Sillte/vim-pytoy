@@ -1,0 +1,15 @@
+line-length = 88
+exclude = [
+    "tests/",
+    "build/",
+    "docs/",
+    ".venv/",
+    "plugin/",  
+    "MEMORY",
+]
+
+[lint]
+select = ["E", "F", "W"]
+
+
+
