@@ -3,9 +3,9 @@
 
 import vim
 from pytoy.command_manager import CommandManager
-from pytoy.ui_utils import store_window
 from pytoy.ui_pytoy import make_buffer
-from pytoy import ui_utils
+from pytoy.ui_pytoy import windows_utils
+from pytoy.ui_pytoy.ui_enum import get_ui_enum, UIEnum
 
 
 @CommandManager.register(name="Pytest")
@@ -54,6 +54,8 @@ class MypyCommand:
 @CommandManager.register(name="GotoDefinition")
 class GotoDefinitionCommand:
     def __call__(self, arg: str = "try_both"):
+        if get_ui_enum() not in {UIEnum.VIM, UIEnum.NVIM}:
+            raise RuntimeError("This command is only available in  VIM and NVIM.")
         if arg.lower() == "jedi":
             self._go_to_by_jedi()
         elif arg.lower() == "coc":
@@ -77,9 +79,9 @@ class GotoDefinitionCommand:
         return candidates
 
     def _go_to_by_coc(self):
-        ui_utils.sweep_windows(exclude=[vim.current.window])
+        windows_utils.sweep_windows()
 
-        if ui_utils.is_leftwindow():
+        if windows_utils.is_leftwindow():
             vim.command("rightbelow vsplit | wincmd l")
             vim.command("call CocAction('jumpDefinition')")
         else:
@@ -91,9 +93,10 @@ class GotoDefinitionCommand:
         * https://github.com/davidhalter/jedi-vim
         """
         import jedi_vim
-        ui_utils.sweep_windows(exclude=[vim.current.window])
+
+        windows_utils.sweep_windows()
         v = vim.eval("g:jedi#use_splits_not_buffers")
-        if ui_utils.is_leftwindow():
+        if windows_utils.is_leftwindow():
             vim.command("let g:jedi#use_splits_not_buffers='right'")
         else:
             vim.command("let g:jedi#use_splits_not_buffers=''")
@@ -174,8 +177,6 @@ class CSpellCommand:
         if records:
             setloclist(win_id, records)
             unknow_words = list(set(str(item["text"]) for item in records))
-            with store_window():
-                vim.command("lopen")
             buffer = make_buffer(TERM_STDOUT, "vertical")
             buffer.init_buffer()
             buffer.append("**UNKNOWN WORDS**")
