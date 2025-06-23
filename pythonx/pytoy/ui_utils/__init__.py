@@ -99,7 +99,7 @@ def is_leftwindow(window=None):
     return int(info["wincol"]) <= 1
 
 
-def sweep_windows(required_width=100, exclude=()):
+def sweep_windows(required_width=100, exclude=tuple()):
     """Sweep the windows of tabpage following to my rule.
     Namely,
     1. if the `winrow` is smaller than `required_width`.
