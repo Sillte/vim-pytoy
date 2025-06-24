@@ -22,7 +22,7 @@ if get_ui_enum() == UIEnum.VSCODE:
     from pytoy.ui_pytoy.vscode.focus_controller import store_focus 
     store_cursor = store_focus
 else:
-    from pytoy.ui_utils import store_window
+    from pytoy.ui_pytoy.vim import store_window
     store_cursor = store_window
 
 

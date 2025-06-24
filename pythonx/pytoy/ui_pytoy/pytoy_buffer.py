@@ -56,7 +56,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
         **kwargs,
     ) -> "PytoyBufferVim":
         """Assure that the specifier `Buffer` exist in the UI."""
-        from pytoy.ui_utils import create_window
+        from pytoy.ui_pytoy.vim import create_window
 
         direction = kwargs.get("direction", "vertical")
         basewindow = kwargs.get("basewindow")
@@ -208,7 +208,7 @@ def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
                 document = make_document(stdout_name)
         stdout_impl = PytoyBufferVSCode(document)
     else:
-        from pytoy.ui_utils import create_window
+        from pytoy.ui_pytoy.vim import create_window
 
         stdout_window = create_window(stdout_name, mode)
         stdout_impl = PytoyBufferVim(stdout_window.buffer)
@@ -234,7 +234,7 @@ def make_duo_buffers(
         stdout_impl = PytoyBufferVSCode(doc1)
         stderr_impl = PytoyBufferVSCode(doc2)
     else:
-        from pytoy.ui_utils import create_window
+        from pytoy.ui_pytoy.vim import create_window
 
         stdout_window = create_window(stdout_name, "vertical")
         stderr_window = create_window(stderr_name, "horizontal", stdout_window)

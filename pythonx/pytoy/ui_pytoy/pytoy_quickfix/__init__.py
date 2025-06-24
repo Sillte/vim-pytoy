@@ -81,7 +81,7 @@ class PytoyQuickFixNormal(PytoyQuickFixProtocol):
             vim.command("cclose")
             vim.command("call setqflist([])")
         else:
-            from pytoy.ui_utils import store_window
+            from pytoy.ui_pytoy.vim import store_window
 
             vim.command(f"call setloclist({win_id}, [])")
             with store_window():
