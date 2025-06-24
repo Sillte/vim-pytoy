@@ -10,18 +10,12 @@ Usage: executors /
 """
 
 import vim
-from typing import Protocol, Any, Type
+from typing import Protocol, Any
 from pytoy.ui_pytoy.ui_enum import UIEnum, get_ui_enum
 from pytoy.ui_pytoy.vscode.document import Document, Uri
 
 
 class PytoyBufferProtocol(Protocol):
-    @classmethod
-    def fetch_or_create(cls, specifier: str, **kwargs) -> "PytoyBufferProtocol":
-        ...
-        """Assure that the specifier `Buffer` exist in the UI.
-        """
-
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
 
@@ -32,9 +26,6 @@ class PytoyBufferProtocol(Protocol):
     def content(self) -> str:
         ...
 
-    @property
-    def identifier(self) -> Any:
-        ...
 
     def focus(self):
         ...
@@ -47,27 +38,6 @@ class PytoyBufferVim(PytoyBufferProtocol):
     def __init__(self, buffer: "vim.Buffer"):
         self.buffer = buffer
 
-    @classmethod
-    def fetch_or_create(
-        cls,
-        specifier: str,
-        direction: str = "vertical",
-        basewindow: Type["vim.Window"] | None = None,
-        **kwargs,
-    ) -> "PytoyBufferVim":
-        """Assure that the specifier `Buffer` exist in the UI."""
-        from pytoy.ui_pytoy.vim import create_window
-
-        direction = kwargs.get("direction", "vertical")
-        basewindow = kwargs.get("basewindow")
-
-        window = create_window(specifier, direction, basewindow)
-        return PytoyBufferVim(window.buffer)
-
-    @property
-    def identifier(self) -> int:
-        """ """
-        return self.buffer.number
 
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
@@ -113,23 +83,6 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     def __init__(self, document: Document):
         self.document = document
 
-    @classmethod
-    def fetch_or_create(
-        cls,
-        specifier: str,
-        direction: str = "vertical",
-        basewindow: Type["vim.Window"] | None = None,
-        **kwargs,
-    ) -> "PytoyBufferVSCode":
-        """Assure that the specifier `Buffer` exist in the UI."""
-
-        document = Document.create(specifier)
-        return PytoyBufferVSCode(document)
-
-    @property
-    def identifier(self) -> str:
-        """ """
-        return self.document.uri.path
 
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
@@ -155,18 +108,17 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         pass
 
 
-class PytoyBuffer:
+class PytoyBuffer(PytoyBufferProtocol):
     def __init__(
-        self, impl: PytoyBufferProtocol | None = None, *, specifier: None | str = None
+        self, impl: PytoyBufferProtocol
     ):
-        if impl is None:
-            assert specifier is not None
-            ui_enum = get_ui_enum()
-            if ui_enum == UIEnum.VSCODE:
-                impl = PytoyBufferVSCode.fetch_or_create(specifier)
-            else:
-                impl = PytoyBufferVim.fetch_or_create(specifier)
-        self._impl: PytoyBufferProtocol = impl
+        self._impl = impl
+
+    @property
+    def impl(self) -> PytoyBufferProtocol:
+        """Return the implementation of 
+        """
+        return self._impl
 
     def init_buffer(self, content: str = ""):
         self._impl.init_buffer(content)
@@ -174,10 +126,6 @@ class PytoyBuffer:
     def append(self, content: str) -> None:
         self._impl.append(content)
 
-    @property
-    def identifier(self) -> Any:
-        """ """
-        return self._impl.identifier
 
     @property
     def content(self) -> str:
@@ -194,7 +142,7 @@ def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
     ui_enum = get_ui_enum()
 
     if ui_enum == UIEnum.VSCODE:
-        from pytoy.ui_pytoy.vscode.document_user import make_document, sweep_editors
+        from pytoy.ui_pytoy.vscode.document_user import make_document 
         from pytoy.ui_pytoy.vscode.focus_controller import store_focus, get_uri_to_views
 
         # sweep_editors()
