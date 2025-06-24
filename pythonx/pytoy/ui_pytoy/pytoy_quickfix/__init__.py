@@ -16,38 +16,30 @@ from shlex import quote
 
 
 class PytoyQuickFixProtocol(Protocol):
-    @classmethod
-    def setlist(cls, records: list[dict], win_id: int | None = None) -> None:
+    def setlist(self, records: list[dict], win_id: int | None = None) -> None:
         ...
 
-    @classmethod
-    def getlist(cls, win_id: int | None = None) -> list[dict[str, Any]]:
+    def getlist(self, win_id: int | None = None) -> list[dict[str, Any]]:
         ...
 
-    @classmethod
-    def close(cls, win_id: int | None = None) -> None:
+    def close(self, win_id: int | None = None) -> None:
         ...
 
-    @classmethod
-    def open(cls, win_id: int | None = None) -> None:
+    def open(self, win_id: int | None = None) -> None:
         ...
 
-    @classmethod
-    def go(cls, idx: int | None = None, win_id: int | None = None) -> None:
+    def go(self, idx: int | None = None, win_id: int | None = None) -> None:
         ...
 
-    @classmethod
-    def next(cls, win_id: int | None = None) -> None:
+    def next(self, win_id: int | None = None) -> None:
         ...
 
-    @classmethod
-    def prev(cls, win_id: int | None = None) -> None:
+    def prev(self, win_id: int | None = None) -> None:
         ...
 
 
 class PytoyQuickFixNormal(PytoyQuickFixProtocol):
-    @classmethod
-    def setlist(cls, records: list[dict], win_id: int | None = None):
+    def setlist(self, records: list[dict], win_id: int | None = None):
         # This is NOT smart code,
         # If `value` is `complex` type, it may cause inconsistency of the data type.
         records = [
@@ -64,8 +56,7 @@ class PytoyQuickFixNormal(PytoyQuickFixProtocol):
         else:
             vim.command(f"call setloclist({win_id}, json_decode({safe_json}))")
 
-    @classmethod
-    def getlist(cls, win_id: int | None = None):
+    def getlist(self, win_id: int | None = None):
         """
         1. When `win_id` is None it is regarded as `quickfix`.
         2. When `records` is empty,
@@ -75,8 +66,7 @@ class PytoyQuickFixNormal(PytoyQuickFixProtocol):
         else:
             return vim.eval(f"call getloclist({win_id})")
 
-    @classmethod
-    def close(cls, win_id: int | None = None):
+    def close(self, win_id: int | None = None):
         if win_id is None:
             vim.command("cclose")
             vim.command("call setqflist([])")
@@ -87,17 +77,15 @@ class PytoyQuickFixNormal(PytoyQuickFixProtocol):
             with store_window():
                 vim.command("lclose")
 
-    @classmethod
-    def open(cls, win_id: int | None = None):
+    def open(self, win_id: int | None = None):
         if win_id is None:
             vim.command("copen")
         else:
             vim.eval(f"win_gotoid({win_id})")
             vim.command("lopen")
 
-    @classmethod
-    def go(cls, idx: int | None = None, win_id: int | None = None) -> None:
-        size = int(vim.eval("getqflist({ 'size':0 })")["size"])
+    def go(self, idx: int | None = None, win_id: int | None = None) -> None:
+        size = int(vim.eval("getqflist({'size': 0})")["size"])
         if not size:
             return
         if idx is not None:
@@ -111,101 +99,92 @@ class PytoyQuickFixNormal(PytoyQuickFixProtocol):
         else:
             vim.command("ll")
 
-    @classmethod
-    def next(cls, win_id: int | None = None) -> None:
+    def next(self, win_id: int | None = None) -> None:
         if win_id is None:
             vim.command("cnext")
         else:
             vim.command("lnext")
 
-    @classmethod
-    def prev(cls, win_id: int | None = None) -> None:
+    def prev(self, win_id: int | None = None) -> None:
         if win_id is None:
             vim.command("cprev")
         else:
             vim.command("lprev")
 
 
-class PytoyQuickFixVSCode:
-    records: list[dict] = []
-    current_idx: int | None = None  # It starts from 1.
+class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
+    def __init__(
+        self,
+    ):
+        self.records = []
+        self.current_idx: int | None = None  # It starts from 1.
 
-    @classmethod
-    def setlist(cls, records: list[dict], win_id: int | None = None):
+    def _convert_filename(self, basepath: Path, record: dict):
+        filename = record.get("filename")
+        if not filename:
+            filename = basepath
+        filename = Path(filename)
+        if filename.is_absolute():
+            record["filename"] = filename.as_posix()
+        else:
+            record["filename"] = (basepath / filename).resolve().as_posix()
+        return record
+
+    def setlist(self, records: list[dict], win_id: int | None = None):
         if win_id is None:
             basepath = Path(vim.eval(f"getcwd()"))
         else:
             basepath = Path(vim.eval(f"getcwd({win_id})"))
 
-        def _convert_filename(record: dict):
-            filename = record.get("filename")
-            if not filename:
-                filename = basepath
-            filename = Path(filename)
-            if filename.is_absolute():
-                record["filename"] = filename.as_posix()
-            else:
-                record["filename"] = (basepath / filename).resolve().as_posix()
-            return record
-
-        for record in records:
-            _convert_filename(record)
-
-        cls.records = records
+        records = [self._convert_filename(basepath, record) for record in records]
+        self.records = records
         if not records:
-            cls.current_idx = None
+            self.current_idx = None
         else:
-            cls.current_idx = 1
+            self.current_idx = 1
 
-    @classmethod
-    def getlist(cls, win_id: int | None = None):
-        return copy.deepcopy(cls.records)
+    def getlist(self, win_id: int | None = None):
+        return copy.deepcopy(self.records)
 
-    @classmethod
-    def close(cls, win_id: int | None = None):
-        cls.records = []
-        cls.current_idx = None
+    def close(self, win_id: int | None = None):
+        self.records = []
+        self.current_idx = None
 
-    @classmethod
-    def open(cls, win_id: int | None = None):
+    def open(self, win_id: int | None = None):
         pass
 
-    @classmethod
-    def go(cls, idx: int | None = None, win_id: int | None = None) -> None:
-        if cls.current_idx is None:
+    def go(self, idx: int | None = None, win_id: int | None = None) -> None:
+        if self.current_idx is None:
             print("QuickFix is not SET.")
             return
-        cls._update_cursor(diff_idx=0, fixed_idx=idx)
+        self._update_cursor(diff_idx=0, fixed_idx=idx)
 
-    @classmethod
-    def next(cls, win_id: int | None = None):
-        if cls.current_idx is None:
+    def next(self, win_id: int | None = None):
+        if self.current_idx is None:
             print("QuickFix is not SET.")
             return
-        cls._update_cursor(diff_idx=+1)
+        self._update_cursor(diff_idx=+1)
 
-    @classmethod
-    def prev(cls, win_id: int | None = None):
-        if cls.current_idx is None:
+    def prev(self, win_id: int | None = None):
+        if self.current_idx is None:
             print("QuickFix is not SET.")
             return
-        cls._update_cursor(diff_idx=-1)
+        self._update_cursor(diff_idx=-1)
 
-    @classmethod
     def _move_idx(
-        cls, diff_idx: int = 0, *, fixed_idx: int | None = None
+        self, diff_idx: int = 0, *, fixed_idx: int | None = None
     ) -> dict | None:
         """
         1. Move `idx` of Quicklist per `diff_idx`.
         2. If fixed_idx is set, this number is set to
         3. Return the `record` of the moved `idx`.
         """
-        records = cls.records
+        records = self.records
         length = len(records)
         if not length:
             return None
 
-        current_idx = cls.current_idx
+        current_idx = self.current_idx
         assert current_idx is not None
 
         current_idx += diff_idx
@@ -216,15 +195,14 @@ class PytoyQuickFixVSCode:
         else:
             current_idx = 1
 
-        cls.current_idx = current_idx
+        self.current_idx = current_idx
 
         record = records[current_idx - 1]
         return record
 
-    @classmethod
-    def _update_cursor(cls, diff_idx: int = 0, *, fixed_idx: int | None = None):
+    def _update_cursor(self, diff_idx: int = 0, *, fixed_idx: int | None = None):
         """For VSCODE, this is the unified interface for `next`, `prev` and `go`"""
-        record = cls._move_idx(diff_idx=diff_idx, fixed_idx=fixed_idx)
+        record = self._move_idx(diff_idx=diff_idx, fixed_idx=fixed_idx)
         if not record:
             print("No record in QuickFix.")
             return
@@ -232,8 +210,8 @@ class PytoyQuickFixVSCode:
         vim.command(f"Edit {path.as_posix()}")
         lnum, col = int(record.get("lnum", 1)), int(record.get("col", 1))
 
-        length = len(PytoyQuickFixVSCode.records)
-        idx = cls.current_idx
+        length = len(self.records)
+        idx = self.current_idx
         text = record.get("text", "")
 
         def func():
@@ -244,35 +222,62 @@ class PytoyQuickFixVSCode:
 
 
 class PytoyQuickFix(PytoyQuickFixProtocol):
-    if get_ui_enum() == UIEnum.VSCODE:
-        impl = PytoyQuickFixVSCode
-    else:
-        impl = PytoyQuickFixNormal
+    def __init__(self, impl: PytoyQuickFixProtocol | None = None, *, name : str | None = "$default"):
+        if impl is None:
+            if name is None:
+                raise ValueError("impl or name must be set.")
+            impl = _get_protocol(name)
+        self._impl = impl
 
-    @classmethod
-    def setlist(cls, records: list[dict], win_id: int | None = None) -> None:
-        return cls.impl.setlist(records, win_id)
+    @property
+    def impl(self) -> PytoyQuickFixProtocol:
+        return self._impl
 
-    @classmethod
-    def getlist(cls, win_id: int | None = None) -> list[dict[str, Any]]:
-        return cls.impl.getlist(win_id)
+    def setlist(self, records: list[dict], win_id: int | None = None) -> None:
+        return self.impl.setlist(records, win_id)
 
-    @classmethod
-    def close(cls, win_id: int | None = None) -> None:
-        return cls.impl.close(win_id)
+    def getlist(self, win_id: int | None = None) -> list[dict[str, Any]]:
+        return self.impl.getlist(win_id)
 
-    @classmethod
-    def open(cls, win_id: int | None = None) -> None:
-        return cls.impl.open(win_id)
+    def close(self, win_id: int | None = None) -> None:
+        return self.impl.close(win_id)
 
-    @classmethod
-    def go(cls, idx: int | None = None, win_id: int | None = None) -> None:
-        return cls.impl.go(idx, win_id)
+    def open(self, win_id: int | None = None) -> None:
+        return self.impl.open(win_id)
 
-    @classmethod
-    def next(cls, win_id: int | None = None) -> None:
-        return cls.impl.next(win_id)
+    def go(self, idx: int | None = None, win_id: int | None = None) -> None:
+        return self.impl.go(idx, win_id)
 
-    @classmethod
-    def prev(cls, win_id: int | None = None) -> None:
-        return cls.impl.prev(win_id)
+    def next(self, win_id: int | None = None) -> None:
+        return self.impl.next(win_id)
+
+    def prev(self, win_id: int | None = None) -> None:
+        return self.impl.prev(win_id)
+
+
+_quickfix_protocol_cache = dict()
+
+
+def _get_protocol(name: str) -> PytoyQuickFixProtocol:
+    if name in _quickfix_protocol_cache:
+        return _quickfix_protocol_cache[name]
+    ui_enum = get_ui_enum()
+
+    def make_vscode():
+        return PytoyQuickFixVSCode()
+
+    def make_vim():
+        return PytoyQuickFixNormal()
+
+    creators = {UIEnum.VSCODE: make_vscode, UIEnum.VIM: make_vim, UIEnum.NVIM: make_vim}
+    _quickfix_protocol_cache[name] = creators[ui_enum]()
+    return _quickfix_protocol_cache[name]
+
+
+def get_pytoy_quickfix(name: str) -> PytoyQuickFix:
+    impl = _get_protocol(name)
+    return PytoyQuickFix(impl)
+
+
+if __name__ == "__main__":
+    pass

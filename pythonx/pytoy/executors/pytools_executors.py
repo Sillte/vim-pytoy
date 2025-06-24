@@ -36,11 +36,11 @@ def _to_quickfix_winid(win_id: int, is_location: bool | None = None) -> int | No
 
 def _handle_loclist(win_id, records: list[dict], is_open: bool):
     if records:
-        PytoyQuickFix.setlist(records, win_id)
+        PytoyQuickFix().setlist(records, win_id)
         if is_open:
-            PytoyQuickFix.open(win_id)
+            PytoyQuickFix().open(win_id)
     else:
-        PytoyQuickFix.close(win_id)
+        PytoyQuickFix().close(win_id)
 
 
 class PytestExecutor(BufferExecutor):

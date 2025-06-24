@@ -3,17 +3,17 @@ from pytoy.command_manager import CommandManager
 @CommandManager.register(name="Qnext")
 def q_next():
     from pytoy.ui_pytoy.pytoy_quickfix import PytoyQuickFix
-    PytoyQuickFix.next()
+    PytoyQuickFix().next()
 
 @CommandManager.register(name="Qprev")
 def q_prev():
     from pytoy.ui_pytoy.pytoy_quickfix import PytoyQuickFix
-    PytoyQuickFix.prev()
+    PytoyQuickFix().prev()
 
 @CommandManager.register(name="QQ")
 def QQ():
     from pytoy.ui_pytoy.pytoy_quickfix import PytoyQuickFix
-    PytoyQuickFix.go()
+    PytoyQuickFix().go()
 
 @CommandManager.register(name="OnlyThisEditor")
 def sweep_editors_command():

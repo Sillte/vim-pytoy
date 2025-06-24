@@ -111,7 +111,7 @@ class PytoyBuffer(PytoyBufferProtocol):
 
     @property
     def impl(self) -> PytoyBufferProtocol:
-        """Return the implementation of"""
+        """Return the implementation of PytoyBuffer."""
         return self._impl
 
     def init_buffer(self, content: str = ""):
