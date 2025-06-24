@@ -2,7 +2,7 @@ import json
 from shlex import quote
 from typing import Optional, Any, List, Dict, Union
 from pathlib import Path
-from pytoy.ui_utils._converter import to_window_id
+from pytoy.ui_pytoy.vim._converter import to_window_id
 import vim
 
 
@@ -75,10 +75,6 @@ class QuickFix:
             record["filename"] = vim.buffers[record["bufnr"]].name
         return records
 
-
-#  #Usage.
-# from pytoy.ui_utils.quickfix_utils import perform_sample
-# perform_sample(True)
 
 
 def perform_sample(location=None):
