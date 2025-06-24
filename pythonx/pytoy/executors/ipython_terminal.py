@@ -8,7 +8,7 @@ import vim
 import time 
 import re
 from threading import Thread
-from pytoy.ui_pytoy.pytoy_buffer import make_buffer
+from pytoy.ui_pytoy.pytoy_buffer import make_buffer, PytoyBufferVim
 from pytoy.ui_pytoy import get_ui_enum, UIEnum
 
     
@@ -68,8 +68,9 @@ class IPythonTerminal:
 
 
         pytoy_buffer = make_buffer(output_bufname, "vertical")
+        assert isinstance(pytoy_buffer.impl, PytoyBufferVim)
 
-        self.output_buffer: int = pytoy_buffer.identifier
+        self.output_buffer: int = pytoy_buffer.impl.buffer.number
         # Settings for buffer.
         vim.buffers[self.output_buffer].options["buftype"] = "nofile"
         vim.buffers[self.output_buffer].options["swapfile"] = False
