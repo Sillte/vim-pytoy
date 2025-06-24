@@ -6,7 +6,6 @@ import re
 from shlex import quote
 
 from pytoy.buffer_executor import BufferExecutor
-from pytoy.ui_utils import init_buffer, store_window
 
 # `set_default_execution_mode` is carried out only in `__init__.py`
 from pytoy.environment_manager import EnvironmentManager
@@ -53,10 +52,6 @@ class PythonExecutor(BufferExecutor):
         if not error_msg:
             self.stderr.hide()
 
-            ## Scrolling output window
-            with store_window():
-                self.stdout.focus()
-                vim.command(f"normal zb")
 
     def _make_qflist(self, string):
         _pattern = re.compile(r'\s+File "(.+)", line (\d+)')
