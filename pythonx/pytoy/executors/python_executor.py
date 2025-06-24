@@ -46,9 +46,9 @@ class PythonExecutor(BufferExecutor):
         qflist = self._make_qflist(error_msg)
 
         if qflist:
-            PytoyQuickFix.setlist(qflist, self.win_id)
+            PytoyQuickFix().setlist(qflist, self.win_id)
         else:
-            PytoyQuickFix.close(self.win_id)
+            PytoyQuickFix().close(self.win_id)
         if not error_msg:
             self.stderr.hide()
 
