@@ -10,7 +10,7 @@ Usage: executors /
 """
 
 import vim
-from typing import Protocol, Any
+from typing import Protocol
 from pytoy.ui_pytoy.ui_enum import UIEnum, get_ui_enum
 from pytoy.ui_pytoy.vscode.document import Document, Uri
 
@@ -26,7 +26,6 @@ class PytoyBufferProtocol(Protocol):
     def content(self) -> str:
         ...
 
-
     def focus(self):
         ...
 
@@ -37,7 +36,6 @@ class PytoyBufferProtocol(Protocol):
 class PytoyBufferVim(PytoyBufferProtocol):
     def __init__(self, buffer: "vim.Buffer"):
         self.buffer = buffer
-
 
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
@@ -83,7 +81,6 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     def __init__(self, document: Document):
         self.document = document
 
-
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
         if content and content[-1] != "\n":
@@ -109,15 +106,12 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
 
 
 class PytoyBuffer(PytoyBufferProtocol):
-    def __init__(
-        self, impl: PytoyBufferProtocol
-    ):
+    def __init__(self, impl: PytoyBufferProtocol):
         self._impl = impl
 
     @property
     def impl(self) -> PytoyBufferProtocol:
-        """Return the implementation of 
-        """
+        """Return the implementation of"""
         return self._impl
 
     def init_buffer(self, content: str = ""):
@@ -125,7 +119,6 @@ class PytoyBuffer(PytoyBufferProtocol):
 
     def append(self, content: str) -> None:
         self._impl.append(content)
-
 
     @property
     def content(self) -> str:
@@ -139,10 +132,8 @@ class PytoyBuffer(PytoyBufferProtocol):
 
 
 def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
-    ui_enum = get_ui_enum()
-
-    if ui_enum == UIEnum.VSCODE:
-        from pytoy.ui_pytoy.vscode.document_user import make_document 
+    def make_vscode():
+        from pytoy.ui_pytoy.vscode.document_user import make_document
         from pytoy.ui_pytoy.vscode.focus_controller import store_focus, get_uri_to_views
 
         # sweep_editors()
@@ -155,21 +146,26 @@ def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
             with store_focus():
                 document = make_document(stdout_name)
         stdout_impl = PytoyBufferVSCode(document)
-    else:
+        return PytoyBuffer(stdout_impl)
+
+    def make_vim():
         from pytoy.ui_pytoy.vim import create_window
 
         stdout_window = create_window(stdout_name, mode)
         stdout_impl = PytoyBufferVim(stdout_window.buffer)
-    return PytoyBuffer(stdout_impl)
+        return PytoyBuffer(stdout_impl)
+
+    ui_enum = get_ui_enum()
+    creator = {UIEnum.VSCODE: make_vscode, UIEnum.VIM: make_vim, UIEnum.NVIM: make_vim}
+    return creator[ui_enum]()
 
 
 def make_duo_buffers(
     stdout_name: str, stderr_name: str
 ) -> tuple[PytoyBuffer, PytoyBuffer]:
     """Create 2 buffers, which is intended to `STDOUT` and `STDERR`."""
-    ui_enum = get_ui_enum()
 
-    if ui_enum == UIEnum.VSCODE:
+    def make_vscode():
         from pytoy.ui_pytoy.vscode.document_user import (
             make_duo_documents,
             sweep_editors,
@@ -181,15 +177,20 @@ def make_duo_buffers(
             doc1, doc2 = make_duo_documents(stdout_name, stderr_name)
         stdout_impl = PytoyBufferVSCode(doc1)
         stderr_impl = PytoyBufferVSCode(doc2)
-    else:
+        return (PytoyBuffer(stdout_impl), PytoyBuffer(stderr_impl))
+
+    def make_vim():
         from pytoy.ui_pytoy.vim import create_window
 
         stdout_window = create_window(stdout_name, "vertical")
         stderr_window = create_window(stderr_name, "horizontal", stdout_window)
         stdout_impl = PytoyBufferVim(stdout_window.buffer)
         stderr_impl = PytoyBufferVim(stderr_window.buffer)
+        return (PytoyBuffer(stdout_impl), PytoyBuffer(stderr_impl))
 
-    return (PytoyBuffer(stdout_impl), PytoyBuffer(stderr_impl))
+    ui_enum = get_ui_enum()
+    creator = {UIEnum.VSCODE: make_vscode, UIEnum.VIM: make_vim, UIEnum.NVIM: make_vim}
+    return creator[ui_enum]()
 
 
 if __name__ == "__main__":
