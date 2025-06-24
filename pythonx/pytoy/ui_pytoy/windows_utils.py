@@ -10,6 +10,9 @@ from pytoy.ui_pytoy.vscode.document import BufferURISolver
 from pytoy.ui_utils import sweep_windows as sweep_windows_vim  
 from pytoy.ui_pytoy.vscode.document_user import sweep_editors as sweep_windows_vscode
 
+from pytoy.ui_utils import sweep_windows as sweep_windows_vim  
+from pytoy.ui_utils import create_window as create_window_vim
+
 
 def sweep_windows() -> None:
     """Delete all the windows 
@@ -43,6 +46,13 @@ def is_leftwindow() -> bool:
     else:
         return is_leftwindow_vim(window=None)
 
+def create_window(bufname: str):
+    ui_enum = get_ui_enum()
+    if ui_enum == UIEnum.VSCODE:
+        pass
+
+    else:
+        return create_window_vim(bufname)
 
 
 if __name__ == "__main__":

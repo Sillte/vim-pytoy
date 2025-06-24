@@ -8,7 +8,8 @@ import vim
 import time 
 import re
 from threading import Thread
-from pytoy.ui_utils import to_buffer_number, init_buffer, create_window, store_window
+from pytoy.ui_pytoy.pytoy_buffer import make_buffer
+from pytoy.ui_pytoy import get_ui_enum, UIEnum
 
     
 class IPythonTerminal:
@@ -50,6 +51,8 @@ class IPythonTerminal:
     #   Then, performs `send`.   
 
     def __init__(self, output_bufname=None):
+        if get_ui_enum() != UIEnum.VIM: 
+            raise RuntimeError("This class is only available in VIM")
         term_name = "__IPYTYON_TERM__"
         self.maximum_line = 1000  # The maximum line for buffer.
         self.in_pattern = re.compile(r"^In \[(\d+)\]:")
@@ -63,7 +66,10 @@ class IPythonTerminal:
         self.term_buffer:int = self._start_term(term_name)
         self.term_name = term_name
 
-        self.output_buffer: int = create_window(output_bufname, "vertical").buffer.number
+
+        pytoy_buffer = make_buffer(output_bufname, "vertical")
+
+        self.output_buffer: int = pytoy_buffer.identifier
         # Settings for buffer.
         vim.buffers[self.output_buffer].options["buftype"] = "nofile"
         vim.buffers[self.output_buffer].options["swapfile"] = False

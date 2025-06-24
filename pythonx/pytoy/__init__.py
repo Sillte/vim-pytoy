@@ -1,7 +1,5 @@
 import vim
 
-from pytoy.ui_utils import create_window
-
 from pytoy.environment_manager import EnvironmentManager
 from pytoy.environment_manager.venv_utils import VenvManager
 from pytoy.ui_pytoy.lightline_utils import Lightline
@@ -40,8 +38,6 @@ def rerun():
 
     stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
 
-    # stdout_window = create_window(TERM_STDOUT, "vertical")
-    # stderr_window = create_window(TERM_STDERR, "horizontal", stdout_window)
     executor.rerun(stdout_buffer, stderr_buffer)
 
 
