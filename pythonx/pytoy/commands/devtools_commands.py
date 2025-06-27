@@ -4,7 +4,7 @@ import json
 import vim
 from pytoy.command_manager import CommandManager
 from pytoy.devtools.vimplugin_package import VimPluginPackage
-from pytoy.timertask_manager import TimerTaskManager
+from pytoy.timertask import TimerTask
 from pytoy.ui import get_ui_enum, UIEnum
 from pytoy.ui.vscode.api import Api
 
@@ -47,19 +47,19 @@ class TimerTaskManagerDebug:
     @staticmethod
     def start():
         name = TimerTaskManagerDebug.taskname
-        if TimerTaskManager.is_registered(name):
+        if TimerTask.is_registered(name):
             print("Already Registered.")
             return 
         def _func():
             print("TimerTask Hello.")
-        TimerTaskManager.register(_func, interval=1000, name=name)
+        TimerTask.register(_func, interval=1000, name=name)
 
     @CommandManager.register(name="TimerTaskStop")
     @staticmethod
     def stop():
         name = TimerTaskManagerDebug.taskname
-        if TimerTaskManager.is_registered(name):
-            TimerTaskManager.deregister(name=name)
+        if TimerTask.is_registered(name):
+            TimerTask.deregister(name=name)
             print("Deregistered.")
         else:
             print("NotStarted")
@@ -71,11 +71,11 @@ class TimerTaskManagerDebug:
 #taskname = "TimerTaskManagerDebug"
 #@CommandManager.register(name="TimerTaskDebugStart")
 #def start():
-#    if TimerTaskManager.is_registered(taskname):
+#    if TimerTask.is_registered(taskname):
 #        print("Already Registered.")
 #        return 
 #    def _func():
 #        print("TimerTask Hello.")
-#    TimerTaskManager.register(_func, name=taskname)
+#    TimerTask.register(_func, name=taskname)
 #
 

@@ -1,11 +1,10 @@
 import vim
 
 import inspect
-class TimerTaskManager:
+class TimerTask:
     """Using `timer_start` function, it enables asyncronous process 
     executed in VIM main loop. 
     Especially, it is expected to use updating UI of VIM.
-
 
     """
     FUNCTION_MAP = dict() # name -> function
@@ -29,12 +28,12 @@ class TimerTaskManager:
         vim_funcname = f"LoopTask_{name}_{id(func)}"
         if __name__ != "__main__":
             prefix = f"{__name__}."
-            import_prefix = f"from {__name__} import TimerTaskManager; "
+            import_prefix = f"from {__name__} import TimerTask; "
         else:
             prefix = "" 
             import_prefix = f" "
         
-        procedures = f"python3 {import_prefix} {prefix}TimerTaskManager.FUNCTION_MAP['{name}']()"
+        procedures = f"python3 {import_prefix} {prefix}TimerTask.FUNCTION_MAP['{name}']()"
 
         vim.command(f"""function! {vim_funcname}(timer) 
             {procedures}
@@ -83,10 +82,10 @@ class TimerTaskManager:
 
         procedures = f"""
 python3 << EOF
-from {__name__} import TimerTaskManager
-TimerTaskManager.FUNCTION_MAP['{name}']()
-del TimerTaskManager.FUNCTION_MAP['{name}']
-del TimerTaskManager.VIMFUNCNAME_MAP['{name}']
+from {__name__} import TimerTask
+TimerTask.FUNCTION_MAP['{name}']()
+del TimerTask.FUNCTION_MAP['{name}']
+del TimerTask.VIMFUNCNAME_MAP['{name}']
 EOF
     """.strip()
 
@@ -105,4 +104,4 @@ EOF
 if  __name__ == "__main__":
     def hello():
         print("H")
-    TimerTaskManager.register(hello)
+    TimerTask.register(hello)

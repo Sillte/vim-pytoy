@@ -2,7 +2,7 @@ import vim
 import time
 from queue import Queue
 from queue import Empty
-from pytoy.timertask_manager import TimerTaskManager
+from pytoy.timertask import TimerTask
 
 from pathlib import Path
 from typing import Callable, Protocol
@@ -95,7 +95,7 @@ class NVimBufferJob(BufferJobProtocol):
                     except Empty:
                         break
 
-            TimerTaskManager.register(_update_stdout, name=self._on_stdout_name)
+            TimerTask.register(_update_stdout, name=self._on_stdout_name)
 
         stderr_drained = True
         if self.stderr is not None:
@@ -127,7 +127,7 @@ class NVimBufferJob(BufferJobProtocol):
                     except Empty:
                         break
 
-            TimerTaskManager.register(_update_stderr, name=self._on_stderr_name)
+            TimerTask.register(_update_stderr, name=self._on_stderr_name)
 
         if self.env is not None:
             options["env"] = self.env
@@ -143,11 +143,11 @@ class NVimBufferJob(BufferJobProtocol):
                     break
             if self.stdout:
                 _update_stdout()
-                TimerTaskManager.deregister(self._on_stdout_name) 
+                TimerTask.deregister(self._on_stdout_name) 
                 self._on_stdout_name = None
             if self.stderr:
                 _update_stderr()
-                TimerTaskManager.deregister(self._on_stderr_name)
+                TimerTask.deregister(self._on_stderr_name)
                 self._on_stderr_name = None
             on_closed_callable()
             vim.command(f"unlet g:{self.jobname}")

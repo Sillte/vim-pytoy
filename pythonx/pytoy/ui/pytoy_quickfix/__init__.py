@@ -10,7 +10,7 @@ from typing import Protocol, Any
 
 import json
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
-from pytoy.timertask_manager import TimerTaskManager
+from pytoy.timertask import TimerTask
 
 from shlex import quote
 
@@ -218,7 +218,7 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
             print(f"({idx}/{length}):{text}", flush=True)
             vim.command(f"call cursor({lnum}, {col})")
 
-        TimerTaskManager.execute_oneshot(func, 300)
+        TimerTask.execute_oneshot(func, 300)
 
 
 class PytoyQuickFix(PytoyQuickFixProtocol):
