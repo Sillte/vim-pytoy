@@ -3,7 +3,7 @@ import vim
 from pathlib import Path
 from typing import Optional, Callable
 
-from pytoy.ui_pytoy import PytoyBuffer
+from pytoy.ui import PytoyBuffer
 
 from pytoy.buffer_executor.command_wrapper import CommandWrapper
 from pytoy.buffer_executor.buffer_job import BufferJobProtocol, VimBufferJob, NVimBufferJob

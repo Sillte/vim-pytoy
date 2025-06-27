@@ -9,8 +9,8 @@ from typing import Callable, Protocol
 
 from pytoy.function_manager import PytoyVimFunctions
 
-from pytoy.ui_pytoy import PytoyBuffer
-from pytoy.ui_pytoy.pytoy_buffer import  PytoyBufferVim
+from pytoy.ui import PytoyBuffer
+from pytoy.ui.pytoy_buffer import  PytoyBufferVim
 from pytoy.buffer_executor.command_wrapper import CommandWrapper
 
 

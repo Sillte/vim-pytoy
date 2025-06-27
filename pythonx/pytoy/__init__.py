@@ -2,7 +2,7 @@ import vim
 
 from pytoy.environment_manager import EnvironmentManager
 from pytoy.environment_manager.venv_utils import VenvManager
-from pytoy.ui_pytoy.lightline_utils import Lightline
+from pytoy.ui.lightline_utils import Lightline
 from pytoy.executors.ipython_terminal import IPythonTerminal
 
 from pytoy.executors.python_executor import PythonExecutor
@@ -23,7 +23,7 @@ def run(path=None):
     if executor.is_running:
         raise RuntimeError(f"Currently, `PythonExecutor` is running.")
 
-    from pytoy.ui_pytoy import make_duo_buffers, PytoyBuffer
+    from pytoy.ui import make_duo_buffers, PytoyBuffer
 
     stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
 
@@ -34,7 +34,7 @@ def rerun():
     """Perform `python` with the previous `path`."""
     executor = PythonExecutor()
 
-    from pytoy.ui_pytoy import make_duo_buffers, PytoyBuffer
+    from pytoy.ui import make_duo_buffers, PytoyBuffer
 
     stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
 

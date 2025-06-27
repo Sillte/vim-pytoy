@@ -2,7 +2,7 @@ import vim
 import os
 from pathlib import Path
 from pytoy.environment_manager import EnvironmentManager
-from pytoy.ui_pytoy import make_buffer
+from pytoy.ui import make_buffer
 from pytoy.command_manager import CommandManager, OptsArgument 
 
 from pytoy.buffer_executor import BufferExecutor

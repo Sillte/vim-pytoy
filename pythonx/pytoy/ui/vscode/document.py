@@ -3,7 +3,7 @@ import vim
 from pathlib import Path 
 from pydantic import BaseModel,ConfigDict
 
-from pytoy.ui_pytoy.vscode.api import Api
+from pytoy.ui.vscode.api import Api
 
 
 class Uri(BaseModel):

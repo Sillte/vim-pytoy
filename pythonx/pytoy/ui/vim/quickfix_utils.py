@@ -2,7 +2,7 @@ import json
 from shlex import quote
 from typing import Optional, Any, List, Dict, Union
 from pathlib import Path
-from pytoy.ui_pytoy.vim._converter import to_window_id
+from pytoy.ui.vim._converter import to_window_id
 import vim
 
 

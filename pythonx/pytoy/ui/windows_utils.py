@@ -2,16 +2,16 @@
 """
 import vim 
 
-from pytoy.ui_pytoy import get_ui_enum, UIEnum
-from pytoy.ui_pytoy.vim import is_leftwindow as is_leftwindow_vim  
-from pytoy.ui_pytoy.vscode import focus_controller
-from pytoy.ui_pytoy.vscode.document import BufferURISolver
+from pytoy.ui import get_ui_enum, UIEnum
+from pytoy.ui.vim import is_leftwindow as is_leftwindow_vim  
+from pytoy.ui.vscode import focus_controller
+from pytoy.ui.vscode.document import BufferURISolver
 
-from pytoy.ui_pytoy.vim import sweep_windows as sweep_windows_vim  
-from pytoy.ui_pytoy.vscode.document_user import sweep_editors as sweep_windows_vscode
+from pytoy.ui.vim import sweep_windows as sweep_windows_vim  
+from pytoy.ui.vscode.document_user import sweep_editors as sweep_windows_vscode
 
-from pytoy.ui_pytoy.vim import sweep_windows as sweep_windows_vim  
-from pytoy.ui_pytoy.vim import create_window as create_window_vim
+from pytoy.ui.vim import sweep_windows as sweep_windows_vim  
+from pytoy.ui.vim import create_window as create_window_vim
 
 
 def sweep_windows() -> None:
