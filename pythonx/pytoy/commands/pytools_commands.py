@@ -3,9 +3,9 @@
 
 import vim
 from pytoy.command_manager import CommandManager
-from pytoy.ui_pytoy import make_buffer
-from pytoy.ui_pytoy import windows_utils
-from pytoy.ui_pytoy.ui_enum import get_ui_enum, UIEnum
+from pytoy.ui import make_buffer
+from pytoy.ui import windows_utils
+from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 
 
 @CommandManager.register(name="Pytest")

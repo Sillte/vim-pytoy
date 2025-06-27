@@ -1,8 +1,8 @@
 from pathlib import Path
 import vim
-from pytoy.ui_pytoy.vscode.api import Api
-from pytoy.ui_pytoy.vscode.document import Uri, BufferURISolver, Document
-from pytoy.ui_pytoy.vscode.utils import wait_until_true
+from pytoy.ui.vscode.api import Api
+from pytoy.ui.vscode.document import Uri, BufferURISolver, Document
+from pytoy.ui.vscode.utils import wait_until_true
 
 def _current_uri_check(name) -> bool:
     api = Api()

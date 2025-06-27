@@ -11,8 +11,8 @@ Usage: executors /
 
 import vim
 from typing import Protocol
-from pytoy.ui_pytoy.ui_enum import UIEnum, get_ui_enum
-from pytoy.ui_pytoy.vscode.document import Document, Uri
+from pytoy.ui.ui_enum import UIEnum, get_ui_enum
+from pytoy.ui.vscode.document import Document, Uri
 
 
 class PytoyBufferProtocol(Protocol):
@@ -133,8 +133,8 @@ class PytoyBuffer(PytoyBufferProtocol):
 
 def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
     def make_vscode():
-        from pytoy.ui_pytoy.vscode.document_user import make_document
-        from pytoy.ui_pytoy.vscode.focus_controller import store_focus, get_uri_to_views
+        from pytoy.ui.vscode.document_user import make_document
+        from pytoy.ui.vscode.focus_controller import store_focus, get_uri_to_views
 
         # sweep_editors()
         # [NOTE]: As of 2025/06/16, the method of initialization is different
@@ -149,7 +149,7 @@ def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
         return PytoyBuffer(stdout_impl)
 
     def make_vim():
-        from pytoy.ui_pytoy.vim import create_window
+        from pytoy.ui.vim import create_window
 
         stdout_window = create_window(stdout_name, mode)
         stdout_impl = PytoyBufferVim(stdout_window.buffer)
@@ -166,11 +166,11 @@ def make_duo_buffers(
     """Create 2 buffers, which is intended to `STDOUT` and `STDERR`."""
 
     def make_vscode():
-        from pytoy.ui_pytoy.vscode.document_user import (
+        from pytoy.ui.vscode.document_user import (
             make_duo_documents,
             sweep_editors,
         )
-        from pytoy.ui_pytoy.vscode.focus_controller import store_focus
+        from pytoy.ui.vscode.focus_controller import store_focus
 
         sweep_editors()
         with store_focus():
@@ -180,7 +180,7 @@ def make_duo_buffers(
         return (PytoyBuffer(stdout_impl), PytoyBuffer(stderr_impl))
 
     def make_vim():
-        from pytoy.ui_pytoy.vim import create_window
+        from pytoy.ui.vim import create_window
 
         stdout_window = create_window(stdout_name, "vertical")
         stderr_window = create_window(stderr_name, "horizontal", stdout_window)

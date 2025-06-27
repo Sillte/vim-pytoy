@@ -9,7 +9,7 @@ import copy
 from typing import Protocol, Any
 
 import json
-from pytoy.ui_pytoy.ui_enum import get_ui_enum, UIEnum
+from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.timertask_manager import TimerTaskManager
 
 from shlex import quote
@@ -71,7 +71,7 @@ class PytoyQuickFixNormal(PytoyQuickFixProtocol):
             vim.command("cclose")
             vim.command("call setqflist([])")
         else:
-            from pytoy.ui_pytoy.vim import store_window
+            from pytoy.ui.vim import store_window
 
             vim.command(f"call setloclist({win_id}, [])")
             with store_window():

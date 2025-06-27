@@ -8,8 +8,8 @@ import vim
 import time 
 import re
 from threading import Thread
-from pytoy.ui_pytoy.pytoy_buffer import make_buffer, PytoyBufferVim
-from pytoy.ui_pytoy import get_ui_enum, UIEnum
+from pytoy.ui.pytoy_buffer import make_buffer, PytoyBufferVim
+from pytoy.ui import get_ui_enum, UIEnum
 
     
 class IPythonTerminal:

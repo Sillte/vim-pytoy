@@ -5,8 +5,8 @@ import vim
 from pytoy.command_manager import CommandManager
 from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.timertask_manager import TimerTaskManager
-from pytoy.ui_pytoy import get_ui_enum, UIEnum
-from pytoy.ui_pytoy.vscode.api import Api
+from pytoy.ui import get_ui_enum, UIEnum
+from pytoy.ui.vscode.api import Api
 
 @CommandManager.register(name="VimReboot")
 class VimReboot:

@@ -3,7 +3,7 @@ import time
 from contextlib import contextmanager
 
 # Conversion to the number or id.
-from pytoy.ui_pytoy.vim._converter import (
+from pytoy.ui.vim._converter import (
     to_buffer_number,
     to_window_number,
     to_tabpage_number,

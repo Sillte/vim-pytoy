@@ -1,10 +1,10 @@
 from pytoy.command_manager import CommandManager, OptsArgument 
 
-from pytoy.ui_pytoy.vscode.api import Api
-from pytoy.ui_pytoy.vscode.document import Api, Uri, Document, get_uris, BufferURISolver
-from pytoy.ui_pytoy.vscode.document_user import sweep_editors, make_document
-from pytoy.ui_pytoy.vscode.focus_controller import get_uri_to_views
-from pytoy.ui_pytoy.pytoy_buffer import PytoyBuffer, PytoyBufferVSCode
+from pytoy.ui.vscode.api import Api
+from pytoy.ui.vscode.document import Api, Uri, Document, get_uris, BufferURISolver
+from pytoy.ui.vscode.document_user import sweep_editors, make_document
+from pytoy.ui.vscode.focus_controller import get_uri_to_views
+from pytoy.ui.pytoy_buffer import PytoyBuffer, PytoyBufferVSCode
 from pytoy.timertask_manager import TimerTaskManager  
 import vim
 import os
@@ -12,7 +12,7 @@ from pytoy.buffer_executor import BufferExecutor
 from pytoy import TERM_STDOUT
 from pathlib import Path
 from pytoy.environment_manager import EnvironmentManager
-from pytoy.ui_pytoy import make_buffer
+from pytoy.ui import make_buffer
 
 
 

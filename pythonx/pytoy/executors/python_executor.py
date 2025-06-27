@@ -11,7 +11,7 @@ from pytoy.buffer_executor import BufferExecutor
 from pytoy.environment_manager import EnvironmentManager
 
 
-from pytoy.ui_pytoy import PytoyBuffer, PytoyQuickFix
+from pytoy.ui import PytoyBuffer, PytoyQuickFix
 
 class PythonExecutor(BufferExecutor):
     def runfile(self, path, stdout: PytoyBuffer, stderr: PytoyBuffer, *, cwd=None, env=None, force_uv=None):

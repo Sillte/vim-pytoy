@@ -78,7 +78,7 @@ class EnvironmentManager:
         Handling the global state of VIM.
         """
         import vim
-        from pytoy.ui_pytoy.lightline_utils import Lightline
+        from pytoy.ui.lightline_utils import Lightline
 
         lightline = Lightline()
         uv_mode = "uv-mode"
@@ -97,7 +97,7 @@ class EnvironmentManager:
         Handling the global state of VIM.
         """
         import vim
-        from pytoy.ui_pytoy.lightline_utils import Lightline
+        from pytoy.ui.lightline_utils import Lightline
         lightline = Lightline()
 
         uv_mode = "uv-mode"

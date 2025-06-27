@@ -1,7 +1,7 @@
 import vim
 
-from pytoy.ui_pytoy.vscode.api import Api
-from pytoy.ui_pytoy.vscode.document import BufferURISolver, Uri
+from pytoy.ui.vscode.api import Api
+from pytoy.ui.vscode.document import BufferURISolver, Uri
 from contextlib import contextmanager
 
 

@@ -7,7 +7,7 @@ from pytoy.buffer_executor import BufferExecutor
 from pytoy.pytools_utils import PytestDecipher, ScriptDecipher
 
 from pytoy.environment_manager import EnvironmentManager
-from pytoy.ui_pytoy import PytoyBuffer, PytoyQuickFix
+from pytoy.ui import PytoyBuffer, PytoyQuickFix
 
 # def _set_focus(win_id: int, topline: int | None = None):
 #    height = int(vim.eval(f"winheight({win_id})"))
