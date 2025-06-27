@@ -185,7 +185,7 @@ _G_LIGHTLINE = vim.eval("g:lightline")
 Below, customization.
 """
 
-from pytoy.function_manager import PytoyVimFunctions
+from pytoy.vim_function import PytoyVimFunctions
 
 class Lightline(_Lightline):
     """
