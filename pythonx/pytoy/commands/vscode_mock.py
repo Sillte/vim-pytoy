@@ -1,4 +1,4 @@
-from pytoy.command_manager import CommandManager, OptsArgument 
+from pytoy.command import CommandManager, OptsArgument 
 
 from pytoy.ui.vscode.api import Api
 from pytoy.ui.vscode.document import Api, Uri, Document, get_uris, BufferURISolver

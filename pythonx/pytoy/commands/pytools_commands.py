@@ -2,7 +2,7 @@
 """
 
 import vim
-from pytoy.command_manager import CommandManager
+from pytoy.command import CommandManager
 from pytoy.ui import make_buffer
 from pytoy.ui import windows_utils
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
