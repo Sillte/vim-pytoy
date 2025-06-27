@@ -1,14 +1,15 @@
 import shlex
 from typing import Callable
+from typing import TypeAlias
 import inspect
 
 import vim
 
-from pytoy.command_manager.range_count_option import RangeCountOption, RangeCountType
-from pytoy.command_manager._opts_converter import _OptsConverter
-from pytoy.command_manager._customlist_manager import _CustomListManager
+from pytoy.command.range_count_option import RangeCountOption, RangeCountType
+from pytoy.command._opts_converter import _OptsConverter
+from pytoy.command._customlist_manager import _CustomListManager
 
-from pytoy.command_manager._opts_converter import OptsArgument  # NOQA
+from pytoy.command._opts_converter import OptsArgument  # NOQA
 
 
 class CommandManager:
@@ -294,6 +295,9 @@ EOF""".strip()
                 cls.deregister(name=name, no_exist_ok=False)
             else:
                 raise ValueError(f"The same `command` is already registered. `{name=}`")
+            
+
+Command: TypeAlias = CommandManager
 
 
 if __name__ == "__main__":
