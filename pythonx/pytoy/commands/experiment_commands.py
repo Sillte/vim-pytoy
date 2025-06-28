@@ -5,7 +5,7 @@ from pytoy.environment_manager import EnvironmentManager
 from pytoy.ui import make_buffer
 from pytoy.command import CommandManager, OptsArgument 
 
-from pytoy.buffer_executor import BufferExecutor
+from pytoy.lib_tools.buffer_executor import BufferExecutor
 from pytoy import TERM_STDOUT
 
 

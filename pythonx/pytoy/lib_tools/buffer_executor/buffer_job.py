@@ -11,7 +11,7 @@ from pytoy.infra.vim_function import PytoyVimFunctions
 
 from pytoy.ui import PytoyBuffer
 from pytoy.ui.pytoy_buffer import  PytoyBufferVim
-from pytoy.buffer_executor.command_wrapper import CommandWrapper
+from pytoy.lib_tools.buffer_executor.command_wrapper import CommandWrapper
 
 
 naive_wrapper = CommandWrapper()

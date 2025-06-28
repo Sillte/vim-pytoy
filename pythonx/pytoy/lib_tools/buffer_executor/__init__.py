@@ -5,8 +5,8 @@ from typing import Optional, Callable
 
 from pytoy.ui import PytoyBuffer
 
-from pytoy.buffer_executor.command_wrapper import CommandWrapper
-from pytoy.buffer_executor.buffer_job import BufferJobProtocol, VimBufferJob, NVimBufferJob
+from pytoy.lib_tools.buffer_executor.command_wrapper import CommandWrapper
+from pytoy.lib_tools.buffer_executor.buffer_job import BufferJobProtocol, VimBufferJob, NVimBufferJob
 
 naive_wrapper = CommandWrapper()
 
