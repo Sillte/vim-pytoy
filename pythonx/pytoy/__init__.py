@@ -3,9 +3,9 @@ import vim
 from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.lib_tools.environment_manager.venv_utils import VenvManager
 from pytoy.ui.lightline_utils import Lightline
-from pytoy.executors.ipython_terminal import IPythonTerminal
+from pytoy.tools.ipython_terminal import IPythonTerminal
 
-from pytoy.executors.python_executor import PythonExecutor
+from pytoy.tools.python_executor import PythonExecutor
 
 
 TERM_STDOUT = "__pystdout__"  # TERIMINAL NAME of `stdout`.
