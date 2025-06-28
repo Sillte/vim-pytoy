@@ -112,7 +112,7 @@ class RuffChecker:
     def __call__(self, opts: dict):
         from pytoy import TERM_STDOUT
         from pytoy.executors import RuffExecutor
-        from pytoy.environment_manager import EnvironmentManager
+        from pytoy.lib_tools.environment_manager import EnvironmentManager
         fargs = opts["fargs"]
         if "workspace" in fargs:
             # This is using the knowledge that 

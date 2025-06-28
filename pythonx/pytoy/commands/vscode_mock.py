@@ -11,7 +11,7 @@ import os
 from pytoy.lib_tools.buffer_executor import BufferExecutor
 from pytoy import TERM_STDOUT
 from pathlib import Path
-from pytoy.environment_manager import EnvironmentManager
+from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.ui import make_buffer
 
 
