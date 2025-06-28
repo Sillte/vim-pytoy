@@ -6,7 +6,7 @@ from pytoy.lib_tools.buffer_executor import BufferExecutor
 
 from pytoy.pytools_utils import PytestDecipher, ScriptDecipher
 
-from pytoy.environment_manager import EnvironmentManager
+from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.ui import PytoyBuffer, PytoyQuickFix
 
 # def _set_focus(win_id: int, topline: int | None = None):

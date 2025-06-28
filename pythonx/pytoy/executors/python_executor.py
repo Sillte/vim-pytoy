@@ -8,7 +8,7 @@ from shlex import quote
 from pytoy.lib_tools.buffer_executor import BufferExecutor
 
 # `set_default_execution_mode` is carried out only in `__init__.py`
-from pytoy.environment_manager import EnvironmentManager
+from pytoy.lib_tools.environment_manager import EnvironmentManager
 
 
 from pytoy.ui import PytoyBuffer, PytoyQuickFix

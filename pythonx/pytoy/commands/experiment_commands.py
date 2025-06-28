@@ -1,7 +1,7 @@
 import vim
 import os
 from pathlib import Path
-from pytoy.environment_manager import EnvironmentManager
+from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.ui import make_buffer
 from pytoy.command import CommandManager, OptsArgument 
 
