@@ -2,12 +2,12 @@ import vim
 import time
 from queue import Queue
 from queue import Empty
-from pytoy.timertask import TimerTask
+from pytoy.infra.timertask import TimerTask
 
 from pathlib import Path
 from typing import Callable, Protocol
 
-from pytoy.vim_function import PytoyVimFunctions
+from pytoy.infra.vim_function import PytoyVimFunctions
 
 from pytoy.ui import PytoyBuffer
 from pytoy.ui.pytoy_buffer import  PytoyBufferVim

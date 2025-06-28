@@ -5,7 +5,7 @@ from pytoy.ui.vscode.document import Api, Uri, Document, get_uris, BufferURISolv
 from pytoy.ui.vscode.document_user import sweep_editors, make_document
 from pytoy.ui.vscode.focus_controller import get_uri_to_views
 from pytoy.ui.pytoy_buffer import PytoyBuffer, PytoyBufferVSCode
-from pytoy.timertask import TimerTask  
+from pytoy.infra.timertask import TimerTask  
 import vim
 import os
 from pytoy.buffer_executor import BufferExecutor
