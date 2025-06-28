@@ -5,7 +5,7 @@ This module is intended to provide the common interface for bufffer.
 * neovim
 * neovim+vscode
 
-Usage: executors / 
+Usage: BufferExecutor / 
 
 """
 

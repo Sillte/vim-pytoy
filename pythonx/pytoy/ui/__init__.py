@@ -6,7 +6,7 @@ This module is intended to provide the common interface of ui.
 * neovim
 * neovim+vscode
 
-Usage: executors:
+Usage: BufferExecutor:
 
 """
 
