@@ -14,7 +14,7 @@ class PyTestCommand:
 
     def __call__(self, command_type: str = "func"):
         import vim
-        from pytoy.executors import PytestExecutor
+        from pytoy.tools import PytestExecutor
         from pytoy import TERM_STDOUT
 
         executor = PytestExecutor()
@@ -42,7 +42,7 @@ class PyTestCommand:
 @CommandManager.register(name="Mypy")
 class MypyCommand:
     def __call__(self):
-        from pytoy.executors import MypyExecutor
+        from pytoy.tools import MypyExecutor
         from pytoy import TERM_STDOUT
         import vim
         path = vim.current.buffer.name
@@ -111,7 +111,7 @@ class GotoDefinitionCommand:
 class RuffChecker:
     def __call__(self, opts: dict):
         from pytoy import TERM_STDOUT
-        from pytoy.executors import RuffExecutor
+        from pytoy.tools import RuffExecutor
         from pytoy.lib_tools.environment_manager import EnvironmentManager
         fargs = opts["fargs"]
         if "workspace" in fargs:
