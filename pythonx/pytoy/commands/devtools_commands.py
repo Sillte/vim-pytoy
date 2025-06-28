@@ -4,7 +4,7 @@ import json
 import vim
 from pytoy.command import CommandManager
 from pytoy.devtools.vimplugin_package import VimPluginPackage
-from pytoy.timertask import TimerTask
+from pytoy.infra.timertask import TimerTask
 from pytoy.ui import get_ui_enum, UIEnum
 from pytoy.ui.vscode.api import Api
 

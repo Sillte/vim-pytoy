@@ -10,7 +10,7 @@ from typing import Protocol, Any
 
 import json
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
-from pytoy.timertask import TimerTask
+from pytoy.infra.timertask import TimerTask
 
 from shlex import quote
 
