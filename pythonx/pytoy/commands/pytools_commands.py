@@ -42,7 +42,7 @@ class PyTestCommand:
 @CommandManager.register(name="Mypy")
 class MypyCommand:
     def __call__(self):
-        from pytoy.tools import MypyExecutor
+        from pytoy.tools.mypy import MypyExecutor
         from pytoy import TERM_STDOUT
         import vim
         path = vim.current.buffer.name
