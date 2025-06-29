@@ -111,7 +111,7 @@ class GotoDefinitionCommand:
 class RuffChecker:
     def __call__(self, opts: dict):
         from pytoy import TERM_STDOUT
-        from pytoy.tools import RuffExecutor
+        from pytoy.tools.ruff import RuffExecutor
         from pytoy.lib_tools.environment_manager import EnvironmentManager
         fargs = opts["fargs"]
         if "workspace" in fargs:
