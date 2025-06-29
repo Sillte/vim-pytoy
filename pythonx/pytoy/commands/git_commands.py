@@ -3,7 +3,7 @@
 import vim 
 from pathlib import Path
 from pytoy.command import CommandManager
-from pytoy.tools.git_utils import get_remote_link
+from pytoy.tools.git import get_remote_link
 
 @CommandManager.register(name="GitAddress", range="")
 def get_gitaddress(opts: dict):
