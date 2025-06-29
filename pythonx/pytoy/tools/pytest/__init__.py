@@ -2,11 +2,9 @@ import vim
 
 from pytoy.lib_tools.buffer_executor import BufferExecutor
 
-
-from pytoy.tools.pytools_utils import PytestDecipher, ScriptDecipher
-
 from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.ui import PytoyBuffer, PytoyQuickFix
+from pytoy.tools.pytest.utils import PytestDecipher, ScriptDecipher
 
 
 

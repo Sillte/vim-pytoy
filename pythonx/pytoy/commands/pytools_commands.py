@@ -150,7 +150,7 @@ class CSpellCommand:
 
         from pathlib import Path
         from pytoy import TERM_STDOUT
-        from pytoy.tools.pytools_utils.cspell_utils import CSpellOneFileChecker
+        from pytoy.tools.cspell import CSpellOneFileChecker
 
         path = vim.current.buffer.name
         if Path(path).suffix == ".py":
