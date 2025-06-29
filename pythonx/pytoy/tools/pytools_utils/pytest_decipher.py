@@ -68,8 +68,7 @@ class PytestDecipher:
         item_to_lines = defaultdict(list)
         item = None
         for line in section_text.split("\n"):
-            m = item_separator.match(line)
-            if item_separator.match(line):
+            if m := item_separator.match(line):
                 item = m.group(1)
             if item is not None:
                 item_to_lines[item].append(line)
