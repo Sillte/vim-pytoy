@@ -11,7 +11,7 @@ from pytoy.lib_tools.buffer_executor import BufferExecutor
 from pytoy.lib_tools.environment_manager import EnvironmentManager
 
 
-from pytoy.ui import PytoyBuffer, PytoyQuickFix
+from pytoy.ui import PytoyBuffer, PytoyQuickFix, handle_records
 
 class PythonExecutor(BufferExecutor):
     def runfile(self, path, stdout: PytoyBuffer, stderr: PytoyBuffer, *, cwd=None, env=None, force_uv=None):
@@ -35,20 +35,14 @@ class PythonExecutor(BufferExecutor):
         cwd = self.run_cwd
         return self.runfile(self.run_path, stdout, stderr, cwd=cwd, force_uv=force_uv)
 
-    def prepare(self):
-        self.win_id = vim.eval("win_getid()")
-
     def on_closed(self):
         assert self.stdout is not None 
         assert self.stderr is not None 
 
         error_msg = self.stderr.content.strip()
         qflist = self._make_qflist(error_msg)
+        handle_records(PytoyQuickFix(), records=qflist, win_id=None, is_open=False)
 
-        if qflist:
-            PytoyQuickFix().setlist(qflist, self.win_id)
-        else:
-            PytoyQuickFix().close(self.win_id)
         if not error_msg:
             self.stderr.hide()
 
