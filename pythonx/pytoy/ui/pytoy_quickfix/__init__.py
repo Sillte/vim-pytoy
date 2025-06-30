@@ -222,7 +222,12 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
 
 
 class PytoyQuickFix(PytoyQuickFixProtocol):
-    def __init__(self, impl: PytoyQuickFixProtocol | None = None, *, name : str | None = "$default"):
+    def __init__(
+        self,
+        impl: PytoyQuickFixProtocol | None = None,
+        *,
+        name: str | None = "$default",
+    ):
         if impl is None:
             if name is None:
                 raise ValueError("impl or name must be set.")
@@ -277,6 +282,21 @@ def _get_protocol(name: str) -> PytoyQuickFixProtocol:
 def get_pytoy_quickfix(name: str) -> PytoyQuickFix:
     impl = _get_protocol(name)
     return PytoyQuickFix(impl)
+
+
+def handle_records(
+    pytoy_quickfix: PytoyQuickFix,
+    records: list[dict],
+    win_id: int | None = None,
+    is_open: bool = True,
+):
+    """When `records` are given, `PytoyQuickFix`  handles them."""
+    if records:
+        pytoy_quickfix.setlist(records, win_id=win_id)
+        if is_open:
+            PytoyQuickFix().open(win_id=win_id)
+    else:
+        PytoyQuickFix().close(win_id=win_id)
 
 
 if __name__ == "__main__":

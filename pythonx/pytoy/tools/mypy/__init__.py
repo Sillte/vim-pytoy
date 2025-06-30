@@ -4,16 +4,7 @@ import re
 from pytoy.lib_tools.buffer_executor import BufferExecutor
 
 from pytoy.lib_tools.environment_manager import EnvironmentManager
-from pytoy.ui import PytoyQuickFix
-
-
-def _handle_records(records: list[dict], is_open: bool):
-    if records:
-        PytoyQuickFix().setlist(records, win_id=None)
-        if is_open:
-            PytoyQuickFix().open(win_id=None)
-    else:
-        PytoyQuickFix().close(win_id=None)
+from pytoy.ui import PytoyQuickFix, handle_records
 
 
 class MypyExecutor(BufferExecutor):
@@ -32,14 +23,12 @@ class MypyExecutor(BufferExecutor):
         # stdout[0] = command
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
-
     def on_closed(self):
         assert self.stdout is not None
         messages = self.stdout.content
 
         qflist = self._make_qflist(messages)
-        _handle_records(qflist, is_open=True)
-
+        handle_records(PytoyQuickFix(), qflist, win_id=None, is_open=True)
 
     def _make_qflist(self, string):
         # Record of `mypy`.
