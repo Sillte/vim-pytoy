@@ -1,5 +1,9 @@
-# vim-pytoy
-Miscellaneous python operations around me. (Personal practice for vim-plugin.)
+# vim-pytoy 
+
+This is a plugin framework for Vim/Neovim/VSCode
+(Personal practice for vim-plugin). 
+It focuses on using python tools within vim-buffers. 
+
 
 ## Environment
 
@@ -9,7 +13,6 @@ Miscellaneous python operations around me. (Personal practice for vim-plugin.)
 * pytest
 * lightline
 
-# Plugin Framework for Vim/Neovim/VSCode (Personal practice for vim-plugin)
 
 
 ## Design Overview
