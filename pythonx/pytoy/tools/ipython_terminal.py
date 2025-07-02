@@ -197,8 +197,8 @@ class IPythonTerminal:
             vim.command(f"redraw")
 
         while (not self._running_terminate):
-            TimerTask.execute_oneshot(_inner, 1)
             time.sleep(0.5)   # It seems this is required.
+            TimerTask.execute_oneshot(_inner, 1)
 
             # (2022/02/06) I wonder whether it is effecive?
             #output_buf.append(f"_running_terminate {self._running_terminate}")
@@ -287,15 +287,9 @@ class IPythonTerminal:
                     break
                 time.sleep(0.1)
 
-            # Ideally, I would like to call 
-            # `self.to_running`, however,  
-            # this is not `MainThread` and `to_running` calls `daemon` Thread.
-            # so `self.to_running` is not good. 
-            # (2022/02/01) I thought above, however,  
-            # it seems not to cause problems.
             self.to_running()
-            self._cpaste(text)
-            #TimerTask.execute_oneshot(lambda: self._cpaste(text), 1) 
+            #self._cpaste(text)
+            TimerTask.execute_oneshot(lambda: self._cpaste(text), 1) 
 
         except Exception as e:
             print("Error _send_first", str(e))
