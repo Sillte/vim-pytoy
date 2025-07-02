@@ -7,7 +7,11 @@ NOTE:
 import vim
 import time 
 import re
+import json 
 from threading import Thread
+from queue import Queue, Empty
+
+from pytoy.infra.timertask import TimerTask
 from pytoy.ui.pytoy_buffer import make_buffer, PytoyBufferVim
 from pytoy.ui import get_ui_enum, UIEnum
 
@@ -15,13 +19,14 @@ from pytoy.ui import get_ui_enum, UIEnum
 class IPythonTerminal:
     # vim functions. 
     def v_sendkeys(self, buffer: int, content: str, naive: bool = True):
-        import shlex
         if naive:
             vim.command(f"call term_sendkeys({buffer}, '{content}')")
         else:
-            content = shlex.quote(content)
-            content = json.dumps(content)
-            vim.command(f"call term_sendkeys({buffer}, json_decode({content}))")
+            content = content.replace("'", '"')
+            #json_content = json.dumps(content) 
+            #vim.command(f"""call term_sendkeys({buffer}, json_decode('{json_content}'))""")
+            vim.command(f"call term_sendkeys({buffer}, '{content}')")
+
 
     def v_start(self, command, options):
         import json 
@@ -70,6 +75,9 @@ class IPythonTerminal:
         pytoy_buffer = make_buffer(output_bufname, "vertical")
         assert isinstance(pytoy_buffer.impl, PytoyBufferVim)
 
+        self.pytoy_buffer = pytoy_buffer
+        self.stdout_queue = Queue()
+        self.consume_task = None
         self.output_buffer: int = pytoy_buffer.impl.buffer.number
         # Settings for buffer.
         vim.buffers[self.output_buffer].options["buftype"] = "nofile"
@@ -96,12 +104,28 @@ class IPythonTerminal:
             return
         assert self.running_thread is not None
         if not self.running_thread.is_alive():
+            self._consume_queue()
+            if self.consume_task:
+                TimerTask.deregister(self.consume_task)
             self.running_thread = None
+            self.consume_task = None
             return 
         self._running_terminate = True
         self.running_thread.join()
+        self._consume_queue()
+        if self.consume_task:
+            TimerTask.deregister(self.consume_task)
         self._running_terminate = False
         self.running_thread = None
+        self.consume_task = None
+
+    def _consume_queue(self):
+        while self.stdout_queue.qsize():
+            try:
+                line = self.stdout_queue.get_nowait()
+                self.pytoy_buffer.append(line)
+            except Empty:
+                break
 
     def to_running(self):
         """Transit to `RUNNING` state. 
@@ -114,6 +138,7 @@ class IPythonTerminal:
             self.to_idel()
         self._running_terminate = False
         self.running_thread = Thread(target=self._loop_function, daemon=True)
+        self.consume_task = TimerTask.register(self._consume_queue, 300)
         self.running_thread.start()
 
     def _loop_function(self):
@@ -139,12 +164,13 @@ class IPythonTerminal:
 
             # order is important.
             # escape is required.
-            string = string.replace("\\", "\\\\")
-            string = string.replace(r'"', r'\"')
-            string = string.replace(r"'", r"''")
-            server = vim.eval("v:servername")
-            func = vim.Function("remote_expr")
-            v = func(server, rf'execute("call appendbufline({buf}, \'$\', \'{string}\')")')
+            #string = string.replace("\\", "\\\\")
+            #string = string.replace(r'"', r'\"')
+            #string = string.replace(r"'", r"''")
+            #server = vim.eval("v:servername")
+            #func = vim.Function("remote_expr")
+            #v = func(server, rf'execute("call appendbufline({buf}, \'$\', \'{string}\')")')
+            self.stdout_queue.put(string)
 
         def _transcript():
             nonlocal t_term_lines
@@ -160,7 +186,7 @@ class IPythonTerminal:
                     # output_buf.append("`stdout` is full.")
                     break
 
-        while (not self._running_terminate):
+        def _inner():
             try:
                 if _is_terminated():
                     self._running_terminate = True
@@ -168,15 +194,18 @@ class IPythonTerminal:
             except Exception as e:
                 output_buf.append(str(e))
                 self._running_terminate = True
+            vim.command(f"redraw")
+
+        while (not self._running_terminate):
+            TimerTask.execute_oneshot(_inner, 1)
+            time.sleep(0.5)   # It seems this is required.
 
             # (2022/02/06) I wonder whether it is effecive?
-            time.sleep(0.5)   # It seems this is required.
-            vim.command(f"redraw")
             #output_buf.append(f"_running_terminate {self._running_terminate}")
             
         # (2022/07/03): This procedure seems required.
-        time.sleep(0.5)
-        vim.command(f"redraw")
+        #time.sleep(0.5)
+        #vim.command(f"redraw")
 
 
     def reset_output(self):
@@ -211,16 +240,15 @@ class IPythonTerminal:
             thread.start()
             self._is_first_execution = False
             return 
-        else:
-            self.to_idle()
-            # The position is important.
-            # Here, it is assured that another `Thread` does not modify the buffer. 
-            self.reset_output() 
-            self.to_running()
-            # The running codes are stopped.
-            self.v_sendkeys(self.term_buffer, "\03", naive=True)  # <ctrl-c>
-            # I do not know, however, the time-interval is mandatory to send the control code.
-            time.sleep(0.02)
+        self.to_idle()
+        # The position is important.
+        # Here, it is assured that another `Thread` does not modify the buffer. 
+        self.reset_output() 
+        self.to_running()
+        # The running codes are stopped.
+        self.v_sendkeys(self.term_buffer, "\03", naive=True)  # <ctrl-c>
+        # I do not know, however, the time-interval is mandatory to send the control code.
+        time.sleep(0.02)
 
         self._cpaste(text, 0.1)
 
@@ -267,6 +295,7 @@ class IPythonTerminal:
             # it seems not to cause problems.
             self.to_running()
             self._cpaste(text)
+            #TimerTask.execute_oneshot(lambda: self._cpaste(text), 1) 
 
         except Exception as e:
             print("Error _send_first", str(e))
@@ -279,7 +308,7 @@ class IPythonTerminal:
         # this `wait_time` seems important.
         time.sleep(wait_time)
         text = text.replace("\n", "\r")
-        self.v_sendkeys(self.term_buffer, text, naive=True)
+        self.v_sendkeys(self.term_buffer, text, naive=False)
         self.v_sendkeys(self.term_buffer, "\r--\r", naive=True)
 
 
