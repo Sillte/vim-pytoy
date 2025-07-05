@@ -5,4 +5,3 @@
 from pytoy.infra.command import Command  # NOQA
 from pytoy.infra.command import CommandManager # NOQA
 from pytoy.infra.command import OptsArgument # NOQA
-
