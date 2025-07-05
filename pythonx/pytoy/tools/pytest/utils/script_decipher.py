@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-import parso
-
 
 @dataclass
 class _TestTarget:
@@ -14,8 +12,7 @@ class _TestTarget:
 
     @property
     def command(self):
-        """Return the test specification comment
-        """
+        """Return the test specification comment"""
         if not self.classname:
             return f'pytest "{self.path}::{self.funcname}"'
         return f'pytest "{self.path}::{self.classname}::{self.funcname}"'
@@ -36,6 +33,10 @@ class ScriptDecipher:
 
     @classmethod
     def from_path(cls, path: Path):
+        # [NOTE]: import of parso takes some time,
+        # so, we do now want to import it at initialization.
+        import parso
+
         path = Path(path)
         text = path.read_text()
         module = parso.parse(text)
@@ -54,6 +55,7 @@ class ScriptDecipher:
                 path=path, start_line=start_line, end_line=end_line, funcname=name
             )
             return target
+
         targets = []
         children = getattr(module, "children", [])
         for node in children:
@@ -103,9 +105,9 @@ class ScriptDecipher:
 if __name__ == "__main__":
     import parso
     from pathlib import Path
+
     module = parso.parse(Path(__file__).read_text())
     print(module)
     interpreter = ScriptDecipher.from_path(__file__)
     print(len(interpreter.targets))
     p = interpreter.pick(12)
-
