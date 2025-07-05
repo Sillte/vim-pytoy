@@ -113,6 +113,10 @@ class PytoyQuickFixNormal(PytoyQuickFixProtocol):
 
 
 class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
+    """
+    [NOTE]: VScode does not have concept of `locationlist`.
+    So, if `win_id` is given, they are treated as `quickfix` list.
+    """
     def __init__(
         self,
     ):

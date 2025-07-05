@@ -17,7 +17,7 @@ class Buffer:
     def number(self) -> int: ...
 
     @property
-    def name(self) -> int: ...
+    def name(self) -> str: ...
 
     def append(self, line: str): ...
 
@@ -34,6 +34,7 @@ class Current:
     window: Window
     tabpage: Any
     line: str
+
 current: Current
 
 options: Any

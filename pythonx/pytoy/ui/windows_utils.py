@@ -57,6 +57,4 @@ def create_window(bufname: str):
 
 if __name__ == "__main__":
     pass
- 
-
-get_ui_enum()
+    get_ui_enum()

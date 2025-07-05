@@ -8,9 +8,11 @@ from pytoy.infra.timertask import TimerTask
 from pytoy.ui import get_ui_enum, UIEnum
 from pytoy.ui.vscode.api import Api
 
+
 @CommandManager.register(name="VimReboot")
 class VimReboot:
     name = "VimReboot"
+
     def __call__(self):
         if get_ui_enum() in {UIEnum.VIM, UIEnum.NVIM}:
             try:
@@ -26,8 +28,7 @@ class VimReboot:
             except ValueError as e:
                 plugin_folder = None
             path = Path(vim.eval("stdpath('cache')")) / "vscode_restarted.json"
-            data = {"plugin_folder": plugin_folder, 
-                    "time": time.time()}
+            data = {"plugin_folder": plugin_folder, "time": time.time()}
             path.write_text(json.dumps(data, indent=4))
 
             api = Api()
@@ -37,6 +38,7 @@ class VimReboot:
 @CommandManager.register(name="DebugInfo")
 def debug_info():
     import pytoy
+
     print(f"pytoy_location: `{pytoy.__file__}`")
 
 
@@ -49,9 +51,11 @@ class TimerTaskManagerDebug:
         name = TimerTaskManagerDebug.taskname
         if TimerTask.is_registered(name):
             print("Already Registered.")
-            return 
+            return
+
         def _func():
             print("TimerTask Hello.")
+
         TimerTask.register(_func, interval=1000, name=name)
 
     @CommandManager.register(name="TimerTaskStop")
@@ -63,19 +67,3 @@ class TimerTaskManagerDebug:
             print("Deregistered.")
         else:
             print("NotStarted")
-
-
-#CommandManager.register(name="DEBUG")(TimerTaskManagerDebug.start)
-
-
-#taskname = "TimerTaskManagerDebug"
-#@CommandManager.register(name="TimerTaskDebugStart")
-#def start():
-#    if TimerTask.is_registered(taskname):
-#        print("Already Registered.")
-#        return 
-#    def _func():
-#        print("TimerTask Hello.")
-#    TimerTask.register(_func, name=taskname)
-#
-
