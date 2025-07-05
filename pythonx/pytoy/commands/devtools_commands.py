@@ -6,7 +6,6 @@ from pytoy.command import CommandManager
 from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.infra.timertask import TimerTask
 from pytoy.ui import get_ui_enum, UIEnum
-from pytoy.ui.vscode.api import Api
 
 
 @CommandManager.register(name="VimReboot")
@@ -14,6 +13,7 @@ class VimReboot:
     name = "VimReboot"
 
     def __call__(self):
+        from pytoy.ui.vscode.api import Api
         if get_ui_enum() in {UIEnum.VIM, UIEnum.NVIM}:
             try:
                 package = VimPluginPackage()
