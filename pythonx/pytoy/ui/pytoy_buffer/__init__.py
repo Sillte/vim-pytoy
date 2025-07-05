@@ -9,100 +9,10 @@ Usage: BufferExecutor /
 
 """
 
-import vim
-from typing import Protocol
 from pytoy.ui.ui_enum import UIEnum, get_ui_enum
-from pytoy.ui.vscode.document import Document, Uri
+from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol
 
 
-class PytoyBufferProtocol(Protocol):
-    def init_buffer(self, content: str = "") -> None:
-        """Set the content of buffer"""
-
-    def append(self, content: str) -> None:
-        ...
-
-    @property
-    def content(self) -> str:
-        ...
-
-    def focus(self):
-        ...
-
-    def hide(self):
-        ...
-
-
-class PytoyBufferVim(PytoyBufferProtocol):
-    def __init__(self, buffer: "vim.Buffer"):
-        self.buffer = buffer
-
-    def init_buffer(self, content: str = "") -> None:
-        """Set the content of buffer"""
-        self.buffer[:] = content.split("\n")
-
-    def append(self, content: str) -> None:
-        if not content:
-            return
-        lines = content.split("\n")
-        if self._is_empty():
-            self.buffer[:] = [lines[0]]
-        else:
-            self.buffer.append(lines[0])
-        for line in lines[1:]:
-            self.buffer.append(line)
-
-    @property
-    def content(self) -> str:
-        return vim.eval("join(getbufline({}, 1, '$'), '\n')".format(self.buffer.number))
-
-    def focus(self):
-        bufnr = self.buffer.number
-        winid = int(vim.eval(f"bufwinid({bufnr})"))
-        if winid != -1:
-            vim.command(f"call win_gotoid({winid})")
-        else:
-            vim.command(f"buffer {bufnr}")
-
-    def hide(self):
-        nr = int(vim.eval(f"bufwinnr({self.buffer.number})"))
-        if 0 <= nr:
-            vim.command(f":{nr}close")
-
-    def _is_empty(self) -> bool:
-        if len(self.buffer) == 0:
-            return True
-        if len(self.buffer) == 1 and self.buffer[0] == "":
-            return True
-        return False
-
-
-class PytoyBufferVSCode(PytoyBufferProtocol):
-    def __init__(self, document: Document):
-        self.document = document
-
-    def init_buffer(self, content: str = "") -> None:
-        """Set the content of buffer"""
-        if content and content[-1] != "\n":
-            content += "\n"
-        self.document.content = content
-
-    def append(self, content: str) -> None:
-        if not content:
-            return
-        self.document.append(content)
-
-    @property
-    def content(self) -> str:
-        return self.document.content
-
-    def focus(self):
-        self.document.show()
-
-    def hide(self):
-        # [NOTE]: Due to the difference of management of window and `Editor` in vscode
-        # this it not implemented.
-        pass
 
 
 class PytoyBuffer(PytoyBufferProtocol):
@@ -133,8 +43,11 @@ class PytoyBuffer(PytoyBufferProtocol):
 
 def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
     def make_vscode():
+        from pytoy.ui.vscode.document import Document, Uri
+        from pytoy.ui.pytoy_buffer.impl_vscode import PytoyBufferVSCode
         from pytoy.ui.vscode.document_user import make_document
         from pytoy.ui.vscode.focus_controller import store_focus, get_uri_to_views
+
 
         # sweep_editors()
         # [NOTE]: As of 2025/06/16, the method of initialization is different
@@ -150,6 +63,7 @@ def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
 
     def make_vim():
         from pytoy.ui.vim import create_window
+        from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
 
         stdout_window = create_window(stdout_name, mode)
         stdout_impl = PytoyBufferVim(stdout_window.buffer)
@@ -171,6 +85,7 @@ def make_duo_buffers(
             sweep_editors,
         )
         from pytoy.ui.vscode.focus_controller import store_focus
+        from pytoy.ui.pytoy_buffer.impl_vscode import PytoyBufferVSCode
 
         sweep_editors()
         with store_focus():
@@ -181,6 +96,7 @@ def make_duo_buffers(
 
     def make_vim():
         from pytoy.ui.vim import create_window
+        from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
 
         stdout_window = create_window(stdout_name, "vertical")
         stderr_window = create_window(stderr_name, "horizontal", stdout_window)

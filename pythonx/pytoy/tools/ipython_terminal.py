@@ -7,12 +7,11 @@ NOTE:
 import vim
 import time 
 import re
-import json 
 from threading import Thread
 from queue import Queue, Empty
 
 from pytoy.infra.timertask import TimerTask
-from pytoy.ui.pytoy_buffer import make_buffer, PytoyBufferVim
+from pytoy.ui.pytoy_buffer import make_buffer
 from pytoy.ui import get_ui_enum, UIEnum
 
     
@@ -73,6 +72,8 @@ class IPythonTerminal:
 
 
         pytoy_buffer = make_buffer(output_bufname, "vertical")
+
+        from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
         assert isinstance(pytoy_buffer.impl, PytoyBufferVim)
 
         self.pytoy_buffer = pytoy_buffer
