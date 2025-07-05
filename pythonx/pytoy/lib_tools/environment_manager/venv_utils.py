@@ -2,15 +2,13 @@
 
 """
 
+import os 
 import sys
-import subprocess
 from pathlib import Path
 from typing import List, Optional
 
-try:
-    import vim
-except ImportError:
-    pass
+import vim
+
 
 
 def search(
@@ -90,13 +88,6 @@ class VenvManager:
     """
     __cache = None
 
-    try:
-        import vim
-    except ImportError:
-        _is_vim = False
-    else:
-        _is_vim = True
-
     def __new__(cls):
         if  cls.__cache is None:
             self = object.__new__(cls)
@@ -147,8 +138,7 @@ class VenvManager:
         self.path = path
         self.name = name
 
-        if self._is_vim:
-            self.prev_vimpath = vim.eval("$PATH")
+        self.prev_vimpath = vim.eval("$PATH")
 
         activate(path)
 
@@ -157,8 +147,7 @@ class VenvManager:
         if not self.is_activated:
             return 
 
-        if self._is_vim:
-            vim.command(f"let $PATH='{self.prev_vimpath}'")
+        vim.command(f"let $PATH='{self.prev_vimpath}'")
         
         self._init()
 
@@ -176,12 +165,8 @@ class VenvManager:
         else:
             activate_path = self.path / "bin" / "activate"
 
-        try:
-            import vim
-        except ImportError:
-            external = True
-
         if external: 
+            import subprocess
             subprocess.run(["start", str(activate_path)], shell=True)
         else:
             number = vim.eval(rf'term_start(&shell)')
@@ -192,9 +177,6 @@ class VenvManager:
             path = _to_slash_path(activate_path)
             keys = rf'{_to_slash_path(path)} \<CR>'
             vim.eval(rf'term_sendkeys({number}, "{keys}")')
-
-# To omit the necessity of exclusive processings.
-VenvManager()
 
 
 """
@@ -261,7 +243,8 @@ def deactivate():
         pass
 
 if __name__ == "__main__":
-    vm = VenvManager()
-    vm.activate()
-    vm.term_start()
+    pass
+    #vm = VenvManager()
+    #vm.activate()
+    #vm.term_start()
     #print(pick("black", n_depth=3))
