@@ -10,7 +10,6 @@ from typing import Callable, Protocol
 from pytoy.infra.vim_function import PytoyVimFunctions
 
 from pytoy.ui import PytoyBuffer
-from pytoy.ui.pytoy_buffer import  PytoyBufferVim
 from pytoy.lib_tools.buffer_executor.command_wrapper import CommandWrapper
 
 
@@ -203,6 +202,7 @@ class VimBufferJob(BufferJobProtocol):
     def job_start(
         self, command: str, on_start_callable: Callable, on_closed_callable: Callable
     ):
+        from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
         options = dict()
         if self.stdout is not None:
             options["out_io"] = "buffer"
