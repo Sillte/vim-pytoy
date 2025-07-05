@@ -70,9 +70,13 @@ class QuickFix:
             # `bytes` keys are returned, so revised.
             return {_inner(key): _inner(value) for key, value in item.items()}
 
-        records = [_convert(item) for item in items]
+        if items:
+            records = [_convert(item) for item in items]
+        else:
+            records = [] 
         for record in records:
-            record["filename"] = vim.buffers[record["bufnr"]].name
+            bufnr = int(record["bufnr"])
+            record["filename"] = vim.buffers[bufnr].name
         return records
 
 
