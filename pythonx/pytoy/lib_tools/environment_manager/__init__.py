@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Callable
 import subprocess
 from enum import Enum
+import vim
+from pytoy.ui import lightline_utils
 
 
 class UvMode(str, Enum):
@@ -77,13 +79,10 @@ class EnvironmentManager:
         """Hook function when `uv_mode` becomes on.
         Handling the global state of VIM.
         """
-        import vim
-        from pytoy.ui.lightline_utils import Lightline
 
-        lightline = Lightline()
         uv_mode = "uv-mode"
-        if not lightline.is_registered(uv_mode):
-            lightline.register(uv_mode)
+        if not lightline_utils.is_registered(uv_mode):
+            lightline_utils.register(uv_mode)
         # Change the environment of `JEDI`.
         venv_path = self.get_uv_venv()
         prev_path = vim.vars.get("g:jedi#environment_path")
@@ -96,13 +95,10 @@ class EnvironmentManager:
         """Hook function when `uv_mode` becomes off.
         Handling the global state of VIM.
         """
-        import vim
-        from pytoy.ui.lightline_utils import Lightline
-        lightline = Lightline()
-
+        
         uv_mode = "uv-mode"
-        if lightline.is_registered(uv_mode):
-            lightline.deregister(uv_mode)
+        if lightline_utils.is_registered(uv_mode):
+            lightline_utils.deregister(uv_mode)
 
         # Change the environment of `JEDI`.
         if self._prev_venv_path:
