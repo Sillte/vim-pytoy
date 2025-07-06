@@ -1,4 +1,15 @@
 from pytoy.ui import get_ui_enum, UIEnum
+from pytoy.ui.windows_utils.protocol import WindowsUtilProtocol
+
+windows_util_instance = None
+
+def get_windows_util() -> WindowsUtilProtocol:
+    if get_ui_enum() == UIEnum.VSCODE:
+        from pytoy.ui.windows_utils.impl_vscode  import WindowsUtilVSCode
+        return WindowsUtilVSCode()
+    else:
+        from pytoy.ui.windows_utils.impl_vim  import WindowsUtilVim
+        return WindowsUtilVim()
 
 
 def sweep_windows() -> None:
@@ -9,37 +20,16 @@ def sweep_windows() -> None:
     while in `sweep_windows_vim` the left window remains.
 
     """
-    ui_enum = get_ui_enum()
-    if ui_enum == UIEnum.VSCODE:
-        from pytoy.ui.windows_utils.impl_vscode import sweep_windows
-
-        sweep_windows()
-    else:
-        from pytoy.ui.windows_utils.impl_vim import sweep_windows
-
-        sweep_windows()
-
+    windows_util = get_windows_util()
+    return windows_util.sweep_windows()
 
 def is_leftwindow() -> bool:
-    ui_enum = get_ui_enum()
-    if ui_enum == UIEnum.VSCODE:
-        from pytoy.ui.windows_utils.impl_vscode import is_leftwindow
-
-        return is_leftwindow()
-    else:
-        from pytoy.ui.windows_utils.impl_vim import is_leftwindow
-
-        return is_leftwindow()
-
+    windows_util = get_windows_util()
+    return windows_util.is_leftwindow()
 
 def create_window(bufname: str):
-    ui_enum = get_ui_enum()
-    if ui_enum == UIEnum.VSCODE:
-        print("Currently, not implemetend.")
-    else:
-        from pytoy.ui.windows_utils.impl_vim import create_window as create_window_vim
-
-        return create_window_vim(bufname)
+    windows_util = get_windows_util()
+    windows_util.create_window(bufname) 
 
 
 if __name__ == "__main__":
