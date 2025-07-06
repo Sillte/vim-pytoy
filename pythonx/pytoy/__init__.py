@@ -2,7 +2,7 @@ import vim
 
 from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.lib_tools.environment_manager.venv_utils import VenvManager
-from pytoy.ui.lightline_utils import Lightline
+from pytoy.ui import lightline_utils
 from pytoy.tools.ipython_terminal import IPythonTerminal
 
 from pytoy.tools.python import PythonExecutor
@@ -71,13 +71,14 @@ def activate():
         name = None
     venv_manager = VenvManager()
     venv_manager.activate(name)
-    Lightline().register(venv_manager.name)
+    if venv_manager.name:
+        lightline_utils.register(venv_manager.name)
 
 
 def deactivate():
     venv_manager = VenvManager()
-    Lightline().deregister(venv_manager.name)
-    venv_manager.deactivate()
+    if venv_manager.name:
+        lightline_utils.deregister(venv_manager.name)
 
 
 def envinfo():
