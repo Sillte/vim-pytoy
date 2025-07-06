@@ -3,13 +3,10 @@ it takes workaround.
 Due to specification, In case of VSCode, only quickfix-like code is used.  
 """
 
-from pathlib import Path
 from typing import Any
 
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol
-from pytoy.ui.pytoy_quickfix.impl_vim import PytoyQuickFixVim
-from pytoy.ui.pytoy_quickfix.impl_vscode import PytoyQuickFixVSCode
 
 
 class PytoyQuickFix(PytoyQuickFixProtocol):
@@ -57,12 +54,17 @@ _quickfix_protocol_cache = dict()
 def _get_protocol(name: str) -> PytoyQuickFixProtocol:
     if name in _quickfix_protocol_cache:
         return _quickfix_protocol_cache[name]
+
     ui_enum = get_ui_enum()
 
     def make_vscode():
+        from pytoy.ui.pytoy_quickfix.impl_vscode import PytoyQuickFixVSCode
+
         return PytoyQuickFixVSCode()
 
     def make_vim():
+        from pytoy.ui.pytoy_quickfix.impl_vim import PytoyQuickFixVim
+
         return PytoyQuickFixVim()
 
     creators = {UIEnum.VSCODE: make_vscode, UIEnum.VIM: make_vim, UIEnum.NVIM: make_vim}
