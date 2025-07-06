@@ -20,29 +20,29 @@ Thank you for the great plugin!
 """
 
 import vim
-from collections import defaultdict, UserDict
 
-class _Lightline(UserDict):
+class _Lightline:
     """ This class is intended to be a wrapper for `g:lightline`.
     """
     _instance = None
-    def __new__(cls, arg=None, **kwargs):
-        if cls._instance is None:
-            self = object.__new__(cls)
-            self._init(arg, **kwargs)
-            cls._instance = self
-        else:
-            self = cls._instance
-        return self
 
-    def _init(self, arg, **kwargs):
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, arg=None, **kwargs):
+        if getattr(self, '_initialized', False):
+            return
+
         if arg is None:
             arg = dict()
         self.data = _G_LIGHTLINE
         arg.update(kwargs)
-        for key in (arg & self.keys()):
-            self[key] = arg
+        for key in (arg & self.data.keys()):
+            self.data[key] = arg
         self.init()
+        self._initialized = True
 
     def _sync(self):
         """Synchronize `self.data` with `g:lightline`.
@@ -54,9 +54,12 @@ class _Lightline(UserDict):
 
     def __setitem__(self, key, value):
         # This is insufficient, since `self["active"]["invalid"] = "hoge"` is accepted.
-        if key not in self:
+        if key not in self.data:
             raise ValueError(f"Invalid key. `{key}`")
-        super().__setitem__(key, value)
+        self.data[key] = value
+        
+    def __getitem__(self, key):
+        return self.data[key]
 
     def init(self): 
         # Here, synchronize `self.data` and `g:lightline`. 
@@ -200,12 +203,6 @@ class Lightline(_Lightline):
 
     _infos = dict()
 
-    def __init__(self, arg=None, initialize=False, **kwargs):
-        pass
-        #super().__init__(arg, **kwargs)
-        #if initialize is True:
-        #    self.default()
-
     def default(self):
         """To my default state.
         """
@@ -322,4 +319,3 @@ class Lightline(_Lightline):
     def is_registered(self, key):
         key = self._to_funcname(key)
         return key in self._infos
-
