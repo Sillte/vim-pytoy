@@ -1,5 +1,4 @@
 import vim
-import time
 from contextlib import contextmanager
 
 # Conversion to the number or id.
@@ -109,31 +108,3 @@ def sweep_windows(required_width=100, exclude=tuple()):
     for winnr in sorted(winnrs, reverse=True):
         if winnr not in exclude:
             vim.command(f"{winnr}close")
-
-
-def create_buffer(bufname: str, options=None) -> "vim.Buffer":
-    # It seems the generation of `buffer` may fail
-    # due to interruption.
-    # hence, retry mechanism is prepared.
-    if options is None:
-        options = dict()
-    _retries = 3
-    _wait_time = 0.1
-
-    def _inner():
-        bufno = int(vim.eval(f'bufnr("{bufname}")'))
-        if not 0 < bufno:
-            vim.command(f"vnew {bufname}")
-            bufno = int(vim.eval(f'bufnr("{bufname}")'))
-        return vim.buffers[bufno]
-
-    for _ in range(_retries):
-        try:
-            buf = _inner()
-        except:
-            time.sleep(_wait_time)
-        else:
-            for key, value in options.items():
-                buf[key] = value
-            return buf
-    return None
