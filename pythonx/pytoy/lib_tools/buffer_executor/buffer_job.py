@@ -1,11 +1,7 @@
-from pytoy.lib_tools.buffer_executor.command_wrapper import CommandWrapper
 from pytoy.lib_tools.buffer_executor.protocol import BufferJobProtocol
-from pytoy.lib_tools.buffer_executor.impl_vim import VimBufferJob
-from pytoy.lib_tools.buffer_executor.impl_nvim import NVimBufferJob
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.ui import PytoyBuffer
 
-naive_wrapper = CommandWrapper()
 
 def make_buffer_job(
     name: str,
@@ -29,8 +25,10 @@ def make_buffer_job(
     """
     ui_enum = get_ui_enum()
     if ui_enum == UIEnum.VIM:
+        from pytoy.lib_tools.buffer_executor.impl_vim import VimBufferJob
         return VimBufferJob(name, stdout, stderr, env=env, cwd=cwd)
     elif ui_enum in {UIEnum.NVIM, UIEnum.VSCODE}:
+        from pytoy.lib_tools.buffer_executor.impl_nvim import NVimBufferJob
         return NVimBufferJob(name, stdout, stderr, env=env, cwd=cwd)
     else:
         assert False, "Implementation Error"
