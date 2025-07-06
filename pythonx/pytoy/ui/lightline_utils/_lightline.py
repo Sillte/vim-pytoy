@@ -119,7 +119,8 @@ class _Lightline:
     def init(self): 
         # Here, synchronize `self.data` and `g:lightline`. 
         self._sync()
-        vim.command("call lightline#init()")
+        if int(vim.eval("exists('*lightline#init')")):
+            vim.command("call lightline#init()")
 
     def mode(self): 
         return vim.eval("lightline#mode()")
