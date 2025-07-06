@@ -4,19 +4,10 @@ from contextlib import contextmanager
 
 # Conversion to the number or id.
 from pytoy.ui.vim._converter import (
-    to_buffer_number,
     to_window_number,
     to_tabpage_number,
     to_window_id,
-    to_buffer,
 )
-
-
-def init_buffer(arg):
-    """Empty the buffer."""
-    bufnum = to_buffer_number(arg)
-    if 0 < bufnum:
-        vim.buffers[bufnum][:] = None
 
 
 @contextmanager
