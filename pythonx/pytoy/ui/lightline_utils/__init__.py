@@ -26,11 +26,18 @@ from pytoy.infra.vim_function import PytoyVimFunctions
 
 
 class LightlineUser:
-    def __init__(
-        self,
-    ):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    def __init__(self):
+        if getattr(self, "_initialized", False):
+            return
         self.lightline = _Lightline()
         self._infos = dict()
+        self._initialized = True
 
     def _to_funcname(self, func):
         if callable(func):
@@ -168,4 +175,3 @@ def deregister(
 
 def is_registered(key: str | Callable):
     return lightline_user.is_registered(key)
-
