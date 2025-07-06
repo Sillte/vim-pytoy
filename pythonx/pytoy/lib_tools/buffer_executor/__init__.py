@@ -1,12 +1,10 @@
-import vim
-
 from pathlib import Path
 from typing import Optional, Callable
 
 from pytoy.ui import PytoyBuffer
 
 from pytoy.lib_tools.buffer_executor.command_wrapper import CommandWrapper
-from pytoy.lib_tools.buffer_executor.buffer_job import BufferJobProtocol, VimBufferJob, NVimBufferJob
+from pytoy.lib_tools.buffer_executor.buffer_job import make_buffer_job, BufferJobProtocol
 
 naive_wrapper = CommandWrapper()
 
@@ -100,15 +98,7 @@ class BufferExecutor:
         self._command = command
 
 
-        if int(vim.eval("has('nvim')")):
-            self._buffer_job = NVimBufferJob(
-                name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd
-            )
-
-        else:
-            self._buffer_job = VimBufferJob(
-                name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd
-            )
+        self._buffer_job = make_buffer_job(name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd)
 
         command = command_wrapper(command)
 
