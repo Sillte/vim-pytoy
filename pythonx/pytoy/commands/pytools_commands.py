@@ -6,6 +6,7 @@ from pytoy.command import CommandManager
 from pytoy.ui import make_buffer
 from pytoy.ui import windows_utils
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
+from pytoy.ui.pytoy_window import PytoyWindow
 
 
 @CommandManager.register(name="Pytest")
@@ -81,7 +82,7 @@ class GotoDefinitionCommand:
     def _go_to_by_coc(self):
         windows_utils.sweep_windows()
 
-        if windows_utils.is_leftwindow():
+        if PytoyWindow.get_current().is_left():
             vim.command("rightbelow vsplit | wincmd l")
             vim.command("call CocAction('jumpDefinition')")
         else:
@@ -96,7 +97,7 @@ class GotoDefinitionCommand:
 
         windows_utils.sweep_windows()
         v = vim.eval("g:jedi#use_splits_not_buffers")
-        if windows_utils.is_leftwindow():
+        if PytoyWindow.get_current().is_left():
             vim.command("let g:jedi#use_splits_not_buffers='right'")
         else:
             vim.command("let g:jedi#use_splits_not_buffers=''")
