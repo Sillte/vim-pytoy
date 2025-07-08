@@ -1,19 +1,16 @@
 from pytoy.command import CommandManager, OptsArgument
 from pytoy.ui import get_ui_enum, UIEnum 
 
-from pytoy import TERM_STDOUT
 
 @CommandManager.register(name="MyWindow", range=True)
 def mywindow_func():
     from pytoy.ui.pytoy_window import PytoyWindow
     window = PytoyWindow.get_current()
-    print(window.valid)
-    buffer = window.buffer
-    if buffer:
-        print(buffer.content)
-    print(window.is_left())
-    for window in PytoyWindow.get_windows():
-        print(window)
+    #print(window.valid, window.impl.editor.document.uri)
+    window.buffer
+
+
+    window.isolate()
     
 
 if get_ui_enum() == UIEnum.VSCODE:
@@ -45,18 +42,20 @@ if get_ui_enum() == UIEnum.VSCODE:
             #data = api.eval_with_return("vscode.window.activeTextEditor", with_await=False)
             #pprint(data)
             print(Editor.get_current())
+            for elem in Editor.get_editors():
+                print(elem)
 
-            editor = Editor.get_current()
-            print("result", editor.close())
-            return
-            scheme = "untitled"
+            #editor = Editor.get_current()
+            #print("result", editor.close())
+            #return
+            #scheme = "untitled"
 
-            uri = Uri(path=TERM_STDOUT, scheme="untitled")
-            uri_to_views = get_uri_to_views()
-            if uri in uri_to_views:
-                doc = Document(uri=uri)
-            else:
-                pass
+            #uri = Uri(path=TERM_STDOUT, scheme="untitled")
+            #uri_to_views = get_uri_to_views()
+            #if uri in uri_to_views:
+            #    doc = Document(uri=uri)
+            #else:
+            #   pass
 
     @CommandManager.register(name="MOCKA", range=True)
     class CommandFunctionClass:

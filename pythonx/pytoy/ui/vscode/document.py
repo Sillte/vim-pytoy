@@ -196,6 +196,13 @@ class Document(BaseModel):
       result = api.eval_with_return(js_code, with_await=True, args=args)
       return result 
 
+    def __eq__(self, other: object) -> bool: 
+        if not isinstance(other, Document):
+            return NotImplemented
+        return self.uri == other.uri
+
+
+
 def get_uris() -> list[Uri]:
     """Return the `fsPaths`. 
     """
