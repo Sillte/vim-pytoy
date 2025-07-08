@@ -12,6 +12,8 @@ def mywindow_func():
     if buffer:
         print(buffer.content)
     print(window.is_left())
+    for window in PytoyWindow.get_windows():
+        print(window)
     
 
 if get_ui_enum() == UIEnum.VSCODE:
@@ -22,7 +24,6 @@ if get_ui_enum() == UIEnum.VSCODE:
     from pydantic import BaseModel, ConfigDict
     from pprint import pprint
     
-
 
 
     def script():
@@ -56,7 +57,6 @@ if get_ui_enum() == UIEnum.VSCODE:
                 doc = Document(uri=uri)
             else:
                 pass
-
 
     @CommandManager.register(name="MOCKA", range=True)
     class CommandFunctionClass:

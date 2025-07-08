@@ -14,6 +14,12 @@ class Editor(BaseModel):
         data = api.eval_with_return("vscode.window.activeTextEditor", with_await=False)
         return Editor(**data)
 
+    @staticmethod
+    def get_editors() -> list["Editor"]:
+        api = Api()
+        data_list = api.eval_with_return("vscode.window.visibleTextEditors", with_await=False)
+        return [Editor(**data) for data in data_list]
+
     @property
     def uri(self) -> Uri:
         return self.document.uri
