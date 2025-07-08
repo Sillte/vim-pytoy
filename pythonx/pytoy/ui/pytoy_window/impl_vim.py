@@ -54,3 +54,7 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
     def get_current(self) -> PytoyWindowProtocol:
         win = vim.current.window
         return PytoyWindowVim(win)
+
+    def get_windows(self) -> list[PytoyWindowProtocol]:
+        return [PytoyWindowVim(elem) for elem in vim.windows]
+

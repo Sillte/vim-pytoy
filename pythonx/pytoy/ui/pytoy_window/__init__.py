@@ -15,6 +15,11 @@ class PytoyWindow(PytoyWindowProtocol):
         impl = PytoyWindowProvider().get_current()
         return PytoyWindow(impl)
     
+    @staticmethod
+    def get_windows() -> list["PytoyWindow"]:
+        impls = PytoyWindowProvider().get_windows()
+        return [PytoyWindow(elem) for elem in impls]
+    
     @property
     def valid(self) -> bool:
         return self.impl.valid
@@ -24,11 +29,14 @@ class PytoyWindow(PytoyWindowProtocol):
         # Implement logic to return the buffer associated with this window
         return self.impl.buffer
 
+    def close(self) -> bool:
+        return self.impl.close()
+
     def is_left(self) -> bool:
         """Return whether this is leftwindow or not."""
         return self.impl.is_left()
 
-class PytoyWindowProvider:
+class PytoyWindowProvider(PytoyWindowProviderProtocol):
     def __init__(self, impl: PytoyWindowProviderProtocol | None = None):
         if impl is None:
             ui_enum = get_ui_enum()
@@ -46,4 +54,7 @@ class PytoyWindowProvider:
 
     def get_current(self) -> PytoyWindowProtocol:
         return self._impl.get_current()
+
+    def get_windows(self) -> list[PytoyWindowProtocol]:
+        return self._impl.get_windows()
         

@@ -39,3 +39,4 @@ current: Current
 
 options: Any
 buffers: list[Buffer]
+windows: list[Window]

@@ -25,4 +25,7 @@ class PytoyWindowProtocol(Protocol):
 class PytoyWindowProviderProtocol(Protocol):
     def get_current(self) -> PytoyWindowProtocol:
         ...
+
+    def get_windows(self) -> list[PytoyWindowProtocol]:
+        ...
     
