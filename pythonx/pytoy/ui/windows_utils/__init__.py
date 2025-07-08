@@ -23,9 +23,6 @@ def sweep_windows() -> None:
     windows_util = get_windows_util()
     return windows_util.sweep_windows()
 
-def is_leftwindow() -> bool:
-    windows_util = get_windows_util()
-    return windows_util.is_leftwindow()
 
 def create_window(bufname: str):
     windows_util = get_windows_util()

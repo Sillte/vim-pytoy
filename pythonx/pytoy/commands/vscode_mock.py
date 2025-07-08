@@ -21,6 +21,8 @@ if get_ui_enum() == UIEnum.VSCODE:
     from pytoy.ui.vscode.focus_controller import get_uri_to_views
     from pydantic import BaseModel, ConfigDict
     from pprint import pprint
+    
+
 
 
     def script():
@@ -42,6 +44,9 @@ if get_ui_enum() == UIEnum.VSCODE:
             #data = api.eval_with_return("vscode.window.activeTextEditor", with_await=False)
             #pprint(data)
             print(Editor.get_current())
+
+            editor = Editor.get_current()
+            print("result", editor.close())
             return
             scheme = "untitled"
 

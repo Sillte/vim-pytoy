@@ -1,4 +1,4 @@
-from typing import Protocol, Self 
+from typing import Protocol
 
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 
@@ -17,6 +17,9 @@ class PytoyWindowProtocol(Protocol):
     def is_left(self) -> bool: 
         """Return whether this is leftwindow or not.
         """
+        ...
+
+    def close(self) -> bool:
         ...
         
 class PytoyWindowProviderProtocol(Protocol):

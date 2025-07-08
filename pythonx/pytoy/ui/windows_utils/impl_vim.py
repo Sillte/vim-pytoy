@@ -8,9 +8,6 @@ class WindowsUtilVim(WindowsUtilProtocol):
         window = vim.current.window
         sweep_windows_vim(required_width=1000, exclude=(window, ))
 
-    def is_leftwindow(self) -> bool:
-        from pytoy.ui.vim import is_leftwindow as is_leftwindow_vim
-        return is_leftwindow_vim()
 
     def create_window(self, bufname: str):
         from pytoy.ui.vim import create_window as create_window_vim

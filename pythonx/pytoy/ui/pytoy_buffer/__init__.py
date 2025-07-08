@@ -14,7 +14,6 @@ from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol
 
 
 
-
 class PytoyBuffer(PytoyBufferProtocol):
     def __init__(self, impl: PytoyBufferProtocol):
         self._impl = impl

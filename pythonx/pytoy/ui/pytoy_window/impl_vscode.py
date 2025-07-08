@@ -20,6 +20,10 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
     def is_left(self) -> bool:
         return self.editor.viewColumn == 1
 
+    def close(self) -> bool:
+        return self.editor.close()
+        
+
 class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
     def get_current(self) -> PytoyWindowProtocol:
         return PytoyWindowVSCode(Editor.get_current())

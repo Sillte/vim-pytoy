@@ -1,5 +1,5 @@
 from pytoy.ui.vscode.document import Api, Uri, Document
-from pytoy.ui.vscode.document import BufferURISolver, Uri
+from pytoy.ui.vscode.document import BufferURISolver
 from pydantic import BaseModel, ConfigDict
 
 
@@ -37,3 +37,52 @@ class Editor(BaseModel):
         uri_to_views = {pair[0]: pair[1] for pair in pairs if pair[0] in uris}
         return uri_to_views.get(self.uri, -1) == self.viewColumn
 
+    def close(self) -> bool:
+        jscode = """
+        (async (uri_dict, viewColumn) => {
+            async function closeUntitledEditorSafely(editor) {
+                const current = vscode.window.activeTextEditor;
+
+                if (editor !== current) {
+                    await vscode.window.showTextDocument(editor.document, editor.viewColumn, false);
+                }
+
+                const doc = editor.document;
+
+                if (doc.isUntitled && doc.isDirty) {
+                    await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+                } else {
+                    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+                }
+
+                if (current && editor !== current) {
+                    await vscode.window.showTextDocument(current.document, current.viewColumn, false);
+                }
+            }
+
+            function findEditorByUriAndColumn(uri, viewColumn) {
+                return vscode.window.visibleTextEditors.find(
+                    editor => editor.document.uri.path == uri.path &&
+                              editor.document.uri.scheme == uri.scheme && 
+                              editor.viewColumn == viewColumn
+                );
+            }
+
+            async function forceCloseEditorByUri(uri_dict, column) {
+                const uri = vscode.Uri.from({"scheme": uri_dict.scheme, "path": uri_dict.path})
+                const editor = findEditorByUriAndColumn(uri, column);
+
+                if (!editor) return false;
+
+                await closeUntitledEditorSafely(editor);
+                return true;
+            }
+
+            return forceCloseEditorByUri(uri_dict, viewColumn)
+        })(args.uri, args.viewColumn)
+        """
+        api = Api()
+
+        args = {"args": {"uri": dict(self.uri), "viewColumn": self.viewColumn}}
+        # [NOTE]: return of `True` or `False` must be considered.
+        return api.eval_with_return(jscode, with_await=True, args=args)
