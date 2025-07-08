@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Protocol, Self
 
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 
@@ -21,6 +21,13 @@ class PytoyWindowProtocol(Protocol):
 
     def close(self) -> bool:
         ...
+
+    def __eq__(self, other: object) -> bool:
+        ...
+
+    def isolate(self) -> None:
+        ...
+
         
 class PytoyWindowProviderProtocol(Protocol):
     def get_current(self) -> PytoyWindowProtocol:

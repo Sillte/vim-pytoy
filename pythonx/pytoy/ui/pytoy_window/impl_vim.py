@@ -1,3 +1,4 @@
+from typing import Self
 import vim
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
@@ -49,6 +50,17 @@ class PytoyWindowVim(PytoyWindowProtocol):
         else:
             return True
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PytoyWindowVim):
+            return NotImplemented
+        return self.window == other.window 
+
+    def isolate(self) -> None:
+        windows = PytoyWindowProviderVim().get_windows()
+        for window in windows:
+            if window != self: 
+                window.close()
+
 
 class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
     def get_current(self) -> PytoyWindowProtocol:
@@ -57,4 +69,5 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
 
     def get_windows(self) -> list[PytoyWindowProtocol]:
         return [PytoyWindowVim(elem) for elem in vim.windows]
+
 

@@ -92,3 +92,11 @@ class Editor(BaseModel):
         args = {"args": {"uri": dict(self.uri), "viewColumn": self.viewColumn}}
         # [NOTE]: return of `True` or `False` must be considered.
         return api.eval_with_return(jscode, with_await=True, args=args)
+
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Editor):
+            return NotImplemented
+        # [NOTE]: We have to be careful since viewColumn corresponds to the one 
+        # when this class is created.
+        return (self.document == other.document) and (self.viewColumn == other.viewColumn)
