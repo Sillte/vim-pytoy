@@ -93,6 +93,31 @@ class Editor(BaseModel):
         # [NOTE]: return of `True` or `False` must be considered.
         return api.eval_with_return(jscode, with_await=True, args=args)
 
+    
+    def focus(self):
+        jscode = """
+        (async (uri_dict, viewColumn) => {
+            function findEditorByUriAndColumn(uri, viewColumn) {
+                return vscode.window.visibleTextEditors.find(
+                    editor => editor.document.uri.path == uri.path &&
+                              editor.document.uri.scheme == uri.scheme && 
+                              editor.viewColumn == viewColumn
+                );
+            }
+            async function FocusEditor(uri_dict, column) {
+                const uri = vscode.Uri.from({"scheme": uri_dict.scheme, "path": uri_dict.path})
+                const editor = findEditorByUriAndColumn(uri, column);
+                if (!editor) return false;
+                await vscode.window.showTextDocument(editor.document, editor.viewColumn);
+                return true;
+            }
+            return FocusEditor(uri_dict, viewColumn)
+        })(args.uri, args.viewColumn)
+        """
+        api = Api()
+        args = {"args": {"uri": dict(self.uri), "viewColumn": self.viewColumn}}
+        return api.eval_with_return(jscode, with_await=True, args=args)
+
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Editor):

@@ -9,7 +9,6 @@ class Api:
         import vim
         vim.exec_lua("_G.vscode_api_global = require('vscode')")
         self._api = vim.lua.vscode_api_global
-        #ret = vim.lua.vscode_api_global.eval("return vscode.window.activeTextEditor.document.fileName")
         
     def eval_with_return(self, js_code: str,
                          args: None | dict = None,  
@@ -33,5 +32,11 @@ class Api:
         # https://github.com/vscode-neovim/vscode-neovim/tree/master?tab=readme-ov-file#vscodeactionname-opts
         if opts is None:
             opts = {}
-        self._api.action(name, opts)
+        return self._api.action(name, opts)
+
+    def call(self, name, opts=None, timeout=-1):
+        # https://github.com/vscode-neovim/vscode-neovim/tree/master?tab=readme-ov-file#vscodecallname-opts-timeout
+        if opts is None:
+            opts = {}
+        return self._api.call(name, opts, timeout)
     
