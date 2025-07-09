@@ -1,13 +1,6 @@
 import vim
 from contextlib import contextmanager
 
-# Conversion to the number or id.
-from pytoy.ui.vim._converter import (
-    to_window_number,
-    to_tabpage_number,
-    to_window_id,
-)
-
 
 @contextmanager
 def store_window():
@@ -59,52 +52,3 @@ def create_window(bufname, mode="vertical", base_window=None):
         vim.command(f":call win_gotoid({storedwin})")
     return window
 
-
-def get_wininfos(tabnr=None) -> list:
-    """Return informations of window
-    Args:
-        tabnr (tabpage).
-    """
-    if tabnr is None:
-        tabnr = vim.current.tabpage
-    tabnr = to_tabpage_number(tabnr)
-    infos = vim.eval(f"getwininfo()")
-    infos = [elem for elem in infos if elem["tabnr"] == str(tabnr)]
-    return infos
-
-
-def is_leftwindow(window=None):
-    """Return whether `winnr` is `left` window or not."""
-    if window is None:
-        window = vim.current.window
-    winid = to_window_id(window)
-    info = vim.eval(f'getwininfo("{winid}")')
-    if not info:
-        raise ValueError(f"Invalid Argument, `{window}`.")
-    else:
-        info = info[0]
-
-    return int(info["wincol"]) <= 1
-
-
-def sweep_windows(required_width=100, exclude=tuple()):
-    """Sweep the windows of tabpage following to my rule.
-    Namely,
-    1. if the `winrow` is smaller than `required_width`.
-    2. the window is not existent of the `left-most` position.
-    """
-
-    def _is_target(info):
-        winnr = info["winnr"]
-        if not is_leftwindow(winnr):
-            if int(info["width"]) < required_width:
-                return True
-        return False
-
-    infos = get_wininfos()
-    infos = [info for info in infos if _is_target(info)]
-    winnrs = [int(info["winnr"]) for info in infos]
-    exclude = set(to_window_number(elem) for elem in exclude)
-    for winnr in sorted(winnrs, reverse=True):
-        if winnr not in exclude:
-            vim.command(f"{winnr}close")
