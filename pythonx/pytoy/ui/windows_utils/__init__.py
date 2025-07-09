@@ -12,16 +12,6 @@ def get_windows_util() -> WindowsUtilProtocol:
         return WindowsUtilVim()
 
 
-def sweep_windows() -> None:
-    """Delete all the windows
-    [NOTE]: There exist some difference about specification.
-
-    In `sweep_windows_vscode`, `closeOtherEditors` are called,
-    while in `sweep_windows_vim` the left window remains.
-
-    """
-    windows_util = get_windows_util()
-    return windows_util.sweep_windows()
 
 
 def create_window(bufname: str):

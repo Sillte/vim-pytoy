@@ -4,7 +4,6 @@
 import vim
 from pytoy.command import CommandManager
 from pytoy.ui import make_buffer
-from pytoy.ui import windows_utils
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.ui.pytoy_window import PytoyWindow
 
@@ -80,8 +79,7 @@ class GotoDefinitionCommand:
         return candidates
 
     def _go_to_by_coc(self):
-        windows_utils.sweep_windows()
-
+        PytoyWindow.get_current().isolate()
         if PytoyWindow.get_current().is_left():
             vim.command("rightbelow vsplit | wincmd l")
             vim.command("call CocAction('jumpDefinition')")
@@ -94,8 +92,7 @@ class GotoDefinitionCommand:
         * https://github.com/davidhalter/jedi-vim
         """
         import jedi_vim
-
-        windows_utils.sweep_windows()
+        PytoyWindow.get_current().isolate()
         v = vim.eval("g:jedi#use_splits_not_buffers")
         if PytoyWindow.get_current().is_left():
             vim.command("let g:jedi#use_splits_not_buffers='right'")
