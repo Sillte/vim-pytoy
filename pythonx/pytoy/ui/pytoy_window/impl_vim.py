@@ -55,11 +55,14 @@ class PytoyWindowVim(PytoyWindowProtocol):
             return NotImplemented
         return self.window == other.window 
 
-    def isolate(self) -> None:
+    def isolate(self, tab_scope: bool = False) -> None:
         windows = PytoyWindowProviderVim().get_windows()
         for window in windows:
             if window != self: 
                 window.close()
+        if tab_scope:
+            vim.command("tabonly!")
+
 
 
 class PytoyWindowProviderVim(PytoyWindowProviderProtocol):

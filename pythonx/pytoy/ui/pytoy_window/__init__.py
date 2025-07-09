@@ -25,13 +25,13 @@ class PytoyWindow(PytoyWindowProtocol):
         """Return whether this is leftwindow or not."""
         return self.impl.is_left()
 
-    def isolate(self) -> None:
+    def isolate(self, tab_scope: bool = False) -> None:
         """Isolate the window.
 
         NOTE: Unfortunately, due to affairs of vscode,
         this cannot be realiazed with `close` and `__eq__`.
         """
-        return self.impl.isolate()
+        return self.impl.isolate(tab_scope)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PytoyWindow):
