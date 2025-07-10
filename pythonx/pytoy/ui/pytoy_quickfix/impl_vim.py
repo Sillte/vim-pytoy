@@ -39,10 +39,15 @@ class PytoyQuickFixVim(PytoyQuickFixProtocol):
             vim.command("cclose")
             vim.command("call setqflist([])")
         else:
-            from pytoy.ui.vim import store_window
-
             vim.command(f"call setloclist({win_id}, [])")
-            with store_window():
+
+            current_win = int(vim.eval("win_getid()"))
+
+            if current_win != win_id:
+                vim.command(f"call win_gotoid({win_id})")
+                vim.command("lclose")
+                vim.command("wincmd p")
+            else:
                 vim.command("lclose")
 
     def open(self, win_id: int | None = None):
