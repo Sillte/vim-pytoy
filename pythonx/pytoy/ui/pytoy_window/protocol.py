@@ -25,7 +25,7 @@ class PytoyWindowProtocol(Protocol):
     def __eq__(self, other: object) -> bool:
         ...
 
-    def isolate(self, tab_scope: bool) -> None:
+    def unique(self, within_tab: bool=False) -> None:
         ...
 
         

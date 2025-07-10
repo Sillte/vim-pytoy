@@ -38,12 +38,9 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
             return NotImplemented
         return self.editor == other.editor
 
-    def isolate(self, tab_scope: bool=False) -> None:
-        self.editor.focus()
-        api = Api()
-        api.call("workbench.action.closeEditorsInOtherGroups")
-        if tab_scope:
-            api.call("workbench.action.closeOtherEditors")
+    def unique(self, within_tab: bool=False) -> None:
+        self.editor.unique(within_tab=within_tab)
+
 
 
 class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):

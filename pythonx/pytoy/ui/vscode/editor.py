@@ -125,3 +125,52 @@ class Editor(BaseModel):
         # [NOTE]: We have to be careful since viewColumn corresponds to the one 
         # when this class is created.
         return (self.document == other.document) and (self.viewColumn == other.viewColumn)
+    
+
+    def unique(self, within_tab: bool=False):
+        """Make it an unique editor. 
+        """
+        jscode = """
+        (async (uri_dict, viewColumn, withinTab) => {
+            function findEditorByUriAndColumn(uri, viewColumn) {
+                return vscode.window.visibleTextEditors.find(
+                    editor => editor.document.uri.path == uri.path &&
+                              editor.document.uri.scheme == uri.scheme && 
+                              editor.viewColumn == viewColumn
+                );
+            }
+            
+            async function revertCloseExcept(editor, withinTab) {
+
+              for (const group of vscode.window.tabGroups.all) {
+                if (withinTab && group.viewColumn !== editor.viewColumn) continue;
+                for (const tab of group.tabs) {
+                  const uri = tab.input?.uri?.toString();
+                    if (!uri) continue;
+                    if (uri  == editor.document.uri.toString()) {
+                        if (group.viewColumn === editor.viewColumn){
+                            continue;
+                        } 
+                        await vscode.window.showTextDocument(tab.input.uri, { preview: false });
+                        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+                    }
+                    else{
+                        await vscode.window.showTextDocument(tab.input.uri, { preview: false });
+                        await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+                    }
+                }
+             }
+           }
+            const uri = vscode.Uri.from({"scheme": uri_dict.scheme, "path": uri_dict.path})
+            const editor = findEditorByUriAndColumn(uri, viewColumn);
+            await revertCloseExcept(editor, withinTab)
+            if (!withinTab) {
+              await vscode.commands.executeCommand('workbench.action.closeEditorsInOtherGroups');
+            }
+
+        })(args.uri, args.viewColumn, args.withinTab)
+        """
+        args = {"args": {"uri": dict(self.uri), "viewColumn": self.viewColumn, "withinTab": within_tab}}
+        api = Api()
+
+        return api.eval_with_return(jscode, with_await=True, args=args)
