@@ -10,8 +10,10 @@ def mywindow_func():
     #windows[0].impl.editor.focus()
     #print(window.valid, window.impl.editor.document.uri)
     #window.buffer
+    window.unique()    
 
-    window.isolate(tab_scope=True)
+
+    #window.isolate(tab_scope=True)
     
 
 if get_ui_enum() == UIEnum.VSCODE:
