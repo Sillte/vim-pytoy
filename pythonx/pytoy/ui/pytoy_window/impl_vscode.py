@@ -9,7 +9,6 @@ from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
 )
-from pytoy.ui.vscode.api import Api
 from pytoy.ui.vscode.document import BufferURISolver
 from pytoy.ui.vscode.editor import Editor
 
@@ -42,7 +41,6 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         self.editor.unique(within_tab=within_tab)
 
 
-
 class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
     def get_current(self) -> PytoyWindowProtocol:
         return PytoyWindowVSCode(Editor.get_current())
@@ -52,3 +50,11 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         uris = set(BufferURISolver.get_uri_to_bufnr())
         editors = [elem for elem in editors if elem.uri in uris]
         return [PytoyWindowVSCode(elem) for elem in editors]
+
+    def create_window(
+        self,
+        bufname: str,
+        mode: str = "vertical",
+        base_window: PytoyWindowProtocol | None = None,
+    ) -> PytoyWindowProtocol:
+        raise RuntimeError("Notimplemented.")

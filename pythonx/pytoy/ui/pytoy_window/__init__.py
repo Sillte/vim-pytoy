@@ -79,3 +79,6 @@ class PytoyWindowProvider(PytoyWindowProviderProtocol):
 
     def get_windows(self) -> list[PytoyWindowProtocol]:
         return self._impl.get_windows()
+
+    def create_window(self, bufname: str, mode: str = "vertical", base_window: PytoyWindowProtocol | None = None) -> PytoyWindowProtocol:
+        return self.impl.create_window(bufname, mode, base_window)

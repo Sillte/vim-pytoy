@@ -35,4 +35,8 @@ class PytoyWindowProviderProtocol(Protocol):
 
     def get_windows(self) -> list[PytoyWindowProtocol]:
         ...
+
+
+    def create_window(self, bufname: str, mode: str = "vertical", base_window: PytoyWindowProtocol | None = None) -> PytoyWindowProtocol:
+        ...
     
