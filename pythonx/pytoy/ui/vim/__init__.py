@@ -1,18 +1,4 @@
 import vim
-from contextlib import contextmanager
-
-
-@contextmanager
-def store_window():
-    """Current window is retrieved, at the end of context."""
-    winid = int(vim.eval("win_getid()"))
-    try:
-        yield
-    except Exception as e:
-        vim.command(f":call win_gotoid({winid})")
-        raise e
-    else:
-        vim.command(f":call win_gotoid({winid})")
 
 
 def create_window(bufname, mode="vertical", base_window=None):

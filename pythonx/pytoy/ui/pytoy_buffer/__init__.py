@@ -94,14 +94,11 @@ def make_duo_buffers(
         return (PytoyBuffer(stdout_impl), PytoyBuffer(stderr_impl))
 
     def make_vim():
-        from pytoy.ui.vim import create_window
-        from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
+        from pytoy.ui.pytoy_window import PytoyWindowProvider
 
-        stdout_window = create_window(stdout_name, "vertical")
-        stderr_window = create_window(stderr_name, "horizontal", stdout_window)
-        stdout_impl = PytoyBufferVim(stdout_window.buffer)
-        stderr_impl = PytoyBufferVim(stderr_window.buffer)
-        return (PytoyBuffer(stdout_impl), PytoyBuffer(stderr_impl))
+        stdout_window = PytoyWindowProvider().create_window(stdout_name, "vertical")
+        stderr_window = PytoyWindowProvider().create_window(stderr_name, "horizontal", stdout_window)
+        return (stdout_window.buffer, stderr_window.buffer)
 
     ui_enum = get_ui_enum()
     creator = {UIEnum.VSCODE: make_vscode, UIEnum.VIM: make_vim, UIEnum.NVIM: make_vim}
