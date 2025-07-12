@@ -20,7 +20,7 @@ class PytoyWindowVim(PytoyWindowProtocol):
         self.window = window
 
     @property
-    def buffer(self) -> PytoyBuffer | None:
+    def buffer(self) -> PytoyBuffer:
         impl = PytoyBufferVim(self.window.buffer)
         return PytoyBuffer(impl)
 
