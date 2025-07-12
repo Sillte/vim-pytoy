@@ -12,7 +12,7 @@ class PytoyBufferProtocol(Protocol):
     def content(self) -> str:
         ...
 
-    def focus(self):
+    def show(self):
         ...
 
     def hide(self):

@@ -33,6 +33,10 @@ class PytoyWindow(PytoyWindowProtocol):
         """
         return self.impl.unique(within_tab)
 
+    def focus(self) -> bool:
+        return self.impl.focus()
+
+    
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PytoyWindow):
             return NotImplemented

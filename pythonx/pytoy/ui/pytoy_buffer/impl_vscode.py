@@ -21,7 +21,7 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     def content(self) -> str:
         return self.document.content
 
-    def focus(self):
+    def show(self):
         self.document.show()
 
     def hide(self):

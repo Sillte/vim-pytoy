@@ -4,7 +4,7 @@ from pytoy.ui.vscode.api import Api
 from pytoy.ui.vscode.document import Uri, BufferURISolver, Document
 from pytoy.ui.vscode.utils import wait_until_true
 
-def _current_uri_check(name) -> bool:
+def _current_uri_check(name: str) -> bool:
     api = Api()
     
     uri = api.eval_with_return(
@@ -15,21 +15,23 @@ def _current_uri_check(name) -> bool:
     return False
   
 def make_document(name: str) -> Document:
-  """Making a document from name.
-  """
-  api = Api()
-  vim.command("Vsplit")
-  vim.command(f"Edit {name}")
+    """Making a document from name.
+    """
+    api = Api()
+    vim.command("Vsplit")
+    vim.command(f"Edit {name}")
 
-  wait_until_true(lambda: _current_uri_check(name), timeout=0.3)
+    wait_until_true(lambda: _current_uri_check(name), timeout=0.3)
 
-  uri = api.eval_with_return(
+    uri = api.eval_with_return(
       "vscode.window.activeTextEditor.document.uri", with_await=False
-  )
-  uri = Uri(**uri)
-  wait_until_true(lambda:  BufferURISolver.get_bufnr(uri) != None, timeout=0.3)
-  vim.command("Tabonly")
-  return Document(uri=uri)
+    )
+    uri = Uri(**uri)
+    wait_until_true(lambda:  BufferURISolver.get_bufnr(uri) != None, timeout=0.3)
+
+
+    vim.command("Tabonly")
+    return Document(uri=uri)
 
 
 def make_duo_documents(name1: str, name2: str) -> tuple[Document, Document]:

@@ -22,6 +22,9 @@ class PytoyWindowProtocol(Protocol):
     def close(self) -> bool:
         ...
 
+    def focus(self) -> bool:
+        ...
+
     def __eq__(self, other: object) -> bool:
         ...
 

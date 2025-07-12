@@ -3,14 +3,18 @@
 # * Editor of PytoyWindow: the buffers of windows is managed in neovim.
 
 
+from pathlib import Path
+import vim  # (vscode-neovim extention)
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_buffer.impl_vscode import PytoyBufferVSCode
 from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
 )
-from pytoy.ui.vscode.document import BufferURISolver
+from pytoy.ui.vscode.document import BufferURISolver, Uri, Api, Document
 from pytoy.ui.vscode.editor import Editor
+from pytoy.ui.vscode.utils import wait_until_true
+from pytoy.ui.vscode.focus_controller import set_active_viewcolumn
 
 
 class PytoyWindowVSCode(PytoyWindowProtocol):
@@ -31,6 +35,10 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
 
     def close(self) -> bool:
         return self.editor.close()
+
+    def focus(self) -> bool:
+        self.editor.focus()
+        return True
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PytoyWindowVSCode):
@@ -57,4 +65,34 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         mode: str = "vertical",
         base_window: PytoyWindowProtocol | None = None,
     ) -> PytoyWindowProtocol:
-        raise RuntimeError("Notimplemented.")
+
+        api = Api()
+        if mode == "vertical":
+            vim.command("Vsplit")
+        else:
+            vim.command("Split")
+
+        vim.command(f"Edit {bufname}")
+
+        wait_until_true(lambda: _current_uri_check(bufname), timeout=0.3)
+
+        uri = api.eval_with_return(
+          "vscode.window.activeTextEditor.document.uri", with_await=False
+        )
+        uri = Uri(**uri)
+        wait_until_true(lambda:  BufferURISolver.get_bufnr(uri) != None, timeout=0.3)
+        vim.command("Tabonly")
+        editor = Editor.get_current()
+        return PytoyWindowVSCode(editor)
+        
+
+def _current_uri_check(name: str) -> bool:
+    api = Api()
+    
+    uri = api.eval_with_return(
+        "vscode.window.activeTextEditor?.document?.uri ?? null", with_await=False
+    )
+    if uri:
+        return Path(Uri(**uri).path).name == name
+    return False
+  

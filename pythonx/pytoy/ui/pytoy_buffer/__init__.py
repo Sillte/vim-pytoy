@@ -33,8 +33,8 @@ class PytoyBuffer(PytoyBufferProtocol):
     def content(self) -> str:
         return self._impl.content
 
-    def focus(self):
-        return self._impl.focus()
+    def show(self):
+        return self._impl.show()
 
     def hide(self):
         return self._impl.hide()
