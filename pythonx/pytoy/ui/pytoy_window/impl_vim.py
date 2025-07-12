@@ -15,7 +15,8 @@ class PytoyWindowVim(PytoyWindowProtocol):
     Provides methods to interact with the Vim UI for Pytoy.
     """
 
-    def __init__(self, window: vim.Window):
+    # NOTE: In neovim, `vim.Window` does not exist.
+    def __init__(self, window: "vim.Window"):
         self.window = window
 
     @property
@@ -49,6 +50,12 @@ class PytoyWindowVim(PytoyWindowProtocol):
             return False
         else:
             return True
+
+    def focus(self) -> bool:
+        if not self.window.valid:
+            return False
+        vim.current.window = self.window
+        return True
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PytoyWindowVim):

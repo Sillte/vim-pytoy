@@ -4,13 +4,17 @@ from pytoy.ui import get_ui_enum, UIEnum
 
 @CommandManager.register(name="MyWindow", range=True)
 def mywindow_func():
-    from pytoy.ui.pytoy_window import PytoyWindow
+    from pytoy.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
     from pytoy.ui.vscode.editor import Editor
     window = PytoyWindow.get_current()
+    PytoyWindowProvider().create_window("hgoehoge", "s")
+    print(window.buffer)
+    print(window.buffer.content)
+    window.focus()
     #windows[0].impl.editor.focus()
     #print(window.valid, window.impl.editor.document.uri)
     #window.buffer
-    window.unique()    
+    #window.unique()    
 
 
     #window.isolate(tab_scope=True)

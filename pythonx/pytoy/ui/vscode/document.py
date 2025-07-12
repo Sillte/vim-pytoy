@@ -1,7 +1,7 @@
-# Experimental codes related to VSCode  
-import vim 
-from pathlib import Path 
-from pydantic import BaseModel,ConfigDict
+# Experimental codes related to VSCode
+import vim
+from pathlib import Path
+from pydantic import BaseModel, ConfigDict
 
 from pytoy.ui.vscode.api import Api
 
@@ -16,7 +16,10 @@ class Uri(BaseModel):
     def __eq__(self, other):
         if isinstance(other, Uri):
             if self.scheme == "file":
-                return (self._norm_filepath(self.path), self.scheme) == (self._norm_filepath(other.path), other.scheme)
+                return (self._norm_filepath(self.path), self.scheme) == (
+                    self._norm_filepath(other.path),
+                    other.scheme,
+                )
             else:
                 return (self.path, self.scheme) == (other.path, other.scheme)
         return False
@@ -29,12 +32,12 @@ class Uri(BaseModel):
 
     def _norm_filepath(self, filepath: str) -> str:
         return Path(filepath.strip("/")).resolve().as_posix()
-    
+
 
 class Document(BaseModel):
     uri: Uri
     model_config = ConfigDict(extra="allow")
-    
+
     @classmethod
     def create(cls, path: None | str | Path = None):
         api = Api()
@@ -55,8 +58,8 @@ class Document(BaseModel):
             path = path.as_posix()
         args = {"args": {"path": path}}
         doc = api.eval_with_return(js_code, with_await=True, args=args)
-        return Document(**doc) 
-    
+        return Document(**doc)
+
     @classmethod
     def from_path(cls, path: str | Path):
         js_code = """
@@ -77,10 +80,9 @@ class Document(BaseModel):
         args = {"args": {"path": str(path)}}
         doc = api.eval_with_return(js_code, with_await=True, args=args)
         return doc
-    
-    def append(self, text:str):
-        """Append text at the end of the document.
-        """
+
+    def append(self, text: str):
+        """Append text at the end of the document."""
         api = Api()
         js_code = """
         (async () => {
@@ -106,20 +108,18 @@ class Document(BaseModel):
       };
     })()
       """
-        result = api.eval_with_return(js_code, with_await=True, args={
-        "args": {
-            "path": self.uri.path,
-            "text": f"{text}\n"
-                }
-              })
+        result = api.eval_with_return(
+            js_code,
+            with_await=True,
+            args={"args": {"path": self.uri.path, "text": f"{text}\n"}},
+        )
         return result
-      
+
     @property
-    def content(self) -> str:   
-      """Return the string of document.
-      """
-      api = Api()
-      js_code = """
+    def content(self) -> str:
+        """Return the string of document."""
+        api = Api()
+        js_code = """
         (async () => {
         const path = args.path; 
       const doc = vscode.workspace.textDocuments.find(
@@ -133,14 +133,21 @@ class Document(BaseModel):
       return fullText;
     })()
     """
-      result = api.eval_with_return(js_code, with_await=True, args={
-        "args": { "path": self.uri.path, } })
-      return result
-    
+        result = api.eval_with_return(
+            js_code,
+            with_await=True,
+            args={
+                "args": {
+                    "path": self.uri.path,
+                }
+            },
+        )
+        return result
+
     @content.setter
-    def content(self, value): 
-      api = Api()
-      js_code = """
+    def content(self, value):
+        api = Api()
+        js_code = """
         (async (path, content) => {
       const doc = vscode.workspace.textDocuments.find(
         d => d.uri.path === path
@@ -166,15 +173,18 @@ class Document(BaseModel):
       });
     })(args.path, args.value)
     """
-      result = api.eval_with_return(js_code, with_await=True, args={
-          "args": { "path": self.uri.path, "value": value} })
-      return result
-    
-    def show(self):
-      api = Api()
-      js_code = """
-  (async (uri) => {
-  async function showDocumentIfVisibleOrOpen(uri) {
+        result = api.eval_with_return(
+            js_code,
+            with_await=True,
+            args={"args": {"path": self.uri.path, "value": value}},
+        )
+        return result
+
+    def show(self, with_focus: bool = False):
+        api = Api()
+        js_code = """
+    (async (uri, preserveFocus) => {
+    async function showDocumentIfVisibleOrOpen(uri) {
     const visibleEditor = vscode.window.visibleTextEditors.find(
       editor => editor.document.uri.toString() === uri.toString()
     );
@@ -182,30 +192,28 @@ class Document(BaseModel):
     if (visibleEditor) {
       return await vscode.window.showTextDocument(visibleEditor.document, {
         viewColumn: visibleEditor.viewColumn,
-        preserveFocus: false,
+        preserveFocus: preserveFocus,
         preview: false
       });
       }
     return null;
     }
     return await showDocumentIfVisibleOrOpen(uri);
-    })(args.uri)
+    })(args.uri, args.preserveFocus)
       """
-      args = {"args": {"uri": dict(self.uri)}}
+        args = {"args": {"uri": dict(self.uri), "preserveFocus": not with_focus}}
 
-      result = api.eval_with_return(js_code, with_await=True, args=args)
-      return result 
+        result = api.eval_with_return(js_code, with_await=True, args=args)
+        return result
 
-    def __eq__(self, other: object) -> bool: 
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Document):
             return NotImplemented
         return self.uri == other.uri
 
 
-
 def get_uris() -> list[Uri]:
-    """Return the `fsPaths`. 
-    """
+    """Return the `fsPaths`."""
     api = Api()
     js_code = """
     (async () => {
@@ -220,8 +228,7 @@ def get_uris() -> list[Uri]:
 
 
 def delete_untitles():
-    """Delete `untitle` documents without warning.
-    """
+    """Delete `untitle` documents without warning."""
     api = Api()
     js_code = """
 (async () => {
@@ -253,7 +260,7 @@ class BufferURISolver:
             return Uri(path=path, scheme=scheme, fsPath=fsPath)
         else:
             scheme = "file"
-            path =  path.resolve().as_posix()
+            path = path.resolve().as_posix()
             fsPath = path
             return Uri(path=path, scheme=scheme, fsPath=fsPath)
 
@@ -263,17 +270,19 @@ class BufferURISolver:
             return (uri.scheme, Path(uri.fsPath))
         elif uri.scheme == "untitled":
             return (uri.scheme, uri.path)
-        else: 
+        else:
             return (uri.scheme, uri.path)
-        
+
     @classmethod
     def get_bufnr_to_uris(cls) -> dict:
         number_to_uri = {buf.number: cls._to_uri(buf.name) for buf in vim.buffers}
-        key_to_number = {cls._to_key(uri): number for number, uri in number_to_uri.items()}
+        key_to_number = {
+            cls._to_key(uri): number for number, uri in number_to_uri.items()
+        }
         key_to_uri = {cls._to_key(uri): uri for uri in get_uris()}
-        
+
         keys = key_to_number.keys() & key_to_uri.keys()
-        result =  {key_to_number[key] : key_to_uri[key] for key in keys}
+        result = {key_to_number[key]: key_to_uri[key] for key in keys}
         return result
 
     @classmethod
@@ -281,18 +290,19 @@ class BufferURISolver:
         # [NOTE]: This class is not throughly checked.
         return {cls._to_uri(buf.name): buf.number for buf in vim.buffers}
 
-
     @classmethod
     def get_bufnr(cls, uri: Uri) -> int | None:
         number_to_uri = {buf.number: cls._to_uri(buf.name) for buf in vim.buffers}
-        key_to_number = {cls._to_key(uri): int(number) for number, uri in number_to_uri.items()}
+        key_to_number = {
+            cls._to_key(uri): int(number) for number, uri in number_to_uri.items()
+        }
         uri_key = cls._to_key(uri)
         return key_to_number.get(uri_key)
 
     @classmethod
     def get_uri(cls, bufnr: int) -> Uri | None:
         # [NOTE]: This may unstready, esps. `cls._to_key`'s construction
-        # If the behavior is not expected, it may be a good idea to use `get_urls` 
-        # and `true` `URI`. 
+        # If the behavior is not expected, it may be a good idea to use `get_urls`
+        # and `true` `URI`.
         number_to_uri = {buf.number: cls._to_uri(buf.name) for buf in vim.buffers}
         return number_to_uri.get(bufnr)

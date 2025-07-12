@@ -25,7 +25,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
     def content(self) -> str:
         return vim.eval("join(getbufline({}, 1, '$'), '\n')".format(self.buffer.number))
 
-    def focus(self):
+    def show(self):
         bufnr = self.buffer.number
         winid = int(vim.eval(f"bufwinid({bufnr})"))
         if winid != -1:
