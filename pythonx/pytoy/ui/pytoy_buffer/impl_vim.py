@@ -44,4 +44,3 @@ class PytoyBufferVim(PytoyBufferProtocol):
         if len(self.buffer) == 1 and self.buffer[0] == "":
             return True
         return False
-

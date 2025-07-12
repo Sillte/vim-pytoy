@@ -24,7 +24,6 @@ if get_ui_enum() == UIEnum.VSCODE:
     from pytoy.ui.vscode.api import Api
     from pytoy.ui.vscode.document import Api, Uri, Document
     from pytoy.ui.vscode.editor import Editor
-    from pytoy.ui.vscode.focus_controller import get_uri_to_views
     from pydantic import BaseModel, ConfigDict
     from pprint import pprint
 

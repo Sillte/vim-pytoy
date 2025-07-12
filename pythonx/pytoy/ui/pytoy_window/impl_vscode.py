@@ -14,7 +14,6 @@ from pytoy.ui.pytoy_window.protocol import (
 from pytoy.ui.vscode.document import BufferURISolver, Uri, Api, Document
 from pytoy.ui.vscode.editor import Editor
 from pytoy.ui.vscode.utils import wait_until_true
-from pytoy.ui.vscode.focus_controller import set_active_viewcolumn
 
 
 class PytoyWindowVSCode(PytoyWindowProtocol):

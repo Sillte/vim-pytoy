@@ -143,7 +143,7 @@ class Editor(BaseModel):
             async function revertCloseExcept(editor, withinTab) {
 
               for (const group of vscode.window.tabGroups.all) {
-                if (withinTab && group.viewColumn !== editor.viewColumn) continue;
+                if (!withinTab && group.viewColumn === editor.viewColumn) continue;
                 for (const tab of group.tabs) {
                   const uri = tab.input?.uri?.toString();
                     if (!uri) continue;

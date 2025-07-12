@@ -17,5 +17,7 @@ def QQ():
 
 @CommandManager.register(name="OnlyThisEditor")
 def sweep_editors_command():
-    from pytoy.ui.vscode.document_user import sweep_editors
-    sweep_editors() 
+    from pytoy.ui.pytoy_window import PytoyWindow
+    current = PytoyWindow.get_current()
+    current.unique(within_tab=False)
+
