@@ -27,13 +27,12 @@ if get_ui_enum() == UIEnum.VSCODE:
     from pytoy.ui.vscode.focus_controller import get_uri_to_views
     from pydantic import BaseModel, ConfigDict
     from pprint import pprint
-    
 
 
     def script():
         jscode = """
         (async () => {
-        return vscode.commands.getCommands(true)
+        return vscode.commands.getCommnds(true)
         //await vscode.commands.executeCommand('workbench.action.focusNextGroup');
         //const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time));
         //await sleep(10)

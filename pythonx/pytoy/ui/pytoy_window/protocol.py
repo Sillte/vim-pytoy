@@ -5,7 +5,7 @@ from pytoy.ui.pytoy_buffer import PytoyBuffer
 class PytoyWindowProtocol(Protocol):
 
     @property
-    def buffer(self) -> PytoyBuffer | None:
+    def buffer(self) -> PytoyBuffer:
          ...
 
     @property

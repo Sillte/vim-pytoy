@@ -66,6 +66,13 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         base_window: PytoyWindowProtocol | None = None,
     ) -> PytoyWindowProtocol:
 
+        current = PytoyWindowProviderVSCode().get_current()
+
+        if base_window is None:
+            base_window = current
+
+        base_window.focus()
+
         api = Api()
         if mode == "vertical":
             vim.command("Vsplit")
@@ -83,7 +90,10 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         wait_until_true(lambda:  BufferURISolver.get_bufnr(uri) != None, timeout=0.3)
         vim.command("Tabonly")
         editor = Editor.get_current()
-        return PytoyWindowVSCode(editor)
+        result = PytoyWindowVSCode(editor)
+
+        current.focus()
+        return result
         
 
 def _current_uri_check(name: str) -> bool:
