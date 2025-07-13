@@ -12,6 +12,9 @@ It focuses on using python tools within vim-buffers.
 * python
 * pytest
 * lightline
+* psutil / pydantic / pywinpty
+    - `python` is available for the environment these libraries are installed (VIM). 
+    - In the specified python environment, these libraries are available (NVIM).  
 
 
 
