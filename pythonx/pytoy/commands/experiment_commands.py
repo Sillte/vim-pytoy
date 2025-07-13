@@ -5,46 +5,40 @@ from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.ui import make_buffer
 from pytoy.command import CommandManager, OptsArgument 
 
-from pytoy.lib_tools.buffer_executor import BufferExecutor
-from pytoy import TERM_STDOUT
+from pytoy.lib_tools.terminal_executor import TerminalExecutor
+from pytoy.lib_tools.terminal_backend import  TerminalBackendProvider
+
+class CommandTerminal:
+    name = "__CMD__"
+
+    executor = None
+
+    @staticmethod
+    def get_executor():
+        if CommandTerminal.executor:
+            return CommandTerminal.executor
+        buffer = make_buffer(CommandTerminal.name)
+        backend = TerminalBackendProvider().make_terminal(command="cmd.exe")
+        executor = TerminalExecutor(buffer, backend)
+        CommandTerminal.executor = executor
+        return executor
 
 
-@CommandManager.register(name="CMD", range=True)
-class CommandFunctionClass:
-    def __call__(self, opts: OptsArgument):
+    @CommandManager.register(name="CMD", range=True)
+    @staticmethod
+    def send(opts: OptsArgument):
+        executor = CommandTerminal.get_executor()
+        if not executor.alive:
+            executor.start()
+
+        # [NOTE]: this specification should be discussed.
         cmd = opts.args
-        line1, line2 = opts.line1, opts.line2
+        if not cmd.strip():
+            executor.interrupt()
+
+        line1, _ = opts.line1, opts.line2
         if not cmd.strip():
             cmd = vim.eval(f"getline({line1})")
+        executor.send(cmd)
 
 
-        env = dict(os.environ)
-
-        executor = BufferExecutor(name="CMD")
-        cwd = str(vim.eval("getcwd()"))
-        
-        if cmd.find("'") != -1:
-            raise ValueError("This is yet mock, so `'` is not handled correctly.")
-        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
-
-        in_cmd = (
-            "python -X utf8 -c \"import subprocess; "
-            rf"print(subprocess.run('{cmd}', stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding=\"cp932\", shell=True).stdout)"
-            "\""
-        )
-        command = in_cmd.replace("'", "''")
-
-        def init_buffers(wrapped, stdout, stderr):
-            line = f"""###-------------------------------------------------------------------
-{Path(cwd).as_posix()}
-{cmd}
--------------------------------------------------------------------
-""".strip()
-            _ = command 
-            _ = stderr
-            stdout.append(line)
-
-        executor.init_buffers = init_buffers
-
-        wrapper = EnvironmentManager().get_command_wrapper(force_uv=False)
-        executor.run(command, pytoy_buffer, pytoy_buffer, command_wrapper=wrapper, cwd=cwd, env=env)

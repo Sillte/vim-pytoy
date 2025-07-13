@@ -62,8 +62,8 @@ class TerminalBackendWin(TerminalBackendProtocol):
         if not self._proc.pid:
             return
         for child in find_children(self._proc.pid):
-            #force_kill(child)
-            send_ctrl_c(child)
+            force_kill(child)
+            #send_ctrl_c(child) # for some app, ctrl_c does not stop.
 
     def terminate(self) -> None:
         """Kill the terminate."""
