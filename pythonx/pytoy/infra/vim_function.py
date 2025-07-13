@@ -21,7 +21,30 @@ class PytoyVimFunctions:
     FUNCTION_MAPS = _PYTOY_VIM_FUNCTION_MAPS
 
     @classmethod
-    def register(cls, func, prefix=None):
+    def to_vimfuncname(cls, func, *, prefix=None, name: str | None = None) -> str:
+        """This function returns the same `vimfuncname`, 
+        when we call `register`.
+        Sometimes, we have to know the name for deregister in prior to register.  
+        In these cases, we use them. 
+        """
+        # You should consider this with auto-deregister mechanism.
+        # if name in cls.FUNCTION_MAPS:
+        #    raise ValueError(f"`{name}` is already used at `PytoyVimFunctions`. ")
+        if prefix is None:
+            prefix = "Pytoy_VIMFUNC"
+
+        # For `__name__`'s reference ` pytoy.func_utils` access must be passed.
+        if name is None:
+            try:
+                name = func.__name__
+            except AttributeError:
+                name = func.__class__.__name__  # For callable of classes.
+
+        vim_funcname = f"{prefix}_{name}_{id(func)}"
+        return vim_funcname
+
+    @classmethod
+    def register(cls, func, *, prefix=None, name: str | None = None) -> str:
         """Register python `func` with `name` identifier.
 
         Args:
@@ -31,19 +54,7 @@ class PytoyVimFunctions:
             The function name of Vim. This is also regarded as `key` of `FUNCTION_MAPS`.
 
         """
-        # You should consider this with auto-deregister mechanism.
-        # if name in cls.FUNCTION_MAPS:
-        #    raise ValueError(f"`{name}` is already used at `PytoyVimFunctions`. ")
-        if prefix is None:
-            prefix = "Pytoy_VIMFUNC"
-
-        # For `__name__`'s reference ` pytoy.func_utils` access must be passed.
-        try:
-            name = func.__name__
-        except AttributeError:
-            name = func.__class__.__name__  # For callable of classes.
-
-        vim_funcname = f"{prefix}_{name}_{id(name)}"
+        vim_funcname = cls.to_vimfuncname(func, prefix=prefix, name=name)
 
         # Depending of the number of parameters, change the
         # definition and calling of functions.
@@ -71,11 +82,11 @@ EOF
         return vim_funcname
 
     @classmethod
-    def is_registered(cls, key):
-        return bool(key in cls.FUNCTION_MAPS or int(vim.eval(f"exists('{key}')")))
+    def is_registered(cls, vim_funcname: str):
+        return bool(vim_funcname in cls.FUNCTION_MAPS or int(vim.eval(f"exists('{vim_funcname}')")))
 
     @classmethod
-    def deregister(cls, key):
-        if key in cls.FUNCTION_MAPS:
-            del cls.FUNCTION_MAPS[key]
-        vim.command(f"delfunction! {key}")
+    def deregister(cls, vim_funcname: str):
+        if vim_funcname in cls.FUNCTION_MAPS:
+            del cls.FUNCTION_MAPS[vim_funcname]
+        vim.command(f"delfunction! {vim_funcname}")

@@ -13,7 +13,6 @@ from pytoy.ui import PytoyBuffer
 from pytoy.lib_tools.buffer_executor.protocol import BufferJobProtocol
 
 
-
 class NVimBufferJob(BufferJobProtocol):
     def __init__(
         self,
@@ -30,8 +29,6 @@ class NVimBufferJob(BufferJobProtocol):
         self.env = env
         self.cwd = cwd
 
-        self._on_stdout_name = None
-        self._on_stderr_name = None
 
     @property
     def stdout(self) -> PytoyBuffer | None:
@@ -46,95 +43,54 @@ class NVimBufferJob(BufferJobProtocol):
     ) -> None:
         options = dict()
 
-        stdout_drained = True
-        if self.stdout is not None:
-            stdout_queue = Queue()
-            stdout_drained = False
+        def _make_buffer_handler(buffer: PytoyBuffer, suffix: str) -> NvimBufferHandler:
+            queue = Queue()
+            putter = NVimJobStartQueuePutter(f"{self.name}_{suffix}", queue)
+            updater = QueueUpdater(buffer, queue)
+            handler = NvimBufferHandler(putter, updater)
+            return handler
 
-            def _on_stdout(job_id, data, event):
-                nonlocal stdout_drained
-                stdout_queue.put(data)
-                if (not data) or (len(data) == 1 and bool(data[0]) is False):
-                    stdout_drained = True
-                else:
-                    stdout_drained = False
-                _ = job_id = event
+        if self.stdout:
+            stdout_handler = _make_buffer_handler(self.stdout, "on_stdout")
+            stdout_handler.register()
+            options["on_stdout"] = stdout_handler.putter_vimfunc
+        else:
+            stdout_handler = None
 
-            self._on_stdout_name = PytoyVimFunctions.register(
-                _on_stdout, f"{self.name}_on_stdout"
-            )
-            options["on_stdout"] = self._on_stdout_name
+        if self.stderr:
+            stderr_handler = _make_buffer_handler(self.stderr, "on_stderr")
+            stderr_handler.register()
+            options["on_stderr"] = stderr_handler.putter_vimfunc
+        else:
+            stderr_handler = None
 
-            def _update_stdout():
-                while stdout_queue.qsize():
-                    try:
-                        lines = stdout_queue.get_nowait()
-                        for line in lines:
-                            line = line.strip("\r")
-                            self.stdout.append(line) # type: ignore
-                    except Empty:
-                        break
-
-            TimerTask.register(_update_stdout, name=self._on_stdout_name)
-
-        stderr_drained = True
-        if self.stderr is not None:
-            stderr_drained = False
-            stderr_queue = Queue()
-
-            def _on_stderr(job_id, data, event):
-                nonlocal stderr_drained
-                _ = job_id = event
-                stderr_queue.put(data)
-                if (not data) or (len(data) == 1 and bool(data[0]) is False):
-                    stderr_drained = True
-                else:
-                    stderr_drained = False
-
-            self._on_stderr_name = PytoyVimFunctions.register(
-                _on_stderr, f"{self.name}_on_stderr"
-            )
-            options["on_stderr"] = self._on_stderr_name
-
-            def _update_stderr():
-                assert self.stderr is not None
-                while stderr_queue.qsize():
-                    try:
-                        lines = stderr_queue.get_nowait()
-                        for line in lines:
-                            line = line.strip("\r")
-                            self.stderr.append(line) # type: ignore
-                    except Empty:
-                        break
-
-            TimerTask.register(_update_stderr, name=self._on_stderr_name)
 
         if self.env is not None:
             options["env"] = self.env
         if self.cwd is not None:
             options["cwd"] = Path(self.cwd).as_posix()
 
+        
         def wrapped_on_closed(*args):
             start = time.time()
-            nonlocal stdout_drained
-            nonlocal stderr_drained
             while time.time() - start < 0.5:
-                if stdout_drained and stderr_drained:
+                if (not stdout_handler or stdout_handler.drained) and (
+                    not stderr_handler or stderr_handler.drained
+                ):
                     break
-            if self.stdout:
-                _update_stdout()
-                TimerTask.deregister(self._on_stdout_name) 
-                self._on_stdout_name = None
-            if self.stderr:
-                _update_stderr()
-                TimerTask.deregister(self._on_stderr_name)
-                self._on_stderr_name = None
+
+            if stdout_handler:
+                stdout_handler.deregister()
+            if stderr_handler:
+                stderr_handler.deregister()
             on_closed_callable()
             vim.command(f"unlet g:{self.jobname}")
+            # It is required to de-register this function in the different context.
+            this_funcname = PytoyVimFunctions.to_vimfuncname(wrapped_on_closed)
+            TimerTask.execute_oneshot(lambda: PytoyVimFunctions.deregister(this_funcname))
 
-        vimfunc_name = PytoyVimFunctions.register(
-            wrapped_on_closed, prefix=f"{self.jobname}_VIMFUNC"
-        )
+        # [NOTE]: `deregister` is performed inside `wrapped_on_closed`. 
+        vimfunc_name = PytoyVimFunctions.register(wrapped_on_closed)
         options["on_exit"] = vimfunc_name
 
         prepared_dict = on_start_callable()
@@ -164,3 +120,117 @@ class NVimBufferJob(BufferJobProtocol):
             print(f"Already, `{self.jobname}` is stopped.")
 
 
+class NVimJobStartQueuePutter:
+    VIMFUNCTION_SUFFIX = "_nvim_jobstart_putter"
+
+    def __init__(self, name: str, queue: Queue):
+        self._name = name
+        self._queue = queue
+        self._drained: bool = True
+        self._vim_function: str | None = None
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def vim_function(self) -> str | None:
+        return self._vim_function
+
+    @property
+    def drained(self):
+        return self._drained
+
+    def register(self) -> str:
+        """Register the putting job.``"""
+
+        def _on_stdout(job_id, data, event):
+            self._queue.put(data)
+            if (not data) or (len(data) == 1 and bool(data[0]) is False):
+                self._drained = True
+            else:
+                self._drained = False
+            _ = job_id = event
+
+        self._drained = True
+        vimfuncname = PytoyVimFunctions.register(
+            _on_stdout, name=f"{self.name}_{self.VIMFUNCTION_SUFFIX}"
+        )
+        self._vim_function = vimfuncname
+        return self._vim_function
+
+    def deregister(self):
+        if not self.vim_function:
+            raise ValueError("`NVimJobStartQueuePutter is not yet registered.`")
+        PytoyVimFunctions.deregister(self.vim_function)
+
+
+class QueueUpdater:
+    def __init__(
+        self,
+        buffer: PytoyBuffer,
+        queue: Queue,
+        taskname: str | None = None,
+        interval: int = 100,
+    ):
+        self._buffer = buffer
+        self._taskname = taskname
+        self._queue = queue
+        self._interval = interval
+
+    @property
+    def taskname(self) -> str | None:
+        return self._taskname
+
+    def _updater(self):
+        while self._queue.qsize():
+            try:
+                lines = self._queue.get_nowait()
+                for line in lines:
+                    line = line.strip("\r")
+                    self._buffer.append(line)  # type: ignore
+            except Empty:
+                break
+
+    def register(self) -> str:
+        self._taskname = TimerTask.register(self._updater, name=self._taskname)
+        return self._taskname
+
+    def deregister(self):
+        if not self.taskname:
+            raise ValueError("`QueueUpdater`: TimerTask is not yet registered.`")
+        # In order to acquire the info as much as possible.
+        self._updater()
+        TimerTask.deregister(self.taskname)
+
+
+class NvimBufferHandler:
+    def __init__(
+        self, queue_putter: NVimJobStartQueuePutter, queue_updater: QueueUpdater
+    ):
+        self._putter = queue_putter
+        self._updater = queue_updater
+
+        self._putter_vimfunc: str | None = None
+        self._updater_taskname: str | None = None
+
+    @property
+    def drained(self) -> bool:
+        return self._putter.drained
+
+    @property
+    def putter_vimfunc(self) -> str | None:
+        return self._putter_vimfunc
+
+    @property
+    def updater_taskname(self) -> str | None:
+        return self._updater_taskname
+
+    def register(self) -> tuple[str, str]:
+        self._putter_vimfunc = self._putter.register()
+        self._updater_taskname = self._updater.register()
+        return (self._putter_vimfunc, self._updater_taskname)
+
+    def deregister(self):
+        self._putter.deregister()
+        self._updater.deregister()
