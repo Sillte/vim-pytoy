@@ -8,11 +8,13 @@ class PytoyBufferVim(PytoyBufferProtocol):
 
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
+        content = content.replace("\r\n", "\n")
         self.buffer[:] = content.split("\n")
 
     def append(self, content: str) -> None:
         if not content:
             return
+        content = content.replace("\r\n", "\n")
         lines = content.split("\n")
         if self._is_empty():
             self.buffer[:] = [lines[0]]
