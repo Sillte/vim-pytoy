@@ -14,7 +14,7 @@ class TimerTask:
     counter = 0
 
     @classmethod
-    def register(cls, func, interval:int=100, name: str | None= None) -> str:
+    def register(cls, func, interval:int=100, name: str | None = None) -> str:
         """Register the function without the argument. 
         """
         interval = int(interval)

@@ -60,7 +60,7 @@ class VimBufferJob(BufferJobProtocol):
             vim.command(f"unlet g:{self.jobname}")
 
         vimfunc_name = PytoyVimFunctions.register(
-            wrapped_on_closed, prefix=f"{self.jobname}_VIMFUNC"
+            wrapped_on_closed, name=f"{self.jobname}_VIMFUNC"
         )
         options["exit_cb"] = vimfunc_name
 
