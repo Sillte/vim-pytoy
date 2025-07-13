@@ -9,8 +9,8 @@ Usage: BufferExecutor /
 
 """
 
-from pytoy.ui.ui_enum import UIEnum, get_ui_enum
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol
+from pytoy.ui.pytoy_buffer.queue_updater import QueueUpdater  # noqa
 
 
 class PytoyBuffer(PytoyBufferProtocol):
@@ -54,7 +54,6 @@ def make_duo_buffers(
     stdout_window = PytoyWindowProvider().create_window(stdout_name, "vertical")
     stderr_window = PytoyWindowProvider().create_window(stderr_name, "horizontal", stdout_window)
     return (stdout_window.buffer, stderr_window.buffer)
-
 
 
 if __name__ == "__main__":

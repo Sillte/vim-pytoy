@@ -1,7 +1,6 @@
 import vim
 import time
 from queue import Queue
-from queue import Empty
 from pytoy.infra.timertask import TimerTask
 
 from pathlib import Path
@@ -10,6 +9,7 @@ from typing import Callable
 from pytoy.infra.vim_function import PytoyVimFunctions
 
 from pytoy.ui import PytoyBuffer
+from pytoy.ui.pytoy_buffer.queue_updater import QueueUpdater
 from pytoy.lib_tools.buffer_executor.protocol import BufferJobProtocol
 
 
@@ -41,7 +41,6 @@ class NVimBufferJob(BufferJobProtocol):
     def job_start(
         self, command: str, on_start_callable: Callable, on_closed_callable: Callable
     ) -> None:
-        options = dict()
 
         def _make_buffer_handler(buffer: PytoyBuffer, suffix: str) -> NvimBufferHandler:
             queue = Queue()
@@ -49,6 +48,8 @@ class NVimBufferJob(BufferJobProtocol):
             updater = QueueUpdater(buffer, queue)
             handler = NvimBufferHandler(putter, updater)
             return handler
+
+        options = dict()
 
         if self.stdout:
             stdout_handler = _make_buffer_handler(self.stdout, "on_stdout")
@@ -164,44 +165,6 @@ class NVimJobStartQueuePutter:
             raise ValueError("`NVimJobStartQueuePutter is not yet registered.`")
         PytoyVimFunctions.deregister(self.vim_function)
 
-
-class QueueUpdater:
-    def __init__(
-        self,
-        buffer: PytoyBuffer,
-        queue: Queue,
-        taskname: str | None = None,
-        interval: int = 100,
-    ):
-        self._buffer = buffer
-        self._taskname = taskname
-        self._queue = queue
-        self._interval = interval
-
-    @property
-    def taskname(self) -> str | None:
-        return self._taskname
-
-    def _updater(self):
-        while self._queue.qsize():
-            try:
-                lines = self._queue.get_nowait()
-                for line in lines:
-                    line = line.strip("\r")
-                    self._buffer.append(line)  # type: ignore
-            except Empty:
-                break
-
-    def register(self) -> str:
-        self._taskname = TimerTask.register(self._updater, name=self._taskname)
-        return self._taskname
-
-    def deregister(self):
-        if not self.taskname:
-            raise ValueError("`QueueUpdater`: TimerTask is not yet registered.`")
-        # In order to acquire the info as much as possible.
-        self._updater()
-        TimerTask.deregister(self.taskname)
 
 
 class NvimBufferHandler:
