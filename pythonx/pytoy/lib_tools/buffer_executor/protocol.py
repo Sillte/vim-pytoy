@@ -27,4 +27,12 @@ class BufferJobProtocol(Protocol):
     def stop(self) -> None:
         ...
 
+    @property
+    def stdout(self) -> PytoyBuffer | None:
+        ...
+
+    @property
+    def stderr(self) -> PytoyBuffer | None:
+        ...
+
 

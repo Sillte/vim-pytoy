@@ -20,10 +20,18 @@ class VimBufferJob(BufferJobProtocol):
         cwd=None,
     ):
         self.name = name
-        self.stdout = stdout
-        self.stderr = stderr
+        self._stdout = stdout
+        self._stderr = stderr
         self.env = env
         self.cwd = cwd
+
+    @property
+    def stdout(self) -> PytoyBuffer | None:
+        return self._stdout
+
+    @property
+    def stderr(self) -> PytoyBuffer | None:
+        return self._stderr
 
     def job_start(
         self, command: str, on_start_callable: Callable, on_closed_callable: Callable

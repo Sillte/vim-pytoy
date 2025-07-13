@@ -26,9 +26,6 @@ class BufferExecutor:
     ------------------------------------------
 
     * Registration of global variable is necessary to manage the state of running or stop.
-    * `_flow_***` are introduced for performing both of the below.
-        - 1). To register / de-register of `self.jobname`
-        - 2). Execute user defined processing.
     """
 
     __cache = dict()

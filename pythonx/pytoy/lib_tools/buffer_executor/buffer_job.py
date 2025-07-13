@@ -26,9 +26,11 @@ def make_buffer_job(
     ui_enum = get_ui_enum()
     if ui_enum == UIEnum.VIM:
         from pytoy.lib_tools.buffer_executor.impl_vim import VimBufferJob
+
         return VimBufferJob(name, stdout, stderr, env=env, cwd=cwd)
     elif ui_enum in {UIEnum.NVIM, UIEnum.VSCODE}:
         from pytoy.lib_tools.buffer_executor.impl_nvim import NVimBufferJob
+
         return NVimBufferJob(name, stdout, stderr, env=env, cwd=cwd)
     else:
         assert False, "Implementation Error"
