@@ -87,19 +87,28 @@ class Document(BaseModel):
         js_code = """
         (async () => {
         const path = args.path; 
-      const text = args.text;
 
-      const doc = vscode.workspace.textDocuments.find(
-        d => d.uri.path === path
-      );
+          const doc = vscode.workspace.textDocuments.find(
+          d => d.uri.path === path
+          );
 
       if (!doc) {
         return { success: false, message: "Untitled document not found." };
       }
 
-      const edit = new vscode.WorkspaceEdit();
-      const pos = new vscode.Position(doc.lineCount, 0);
-      edit.insert(doc.uri, pos, text);
+        const edit = new vscode.WorkspaceEdit();
+
+        let pos;
+        if (doc.lineCount === 0) {
+          pos = new vscode.Position(0, 0);
+        } else {
+          const lastLine = doc.lineCount - 1;
+          const lastLineText = doc.lineAt(lastLine).text;
+          pos = new vscode.Position(lastLine, lastLineText.length);
+        }
+
+        edit.insert(doc.uri, pos, args.text);
+
 
       const ok = await vscode.workspace.applyEdit(edit);
       return {
@@ -111,7 +120,7 @@ class Document(BaseModel):
         result = api.eval_with_return(
             js_code,
             with_await=True,
-            args={"args": {"path": self.uri.path, "text": f"{text}\n"}},
+            args={"args": {"path": self.uri.path, "text": f"{text}"}},
         )
         return result
 
