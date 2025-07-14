@@ -6,6 +6,7 @@ import winpty
 
 from .protocol import TerminalBackendProtocol, ApplicationProtocol
 from .line_buffer import LineBuffer
+from .utils import find_children  
 
 
 class TerminalBackendWin(TerminalBackendProtocol):
@@ -45,7 +46,8 @@ class TerminalBackendWin(TerminalBackendProtocol):
             return False
         if not self._proc.pid:
             return False
-        return self._app.is_busy(self._proc.pid, self.last_line)
+        children_pids = find_children(self._proc.pid)
+        return self._app.is_busy(children_pids, self.last_line)
         
 
     def send(self, input_str: str):
@@ -61,7 +63,8 @@ class TerminalBackendWin(TerminalBackendProtocol):
             return 
         if not self._proc.pid:
             return
-        self._app.interrupt(self._proc.pid)
+        children_pids = find_children(self._proc.pid)
+        self._app.interrupt(children_pids)
 
 
     def terminate(self) -> None:
