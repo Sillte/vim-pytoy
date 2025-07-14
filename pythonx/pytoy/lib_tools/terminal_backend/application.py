@@ -1,5 +1,5 @@
 from .protocol import ApplicationProtocol
-from .utils import find_children, force_kill
+from .utils import force_kill
 
 
 class ShellApplication(ApplicationProtocol):
@@ -11,18 +11,18 @@ class ShellApplication(ApplicationProtocol):
     def command(self) -> str:
         return self._command 
 
-    def is_busy(self, pid: int, lastline: str) -> bool:
+    def is_busy(self, children_pids: list[int], lastline: str) -> bool:
         _ = lastline
-        return bool(find_children(pid))
+        return bool(children_pids)
 
     def modify(self, input_str: str) -> str: 
         """Modify the command before sending to `terminal`
         """
         return input_str + self._line_suffix
 
-    def interrupt(self, pid: int):
+    def interrupt(self, children_pids: list[int]):
         """Interrupt the process.
         """
-        for child in find_children(pid):
+        for child in children_pids:
             force_kill(child)
 

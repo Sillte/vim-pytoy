@@ -52,11 +52,11 @@ class ApplicationProtocol(Protocol):
 
     @property
     def command(self) -> str:
-        """Start 
+        """The name of command 
         """
         ...
 
-    def is_busy(self, pid: int, lastline: str) -> bool | None:
+    def is_busy(self, children_pids: list[int], lastline: str) -> bool | None:
         """Return whether the `terminal` is busy or not. 
         Note that sometimes, the estimation is not perfect. (very difficult to realize 100%).
         If the return is True, it is 100% sure that the process is busy, 
@@ -70,7 +70,7 @@ class ApplicationProtocol(Protocol):
         """
         ...
 
-    def interrupt(self, pid: int):
+    def interrupt(self, children_pids: list[int]):
         """Interrupt the process.
         """
         ...
