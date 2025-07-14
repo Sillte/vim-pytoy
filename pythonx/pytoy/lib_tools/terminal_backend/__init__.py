@@ -1,3 +1,4 @@
+import sys
 from queue import Queue
 from .protocol import TerminalBackendProtocol
 
@@ -40,22 +41,25 @@ class TerminalBackend(TerminalBackendProtocol):
         """It returns the queue which is used for output."""
         return self.impl.queue
 
+    @property
+    def last_line(self) -> str:
+        return self.impl.last_line
+
 
 class TerminalBackendProvider:
-    def make_terminal(self, command: str) -> TerminalBackend:
-        import sys
-
+    def make_terminal(self, command: str = "C:\\Windows\\System32\\cmd.exe") -> TerminalBackend:
         def make_win32():
             from .impl_win import TerminalBackendWin
-
-            impl = TerminalBackendWin(command)
+            from .application import ShellApplication
+            cmd_app = ShellApplication(command)
+            impl = TerminalBackendWin(cmd_app)
             return TerminalBackend(impl)
 
         creators = {}
         creators["win32"] = make_win32
         creator = creators.get(sys.platform, None)
         if not creator:
-            raise RuntimeError(f"TerminalBackedn cannot be used in {sys.platform}")
+            raise RuntimeError(f"TerminalBackend cannot be used in {sys.platform}")
         return creator()
 
 

@@ -1,11 +1,14 @@
 import time
 from queue import Empty
 from .impl_win import TerminalBackendWin
+from .application import ShellApplication
+
+shell = ShellApplication("cmd.exe")
 
 
 def test_start_and_send_echo(terminal=None):
     if terminal is None:
-        terminal = TerminalBackendWin()
+        terminal = TerminalBackendWin(shell)
     if not terminal.alive:
         terminal.start()
 
@@ -29,7 +32,7 @@ def test_start_and_send_echo(terminal=None):
 
 
 def test_send_multiple_lines():
-    terminal = TerminalBackendWin()
+    terminal = TerminalBackendWin(shell)
     terminal.start()
     terminal.send('echo Line1')
     terminal.send('echo Line2')
@@ -51,7 +54,7 @@ def test_send_multiple_lines():
 
 
 def test_interrupt_safe_call():
-    terminal = TerminalBackendWin()
+    terminal = TerminalBackendWin(shell)
     terminal.start()
     terminal.send("timeout /t 2 > NUL")  # Sleep equivalent
     time.sleep(0.5)
@@ -63,7 +66,7 @@ def test_interrupt_safe_call():
     test_start_and_send_echo(terminal) 
 
 def test_busy_behavior():
-    terminal = TerminalBackendWin()
+    terminal = TerminalBackendWin(shell)
     terminal.start()
 
     assert not terminal.busy, "Terminal should not be busy immediately after start"
@@ -79,7 +82,7 @@ def test_busy_behavior():
     terminal.terminate()
     
 if __name__ == "__main__":
-    terminal = TerminalBackendWin()
+    terminal = TerminalBackendWin(shell)
     terminal.send("echo hello")
     time.sleep(2)
 
