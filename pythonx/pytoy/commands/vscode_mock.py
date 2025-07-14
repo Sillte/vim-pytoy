@@ -18,7 +18,6 @@ def mywindow_func():
     #window.unique()    
 
 
-    #window.isolate(tab_scope=True)
 
 from pytoy.lib_tools.terminal_backend import TerminalBackendProvider
 from pytoy.lib_tools.terminal_executor import TerminalExecutor
