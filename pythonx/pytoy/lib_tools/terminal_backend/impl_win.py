@@ -1,25 +1,24 @@
 """Terminal, which is used by python.
 """
-import time
 from queue import Queue
-from threading import Thread, Lock, RLock
+from threading import Thread, Lock
 import winpty
 
-from .protocol import TerminalBackendProtocol
+from .protocol import TerminalBackendProtocol, ApplicationProtocol
 from .line_buffer import LineBuffer
-from .win_utils import send_ctrl_c, find_children, force_kill
 
 
 class TerminalBackendWin(TerminalBackendProtocol):
-    def __init__(self, command: str = "C:\\Windows\\System32\\cmd.exe"):
-        self._command = command
+    def __init__(self, app: ApplicationProtocol):
+        self._app = app
 
         self._queue = Queue()
-        self._lock = RLock()
+        self._lock = Lock()
         self._proc: winpty.PtyProcess | None = None
         self._stdout_thread: Thread | None = None
         self._reading_stdout = False
         self._line_buffer = LineBuffer()
+        self._last_line = ""
 
     def start(
         self,
@@ -27,33 +26,34 @@ class TerminalBackendWin(TerminalBackendProtocol):
         if self.alive:
             print("Already `started`.")
             return
-
-        self._proc = winpty.PtyProcess.spawn(self._command)
-        self._stdout_thread = Thread(target=self._stdout_loop, daemon=True)
-        self._reading_stdout = True
-        self._stdout_thread.start()
+        with self._lock:
+            self._proc = winpty.PtyProcess.spawn(self._app.command)
+            self._stdout_thread = Thread(target=self._stdout_loop, daemon=True)
+            self._reading_stdout = True
+            self._stdout_thread.start()
 
     @property
     def alive(self) -> bool:
-        if not self._proc:
-            return False
-        return self._proc.isalive()
+        with self._lock:
+            if not self._proc:
+                return False
+            return self._proc.isalive()
 
     @property
-    def busy(self) -> bool:
+    def busy(self) -> bool | None:
         if not self._proc:
             return False
         if not self._proc.pid:
             return False
-        return bool(find_children(self._proc.pid))
+        return self._app.is_busy(self._proc.pid, self.last_line)
         
 
-    def send(self, cmd: str):
+    def send(self, input_str: str):
         if not self.alive:
             self.start()
         assert self._proc is not None
-        with self._lock:
-            self._proc.write((cmd + "\r\n"))
+        input_str = self._app.modify(input_str)
+        self._proc.write(input_str)
 
     def interrupt(self) -> None:
         """Stop the child process."""
@@ -61,9 +61,8 @@ class TerminalBackendWin(TerminalBackendProtocol):
             return 
         if not self._proc.pid:
             return
-        for child in find_children(self._proc.pid):
-            force_kill(child)
-            #send_ctrl_c(child) # for some app, ctrl_c does not stop.
+        self._app.interrupt(self._proc.pid)
+
 
     def terminate(self) -> None:
         """Kill the terminate."""
@@ -75,6 +74,11 @@ class TerminalBackendWin(TerminalBackendProtocol):
     def queue(self) -> Queue:
         """It returns the queue which is used for output."""
         return self._queue
+
+    @property
+    def last_line(self) -> str:
+        """It returns the lastest line added to queue."""
+        return self._last_line
 
     def _stdout_loop(self):
         while self.alive and self._reading_stdout:
@@ -92,7 +96,9 @@ class TerminalBackendWin(TerminalBackendProtocol):
                 lines = self._line_buffer.append(chunk)
             else:
                 lines = []
+
             if lines:
+                self._last_line = lines[-1]
                 self.queue.put(lines)
 
 
