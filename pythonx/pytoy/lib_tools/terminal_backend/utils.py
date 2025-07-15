@@ -1,3 +1,8 @@
+import subprocess
+import sys
+import os
+
+# `import psutil` may take time.
 
 
 def find_children(parent_pid: int) -> list[int]:
@@ -44,3 +49,15 @@ def force_kill(pid: int, timeout: float = 1.0):
         print(f"pid cannot be handled.")
     except Exception as e:
         print(f"Unexpected error: {e}")
+
+
+def send_ctrl_c(pid: int):
+    if sys.platform == "win32":
+        from pathlib import Path
+        _this_folder = Path(__file__).absolute().parent
+        path = _this_folder / "ctrl_c_isolated.py"
+        ret = subprocess.run(["python", str(path), str(pid)]) 
+        return ret.returncode == 0
+    else:
+        os.kill(pid, signal.SIGINT)
+

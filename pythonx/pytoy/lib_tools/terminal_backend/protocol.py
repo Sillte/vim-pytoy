@@ -70,7 +70,7 @@ class ApplicationProtocol(Protocol):
         """
         ...
 
-    def interrupt(self, children_pids: list[int]):
+    def interrupt(self, pid: int, children_pids: list[int]):
         """Interrupt the process.
         """
         ...
