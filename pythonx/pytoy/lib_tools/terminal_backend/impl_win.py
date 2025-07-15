@@ -55,7 +55,10 @@ class TerminalBackendWin(TerminalBackendProtocol):
             self.start()
         assert self._proc is not None
         input_str = self._app.modify(input_str)
-        self._proc.write(input_str)
+        # LF -> CRLF, clensing.
+        input_str = input_str.replace("\r\n", "\n")
+        for line in input_str.split("\n"):
+            self._proc.write(line + "\r\n")
 
     def interrupt(self) -> None:
         """Stop the child process."""
