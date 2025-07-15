@@ -17,15 +17,15 @@ class TerminalBackend(TerminalBackendProtocol):
         """Start the terminal."""
         self.impl.start()
 
-    def send(self, cmd: str):
-        self.impl.send(cmd)
+    def send(self, input_str: str):
+        self.impl.send(input_str)
 
     @property
     def alive(self) -> bool:
         return self.impl.alive
 
     @property
-    def busy(self) -> bool:
+    def busy(self) -> bool | None:
         return self.impl.busy
 
     def interrupt(self) -> None:

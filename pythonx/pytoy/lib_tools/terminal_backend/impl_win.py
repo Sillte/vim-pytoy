@@ -63,8 +63,9 @@ class TerminalBackendWin(TerminalBackendProtocol):
             return 
         if not self._proc.pid:
             return
+        pid = self._proc.pid
         children_pids = find_children(self._proc.pid)
-        self._app.interrupt(children_pids)
+        self._app.interrupt(pid, children_pids)
 
 
     def terminate(self) -> None:
