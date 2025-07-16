@@ -1,4 +1,6 @@
+from pytoy.lib_tools.terminal_backend.protocol import LineBufferProtocol
 import re
+
 
 # Comprehensive regex to remove ANSI escape codes and other common control characters.
 # This regex is designed to work with Python strings (Unicode).
@@ -41,24 +43,29 @@ CONTROL_CODE_RE = re.compile(
     re.VERBOSE | re.DOTALL # re.DOTALL allows '.' to match newlines for OSC sequences
 )
 
-class LineBuffer:
+class LineBufferNaive(LineBufferProtocol):
     """Return the `lines` based on given information.
     """
     def __init__(self): 
-        self._line_buffer: str = ""
+        self._chunk_buffer = ""
         self._last_row = 1  # First.
         self._cursor_move_pattern = re.compile(r'\x1b\[(\d+);(\d+)H')
 
     def reset(self):
         """Please invoke this function when you restarted this buffer, if necessary.
         """
-        self._line_buffer = ""
+        self._chunk_buffer = ""
+
+    def flush(self) -> list[str]: 
+        line = CONTROL_CODE_RE.sub('', self._chunk_buffer)
+        self._chunk_buffer = ""
+        return [line]
 
     @property
     def chunk(self) -> str:
-        return self._line_buffer
+        return self._chunk_buffer
 
-    def append(self, chunk: str) -> list[str]:
+    def feed(self, chunk: str) -> list[str]:
         """Append a chunk of text and return any complete lines (with control codes removed).
         If a chunk does not contain a newline or carriage return, the data is buffered.
         Multiple lines in one chunk are handled gracefully.
@@ -67,19 +74,19 @@ class LineBuffer:
 
         lines: list[str] = []
 
-        self._line_buffer += chunk
+        self._chunk_buffer += chunk
         # Process lines when a newline or carriage return is found
         # Use a loop to handle multiple newlines in a single chunk
-        while "\n" in self._line_buffer or "\r" in self._line_buffer:
+        while "\n" in self._chunk_buffer or "\r" in self._chunk_buffer:
             # Find the first newline or carriage return
             newline_idx = -1
             # Prefer \r\n as a single unit if present
-            crnl_idx = self._line_buffer.find('\r\n')
+            crnl_idx = self._chunk_buffer.find('\r\n')
             if crnl_idx != -1:
                 newline_idx = crnl_idx + 1 # Point to the 'n' in '\r\n'
             else:
-                nl_idx = self._line_buffer.find('\n')
-                cr_idx = self._line_buffer.find('\r')
+                nl_idx = self._chunk_buffer.find('\n')
+                cr_idx = self._chunk_buffer.find('\r')
 
                 if nl_idx != -1 and (cr_idx == -1 or nl_idx < cr_idx):
                     newline_idx = nl_idx
@@ -88,8 +95,8 @@ class LineBuffer:
 
             if newline_idx != -1:
                 # Extract the line including the newline/CR character(s)
-                line_to_process = self._line_buffer[:newline_idx + 1]
-                self._line_buffer = self._line_buffer[newline_idx + 1:]
+                line_to_process = self._chunk_buffer[:newline_idx + 1]
+                self._chunk_buffer = self._chunk_buffer[newline_idx + 1:]
 
 
                 # Strip control codes and ANSI escape sequences
@@ -106,7 +113,7 @@ class LineBuffer:
         last_end = 0
         for match in pattern.finditer(text):
             row = int(match.group(1))
-            col = int(match.group(2))
+            _ = int(match.group(2)) # col
             if row > self._last_row:
                 output += text[last_end:match.start()] + "\r\n" 
             else:
@@ -115,3 +122,4 @@ class LineBuffer:
             last_end = match.end()
         output += text[last_end:]
         return output
+

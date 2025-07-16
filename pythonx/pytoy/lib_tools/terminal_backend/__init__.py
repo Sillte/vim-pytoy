@@ -51,8 +51,10 @@ class TerminalBackendProvider:
         def make_win32():
             from .impl_win import TerminalBackendWin
             from .application import ShellApplication
+            from .line_buffers import LineBufferNaive
+            line_buffer = LineBufferNaive()
             cmd_app = ShellApplication(command)
-            impl = TerminalBackendWin(cmd_app)
+            impl = TerminalBackendWin(cmd_app, line_buffer)
             return TerminalBackend(impl)
 
         creators = {}

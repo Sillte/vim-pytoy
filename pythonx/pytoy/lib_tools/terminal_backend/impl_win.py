@@ -4,13 +4,16 @@ from queue import Queue
 from threading import Thread, Lock
 import winpty
 
-from .protocol import TerminalBackendProtocol, ApplicationProtocol
-from .line_buffer import LineBuffer
+from .protocol import TerminalBackendProtocol, ApplicationProtocol, LineBufferProtocol
+from .line_buffers.line_buffer_naive import LineBufferNaive
 from .utils import find_children  
 
 
 class TerminalBackendWin(TerminalBackendProtocol):
-    def __init__(self, app: ApplicationProtocol):
+    def __init__(self, app: ApplicationProtocol, line_buffer: LineBufferProtocol | None = None):
+        if line_buffer is None:
+            line_buffer = LineBufferNaive()
+
         self._app = app
 
         self._queue = Queue()
@@ -18,7 +21,7 @@ class TerminalBackendWin(TerminalBackendProtocol):
         self._proc: winpty.PtyProcess | None = None
         self._stdout_thread: Thread | None = None
         self._reading_stdout = False
-        self._line_buffer = LineBuffer()
+        self._line_buffer = line_buffer
         self._last_line = ""
 
     def start(
@@ -92,21 +95,27 @@ class TerminalBackendWin(TerminalBackendProtocol):
             if not self._proc:
                 self._reading_stdout = False
                 continue
-
             try:
-                chunk = self._proc.read(1024)
+                chunk = self._proc.readline()
             except EOFError:
                 self._reading_stdout = False
                 chunk = None
 
             if chunk:
-                lines = self._line_buffer.append(chunk)
+                lines = self._line_buffer.feed(chunk)
             else:
                 lines = []
 
             if lines:
                 self._last_line = lines[-1]
                 self.queue.put(lines)
+
+        lines = self._line_buffer.flush()
+        # [NOTE] For the last resort, only the meaningful line are `put` into queue.
+        lines = [line for line in lines if line.strip()]
+        if lines:
+            self._last_line = lines[-1]
+            self.queue.put(lines)
 
 
 if __name__ == "__main__":
