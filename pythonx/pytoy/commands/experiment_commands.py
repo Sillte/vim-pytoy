@@ -17,9 +17,26 @@ class CommandTerminal:
     def get_executor():
         if CommandTerminal.executor:
             return CommandTerminal.executor
+
+        from pytoy.lib_tools.terminal_backend.impl_win import TerminalBackendWin
+        from pytoy.lib_tools.terminal_backend import TerminalBackend
+        from pytoy.lib_tools.terminal_backend.application import InteractiveApplication, ShellApplication
+
+        from pytoy.lib_tools.terminal_backend.line_buffers import LineBufferPyte
+
+        if False:
+            app = InteractiveApplication("python")
+            impl = TerminalBackendWin(app)
+            backend = TerminalBackend(impl)
+            #wrapped = f"exec({cmd!r})"
+        else:
+            app = ShellApplication("cmd.exe")
+            impl = TerminalBackendWin(app, LineBufferPyte())
+            backend = TerminalBackend(impl)
+
         buffer = make_buffer(CommandTerminal.name)
-        backend = TerminalBackendProvider().make_terminal(command="cmd.exe")
         executor = TerminalExecutor(buffer, backend)
+
         CommandTerminal.executor = executor
         return executor
 
@@ -33,12 +50,14 @@ class CommandTerminal:
 
         # [NOTE]: this specification should be discussed.
         cmd = opts.args
-        if not cmd.strip():
-            executor.interrupt()
+        #if not cmd.strip():
+        #    executor.interrupt()
 
-        line1, _ = opts.line1, opts.line2
+        line1, line2 = opts.line1, opts.line2
         if not cmd.strip():
-            cmd = vim.eval(f"getline({line1})")
+            lines = vim.eval(f"getline({line1}, {line2})")
+            cmd = "\n".join(lines)
+
         executor.send(cmd)
 
 

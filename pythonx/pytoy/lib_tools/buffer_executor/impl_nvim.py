@@ -144,9 +144,14 @@ class NVimJobStartQueuePutter:
 
     def register(self) -> str:
         """Register the putting job.``"""
-
+        buffer = ""
         def _on_stdout(job_id, data, event):
-            self._queue.put(data)
+            nonlocal buffer
+            if data:
+                data[0] = buffer + data[0]
+                lines = [line.strip("\r") for line in data[:-1]]
+                self._queue.put(lines)
+                buffer = data[-1]
             if (not data) or (len(data) == 1 and bool(data[0]) is False):
                 self._drained = True
             else:
