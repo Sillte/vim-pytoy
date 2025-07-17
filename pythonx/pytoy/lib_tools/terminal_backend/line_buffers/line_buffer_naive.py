@@ -1,4 +1,4 @@
-from pytoy.lib_tools.terminal_backend.protocol import LineBufferProtocol
+from pytoy.lib_tools.terminal_backend.protocol import LineBufferProtocol, DEFAULT_LINES, DEFAULT_COLUMNS
 import re
 
 
@@ -46,10 +46,21 @@ CONTROL_CODE_RE = re.compile(
 class LineBufferNaive(LineBufferProtocol):
     """Return the `lines` based on given information.
     """
-    def __init__(self): 
+    def __init__(self, columns: int=DEFAULT_COLUMNS, lines: int = DEFAULT_LINES): 
         self._chunk_buffer = ""
         self._last_row = 1  # First.
         self._cursor_move_pattern = re.compile(r'\x1b\[(\d+);(\d+)H')
+        self._columns = columns
+        self._lines = lines
+
+    @property
+    def columns(self) -> int:
+        return self._columns
+
+    @property
+    def lines(self) -> int:
+        return self.lines
+
 
     def reset(self):
         """Please invoke this function when you restarted this buffer, if necessary.

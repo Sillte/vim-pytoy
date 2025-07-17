@@ -1,9 +1,9 @@
 import pyte
-from pytoy.lib_tools.terminal_backend.protocol import LineBufferProtocol
-
-
-DEFAULT_LINES = 128
-DEFAULT_COLUMNS = 1024
+from pytoy.lib_tools.terminal_backend.protocol import (
+    LineBufferProtocol,
+    DEFAULT_LINES,
+    DEFAULT_COLUMNS,
+)
 
 
 class LineBufferPyte(LineBufferProtocol):
@@ -15,14 +15,14 @@ class LineBufferPyte(LineBufferProtocol):
         self.stream.feed(chunk)
 
         cy = self.screen.cursor.y
-        #print("dirty", self.screen.dirty, cy)
+        # print("dirty", self.screen.dirty, cy)
 
         start = min(self.screen.dirty, default=self.lines)
         lines = []
         for s in range(start, cy):
             line = self.screen.display[s]
             lines.append(line.rstrip())
-        print("lines" ,lines, self.screen.dirty, cy)
+        #print("lines", lines, self.screen.dirty, cy)
         self.screen.dirty.clear()
 
         if cy == self.lines - 1:  # End of cursor.
@@ -51,3 +51,7 @@ class LineBufferPyte(LineBufferProtocol):
     @property
     def lines(self):
         return self.screen.lines
+
+    @property
+    def columns(self):
+        return self.screen.columns

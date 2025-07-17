@@ -7,6 +7,10 @@ from pytoy.command import CommandManager, OptsArgument
 
 from pytoy.lib_tools.terminal_executor import TerminalExecutor
 from pytoy.lib_tools.terminal_backend import  TerminalBackendProvider
+from pytoy.lib_tools.terminal_backend.protocol import  ApplicationProtocol
+
+
+
 
 class CommandTerminal:
     name = "__CMD__"
@@ -20,19 +24,14 @@ class CommandTerminal:
 
         from pytoy.lib_tools.terminal_backend.impl_win import TerminalBackendWin
         from pytoy.lib_tools.terminal_backend import TerminalBackend
-        from pytoy.lib_tools.terminal_backend.application import InteractiveApplication, ShellApplication
+        from pytoy.lib_tools.terminal_backend.application import ShellApplication
 
-        from pytoy.lib_tools.terminal_backend.line_buffers import LineBufferPyte
+        from pytoy.lib_tools.terminal_backend.line_buffers import LineBufferPyte, LineBufferNaive
 
-        if False:
-            app = InteractiveApplication("python")
-            impl = TerminalBackendWin(app)
-            backend = TerminalBackend(impl)
-            #wrapped = f"exec({cmd!r})"
-        else:
-            app = ShellApplication("cmd.exe")
-            impl = TerminalBackendWin(app, LineBufferPyte())
-            backend = TerminalBackend(impl)
+
+        app = ShellApplication("cmd.exe")
+        impl = TerminalBackendWin(app, LineBufferNaive())
+        backend = TerminalBackend(impl)
 
         buffer = make_buffer(CommandTerminal.name)
         executor = TerminalExecutor(buffer, backend)
