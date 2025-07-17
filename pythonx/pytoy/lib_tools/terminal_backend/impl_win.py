@@ -1,5 +1,6 @@
 """Terminal, which is used by python.
 """
+import time 
 from queue import Queue
 from threading import Thread, Lock
 import winpty
@@ -31,7 +32,7 @@ class TerminalBackendWin(TerminalBackendProtocol):
             print("Already `started`.")
             return
         with self._lock:
-            self._proc = winpty.PtyProcess.spawn(self._app.command)
+            self._proc = winpty.PtyProcess.spawn(self._app.command, dimensions=(24, 1024))
             self._stdout_thread = Thread(target=self._stdout_loop, daemon=True)
             self._reading_stdout = True
             self._stdout_thread.start()
@@ -57,11 +58,15 @@ class TerminalBackendWin(TerminalBackendProtocol):
         if not self.alive:
             self.start()
         assert self._proc is not None
-        input_str = self._app.modify(input_str)
-        # LF -> CRLF, clensing.
-        input_str = input_str.replace("\r\n", "\n")
-        for line in input_str.split("\n"):
-            self._proc.write(line + "\r\n")
+        self._line_buffer.flush()
+        lines = self._app.make_lines(input_str)
+        for line in lines:
+            if not(line.endswith("\r") or line.endswith("\n")):
+                line = line + "\r\n"
+            self._proc.write(line)
+            time.sleep(0.01)
+        #for line in input_str.split("\n"):
+        #    self._proc.write(line + "\r\n")
 
     def interrupt(self) -> None:
         """Stop the child process."""
@@ -101,6 +106,7 @@ class TerminalBackendWin(TerminalBackendProtocol):
                 self._reading_stdout = False
                 chunk = None
 
+            #print("chunk", chunk)
             if chunk:
                 lines = self._line_buffer.feed(chunk)
             else:

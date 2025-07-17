@@ -59,8 +59,12 @@ class ApplicationProtocol(Protocol):
         """
         ...
 
-    def modify(self, input_str: str) -> str:
-        """Modify the command before sending to `terminal`"""
+    def make_lines(self, input_str: str) -> list[str]:
+        """Make the lines which is sent into `pty`.
+
+        * If `\r` / `\n` is added at the end of elements, they are sent as is.  
+        * Otherwise, the LF is appended at the end of elements.
+        """
         ...
 
     def interrupt(self, pid: int, children_pids: list[int]):
@@ -68,11 +72,27 @@ class ApplicationProtocol(Protocol):
         ...
 
 
+DEFAULT_LINES = 1024
+DEFAULT_COLUMNS = 1024
 
 class LineBufferProtocol(Protocol):
     """Implement LineBuffer, which is used to capture the output of the virtual
     terminal and convert them to lines.
     """
+
+
+    @property
+    def lines(self) -> int:
+        """Return the number of lines
+        """
+        ...
+
+    @property
+    def columns(self) -> int:
+        """Return the number of columns
+        """
+        ...
+
 
     def feed(self, chunk: str) -> list[str]:
         """Give the `chunk` info into the buffer and
