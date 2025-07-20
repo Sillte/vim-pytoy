@@ -81,6 +81,8 @@ class TerminalContoller:
         executor.terminate()
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
+        """This is defined by `Command`.
+        """
         return self.handler.complete(arg_lead, cmd_line, cursor_pos)
 
     def _connect(

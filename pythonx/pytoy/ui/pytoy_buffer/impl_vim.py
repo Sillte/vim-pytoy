@@ -11,6 +11,11 @@ class PytoyBufferVim(PytoyBufferProtocol):
         content = content.replace("\r\n", "\n")
         self.buffer[:] = content.split("\n")
 
+    @property
+    def valid(self) -> bool:
+        return self.buffer.valid
+        
+
     def append(self, content: str) -> None:
         if not content:
             return
