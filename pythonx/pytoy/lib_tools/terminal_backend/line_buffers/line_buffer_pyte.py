@@ -1,4 +1,3 @@
-import pyte
 from pytoy.lib_tools.terminal_backend.protocol import (
     LineBufferProtocol,
     DEFAULT_LINES,
@@ -8,6 +7,7 @@ from pytoy.lib_tools.terminal_backend.protocol import (
 
 class LineBufferPyte(LineBufferProtocol):
     def __init__(self, columns: int = DEFAULT_COLUMNS, lines: int = DEFAULT_LINES):
+        import pyte
         self._screen = pyte.Screen(columns, lines)
         self._stream = pyte.Stream(self._screen)
 
@@ -41,11 +41,11 @@ class LineBufferPyte(LineBufferProtocol):
         self.screen.dirty.clear()
 
     @property
-    def screen(self) -> pyte.Screen:
+    def screen(self) -> "pyte.Screen":
         return self._screen
 
     @property
-    def stream(self) -> pyte.Stream:
+    def stream(self) -> "pyte.Stream":
         return self._stream
 
     @property
