@@ -20,7 +20,7 @@ def mywindow_func():
 
 
 from pytoy.lib_tools.terminal_backend import TerminalBackendProvider
-from pytoy.lib_tools.terminal_executor import TerminalExecutor
+from pytoy.lib_tools.terminal_backend.executor import TerminalExecutor
 from pytoy.ui.pytoy_buffer import PytoyBuffer, make_buffer
 
 from pytoy.command import CommandManager, OptsArgument 

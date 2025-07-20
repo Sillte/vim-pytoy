@@ -12,4 +12,6 @@ from pytoy.commands.vscode_experiments import *
 from pytoy.commands.vscode_commands import *
 from pytoy.commands.vscode_mock import *
 
+from pytoy.commands.console_command import TerminalContoller  # NOQA
+
 

@@ -5,7 +5,7 @@ from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.ui import make_buffer
 from pytoy.command import CommandManager, OptsArgument 
 
-from pytoy.lib_tools.terminal_executor import TerminalExecutor
+from pytoy.lib_tools.terminal_backend.executor import TerminalExecutor
 from pytoy.lib_tools.terminal_backend import  TerminalBackendProvider
 from pytoy.lib_tools.terminal_backend.protocol import  ApplicationProtocol
 
