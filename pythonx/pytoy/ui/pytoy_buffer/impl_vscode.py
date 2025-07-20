@@ -1,5 +1,5 @@
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol
-from pytoy.ui.vscode.document import Document
+from pytoy.ui.vscode.document import Document, BufferURISolver
 
 
 class PytoyBufferVSCode(PytoyBufferProtocol):
@@ -11,6 +11,14 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         if content and content[-1] != "\n":
             content += "\n"
         self.document.content = content
+
+    @property
+    def valid(self) -> bool:
+        # Condition of validity.
+        # * `self.document` is recognized at vscode.
+        # *  Neovim recoginizes the document.
+        bufnr = BufferURISolver.get_bufnr(self.document.uri)
+        return bufnr is not None
 
     def append(self, content: str) -> None:
         if not content:

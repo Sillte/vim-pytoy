@@ -22,6 +22,10 @@ class PytoyBuffer(PytoyBufferProtocol):
         """Return the implementation of PytoyBuffer."""
         return self._impl
 
+    @property
+    def valid(self) -> bool:
+        return self.impl.valid
+
     def init_buffer(self, content: str = ""):
         self._impl.init_buffer(content)
 

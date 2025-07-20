@@ -25,7 +25,6 @@ class TerminalExecutor:
     def updater(self) -> QueueUpdater | None:
         return self._updater
 
-
     def start(self, ):
         if self.alive:
             print("Already running")
@@ -40,7 +39,7 @@ class TerminalExecutor:
 
     @property
     def alive(self) -> bool: 
-        return self.backend.alive
+        return self.backend.alive and self.buffer.valid
 
     @property
     def busy(self) -> bool: 
@@ -74,6 +73,7 @@ class TerminalExecutorManagerClass:
         self._cache: dict[tuple[str, str], TerminalExecutor] = dict()
         self._app_manager = app_manager
         self._current_executor = None
+        self._current_key : tuple[str, str] | None = None
 
     @property
     def app_manager(self):
@@ -82,22 +82,37 @@ class TerminalExecutorManagerClass:
     def get_executor(
         self, app_name: str, buffer_name: str | None = None, **app_init_kwargs
     ) -> TerminalExecutor:
+        """Get the executor and change the current_exector.
+        When the specified executor is not existent, 
+        """
+
         if buffer_name is None:
             buffer_name = "__CMD__"
         key = (app_name, buffer_name)
+
         if key in self._cache:
             executor = self._cache[key]
-        else:
-            executor = self._make_executor(app_name, buffer_name, **app_init_kwargs)
-            self._cache[key] = executor
+            if executor.alive:
+                self._current_key = key
+                return executor
+            else:
+                executor.terminate()
+                # Delete the unattainable buffer and construct the new one.
+
+        executor = self._make_executor(app_name, buffer_name, **app_init_kwargs)
+        self._cache[key] = executor
+        self._current_key = key
+
         if not executor.alive:
             executor.start()
-        self._current_executor = executor
-        return self._current_executor
+        return executor
 
     @property
     def current_executor(self) -> None | TerminalExecutor:
-        return self._current_executor
+        if not self._current_key:
+            return None
+        app_name, buffer_name = self._current_key
+        return self.get_executor(app_name, buffer_name)
 
     def reset(self):
         self._current_executor = None
