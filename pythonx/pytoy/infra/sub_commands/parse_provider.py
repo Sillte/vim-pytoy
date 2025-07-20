@@ -72,7 +72,7 @@ class _OptionParser:
         additional_idx = 1
 
         if token.value == "--":
-            arg = arg_line[token.end :]
+            arg = self.arg_line[token.end :]
             arguments.append(arg)
             return len(tokens)  # End of loop.
         elif token.value.startswith("--"):
