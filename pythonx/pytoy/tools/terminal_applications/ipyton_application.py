@@ -35,18 +35,26 @@ class IPythonApplication(ApplicationProtocol):
 
         if self._is_first_input:
             # I do not know, but the first call fails, so dummy call is invoked 
-            result += [LINE_WAITTIME(0.3), "%cpaste -q\n", LINE_WAITTIME(0.3), "print\r", LINE_WAITTIME(0.2), "--\r\n", LINE_WAITTIME(0.2), "\r\n"]
-            self._is_first_input = False
+            result += [LINE_WAITTIME(0.5), "%cpaste -q\n", LINE_WAITTIME(0.3), "print\r", LINE_WAITTIME(0.2), "--\r\n", LINE_WAITTIME(0.2), "\r\n"]
+            result += ["%cpaste -q\n", LINE_WAITTIME(0.5)]
+            input_str = input_str.replace("\r\n", "\n")
+            input_str = input_str.replace("\n", "\r")
+            result.append(input_str)
+            result.append(LINE_WAITTIME(0.3))
+            result.append("--\r\n")
+            result.append(LINE_WAITTIME(0.3))
+            result.append("\r\n")
 
-        result += ["%cpaste -q\n", LINE_WAITTIME(0.3)]
-        
-        input_str = input_str.replace("\r\n", "\n")
-        input_str = input_str.replace("\n", "\r")
-        result.append(input_str)
-        result.append(LINE_WAITTIME(0.1))
-        result.append("--\r\n")
-        result.append(LINE_WAITTIME(0.1))
-        result.append("\r\n")
+            self._is_first_input = False
+        else:
+            result += ["%cpaste -q\n", LINE_WAITTIME(0.3)]
+            input_str = input_str.replace("\r\n", "\n")
+            input_str = input_str.replace("\n", "\r")
+            result.append(input_str)
+            result.append(LINE_WAITTIME(0.1))
+            result.append("--\r\n")
+            result.append(LINE_WAITTIME(0.1))
+            result.append("\r\n")
         return result
 
 
