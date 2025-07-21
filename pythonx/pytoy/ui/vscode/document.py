@@ -39,6 +39,12 @@ class Document(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     @classmethod
+    def get_current(cls):
+        api = Api()
+        doc = api.eval_with_return("vscode.window.activeTextEditor.document", with_await=False)
+        return Document(**doc)
+
+    @classmethod
     def create(cls, path: None | str | Path = None):
         api = Api()
         js_code = """

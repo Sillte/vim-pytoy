@@ -1,8 +1,10 @@
 """Terminal, which is used by python.
 """
-from typing import Protocol
+from typing import Protocol, NewType, Sequence
 from queue import Queue
 
+
+LINE_WAITTIME = NewType("LINE_WAITTIME", float)  # Waitint time used for `input`.
 
 class TerminalBackendProtocol(Protocol):
     def start(
@@ -59,7 +61,7 @@ class ApplicationProtocol(Protocol):
         """
         ...
 
-    def make_lines(self, input_str: str) -> list[str]:
+    def make_lines(self, input_str: str) -> Sequence[str | LINE_WAITTIME]:
         """Make the lines which is sent into `pty`.
 
         * If `\r` / `\n` is added at the end of elements, they are sent as is.  
