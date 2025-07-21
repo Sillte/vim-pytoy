@@ -32,7 +32,10 @@ class TerminalBackendWin(TerminalBackendProtocol):
             print("Already `started`.")
             return
         with self._lock:
-            self._proc = winpty.PtyProcess.spawn(self._app.command, dimensions=(24, 1024))
+            self._proc = winpty.PtyProcess.spawn(self._app.command, dimensions=(self._line_buffer.lines, self._line_buffer.columns))
+            _focus_assure()
+
+
             self._stdout_thread = Thread(target=self._stdout_loop, daemon=True)
             self._reading_stdout = True
             self._stdout_thread.start()
@@ -124,6 +127,13 @@ class TerminalBackendWin(TerminalBackendProtocol):
         if lines:
             self._last_line = lines[-1]
             self.queue.put(lines)
+
+def _focus_assure():
+    import vim
+    is_gui = vim.eval('has("gui_running")')
+    if is_gui:
+        from .win_utils import focus_gvim
+        focus_gvim()
 
 
 if __name__ == "__main__":
