@@ -1,7 +1,7 @@
 """Terminal, which is used by python.
 """
 import time 
-from queue import Queue
+from queue import Queue, Empty
 from threading import Thread, Lock
 import winpty
 
@@ -21,9 +21,11 @@ class TerminalBackendWin(TerminalBackendProtocol):
         self._lock = Lock()
         self._proc: winpty.PtyProcess | None = None
         self._stdout_thread: Thread | None = None
-        self._reading_stdout = False
+        self._stdin_thread: Thread | None = None
+        self._stdin_queue = Queue()
         self._line_buffer = line_buffer
         self._last_line = ""
+        self._running = False
 
     def start(
         self,
@@ -35,17 +37,17 @@ class TerminalBackendWin(TerminalBackendProtocol):
             self._proc = winpty.PtyProcess.spawn(self._app.command, dimensions=(self._line_buffer.lines, self._line_buffer.columns))
             _focus_assure()
 
-
             self._stdout_thread = Thread(target=self._stdout_loop, daemon=True)
-            self._reading_stdout = True
+            self._stdin_thread = Thread(target=self._stdin_loop, daemon=True)
+            self._running = True
             self._stdout_thread.start()
+            self._stdin_thread.start()
 
     @property
     def alive(self) -> bool:
-        with self._lock:
-            if not self._proc:
-                return False
-            return self._proc.isalive()
+        if not self._proc:
+            return False
+        return self._proc.isalive()
 
     @property
     def busy(self) -> bool | None:
@@ -60,18 +62,15 @@ class TerminalBackendWin(TerminalBackendProtocol):
     def send(self, input_str: str):
         if not self.alive:
             self.start()
-        assert self._proc is not None
-        self._line_buffer.flush()
-        lines = self._app.make_lines(input_str)
-        for line in lines:
-            if isinstance(line, (int, float)):
-                time.sleep(line)
-                continue
-            time.sleep(0.01) # default wait time.
-            if not (line.endswith("\r") or line.endswith("\n")):
-                line = line + "\r\n"
-            self._proc.write(line)
 
+        assert self._proc is not None
+        lines = self._app.make_lines(input_str)
+
+        for line in lines:
+            if isinstance(line, str):
+                if not (line.endswith("\r") or line.endswith("\n")):
+                    line = line + "\r\n"
+            self._stdin_queue.put(line)
 
     def interrupt(self) -> None:
         """Stop the child process."""
@@ -86,9 +85,10 @@ class TerminalBackendWin(TerminalBackendProtocol):
 
     def terminate(self) -> None:
         """Kill the terminate."""
-        if not self._proc:
-            return
-        self._proc.terminate(force=True)
+        with self._lock:
+            if not self._proc:
+                return
+            self._proc.terminate(force=True)
 
     @property
     def queue(self) -> Queue:
@@ -100,15 +100,40 @@ class TerminalBackendWin(TerminalBackendProtocol):
         """It returns the lastest line added to queue."""
         return self._last_line
 
-    def _stdout_loop(self):
-        while self.alive and self._reading_stdout:
+    def _stdin_loop(self):
+        while self.alive and self._running:
             if not self._proc:
-                self._reading_stdout = False
+                self._running = False
+                continue
+            try:
+                line = self._stdin_queue.get(timeout=0.5)
+            except Empty:
+                continue
+            if isinstance(line, (int, float)):
+                time.sleep(line)
+                continue
+            else:  # type(line) is str
+                try:
+                    if self._proc is None:
+                        self._running = False
+                        continue
+                    self._proc.write(line)
+                except EOFError:
+                    self._running = False
+                    continue
+                else:
+                    time.sleep(0.01)
+
+
+    def _stdout_loop(self):
+        while self.alive and self._running:
+            if not self._proc:
+                self._running = False
                 continue
             try:
                 chunk = self._proc.readline()
             except EOFError:
-                self._reading_stdout = False
+                self._running = False
                 chunk = None
 
             #print("chunk", chunk)
