@@ -1,5 +1,8 @@
 from pytoy.lib_tools.terminal_backend.executor import TerminalExecutorManager, TerminalExecutor
+from pytoy.tools import terminal_applications  # noqa
+from pytoy.tools.terminal_applications import get_default_app_name 
 from pytoy.infra.command import Command, OptsArgument
+from pytoy.ui.pytoy_buffer import PytoyBuffer
 
 from pytoy.infra.sub_commands import (
     MainCommandSpec,
@@ -10,7 +13,8 @@ from pytoy.infra.sub_commands import (
 )
 
 
-@Command.register(name="Console")
+
+@Command.register(name="Console", range=True)
 class TerminalContoller:
     terminal_manager = TerminalExecutorManager
 
@@ -34,15 +38,17 @@ class TerminalContoller:
         self.handler = SubCommandsHandler(command_spec)
 
     def __call__(self, opts: OptsArgument):
-        parsed_arguments = self.handler.parse(opts.args)
+
+        args: str = opts.args
+        parsed_arguments = self.handler.parse(args)
         sub_command = parsed_arguments.sub_command
         app_name = parsed_arguments.main_options.get("app")
         buffer = parsed_arguments.main_options.get("buffer")
 
         if app_name or buffer:
             if app_name is None:
-                # Todo, set the default app.
-                app_name = "shell"
+                # Todo, select the default app.
+                app_name = get_default_app_name()
             if buffer is None:
                 buffer =  "__CMD__"
             self._connect(str(app_name), str(buffer))
@@ -55,7 +61,11 @@ class TerminalContoller:
         elif sub_command == "terminate":
             self.terminate()
         else:
-            raise ValueError("Invalid subcommand")
+            assert opts.line1 is not None and opts.line2 is not None
+            line1, line2 =  opts.line1, opts.line2
+            lines = PytoyBuffer.get_current().get_lines(line1, line2)
+            content = "\n".join(lines)
+            self.run(content)
 
     def run(self, content: str):
         executor = self.terminal_manager.current_executor
@@ -89,7 +99,7 @@ class TerminalContoller:
         self, app_name: str | None = None, buffer_name: str | None = None
     ) -> TerminalExecutor:
         if not app_name:
-            app_name = "shell"
+            app_name = get_default_app_name()
         executor = self.terminal_manager.get_executor(
             app_name, buffer_name=buffer_name
         )

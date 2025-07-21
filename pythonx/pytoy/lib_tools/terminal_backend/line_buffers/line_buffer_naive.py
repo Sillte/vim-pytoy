@@ -52,6 +52,8 @@ class LineBufferNaive(LineBufferProtocol):
         self._cursor_move_pattern = re.compile(r'\x1b\[(\d+);(\d+)H')
         self._columns = columns
         self._lines = lines
+        self._empty_succession: int = 0
+        self._prev_non_empty_line: str | None = None
 
     @property
     def columns(self) -> int:
@@ -109,9 +111,30 @@ class LineBufferNaive(LineBufferProtocol):
                 line_to_process = self._chunk_buffer[:newline_idx + 1]
                 self._chunk_buffer = self._chunk_buffer[newline_idx + 1:]
 
+                if line_to_process.strip("\r\n") == "\x1b[K":
+                    #print("line_to_process", line_to_process)
+                    continue
 
                 # Strip control codes and ANSI escape sequences
                 cleaned_line = CONTROL_CODE_RE.sub('', line_to_process)
+                # `append` line does not contain `\n`.
+                cleaned_line = cleaned_line.replace("\r\n", "\n").strip("\n")
+
+                # Logic for filtering of buffer.
+                # Judegement regarding empty lines
+                if not cleaned_line:
+                    self._empty_succession += 1
+                else:
+                    self._empty_succession = 0
+                if 2 <= self._empty_succession:
+                    continue
+                # The repeated content does not have imporant info. 
+                if self._prev_non_empty_line == cleaned_line:
+                    continue
+                if cleaned_line:
+                    self._prev_non_empty_line = cleaned_line
+
+                
                 lines.append(cleaned_line)
             else:
                 break

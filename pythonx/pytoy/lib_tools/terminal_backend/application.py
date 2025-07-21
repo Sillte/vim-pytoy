@@ -1,7 +1,7 @@
 import sys
-from .protocol import ApplicationProtocol
+from typing import Type, Sequence
+from .protocol import ApplicationProtocol, LINE_WAITTIME
 from .utils import force_kill, send_ctrl_c
-from typing import Type
 
 class AppClassManagerClass:
     """Register and creation of the `Application` with` the given name.
@@ -19,6 +19,9 @@ class AppClassManagerClass:
             self._app_types[name] = application_cls
             return application_cls
         return _inner
+
+    def is_registered(self, name: str) -> bool:
+        return name in self._app_types
 
     @property
     def app_names(self) -> list[str]:
@@ -54,7 +57,7 @@ class ShellApplication(ApplicationProtocol):
         _ = lastline
         return bool(children_pids)
 
-    def make_lines(self, input_str: str) -> list[str]: 
+    def make_lines(self, input_str: str) -> Sequence[str | LINE_WAITTIME]: 
         """Modify the command before sending to `terminal`
         """
         lines = input_str.split("\n")

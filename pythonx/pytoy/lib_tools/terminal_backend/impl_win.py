@@ -5,7 +5,7 @@ from queue import Queue
 from threading import Thread, Lock
 import winpty
 
-from .protocol import TerminalBackendProtocol, ApplicationProtocol, LineBufferProtocol
+from .protocol import TerminalBackendProtocol, ApplicationProtocol, LineBufferProtocol, LINE_WAITTIME
 from .line_buffers.line_buffer_naive import LineBufferNaive
 from .utils import find_children  
 
@@ -61,12 +61,14 @@ class TerminalBackendWin(TerminalBackendProtocol):
         self._line_buffer.flush()
         lines = self._app.make_lines(input_str)
         for line in lines:
-            if not(line.endswith("\r") or line.endswith("\n")):
+            if isinstance(line, (int, float)):
+                time.sleep(line)
+                continue
+            time.sleep(0.01) # default wait time.
+            if not (line.endswith("\r") or line.endswith("\n")):
                 line = line + "\r\n"
             self._proc.write(line)
-            time.sleep(0.01)
-        #for line in input_str.split("\n"):
-        #    self._proc.write(line + "\r\n")
+
 
     def interrupt(self) -> None:
         """Stop the child process."""

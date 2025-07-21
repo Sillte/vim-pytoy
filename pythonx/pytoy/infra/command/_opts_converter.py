@@ -191,7 +191,7 @@ class OptsArgument:
     count: int | None = None
     line1: int | None = None
     line2: int | None = None
-    range: int | None = None
+    range: tuple[int, int] | int | None = None
 
 @_OptsConverter.register
 class OpsDataclassArgumentConverter(_ConverterProvider):

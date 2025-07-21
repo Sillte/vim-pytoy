@@ -1,5 +1,6 @@
 import vim
-from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol
+from pathlib import Path
+from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeSelectorProtocol
 
 
 class PytoyBufferVim(PytoyBufferProtocol):
@@ -10,6 +11,20 @@ class PytoyBufferVim(PytoyBufferProtocol):
         """Set the content of buffer"""
         content = content.replace("\r\n", "\n")
         self.buffer[:] = content.split("\n")
+
+    @classmethod
+    def get_current(cls) -> PytoyBufferProtocol:
+        return PytoyBufferVim(vim.current.buffer)
+
+    @property
+    def path(self) -> Path | None:
+        name = self.buffer.name
+        if not name:
+            return None
+        buftype = vim.eval(f"getbufvar({self.buffer.number}, '&buftype')")
+        if buftype == "nofile":
+            return None
+        return Path(name)
 
     @property
     def valid(self) -> bool:
@@ -51,3 +66,31 @@ class PytoyBufferVim(PytoyBufferProtocol):
         if len(self.buffer) == 1 and self.buffer[0] == "":
             return True
         return False
+
+
+class RangeSelectorVim(RangeSelectorProtocol):
+    def __init__(self, buffer: PytoyBufferVim):
+        self._buffer = buffer
+
+    @property
+    def buffer(self) -> PytoyBufferVim:
+        return self._buffer
+
+    def get_lines(self, line1: int, line2: int) -> list[str]:
+        bufnr = self._buffer.buffer.number
+        return vim.eval(f"getbufline({bufnr}, {line1}, {line2})")
+
+    def get_range(self, line1: int, pos1:int, line2: int, pos2: int) -> str:  
+        """`line` and `pos` are number acquried by `getpos`.
+        """
+        lines: list[str] = self.get_lines(line1, line2)
+        if not lines:
+            return ""
+
+        if line1 == line2:
+            return lines[0][pos1 - 1:pos2 - 1]
+
+        lines[0] = lines[0][pos1 - 1:]
+        lines[-1] = lines[-1][:pos2 - 1]
+        return "\n".join(lines)
+
