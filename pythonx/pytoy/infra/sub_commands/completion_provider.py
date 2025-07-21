@@ -105,6 +105,19 @@ class _ArgumentCandidatesProvider:
             return valid_candidates
         return candidates
 
+def _remove_range(cmd_line: str, cursor_pos: int) -> tuple[str, int]:
+    """Return the `cmd_line`, whose `range` is trimmed and modified `
+
+    Example,
+    --------
+    '<,'>Command -> Command
+    10,'>Command -> Command
+    """
+    for i, c in enumerate(cmd_line):
+        if c.isalpha():
+            return cmd_line[i:], cursor_pos - i
+    return cmd_line, cursor_pos
+
 
 class CompletionProvider:
     def __init__(self, command_spec: MainCommandSpec):
@@ -115,6 +128,10 @@ class CompletionProvider:
         return self._main_command_spec
 
     def __call__(self, arg_lead: str, cmd_line: str, cursor_pos: int) -> list[str]:
+
+        cmd_line, cursor_pos = _remove_range(cmd_line, cursor_pos)
+
+        # Here, `cmd_line` starts the command like `Command ...`
         context_maker = CompletionContextMaker(self.main_spec)
         context = context_maker(arg_lead, cmd_line, cursor_pos)
 
