@@ -61,7 +61,7 @@ class LineBufferNaive(LineBufferProtocol):
 
     @property
     def lines(self) -> int:
-        return self.lines
+        return self._lines
 
 
     def reset(self):
