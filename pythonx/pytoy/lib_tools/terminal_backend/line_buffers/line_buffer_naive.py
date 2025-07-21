@@ -117,23 +117,15 @@ class LineBufferNaive(LineBufferProtocol):
 
                 # Strip control codes and ANSI escape sequences
                 cleaned_line = CONTROL_CODE_RE.sub('', line_to_process)
-                # `append` line does not contain `\n`.
+                # `append` line should not contain `\n`.
                 cleaned_line = cleaned_line.replace("\r\n", "\n").strip("\n")
+                cleaned_line = cleaned_line.replace("\r", "")
 
-                # Logic for filtering of buffer.
-                # Judegement regarding empty lines
-                if not cleaned_line:
-                    self._empty_succession += 1
-                else:
-                    self._empty_succession = 0
-                if 2 <= self._empty_succession:
-                    continue
-                # The repeated content does not have imporant info. 
+                # May be carridge return and data is repeated.
                 if self._prev_non_empty_line == cleaned_line:
                     continue
                 if cleaned_line:
                     self._prev_non_empty_line = cleaned_line
-
                 
                 lines.append(cleaned_line)
             else:
