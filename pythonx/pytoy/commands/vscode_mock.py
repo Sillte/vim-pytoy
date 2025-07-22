@@ -25,41 +25,6 @@ from pytoy.ui.pytoy_buffer import PytoyBuffer, make_buffer
 
 from pytoy.command import CommandManager, OptsArgument 
 
-class CommandTerminal:
-    name = "__command__"
-
-    executor = None
-
-    @staticmethod
-    def get_executor():
-        if CommandTerminal.executor:
-            return CommandTerminal.executor
-        buffer = make_buffer(CommandTerminal.name)
-        backend = TerminalBackendProvider().make_terminal(command="cmd.exe")
-        executor = TerminalExecutor(buffer, backend)
-        CommandTerminal.executor = executor
-        return executor
-
-
-    @CommandManager.register(name="MockCMDStart")
-    @staticmethod
-    def start():
-        executor = CommandTerminal.get_executor()
-        executor.start()
-
-    @CommandManager.register(name="MockCMDSend", range=True)
-    @staticmethod
-    def send(opts: OptsArgument):
-        executor = CommandTerminal.get_executor()
-        if not executor.alive:
-            executor.start()
-
-        cmd = opts.args
-        line1, _ = opts.line1, opts.line2
-        if not cmd.strip():
-            cmd = vim.eval(f"getline({line1})")
-        executor.send(cmd)
-    
 
 if get_ui_enum() == UIEnum.VSCODE:
     from pytoy.ui.vscode.api import Api
