@@ -37,11 +37,9 @@ class ParsedCommand:
 
     sub_command: str | None
     main_options: dict[str, str]
-    main_short_options: set[str]
     main_arguments: list[str]
     sub_options: dict[str, str]
     sub_arguments: list[str]
-    sub_short_options: set[str]
 
 
 
@@ -52,6 +50,14 @@ class _OptionParser:
         self.expect_value_options: dict[str, OptionSpec] = {
             option.name: option for option in spec.options if option.expects_value
         }
+
+        self.non_value_options = {
+            option.name: option for option in spec.options if not option.expects_value
+                }
+
+        self.char_to_option: dict[str, str]  = {option.short_option: option.name for option in spec.options
+                                                 if option.short_option}
+
         self.arg_line = arg_line
 
     def parse(
@@ -59,7 +65,6 @@ class _OptionParser:
         idx: int,
         tokens: list[Token],
         options: dict[str, OptionType | None],
-        short_options: set[str],
         arguments: list[str],
     ) -> int:
         """Update `options` and `short_options` and return the next `idx`.
@@ -77,21 +82,42 @@ class _OptionParser:
             return len(tokens)  # End of loop.
         elif token.value.startswith("--"):
             if "=" in token.value:
-                key, value = token.value[2:].split("=", 1)
+                key, value = token.value.strip("--").split("=", 1)
                 options[key] = value
             else:
-                key = token.value.strip("-")
+                key = token.value.strip("--")
                 if key in self.expect_value_options:
                     if next_token:
                         options[key] = next_token.value
                         additional_idx = 2  # Consumed one more token
                     else:
                         options[key] = self.expect_value_options[key].default
+                elif key in self.non_value_options:
+                    options[key] = self.non_value_options[key].default
                 else:
                     options[key] = None
-        elif token.value.startswith("-") and len(token.value) > 1:
-            for char in token.value[1:]:
-                short_options.add(char)
+        elif token.value.startswith("-") and len(token.value) > 1:  # "-cf"
+            for char in token.value[1:-1]:  # handling of `c` inside `cf`
+                if char not in self.char_to_option:
+                    raise ValueError(f"{char=} is not related to options.")
+                option_name = self.char_to_option[char]
+                if option_name in self.expect_value_options:
+                    raise ValueError(f"{option_name=}, {char=} cannot be allowed here.")
+                options[option_name] = self.non_value_options[option_name].default
+            last_char = token.value[-1]
+            if last_char not in self.char_to_option:
+                raise ValueError(f"{last_char=} is not related to options.")
+            option_name = self.char_to_option[last_char]
+            if option_name in self.expect_value_options: # -f filename.
+                if next_token:
+                    options[option_name] = next_token.value
+                    additional_idx = 2  # Consumed one more token
+                else:
+                    options[option_name] = self.expect_value_options[option_name].default
+            elif option_name in self.non_value_options:
+                options[option_name] = self.non_value_options[option_name].default
+            else:
+                assert False, "Implementation Error"
         else:
             arguments.append(token.value)
         return idx + additional_idx
@@ -107,7 +133,6 @@ def make_parsed_command(main_spec: MainCommandSpec, arg_line: str) -> ParsedComm
     sub_names = {command.name: command for command in main_spec.commands}
     sub_spec: None | SubCommandSpec = None
     main_options = dict()
-    main_short_options = set()
     main_arguments = []
 
     main_parser = _OptionParser(main_spec, arg_line)
@@ -121,40 +146,34 @@ def make_parsed_command(main_spec: MainCommandSpec, arg_line: str) -> ParsedComm
             idx = idx + 1
             break
         idx = main_parser.parse(
-            idx, tokens, main_options, main_short_options, main_arguments
+            idx, tokens, main_options, main_arguments
         )
 
     if not sub_spec:
         return ParsedCommand(
             sub_command=None,
             main_options=main_options,
-            main_short_options=main_short_options,
             main_arguments=main_arguments,
             sub_options={},
-            sub_short_options=set(),
             sub_arguments=[],
         )
 
     sub_options = dict()
-    sub_short_options = set()
     sub_arguments = []
 
     sub_parser = _OptionParser(sub_spec, arg_line)
 
-    # print("idx", idx, len(tokens), tokens )
     while idx < len(tokens):
         token = tokens[idx]
         idx = sub_parser.parse(
-            idx, tokens, sub_options, sub_short_options, sub_arguments
+            idx, tokens, sub_options, sub_arguments
         )
 
     return ParsedCommand(
         sub_command=sub_spec.name,
         main_options=main_options,
-        main_short_options=main_short_options,
         main_arguments=main_arguments,
         sub_options=sub_options,
-        sub_short_options=sub_short_options,
         sub_arguments=sub_arguments,
     )
 
@@ -169,20 +188,6 @@ def to_parsed_arguments(
     """,
     #print("ParsedCommand", parsed_command)
 
-    def _update_option(
-        spec: MainCommandSpec | SubCommandSpec, options, short_options
-    ) -> dict:
-        char_to_option = {}
-        for opt_spec in spec.options:
-            for char in opt_spec.short_options:
-                char_to_option[char] = opt_spec
-        result = dict(options)
-
-        for char in short_options:
-            option = char_to_option[char]
-            if option.name not in result:
-                result[option.name] = option.default
-        return result
 
     def _type_conversion(
         spec: MainCommandSpec | SubCommandSpec, options: dict[str, str | None]
@@ -202,16 +207,11 @@ def to_parsed_arguments(
 
     main_options = parsed_command.main_options
     sub_options = parsed_command.sub_options
-    main_options = _update_option(
-        main_spec, main_options, parsed_command.main_short_options
-    )
+
     main_options = _type_conversion(main_spec, main_options)
     if parsed_command.sub_command:
         name_to_spec = {spec.name: spec for spec in main_spec.commands}
         sub_spec = name_to_spec[parsed_command.sub_command]
-        sub_options = _update_option(
-            sub_spec, sub_options, parsed_command.sub_short_options
-        )
         sub_options = _type_conversion(sub_spec, sub_options)
     return ParsedArguments(
         sub_command=parsed_command.sub_command,
@@ -243,12 +243,30 @@ if __name__ == "__main__":
         ),
     )
     option_specs = [
-        OptionSpec("app", expects_value=True),
+        OptionSpec("app", expects_value=True, short_option="a"),
         OptionSpec("buffer", expects_value=True, completion=["__CMD__", "__MOCK__"]),
+        OptionSpec("flag", expects_value=False, short_option="f"),
     ]
 
-    #arg_line = "--app=hoge run --ra=fafa "
-    arg_line = "run"
     command_spec = MainCommandSpec([run_spec], options=option_specs)
     provider = ParseProvider(command_spec)
-    print(provider(arg_line))
+
+    def test_1():
+        for arg_line in ["-f -a appname run command", "-fa appname run command"]:
+            arg_line = "-f -a appname run command"
+            parsed = provider(arg_line)
+            assert parsed.main_options["app"] == "appname"
+            assert "flag" in parsed.main_options
+            assert "run" == parsed.sub_command
+            assert parsed.sub_arguments[0] == "command"
+    test_1()
+
+    def test_2():
+        arg_line = "--app=appname run command"
+        parsed = provider(arg_line)
+        assert parsed.main_options["app"] == "appname"
+        assert "run" == parsed.sub_command
+        assert parsed.sub_arguments[0] == "command"
+    test_2()
+
+
