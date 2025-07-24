@@ -73,6 +73,11 @@ class ApplicationProtocol(Protocol):
         """Interrupt the process."""
         ...
 
+    def filter(self, lines: Sequence[str]) -> Sequence[str]:
+        """Filter the output of `stdout`.
+        """
+        ...
+
 
 DEFAULT_LINES = 1024
 DEFAULT_COLUMNS = 1024

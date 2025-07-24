@@ -1,4 +1,5 @@
 import re
+import time
 from typing import Sequence
 from pytoy.lib_tools.terminal_backend.application import AppManager, ApplicationProtocol, LINE_WAITTIME  
 from pytoy.lib_tools.terminal_backend.utils import send_ctrl_c
@@ -8,6 +9,7 @@ from pytoy.lib_tools.terminal_backend.utils import send_ctrl_c
 class IPythonApplication(ApplicationProtocol):
     def __init__(self, ):
         self._in_pattern = re.compile(r"^In \[(\d+)\]:")
+        self._is_prepared = False
         self._is_first_input = True
 
     @property
@@ -34,8 +36,7 @@ class IPythonApplication(ApplicationProtocol):
         result = []
 
         if self._is_first_input:
-            # I do not know, but the first call fails, so dummy call is invoked 
-            result += [LINE_WAITTIME(0.5), "%cpaste -q\n", LINE_WAITTIME(0.3), "print\r", LINE_WAITTIME(0.2), "--\r\n", LINE_WAITTIME(0.2), "\r\n"]
+            self._is_wait_initialization()
             result += ["%cpaste -q\n", LINE_WAITTIME(0.5)]
             input_str = input_str.replace("\r\n", "\n")
             input_str = input_str.replace("\n", "\r")
@@ -62,6 +63,18 @@ class IPythonApplication(ApplicationProtocol):
         """Interrupt the process."""
         _ = children_pids
         send_ctrl_c(pid)
+
+    def _is_wait_initialization(self, timeout: float = 3.0):
+        now = time.time()
+        while time.time() - now  < timeout and (self._is_prepared is False):
+            time.sleep(0.05)
+
+    def filter(self, lines: Sequence[str]) -> Sequence[str]:
+        if not self._is_prepared:
+            for line in lines: 
+                if line.startswith("In [1]:"):
+                    self._is_prepared = True
+        return lines
 
 
 
