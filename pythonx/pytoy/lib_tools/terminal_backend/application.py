@@ -71,6 +71,9 @@ class ShellApplication(ApplicationProtocol):
         for child in children_pids:
             force_kill(child)
 
+    def filter(self,  lines: Sequence[str]) -> Sequence[str]:
+        return lines
+
     def _get_default_shell_command(self) -> str:
         if sys.platform == "win32":
             return self.WIN_DEFAULT_SHELL_COMMAND

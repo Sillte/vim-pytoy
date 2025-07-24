@@ -142,7 +142,8 @@ class TerminalBackendWin(TerminalBackendProtocol):
             else:
                 lines = []
 
-            if lines:
+            if lines and "\n".join(lines):
+                lines = self._app.filter(lines)
                 self._last_line = lines[-1]
                 self.queue.put(lines)
 
