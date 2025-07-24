@@ -10,7 +10,6 @@ class IPythonApplication(ApplicationProtocol):
     def __init__(self, ):
         self._in_pattern = re.compile(r"^In \[(\d+)\]:")
         self._is_prepared = False
-        self._is_first_input = True
 
     @property
     def command(self) -> str:
@@ -33,29 +32,17 @@ class IPythonApplication(ApplicationProtocol):
         * Otherwise, the LF is appended at the end of elements.
         """
 
+
+        self._is_wait_initialization()
         result = []
-
-        if self._is_first_input:
-            self._is_wait_initialization()
-            result += ["%cpaste -q\n", LINE_WAITTIME(0.5)]
-            input_str = input_str.replace("\r\n", "\n")
-            input_str = input_str.replace("\n", "\r")
-            result.append(input_str)
-            result.append(LINE_WAITTIME(0.3))
-            result.append("--\r\n")
-            result.append(LINE_WAITTIME(0.3))
-            result.append("\r\n")
-
-            self._is_first_input = False
-        else:
-            result += ["%cpaste -q\n", LINE_WAITTIME(0.3)]
-            input_str = input_str.replace("\r\n", "\n")
-            input_str = input_str.replace("\n", "\r")
-            result.append(input_str)
-            result.append(LINE_WAITTIME(0.1))
-            result.append("--\r\n")
-            result.append(LINE_WAITTIME(0.1))
-            result.append("\r\n")
+        result += ["%cpaste -q\n", LINE_WAITTIME(0.3)]
+        input_str = input_str.replace("\r\n", "\n")
+        input_str = input_str.replace("\n", "\r")
+        result.append(input_str)
+        result.append(LINE_WAITTIME(0.1))
+        result.append("--\r\n")
+        result.append(LINE_WAITTIME(0.1))
+        result.append("\r\n")
         return result
 
 

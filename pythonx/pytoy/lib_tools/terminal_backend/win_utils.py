@@ -17,18 +17,13 @@ def focus_gvim():
     import os
 
     user32 = ctypes.WinDLL("user32", use_last_error=True)
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-
-    SW_SHOW = 5
 
     SetForegroundWindow = user32.SetForegroundWindow
-    ShowWindow = user32.ShowWindow
     EnumWindows = user32.EnumWindows
     GetWindowThreadProcessId = user32.GetWindowThreadProcessId
     IsWindowVisible = user32.IsWindowVisible
     IsWindowEnabled = user32.IsWindowEnabled
-    #AttachThreadInput = user32.AttachThreadInput
-    #GetCurrentThreadId = kernel32.GetCurrentThreadId
+
 
     my_pid = os.getpid()
     hwnds = []
@@ -48,5 +43,4 @@ def focus_gvim():
 
     if hwnds:
         hwnd = hwnds[0]
-        ShowWindow(hwnd, SW_SHOW)
         SetForegroundWindow(hwnd)
