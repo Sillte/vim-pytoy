@@ -1,10 +1,12 @@
 """Terminal, which is used by python.
 """
+from pathlib import Path
 from typing import Protocol, NewType, Sequence
 from queue import Queue
 
 
 LINE_WAITTIME = NewType("LINE_WAITTIME", float)  # Waitint time used for `input`.
+
 
 class TerminalBackendProtocol(Protocol):
     def start(
@@ -64,7 +66,7 @@ class ApplicationProtocol(Protocol):
     def make_lines(self, input_str: str) -> Sequence[str | LINE_WAITTIME]:
         """Make the lines which is sent into `pty`.
 
-        * If `\r` / `\n` is added at the end of elements, they are sent as is.  
+        * If `\r` / `\n` is added at the end of elements, they are sent as is.
         * Otherwise, the LF is appended at the end of elements.
         """
         ...
@@ -74,32 +76,28 @@ class ApplicationProtocol(Protocol):
         ...
 
     def filter(self, lines: Sequence[str]) -> Sequence[str]:
-        """Filter the output of `stdout`.
-        """
+        """Filter the output of `stdout`."""
         ...
 
 
 DEFAULT_LINES = 1024
 DEFAULT_COLUMNS = 1024
 
+
 class LineBufferProtocol(Protocol):
     """Implement LineBuffer, which is used to capture the output of the virtual
     terminal and convert them to lines.
     """
 
-
     @property
     def lines(self) -> int:
-        """Return the number of lines
-        """
+        """Return the number of lines"""
         ...
 
     @property
     def columns(self) -> int:
-        """Return the number of columns
-        """
+        """Return the number of columns"""
         ...
-
 
     def feed(self, chunk: str) -> list[str]:
         """Give the `chunk` info into the buffer and
@@ -108,13 +106,41 @@ class LineBufferProtocol(Protocol):
         ...
 
     def flush(self) -> list[str]:
-        """Return the displayed lines, using the internal state.
-        """
+        """Return the displayed lines, using the internal state."""
         ...
-    
-    def reset(self, ):
-        """Reset the state.  
-        """
 
+    def reset(
+        self,
+    ):
+        """Reset the state."""
+
+
+class PseudoTerminalProtocol:
+
+    def isalive(self) -> bool:
+        ...
+
+    @property
+    def pid(self) -> int | None:
+        ...
+
+    def terminate(self) -> bool | None:
+        ...
+
+    def write(self, content: str) -> int:
+        ...
+
+    def readline(self) -> str | None:
+        ...
+
+class PseudoTerminalProviderProtocol:
+    def spawn(
+        self,
+        argv: str | Sequence[str],
+        dimensions: tuple[int, int] | None = None, 
+        cwd: str | Path | None = None,
+        env: dict[str, str] | None = None,
+    ) -> PseudoTerminalProtocol:
+        ...
 
 
