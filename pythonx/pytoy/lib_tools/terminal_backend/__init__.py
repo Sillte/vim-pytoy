@@ -1,6 +1,5 @@
-import sys
 from queue import Queue
-from .protocol import TerminalBackendProtocol, ApplicationProtocol
+from .protocol import TerminalBackendProtocol, ApplicationProtocol, LineBufferProtocol
 
 
 class TerminalBackend(TerminalBackendProtocol):
@@ -47,23 +46,15 @@ class TerminalBackend(TerminalBackendProtocol):
 
 
 class TerminalBackendProvider:
-    def make_terminal(self, app: str | ApplicationProtocol = "C:\\Windows\\System32\\cmd.exe") -> TerminalBackend:
-        def make_win32(app: str | ApplicationProtocol):
-            from .impl_win import TerminalBackendWin
-            from .application import ShellApplication
-            from .line_buffers import LineBufferNaive
-            line_buffer = LineBufferNaive()
-            if isinstance(app, str):
-                app = ShellApplication(app)
-            impl = TerminalBackendWin(app, line_buffer)
-            return TerminalBackend(impl)
+    def make_terminal(
+        self,
+        app: str | ApplicationProtocol | None = None,
+        line_buffer: LineBufferProtocol | None = None,
+    ) -> TerminalBackend:
+        from .impl_main import TerminalBackendImplProvider
 
-        creators = {}
-        creators["win32"] = make_win32
-        creator = creators.get(sys.platform, None)
-        if not creator:
-            raise RuntimeError(f"TerminalBackend cannot be used in {sys.platform}")
-        return creator(app)
+        impl = TerminalBackendImplProvider().provide(app=app, line_buffer=line_buffer)
+        return TerminalBackend(impl)
 
 
 if __name__ == "__main__":

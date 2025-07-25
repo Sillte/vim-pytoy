@@ -1,13 +1,9 @@
 import vim
-import os
-from pathlib import Path
 from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.ui import make_buffer
 from pytoy.command import CommandManager, OptsArgument 
 
 from pytoy.lib_tools.terminal_backend.executor import TerminalExecutor
-from pytoy.lib_tools.terminal_backend import  TerminalBackendProvider
-from pytoy.lib_tools.terminal_backend.protocol import  ApplicationProtocol
 
 
 
@@ -22,17 +18,12 @@ class CommandTerminal:
         if CommandTerminal.executor:
             return CommandTerminal.executor
 
-        from pytoy.lib_tools.terminal_backend.impl_win import TerminalBackendWin
-        from pytoy.lib_tools.terminal_backend import TerminalBackend
+        from pytoy.lib_tools.terminal_backend import TerminalBackendProvider
         from pytoy.lib_tools.terminal_backend.application import ShellApplication
 
         from pytoy.lib_tools.terminal_backend.line_buffers import LineBufferPyte, LineBufferNaive
-
-
-        app = ShellApplication("cmd.exe")
-        impl = TerminalBackendWin(app, LineBufferNaive())
-        backend = TerminalBackend(impl)
-
+        app = ShellApplication()
+        backend = TerminalBackendProvider().make_terminal(app, LineBufferNaive())
         buffer = make_buffer(CommandTerminal.name)
         executor = TerminalExecutor(buffer, backend)
 
