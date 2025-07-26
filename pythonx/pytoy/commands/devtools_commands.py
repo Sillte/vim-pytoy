@@ -28,6 +28,8 @@ class VimRebootExecutor:
         json_cache_path = folder / self.JSON_CACHE_NAME
         session_cache_path = folder / self.SESSION_CACHE_NAME
         self._dump_reboot_info(json_cache_path, session_cache_path)
+        if not self.package:
+            raise ValueError("Current folder is not within a plugin folder, so no reboot.")
         self.reboot()
 
     def get_cache_folder(self) -> Path:
