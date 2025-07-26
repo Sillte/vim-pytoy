@@ -191,7 +191,7 @@ def _start_vim_detached(cmd):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             preexec_fn=os.setpgrp,
-            shell=True,
+            shell=False,
         )
 
 if __name__ == "__main__":
