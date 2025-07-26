@@ -5,6 +5,7 @@ import vim
 
 @CommandManager.register(name="MyWindow", range=True)
 def mywindow_func():
+    print("hgoegege")
     from pytoy.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
     from pytoy.ui.vscode.editor import Editor
     window = PytoyWindow.get_current()

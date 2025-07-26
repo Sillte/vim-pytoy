@@ -28,7 +28,10 @@ class PseudoTerminalUnix(PseudoTerminalProtocol):
         return self.pty.send(content)
 
     def readline(self) -> str | None:
-        return self.pty.readline()
+        try:
+            return self.pty.readline()
+        except pexpect.exceptions.TIMEOUT:
+            return None
 
 
 class PseudoTerminalProviderUnix(PseudoTerminalProviderProtocol):

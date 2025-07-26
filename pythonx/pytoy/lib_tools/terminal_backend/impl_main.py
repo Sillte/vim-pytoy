@@ -4,7 +4,6 @@ import sys
 import time 
 from queue import Queue, Empty
 from threading import Thread, Lock
-import winpty
 
 from .protocol import TerminalBackendProtocol, ApplicationProtocol, LineBufferProtocol, PseudoTerminalProtocol, PseudoTerminalProviderProtocol
 from .line_buffers.line_buffer_naive import LineBufferNaive
@@ -22,7 +21,7 @@ class TerminalBackendMain(TerminalBackendProtocol):
 
         self._queue = Queue()
         self._lock = Lock()
-        self._proc: winpty.PtyProcess | None = None
+        self._proc: PseudoTerminalProviderProtocol | None = None
         self._stdout_thread: Thread | None = None
         self._stdin_thread: Thread | None = None
         self._stdin_queue = Queue()
@@ -170,7 +169,9 @@ class TerminalBackendImplProvider:
             return PseudoTerminalProviderWin()
 
         def make_linux():
-            raise RuntimeError("Notimplmented.")
+            from .impl_unix import PseudoTerminalProviderUnix
+            return PseudoTerminalProviderUnix()
+            
 
         if not line_buffer: 
             line_buffer = LineBufferNaive()
@@ -181,6 +182,7 @@ class TerminalBackendImplProvider:
 
         creators = {}
         creators["win32"] = make_win32
+        creators["linux"] = make_linux
         creator = creators.get(sys.platform, None)
         if not creator:
             raise RuntimeError(f"TerminalBackend cannot be used in {sys.platform}")
