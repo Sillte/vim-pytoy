@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys 
 import time
 import os
 import json
@@ -10,7 +11,8 @@ from pytoy.ui import get_ui_enum, UIEnum
 
 
 class VimRebootExecutor:
-    CACHE_NAME = "pytoy_reboot.json"
+    JSON_CACHE_NAME = "pytoy_reboot.json"
+    SESSION_CACHE_NAME = "pytoy_reboot.vim"
 
     def __init__(self, start_folder=None):
         try:
@@ -21,18 +23,19 @@ class VimRebootExecutor:
         self.package = package
 
     def __call__(self):
-        cache_path = self.get_cache_path()
-        self._dump_reboot_info(cache_path)
+        folder = self.get_cache_folder()
+        json_cache_path = folder / self.JSON_CACHE_NAME
+        session_cache_path = folder / self.SESSION_CACHE_NAME
+        self._dump_reboot_info(json_cache_path, session_cache_path)
         self.terminate()
 
-    def get_cache_path(self) -> Path:
+    def get_cache_folder(self) -> Path:
         """Get the cache path.
         By reloading the `cache` file at the start of `.vimrc` / `init.lua`,
-
         """
         ui_enum = get_ui_enum()
         if ui_enum in {UIEnum.VSCODE, UIEnum.NVIM}:
-            return Path(vim.eval("stdpath('cache')")) / self.CACHE_NAME
+            return Path(vim.eval("stdpath('cache')"))
         elif ui_enum == UIEnum.VIM:
             if "XDG_CACHE_HOME" in os.environ:
                 cache_dir = Path(os.environ["XDG_CACHE_HOME"])
@@ -40,15 +43,16 @@ class VimRebootExecutor:
                 cache_dir = Path.home() / ".cache"
             if not cache_dir.exists():
                 cache_dir.mkdir(parents=True)
-            return cache_dir / self.CACHE_NAME
+            return cache_dir
         raise RuntimeError("Not Implmented.")
 
-    def _dump_reboot_info(self, path):
+    def _dump_reboot_info(self, json_path, session_path):
         plugin_folder = self.package.root_folder.as_posix() if self.package else None
         data: dict[str, float | str] = {"time": time.time()}
         if plugin_folder:
             data["plugin_folder"] = plugin_folder
-        path.write_text(json.dumps(data, indent=4))
+        json_path.write_text(json.dumps(data, indent=4))
+        vim.command(f"mksession! {session_path.as_posix()}")
 
     def terminate(self):
         ui_enum = get_ui_enum()
@@ -59,7 +63,7 @@ class VimRebootExecutor:
 
             api = Api()
             api.action("vscode-neovim.restart")
-        elif is_gui:
+        elif is_gui and sys.platform.startswith("win32"):
             if self.package:
                 self.package.restart(with_vimrc=True, kill_myprocess=True)
             else:
