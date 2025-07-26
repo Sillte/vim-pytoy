@@ -1,7 +1,7 @@
 import time
 from queue import Empty
 from .impl_main import TerminalBackendImplProvider
-from .application import ShellApplication, DEFAULT_SHELL_APPLICATION_NAME
+from .application import ShellApplication
 
 shell = ShellApplication()
 

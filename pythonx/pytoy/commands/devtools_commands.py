@@ -1,5 +1,6 @@
 from pathlib import Path
 import time
+import os
 import json
 import vim
 from pytoy.command import CommandManager
@@ -8,12 +9,75 @@ from pytoy.infra.timertask import TimerTask
 from pytoy.ui import get_ui_enum, UIEnum
 
 
+class VimRebootExecutor:
+    CACHE_NAME = "pytoy_reboot.json"
+
+    def __init__(self, start_folder=None):
+        try:
+            package = VimPluginPackage(start_folder)
+        except ValueError as e:
+            print("Current folder is not within a plugin folder.", e)
+            package = None
+        self.package = package
+
+    def __call__(self):
+        cache_path = self.get_cache_path()
+        self._dump_reboot_info(cache_path)
+        self.terminate()
+
+    def get_cache_path(self) -> Path:
+        """Get the cache path.
+        By reloading the `cache` file at the start of `.vimrc` / `init.lua`,
+
+        """
+        ui_enum = get_ui_enum()
+        if ui_enum in {UIEnum.VSCODE, UIEnum.NVIM}:
+            return Path(vim.eval("stdpath('cache')")) / self.CACHE_NAME
+        elif ui_enum == UIEnum.VIM:
+            if "XDG_CACHE_HOME" in os.environ:
+                cache_dir = Path(os.environ["XDG_CACHE_HOME"])
+            else:
+                cache_dir = Path.home() / ".cache"
+            if not cache_dir.exists():
+                cache_dir.mkdir(parents=True)
+            return cache_dir / self.CACHE_NAME
+        raise RuntimeError("Not Implmented.")
+
+    def _dump_reboot_info(self, path):
+        plugin_folder = self.package.root_folder.as_posix() if self.package else None
+        data: dict[str, float | str] = {"time": time.time()}
+        if plugin_folder:
+            data["plugin_folder"] = plugin_folder
+        path.write_text(json.dumps(data, indent=4))
+
+    def terminate(self):
+        ui_enum = get_ui_enum()
+
+        is_gui = bool(vim.eval("&term == 'builtin_gui'"))
+        if ui_enum == ui_enum.VSCODE:
+            from pytoy.ui.vscode.api import Api
+
+            api = Api()
+            api.action("vscode-neovim.restart")
+        elif is_gui:
+            if self.package:
+                self.package.restart(with_vimrc=True, kill_myprocess=True)
+            else:
+                raise ValueError("Current folder is not within a plugin folder.")
+        else:
+            vim.command("qall!")
+
+
+
 @CommandManager.register(name="VimReboot")
 class VimReboot:
     name = "VimReboot"
 
     def __call__(self):
         from pytoy.ui.vscode.api import Api
+        executor = VimRebootExecutor()
+        executor()
+
         if get_ui_enum() in {UIEnum.VIM, UIEnum.NVIM}:
             try:
                 package = VimPluginPackage()
