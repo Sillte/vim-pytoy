@@ -6,6 +6,7 @@ import json
 import vim
 from pytoy.command import CommandManager
 from pytoy.devtools.vimplugin_package import VimPluginPackage
+from pytoy.devtools.vim_rebooter import VimRebooter
 from pytoy.infra.timertask import TimerTask
 from pytoy.ui import get_ui_enum, UIEnum
 
@@ -27,7 +28,7 @@ class VimRebootExecutor:
         json_cache_path = folder / self.JSON_CACHE_NAME
         session_cache_path = folder / self.SESSION_CACHE_NAME
         self._dump_reboot_info(json_cache_path, session_cache_path)
-        self.terminate()
+        self.reboot()
 
     def get_cache_folder(self) -> Path:
         """Get the cache path.
@@ -35,15 +36,19 @@ class VimRebootExecutor:
         """
         ui_enum = get_ui_enum()
         if ui_enum in {UIEnum.VSCODE, UIEnum.NVIM}:
-            return Path(vim.eval("stdpath('cache')"))
+            nvim_folder = Path(vim.eval("stdpath('cache')"))
+            if not nvim_folder:
+                nvim_folder.mkdir(parents=True)
+            return nvim_folder
         elif ui_enum == UIEnum.VIM:
             if "XDG_CACHE_HOME" in os.environ:
                 cache_dir = Path(os.environ["XDG_CACHE_HOME"])
             else:
                 cache_dir = Path.home() / ".cache"
-            if not cache_dir.exists():
-                cache_dir.mkdir(parents=True)
-            return cache_dir
+            vim_folder = cache_dir / "vim"
+            if not vim_folder.exists():
+                vim_folder.mkdir(parents=True)
+            return vim_folder
         raise RuntimeError("Not Implmented.")
 
     def _dump_reboot_info(self, json_path, session_path):
@@ -54,22 +59,23 @@ class VimRebootExecutor:
         json_path.write_text(json.dumps(data, indent=4))
         vim.command(f"mksession! {session_path.as_posix()}")
 
-    def terminate(self):
+    def reboot(self):
         ui_enum = get_ui_enum()
-
-        is_gui = bool(vim.eval("&term == 'builtin_gui'"))
         if ui_enum == ui_enum.VSCODE:
             from pytoy.ui.vscode.api import Api
-
             api = Api()
             api.action("vscode-neovim.restart")
-        elif is_gui and sys.platform.startswith("win32"):
-            if self.package:
-                self.package.restart(with_vimrc=True, kill_myprocess=True)
-            else:
-                raise ValueError("Current folder is not within a plugin folder.")
-        else:
-            vim.command("qall!")
+            return 
+        rebooter = VimRebooter() 
+
+        rebooter()
+        #if is_gui and sys.platform.startswith("win32"):
+        #    if self.package:
+        #        self.package.restart(with_vimrc=True, kill_myprocess=True)
+        #    else:
+        #        raise ValueError("Current folder is not within a plugin folder.")
+        #else:
+        #    vim.command("qall!")
 
 
 
