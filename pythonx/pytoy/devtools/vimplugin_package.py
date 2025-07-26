@@ -24,7 +24,13 @@ class VimPluginPackage:
                 If not specified, the current working directory is used.
         """
         if start_folder is None:
-            start_folder = Path.cwd()
+            import vim
+            current = vim.eval("expand('%:p:h')")
+            try:
+                start_folder = Path(current)
+            except Exception:
+                start_folder = Path.cwd()
+
         start_folder = Path(start_folder)
 
         root_folder = self._find_plugin_root(start_folder)
