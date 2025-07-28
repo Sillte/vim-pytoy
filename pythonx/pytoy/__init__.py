@@ -3,7 +3,6 @@ import vim
 from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.lib_tools.environment_manager.venv_utils import VenvManager
 from pytoy.ui import lightline_utils
-from pytoy.tools.ipython_terminal import IPythonTerminal
 
 from pytoy.tools.python import PythonExecutor
 
@@ -94,43 +93,6 @@ def term():
     """
     venv_manager = VenvManager()
     venv_manager.term_start()
-
-
-## IPython Interface.
-
-
-def _get_ipython_terminal():
-    global IPYTHON_TERMINAL
-    if IPYTHON_TERMINAL is None:
-        IPYTHON_TERMINAL = IPythonTerminal(TERM_STDOUT)
-    IPYTHON_TERMINAL.assure_alive()
-    return IPYTHON_TERMINAL
-
-
-def ipython_send_line():
-    term = _get_ipython_terminal()
-    term.send_current_line()
-
-
-def ipython_send_range():
-    term = _get_ipython_terminal()
-    term.send_current_range()
-
-
-def ipython_stop():
-    term = _get_ipython_terminal()
-    term.stop()
-
-
-def ipython_reset():
-    term = _get_ipython_terminal()
-    term.reset_term()
-
-
-def ipython_history():
-    # Transcript all the buffer to `output_buffer`.
-    term = _get_ipython_terminal()
-    term.transcript()
 
 
 # Command definitions.
