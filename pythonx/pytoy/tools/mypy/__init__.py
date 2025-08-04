@@ -1,4 +1,3 @@
-import vim
 import re
 
 from pytoy.lib_tools.buffer_executor import BufferExecutor
@@ -20,7 +19,6 @@ class MypyExecutor(BufferExecutor):
         if command_wrapper is None:
             command_wrapper = EnvironmentManager().get_command_wrapper()
         command = f'mypy --show-traceback --show-column-numbers "{path}"'
-        # stdout[0] = command
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def on_closed(self):

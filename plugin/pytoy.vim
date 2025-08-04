@@ -8,6 +8,4 @@ nnoremap <leader>t :<c-u>Pytest<CR>
 nnoremap <F12> :<c-u>UVToggle<CR>
 nnoremap <leader>d :GotoDefinition<CR>
 
-call pytoy#init_python()
-
 
