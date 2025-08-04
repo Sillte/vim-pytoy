@@ -31,12 +31,6 @@ function! pytoy#reset_python()
 python3 pytoy.reset_python()
 endfunction
 
-if !exists("s:init_python") || (s:init_python != 1)
-    call pytoy#init_python()
-else
-    call pytoy#reset_python()
-    call pytoy#init_python()
-endif 
 
 " Python Execution.
 
