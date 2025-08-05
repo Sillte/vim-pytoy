@@ -7,5 +7,6 @@ xnoremap <leader>f :Console<CR>
 nnoremap <leader>t :<c-u>Pytest<CR>
 nnoremap <F12> :<c-u>UVToggle<CR>
 nnoremap <leader>d :GotoDefinition<CR>
+python3 import pytoy
 
 
