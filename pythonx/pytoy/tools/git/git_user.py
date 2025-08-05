@@ -1,6 +1,7 @@
 import subprocess
 import re
-from typing import List, Callable, Any
+from dataclasses import dataclass
+from typing import List, Callable
 from subprocess import PIPE
 from pathlib import Path
 from urllib import parse 
@@ -55,8 +56,17 @@ class GitUser:
         default.update(kwargs)
         return subprocess.run(cmd, **default)
 
+@dataclass
+class GitInfo:
+    rootpath: str
+    filepath: str
+    relpath: str
+    branch: str
+    commit: str
+    remote: str
 
-def get_git_info(local_filepath) -> dict[str, str]:
+
+def get_git_info(local_filepath) -> GitInfo:
     """Return the information regarding git."""
     local_filepath = Path(local_filepath)
     cwd = str(local_filepath.parent)
@@ -71,41 +81,51 @@ def get_git_info(local_filepath) -> dict[str, str]:
         local_filepath.resolve().relative_to(Path(result["rootpath"])).as_posix()
     )
     result["branch"] = _run_git(["rev-parse", "--abbrev-ref", "HEAD"])
+    result["commit"] = _run_git(["rev-parse", "HEAD"])
     result["remote"] = _run_git(["remote", "get-url", "origin"])
-    return result
+    return GitInfo(**result)
+
+@dataclass
+class LinkOption:
+    line_start: int | None = None
+    line_end: int | None = None
 
 
-REMOTE_TO_MAKER: dict[str, Callable[[dict[str, str], dict[str, str]], str]] = dict()
+REMOTE_TO_MAKER: dict[str, Callable[[GitInfo, LinkOption], str]] = dict()
 
 
-def _to_github_address(info: dict[str, str], options: dict[str, Any]):
-    remote = info["remote"]
-    branch = info["branch"]
-    relpath = info["relpath"]
+def _to_github_address(info: GitInfo, option: LinkOption):
+    remote = info.remote
+    branch = info.branch
+    relpath = info.relpath
     remote = remote.replace(".git", "").replace(
         "git@github.com:", "https://github.com/"
     )
     path = f"{remote}/blob/{parse.quote(branch)}/{parse.quote(relpath)}"
-    if "line" in options:
-        path += f"#L{options['line']}"
+    if option.line_start:
+        path += f"#L{option.line_start}"
+        if option.line_end and option.line_end != option.line_start:
+            path += f"-L{option.line_end}"
+
     return path
 
 
-def _to_azure_address(info: dict[str, str], options: dict[str, Any]):
-    remote = info["remote"]
-    branch = info["branch"]
-    relpath = info["relpath"].strip("/")
+def _to_azure_address(info: GitInfo, option: LinkOption):
+    remote = info.remote
+    branch = info.branch
+    relpath = info.relpath.strip("/")
     if remote.find("https:") != -1:
         m = re.match(r"https://([^/]*)@dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)", remote)
         if not m:
             raise ValueError(f"Invalid Azure Address {remote=}")
+        _, org, project, repo = m.groups()
     elif remote.startswith("git@ssh.dev.azure.com:"):
-        m = re.match(r"git@([^/]*)ssh\.dev\.azure\.com:v3/([^/]+)/([^/]+)/([^/]+)", remote)
+        m = re.match(r"git@ssh\.dev\.azure\.com:v3/([^/]+)/([^/]+)/([^/]+)", remote)
         if not m:
             raise ValueError("Invalid Azure Address {remote=}")
+        org, project, repo = m.groups()
     else:
         raise ValueError("Invalid Azure Address {remote=}")
-    _, org, project, repo = m.groups()
 
     url = (
         f"https://dev.azure.com/{org}/{project}/_git/{repo}"
@@ -113,8 +133,16 @@ def _to_azure_address(info: dict[str, str], options: dict[str, Any]):
     )
 
     queries = dict()
-    if "line" in options:
-        queries["line"] = options["line"]
+    if option.line_start:
+        queries["line"] = option.line_start
+    if option.line_end:
+        queries["lineEnd"] = option.line_end + 1
+
+    if queries:
+        queries["lineStartColumn"] = 1
+        queries["lineEndColumn"] = 1
+        queries["lineStyle"] = "plain"
+
     if queries:
         a_param: str = "&".join([f"{key}={value}" for key, value in queries.items()])
         url = f"{url}&{a_param}"
@@ -124,15 +152,18 @@ def _to_azure_address(info: dict[str, str], options: dict[str, Any]):
 REMOTE_TO_MAKER["github.com"] = _to_github_address
 REMOTE_TO_MAKER["dev.azure.com"] = _to_azure_address
 
-def get_remote_link(local_filepath: str | Path, line: int | None = None):
+def get_remote_link(local_filepath: str | Path, line_start: int | None = None, line_end: int | None = None):
     info = get_git_info(local_filepath)
     options = dict()
-    if line is not None:
-        options["line"] = line
+    if line_start is not None:
+        options["line_start"] = line_start
+    if line_end is not None:
+        options["line_end"] = line_end
+    option = LinkOption(line_start=line_start, line_end=line_end)
 
     for key, func in REMOTE_TO_MAKER.items():
-        if key in info["remote"]:
-            return func(info, options)
+        if key in info.remote:
+            return func(info, option)
     raise ValueError(
         "Cannot resolve remote adress{info['remote']=}\n"
         "For workaround, please consider to add `REMOTE_TO_MAKER`.",
