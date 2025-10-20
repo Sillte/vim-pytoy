@@ -7,6 +7,8 @@ xnoremap <leader>f :Console<CR>
 nnoremap <leader>t :<c-u>Pytest<CR>
 nnoremap <F12> :<c-u>UVToggle<CR>
 nnoremap <leader>d :GotoDefinition<CR>
-python3 import pytoy
+" It seems that invocation of the plugin is necessary.
+call pytoy#init_python()
+"python3 import pytoy 
 
 
