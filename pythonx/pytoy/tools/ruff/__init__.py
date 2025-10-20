@@ -20,7 +20,7 @@ class RuffExecutor(BufferExecutor):
 
         if isinstance(args, list):
             args = " ".join(args)
-        command = f"ruff check {args}"
+        command = f"ruff check {args} --output-format=concise"
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
     def on_closed(self):
