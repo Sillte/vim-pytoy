@@ -47,7 +47,7 @@ python3 pytoy.stop()
 endfunction
 
 function! pytoy#is_running()
-python3 pytoy.is_running()
+  return py3eval('pytoy.is_running()')
 endfunction
 
 function! pytoy#reset()
@@ -64,7 +64,7 @@ python3 pytoy.deactivate()
 endfunction
 
 function! pytoy#envinfo()
-python3 pytoy.envinfo()
+return py3eval('pytoy.envinfo()')
 endfunction
 
 " Open Terminal with the specified virtual environment.
