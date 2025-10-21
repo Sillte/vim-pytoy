@@ -149,8 +149,9 @@ class CSpellCommand:
         from pathlib import Path
         from pytoy import TERM_STDOUT
         from pytoy.tools.cspell import CSpellOneFileChecker
+        from pytoy.ui import normalize_path 
 
-        path = vim.current.buffer.name
+        path = normalize_path(vim.current.buffer.name)
         if Path(path).suffix == ".py":
             checker = CSpellOneFileChecker(only_python_string=True)
         else:
