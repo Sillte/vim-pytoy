@@ -19,7 +19,7 @@ class RuffExecutor(BufferExecutor):
             command_wrapper = EnvironmentManager().get_command_wrapper()
 
         if isinstance(args, list):
-            args = " ".join(args)
+            args = " ".join(map(str, args))
         command = f"ruff check {args} --output-format=concise"
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
