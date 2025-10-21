@@ -6,6 +6,7 @@ from pytoy.command import CommandManager
 from pytoy.ui import make_buffer
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.ui.pytoy_window import PytoyWindow
+from pytoy.ui import normalize_path
 
 
 @CommandManager.register(name="Pytest")
@@ -126,6 +127,7 @@ class RuffChecker:
         arguments = [elem for elem in fargs if not elem.startswith("-")] 
         if not arguments:
             path = vim.current.buffer.name
+            path = normalize_path(path)
             fargs.append(path)
             
         executor = RuffExecutor()
