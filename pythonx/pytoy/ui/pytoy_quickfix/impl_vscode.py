@@ -108,7 +108,10 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
             print("No record in QuickFix.")
             return
         path = Path(record["filename"])
-        vim.command(f"Edit {path.as_posix()}")
+
+        # As of 2025/10/21, this `_edit_file` is the workaround, but I hope this is addressed in the plugin.
+        #vim.command(f"Edit {path.as_posix()}")
+        self._edit_file(path)
         lnum, col = int(record.get("lnum", 1)), int(record.get("col", 1))
 
         length = len(self.records)
@@ -120,3 +123,11 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
             vim.command(f"call cursor({lnum}, {col})")
 
         TimerTask.execute_oneshot(func, 300)
+
+
+    def _edit_file(self, path: Path): 
+        """This path is not the uri of vscode, but  
+        """
+        from pytoy.ui.vscode.utils import open_file
+        open_file(path)
+
