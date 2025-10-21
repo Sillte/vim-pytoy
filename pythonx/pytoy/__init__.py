@@ -3,6 +3,7 @@ import vim
 from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.lib_tools.environment_manager.venv_utils import VenvManager
 from pytoy.ui import lightline_utils
+from pytoy.ui import normalize_path
 
 from pytoy.tools.python import PythonExecutor
 
@@ -18,6 +19,7 @@ def run(path=None):
     """Perform `python {path}`."""
     if not path:
         path = vim.current.buffer.name
+        path = normalize_path(path)
     executor = PythonExecutor()
     if executor.is_running:
         raise RuntimeError(f"Currently, `PythonExecutor` is running.")

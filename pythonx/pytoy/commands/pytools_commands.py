@@ -22,10 +22,12 @@ class PyTestCommand:
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
         if command_type == "func":
             path = vim.current.buffer.name
+            path = normalize_path(path)
             line = int(vim.eval("line('.')"))
             executor.runfunc(path, line, pytoy_buffer)
         elif command_type == "file":
             path = vim.current.buffer.name
+            path = normalize_path(path)
             executor.runfile(path, pytoy_buffer)
         elif command_type == "all":
             executor.runall(pytoy_buffer)
@@ -47,6 +49,7 @@ class MypyCommand:
         from pytoy import TERM_STDOUT
         import vim
         path = vim.current.buffer.name
+        path = normalize_path(path)
         executor = MypyExecutor()
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
         executor.runfile(path, pytoy_buffer)
