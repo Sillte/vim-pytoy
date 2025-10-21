@@ -9,6 +9,7 @@ from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.devtools.vim_rebooter import VimRebooter
 from pytoy.infra.timertask import TimerTask
 from pytoy.ui import get_ui_enum, UIEnum
+from pytoy.ui import normalize_path
 
 
 class VimRebootExecutor:
@@ -39,6 +40,7 @@ class VimRebootExecutor:
         ui_enum = get_ui_enum()
         if ui_enum in {UIEnum.VSCODE, UIEnum.NVIM}:
             nvim_folder = Path(vim.eval("stdpath('cache')"))
+            nvim_folder = normalize_path(nvim_folder)
             if not nvim_folder:
                 nvim_folder.mkdir(parents=True)
             return nvim_folder
@@ -104,6 +106,7 @@ class VimReboot:
             except ValueError as e:
                 plugin_folder = None
             path = Path(vim.eval("stdpath('cache')")) / "vscode_restarted.json"
+            path = normalize_path(path)
             data = {"plugin_folder": plugin_folder, "time": time.time()}
             path.write_text(json.dumps(data, indent=4))
 
