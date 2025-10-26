@@ -80,13 +80,13 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
 
         vim.command(f"Edit {bufname}")
 
-        wait_until_true(lambda: _current_uri_check(bufname), timeout=0.3)
+        wait_until_true(lambda: _current_uri_check(bufname), timeout=1.0)
 
         uri = api.eval_with_return(
           "vscode.window.activeTextEditor.document.uri", with_await=False
         )
         uri = Uri(**uri)
-        wait_until_true(lambda:  BufferURISolver.get_bufnr(uri) != None, timeout=0.3)
+        wait_until_true(lambda:  BufferURISolver.get_bufnr(uri) != None, timeout=1.0)
         vim.command("Tabonly")
         editor = Editor.get_current()
         result = PytoyWindowVSCode(editor)
