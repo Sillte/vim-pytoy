@@ -125,7 +125,7 @@ class RuffChecker:
             root_folder = venv_folder.parent
             path = root_folder
             fargs.remove("workspace")
-            fargs.append(path)
+            fargs.append(str(path))
 
         arguments = [elem for elem in fargs if not elem.startswith("-")] 
         if not arguments:
