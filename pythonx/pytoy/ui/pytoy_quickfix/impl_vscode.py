@@ -4,7 +4,7 @@ import copy
 
 from pytoy.infra.timertask import TimerTask
 from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol
-from pytoy.ui import normalize_path
+from pytoy.ui import to_filename
 
 
 class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
@@ -23,7 +23,7 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
         filename = record.get("filename")
         if not filename:
             filename = basepath
-        filename = normalize_path(filename)
+        filename = to_filename(filename)
         if filename.is_absolute():
             record["filename"] = filename.as_posix()
         else:
@@ -35,7 +35,7 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
             basepath = Path(vim.eval(f"getcwd()"))
         else:
             basepath = Path(vim.eval(f"getcwd({win_id})"))
-        basepath = normalize_path(basepath)
+        basepath = to_filename(basepath)
 
         records = [self._convert_filename(basepath, record) for record in records]
         self.records = records
