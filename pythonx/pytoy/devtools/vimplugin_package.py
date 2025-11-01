@@ -25,9 +25,9 @@ class VimPluginPackage:
         """
         if start_folder is None:
             import vim
-            from pytoy.ui import normalize_path
+            from pytoy.ui import to_filename
             try:
-                current = normalize_path(vim.eval("expand('%:p:h')"))
+                current = to_filename(vim.eval("expand('%:p:h')"))
                 start_folder = Path(current)
             except Exception:
                 start_folder = Path.cwd()
