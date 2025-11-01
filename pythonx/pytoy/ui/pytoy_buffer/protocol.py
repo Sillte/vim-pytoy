@@ -17,12 +17,18 @@ class PytoyBufferProtocol(Protocol):
         ...
 
     @property
-    def path(self) -> Path | None:
+    def path(self) -> Path:
         """Return the file path, if buffer corresponds to `file`.
         If not, it returns None.
         """
         ...
 
+    @property
+    def is_file(self) -> bool:
+        """Return True if the buffer corresponds to a file.
+        Return False for scratch buffers, unnamed buffers, etc.
+        """
+        ...
 
     def append(self, content: str) -> None:
         ...

@@ -12,14 +12,16 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         return PytoyBufferVSCode(Document.get_current())
 
     @property
-    def path(self) -> Path | None:
+    def path(self) -> Path:
         """Return the file path, if buffer corresponds to `file`.
         If not, it returns None.
         """
-        scheme = self.document.uri.scheme
-        if scheme == "file":
-            return Path(self.document.uri.path)
-        return None
+        return Path(self.document.uri.path)
+
+    @property
+    def is_file(self) -> bool:
+        """Return True if the buffer corresponds to a file on disk."""
+        return self.document.uri.scheme == "file"
 
 
     def init_buffer(self, content: str = "") -> None:

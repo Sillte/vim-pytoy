@@ -7,12 +7,24 @@ import vim
 def mywindow_func():
     print("hgoegege")
     from pytoy.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
+    from pytoy.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
     from pytoy.ui.vscode.editor import Editor
-    window = PytoyWindow.get_current()
-    PytoyWindowProvider().create_window("hgoehoge", "s")
-    print(window.buffer)
-    print(window.buffer.content)
-    window.focus()
+    #window = PytoyWindow.get_current()
+    #PytoyWindowProvider().create_window("hgoehoge", "s")
+    #print(window.buffer)
+    #print(window.buffer.content)
+    #window.focus()
+
+    from pytoy.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
+    from pytoy.ui.pytoy_window.impl_vscode import PytoyBufferVSCode, PytoyWindowProviderProtocol   
+    PytoyBufferVSCode
+
+    windows = PytoyWindowProvider().get_windows()
+    for elem in windows:
+        print(elem.buffer._impl.document)
+    for elem in PytoyWindowProvider().get_windows():
+        print(elem.buffer._impl.document.uri.path)
+
     #windows[0].impl.editor.focus()
     #print(window.valid, window.impl.editor.document.uri)
     #window.buffer
