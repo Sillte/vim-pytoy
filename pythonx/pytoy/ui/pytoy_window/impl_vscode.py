@@ -21,7 +21,7 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         self.editor = editor
 
     @property
-    def buffer(self) -> PytoyBuffer | None:
+    def buffer(self) -> PytoyBuffer:
         impl = PytoyBufferVSCode(self.editor.document)
         return PytoyBuffer(impl)
 
@@ -53,9 +53,7 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         return PytoyWindowVSCode(Editor.get_current())
 
     def get_windows(self) -> list[PytoyWindowProtocol]:
-        editors = Editor.get_editors()
-        uris = set(BufferURISolver.get_uri_to_bufnr())
-        editors = [elem for elem in editors if elem.uri in uris]
+        editors = self._get_editors()
         return [PytoyWindowVSCode(elem) for elem in editors]
 
     def create_window(
@@ -63,7 +61,9 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         bufname: str,
         mode: str = "vertical",
         base_window: PytoyWindowProtocol | None = None,
-    ) -> PytoyWindowProtocol:
+    ) -> PytoyWindowVSCode:
+        if window:= self._get_window_by_bufname(bufname):
+            return window
 
         current = PytoyWindowProviderVSCode().get_current()
 
@@ -93,6 +93,25 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
 
         current.focus()
         return result
+    
+    def _get_editors(self):
+        editors = Editor.get_editors()
+        uris = set(BufferURISolver.get_uri_to_bufnr())
+        return [elem for elem in editors if elem.uri in uris]
+
+    def _get_window_by_bufname(self, bufname: str, *, only_non_file: bool = True) -> PytoyWindowVSCode | None:
+        """If there exists a visible window displaying a buffer named `bufname` and that buffer
+        is not a file buffer, return the corresponding PytoyWindowVim.
+        """
+        editors = self._get_editors()
+        for editor in editors:
+            if editor.document.uri.path != bufname:
+                continue
+            if only_non_file and PytoyBufferVSCode(editor.document).is_file:
+                continue
+            return PytoyWindowVSCode(editor) 
+        return None
+
         
 
 def _current_uri_check(name: str) -> bool:

@@ -17,14 +17,13 @@ class PytoyBufferVim(PytoyBufferProtocol):
         return PytoyBufferVim(vim.current.buffer)
 
     @property
-    def path(self) -> Path | None:
-        name = self.buffer.name
-        if not name:
-            return None
+    def path(self) -> Path:
+        return Path(self.buffer.name)
+
+    @property
+    def is_file(self) -> bool:
         buftype = vim.eval(f"getbufvar({self.buffer.number}, '&buftype')")
-        if buftype == "nofile":
-            return None
-        return Path(name)
+        return buftype == "" and bool(self.buffer.name)
 
     @property
     def valid(self) -> bool:

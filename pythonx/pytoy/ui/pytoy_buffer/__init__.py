@@ -26,10 +26,17 @@ class PytoyBuffer(PytoyBufferProtocol):
     def impl(self) -> PytoyBufferProtocol:
         """Return the implementation of PytoyBuffer."""
         return self._impl
+
     @property
-    def path(self) -> Path | None:
+    def path(self) -> Path:
         """Return the implementation of PytoyBuffer."""
         return self.impl.path
+    
+
+    @property
+    def is_file(self) -> bool:
+        """Return whether this buffer corresponds to the file or not."""
+        return self.impl.is_file
 
     @property
     def valid(self) -> bool:
