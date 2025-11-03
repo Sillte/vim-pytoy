@@ -94,8 +94,10 @@ class _Lightline:
             arg = dict()
         self.data = _G_LIGHTLINE
         arg.update(kwargs)
-        for key in (arg & self.data.keys()):
-            self.data[key] = arg
+        # 辞書のキーの共通部分を取得
+        common_keys = set(arg.keys()) & set(self.data.keys())
+        for key in common_keys:
+            self.data[key] = arg[key]
         self.init()
         self._initialized = True
 

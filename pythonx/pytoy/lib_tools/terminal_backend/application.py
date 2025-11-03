@@ -60,8 +60,25 @@ class ShellApplication(ApplicationProtocol):
     def make_lines(self, input_str: str) -> Sequence[str | LINE_WAITTIME]: 
         """Modify the command before sending to `terminal`
         """
-        lines = input_str.split("\n")
-        return [line.strip("\r") for line in lines] + [""]
+        raw_lines = [line.rstrip("\r") for line in input_str.split("\n")]
+        joined_lines: list[str] = []
+        buffer = ""
+        continuation_chars = {"\\", "^", "`"}
+        for line in raw_lines:
+            stripped = line.rstrip()
+            if stripped and stripped[-1] in continuation_chars:
+                # 継続文字を削除して空白を追加
+                buffer += stripped[:-1] + " "
+            else:
+                buffer += stripped
+                joined_lines.append(buffer)
+                buffer = ""
+
+        if buffer:
+            joined_lines.append(buffer)
+
+        joined_lines.append("")  # 最後にEnter
+        return joined_lines
 
     def interrupt(self, pid: int, children_pids: list[int]):
         _ = children_pids
