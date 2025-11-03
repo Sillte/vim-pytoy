@@ -6,7 +6,6 @@ dependencies = [
     "pydantic>=2.0.0",
     "typing-extensions>=4.0.0",
     "psutil", 
-    "pywinpty", 
 ]
 requires-python = ">=3.8"
 
@@ -15,8 +14,9 @@ dev = [
     "pytest>=7.0.0",
     "black>=22.0.0",
 ]
+windows = ["pywinpty"]
 
-[pytest]
+[tool.pytest.ini_options]
 testpaths = ["tests"]
-python_paths = ["pythonx"]
-addopts = ["-v"]
+pythonpath = ["pythonx"]
+addopts = "-v"

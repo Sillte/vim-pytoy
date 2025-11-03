@@ -90,11 +90,10 @@ class _Lightline:
         if getattr(self, '_initialized', False):
             return
 
-        if arg is None:
+        if not arg:
             arg = dict()
         self.data = _G_LIGHTLINE
         arg.update(kwargs)
-        # 辞書のキーの共通部分を取得
         common_keys = set(arg.keys()) & set(self.data.keys())
         for key in common_keys:
             self.data[key] = arg[key]
