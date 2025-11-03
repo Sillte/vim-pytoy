@@ -38,7 +38,7 @@ class ScriptDecipher:
         import parso
 
         path = Path(path)
-        text = path.read_text()
+        text = path.read_text(encoding="utf8")
         module = parso.parse(text)
         targets = []
         targets += cls._gather_test_funcs(module, path)
