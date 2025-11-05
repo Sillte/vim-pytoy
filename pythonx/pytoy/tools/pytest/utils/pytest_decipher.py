@@ -43,6 +43,7 @@ class PytestDecipher:
         """Separate `each` sections."""
         section_to_lines = {key: [] for key in self._SEPARATORS}
         lines = text.split("\n")
+        lines = [line.strip("\r") for line in lines] # maybe...
         current = None
         for line in lines:
             for key, pattern in self._SEPARATORS.items():
