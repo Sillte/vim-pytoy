@@ -18,16 +18,17 @@ class PyTestCommand:
         from pytoy.tools import PytestExecutor
         from pytoy import TERM_STDOUT
 
+        
         executor = PytestExecutor()
+        # `make_buffer` may change the current buffer.
+        path = vim.current.buffer.name
+        path = to_filename(path)
+        line = int(vim.eval("line('.')"))
+
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
         if command_type == "func":
-            path = vim.current.buffer.name
-            path = to_filename(path)
-            line = int(vim.eval("line('.')"))
             executor.runfunc(path, line, pytoy_buffer)
         elif command_type == "file":
-            path = vim.current.buffer.name
-            path = to_filename(path)
             executor.runfile(path, pytoy_buffer)
         elif command_type == "all":
             executor.runall(pytoy_buffer)
