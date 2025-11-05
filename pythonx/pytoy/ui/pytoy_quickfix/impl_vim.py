@@ -12,9 +12,8 @@ class PytoyQuickFixVim(PytoyQuickFixProtocol):
         # If `value` is `complex` type, it may cause inconsistency of the data type.
         records = [
             {
-                key: str(value).replace("'", '"')
+                key: (str(value).replace("'", '"') if isinstance(value, str) else value)
                 for key, value in row.items()
-                if isinstance(value, str)
             }
             for row in records
         ]

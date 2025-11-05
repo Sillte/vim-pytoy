@@ -63,7 +63,7 @@ class PytestDecipher:
 
         """
         # `item`'s separator.
-        item_separator = re.compile(r"^_+\s(.+)\s_+$")
+        item_separator = re.compile(r"^\s*_+\s(.+?)\s_+\s*$")
 
         item_to_lines = defaultdict(list)
         item = None
@@ -83,37 +83,41 @@ class PytestDecipher:
 
         # As for `filename`, 2 pattern exist.
         summary_specifier = re.compile(
-            r"(?P<filename>(.*)\.py):(?P<lnum>\d+)(:(?P<text>.*))?$"
+            r"(?P<filename>.+?\.py):(?P<lnum>\d+):(?:\s*(?P<text>.*))?$"
         )
         summary_specifier2 = re.compile(
             r'^E\s*File\s*"(?P<filename>.*)",\s*line\s*(?P<lnum>\d+)\s*$'
         )
-        summaries = []
-        details = []
-        for line in lines:
-            m = summary_specifier.match(line)
-            if m:
-                summaries.append(m)
-                continue
-            m = summary_specifier2.match(line)
-            if m:
-                summaries.append(m)
-                continue
 
-            m = detail_specifier.match(line)
-            if m:
-                details.append(m)
-        if not summaries:
-            return [{"filename": "BUG?", "lnum": 1, "text": item_text}]
-        records = []
-        for summary in summaries:
+
+        def _to_record(summary, details: list) -> dict:
             row = summary.groupdict()
             row["lnum"] = int(row["lnum"])
+            if details:
+                row["text"] = " ".join(elem.group("reason") for elem in details)
             if "text" not in row:
                 row["text"] = "No Text"
-            records.append(row)
-        if details:
-            records[-1]["text"] = " ".join(elem.group("reason") for elem in details)
+            return row
+        
+        details = []
+        records = []
+        summary = None
+        for line in lines:
+            line = line.strip()
+            for pattern in [summary_specifier, summary_specifier2]:
+                if m := pattern.match(line):
+                    if summary:
+                        records.append(_to_record(summary, details))
+                    summary = m
+                    details = []
+                    break
+            else:
+                if m:= detail_specifier.match(line):
+                    details.append(m)
+        if summary:
+            records.append(_to_record(summary, details))
+        if not records:
+            return [{"filename": "BUG?", "lnum": 1, "text": item_text}]
         return records
 
 
