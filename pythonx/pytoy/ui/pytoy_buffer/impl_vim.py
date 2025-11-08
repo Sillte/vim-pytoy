@@ -28,7 +28,6 @@ class PytoyBufferVim(PytoyBufferProtocol):
     @property
     def valid(self) -> bool:
         return self.buffer.valid
-        
 
     def append(self, content: str) -> None:
         if not content:
@@ -79,17 +78,15 @@ class RangeSelectorVim(RangeSelectorProtocol):
         bufnr = self._buffer.buffer.number
         return vim.eval(f"getbufline({bufnr}, {line1}, {line2})")
 
-    def get_range(self, line1: int, pos1:int, line2: int, pos2: int) -> str:  
-        """`line` and `pos` are number acquried by `getpos`.
-        """
+    def get_range(self, line1: int, pos1: int, line2: int, pos2: int) -> str:
+        """`line` and `pos` are number acquried by `getpos`."""
         lines: list[str] = self.get_lines(line1, line2)
         if not lines:
             return ""
 
         if line1 == line2:
-            return lines[0][pos1 - 1:pos2 - 1]
+            return lines[0][pos1 - 1 : pos2 - 1]
 
-        lines[0] = lines[0][pos1 - 1:]
-        lines[-1] = lines[-1][:pos2 - 1]
+        lines[0] = lines[0][pos1 - 1 :]
+        lines[-1] = lines[-1][: pos2 - 1]
         return "\n".join(lines)
-

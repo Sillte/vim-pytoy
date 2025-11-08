@@ -1,5 +1,5 @@
-"""Terminal, which is used by python.
-"""
+"""Terminal, which is used by python."""
+
 from pathlib import Path
 from typing import Protocol, NewType, Sequence
 from queue import Queue
@@ -14,12 +14,10 @@ class TerminalBackendProtocol(Protocol):
     ) -> None:
         """Start the terminal."""
 
-    def send(self, input_str: str):
-        ...
+    def send(self, input_str: str): ...
 
     @property
-    def alive(self) -> bool:
-        ...
+    def alive(self) -> bool: ...
 
     @property
     def busy(self) -> bool | None:
@@ -116,31 +114,23 @@ class LineBufferProtocol(Protocol):
 
 
 class PseudoTerminalProtocol:
-
-    def isalive(self) -> bool:
-        ...
+    def isalive(self) -> bool: ...
 
     @property
-    def pid(self) -> int | None:
-        ...
+    def pid(self) -> int | None: ...
 
-    def terminate(self) -> bool | None:
-        ...
+    def terminate(self) -> bool | None: ...
 
-    def write(self, content: str) -> int:
-        ...
+    def write(self, content: str) -> int: ...
 
-    def readline(self) -> str | None:
-        ...
+    def readline(self) -> str | None: ...
+
 
 class PseudoTerminalProviderProtocol:
     def spawn(
         self,
         argv: str | Sequence[str],
-        dimensions: tuple[int, int] | None = None, 
+        dimensions: tuple[int, int] | None = None,
         cwd: str | Path | None = None,
         env: dict[str, str] | None = None,
-    ) -> PseudoTerminalProtocol:
-        ...
-
-
+    ) -> PseudoTerminalProtocol: ...

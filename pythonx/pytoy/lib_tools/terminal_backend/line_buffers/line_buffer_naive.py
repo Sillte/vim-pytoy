@@ -1,4 +1,8 @@
-from pytoy.lib_tools.terminal_backend.protocol import LineBufferProtocol, DEFAULT_LINES, DEFAULT_COLUMNS
+from pytoy.lib_tools.terminal_backend.protocol import (
+    LineBufferProtocol,
+    DEFAULT_LINES,
+    DEFAULT_COLUMNS,
+)
 import re
 
 
@@ -22,7 +26,7 @@ import re
 #      as they are typically desired as actual line breaks in the output.
 #      If you want to remove ALL non-printable characters including newlines/tabs, you would adjust this part.
 CONTROL_CODE_RE = re.compile(
-    r'''
+    r"""
     \x1b\[             # CSI escape sequence (starts with ESC[)
     [0-9;?]* # Parameter bytes (digits, semicolons, question marks)
     [ -/]* # Intermediate bytes (space to slash)
@@ -39,17 +43,18 @@ CONTROL_CODE_RE = re.compile(
     \x1b[\(\)][A-Za-z] # Character set switching (e.g., ESC(B)
     |
     [\x00-\x08\x0b\x0c\x0e-\x1f\x7f] # Other common non-printable ASCII control characters (excluding LF, CR, TAB)
-    ''',
-    re.VERBOSE | re.DOTALL # re.DOTALL allows '.' to match newlines for OSC sequences
+    """,
+    re.VERBOSE | re.DOTALL,  # re.DOTALL allows '.' to match newlines for OSC sequences
 )
 
+
 class LineBufferNaive(LineBufferProtocol):
-    """Return the `lines` based on given information.
-    """
-    def __init__(self, columns: int=DEFAULT_COLUMNS, lines: int = DEFAULT_LINES): 
+    """Return the `lines` based on given information."""
+
+    def __init__(self, columns: int = DEFAULT_COLUMNS, lines: int = DEFAULT_LINES):
         self._chunk_buffer = ""
         self._last_row = 1  # First.
-        self._cursor_move_pattern = re.compile(r'\x1b\[(\d+);(\d+)H')
+        self._cursor_move_pattern = re.compile(r"\x1b\[(\d+);(\d+)H")
         self._columns = columns
         self._lines = lines
         self._empty_succession: int = 0
@@ -63,14 +68,12 @@ class LineBufferNaive(LineBufferProtocol):
     def lines(self) -> int:
         return self._lines
 
-
     def reset(self):
-        """Please invoke this function when you restarted this buffer, if necessary.
-        """
+        """Please invoke this function when you restarted this buffer, if necessary."""
         self._chunk_buffer = ""
 
-    def flush(self) -> list[str]: 
-        line = CONTROL_CODE_RE.sub('', self._chunk_buffer)
+    def flush(self) -> list[str]:
+        line = CONTROL_CODE_RE.sub("", self._chunk_buffer)
         self._chunk_buffer = ""
         return [line]
 
@@ -94,12 +97,12 @@ class LineBufferNaive(LineBufferProtocol):
             # Find the first newline or carriage return
             newline_idx = -1
             # Prefer \r\n as a single unit if present
-            crnl_idx = self._chunk_buffer.find('\r\n')
+            crnl_idx = self._chunk_buffer.find("\r\n")
             if crnl_idx != -1:
-                newline_idx = crnl_idx + 1 # Point to the 'n' in '\r\n'
+                newline_idx = crnl_idx + 1  # Point to the 'n' in '\r\n'
             else:
-                nl_idx = self._chunk_buffer.find('\n')
-                cr_idx = self._chunk_buffer.find('\r')
+                nl_idx = self._chunk_buffer.find("\n")
+                cr_idx = self._chunk_buffer.find("\r")
 
                 if nl_idx != -1 and (cr_idx == -1 or nl_idx < cr_idx):
                     newline_idx = nl_idx
@@ -108,15 +111,15 @@ class LineBufferNaive(LineBufferProtocol):
 
             if newline_idx != -1:
                 # Extract the line including the newline/CR character(s)
-                line_to_process = self._chunk_buffer[:newline_idx + 1]
-                self._chunk_buffer = self._chunk_buffer[newline_idx + 1:]
+                line_to_process = self._chunk_buffer[: newline_idx + 1]
+                self._chunk_buffer = self._chunk_buffer[newline_idx + 1 :]
 
                 if line_to_process.strip("\r\n") == "\x1b[K":
-                    #print("line_to_process", line_to_process)
+                    # print("line_to_process", line_to_process)
                     continue
 
                 # Strip control codes and ANSI escape sequences
-                cleaned_line = CONTROL_CODE_RE.sub('', line_to_process)
+                cleaned_line = CONTROL_CODE_RE.sub("", line_to_process)
                 # `append` line should not contain `\n`.
                 cleaned_line = cleaned_line.replace("\r\n", "\n").strip("\n")
                 cleaned_line = cleaned_line.replace("\r", "")
@@ -126,7 +129,7 @@ class LineBufferNaive(LineBufferProtocol):
                     continue
                 if cleaned_line:
                     self._prev_non_empty_line = cleaned_line
-                
+
                 lines.append(cleaned_line)
             else:
                 break
@@ -134,18 +137,17 @@ class LineBufferNaive(LineBufferProtocol):
 
     def _detect_cursor_move_and_maybe_break(self, text: str) -> str:
         # ANSI cursor move pattern: \x1b[{row};{col}H
-        pattern = self._cursor_move_pattern 
+        pattern = self._cursor_move_pattern
         output = ""
         last_end = 0
         for match in pattern.finditer(text):
             row = int(match.group(1))
-            _ = int(match.group(2)) # col
+            _ = int(match.group(2))  # col
             if row > self._last_row:
-                output += text[last_end:match.start()] + "\r\n" 
+                output += text[last_end : match.start()] + "\r\n"
             else:
-                output += text[last_end:match.start()]
+                output += text[last_end : match.start()]
             self._last_row = row
             last_end = match.end()
         output += text[last_end:]
         return output
-

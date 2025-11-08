@@ -36,7 +36,7 @@ class EnvironmentManager:
         self._prev_venv_path = None
 
     def get_uv_venv(self, path: str | Path | None = None) -> Path | None:
-        """Return the environment `uv run` uses if it has virtual envrinment. 
+        """Return the environment `uv run` uses if it has virtual envrinment.
 
         # [TODO] handling of `--package`.
         """
@@ -53,7 +53,7 @@ class EnvironmentManager:
         )
         try:
             python_path = Path(ret.stdout.strip())
-        except Exception as e: 
+        except Exception as e:
             print(e)
             return None
         if all(
@@ -66,7 +66,9 @@ class EnvironmentManager:
             # Not virtual environment.
             return None
 
-    def get_command_wrapper(self, force_uv: bool | None = False) -> Callable[[str], str]:
+    def get_command_wrapper(
+        self, force_uv: bool | None = False
+    ) -> Callable[[str], str]:
         # [NOTE]: In the future, parameter may become desirable.
         # Consider `--package option`
 
@@ -88,14 +90,14 @@ class EnvironmentManager:
         prev_path = vim.vars.get("g:jedi#environment_path")
         if prev_path:
             self._prev_venv_path = prev_path
-        if venv_path: 
+        if venv_path:
             vim.vars["g:jedi#environment_path"] = venv_path.as_posix()
 
     def on_uv_mode_off(self):
         """Hook function when `uv_mode` becomes off.
         Handling the global state of VIM.
         """
-        
+
         uv_mode = "uv-mode"
         if lightline_utils.is_registered(uv_mode):
             lightline_utils.deregister(uv_mode)
@@ -114,7 +116,6 @@ class EnvironmentManager:
         elif prev_mode != uv_mode and self._uv_mode == UvMode.OFF:
             self.on_uv_mode_off()
         return self._uv_mode
-
 
     def get_uv_mode(self):
         if self._uv_mode == UvMode.UNDEFINED:

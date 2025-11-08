@@ -4,7 +4,7 @@ from pytoy.lib_tools.terminal_backend.application import AppManager
 from pytoy.lib_tools.terminal_backend.application import DEFAULT_SHELL_APPLICATION_NAME
 
 
-def get_default_app_name(buffer: PytoyBuffer | None=None) -> str:
+def get_default_app_name(buffer: PytoyBuffer | None = None) -> str:
     if buffer is None:
         buffer = PytoyBuffer.get_current()
     path = buffer.path

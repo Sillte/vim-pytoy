@@ -1,5 +1,4 @@
 from pathlib import Path
-import sys 
 import time
 import os
 import json
@@ -30,7 +29,9 @@ class VimRebootExecutor:
         session_cache_path = folder / self.SESSION_CACHE_NAME
         self._dump_reboot_info(json_cache_path, session_cache_path)
         if not self.package:
-            raise ValueError("Current folder is not within a plugin folder, so no reboot.")
+            raise ValueError(
+                "Current folder is not within a plugin folder, so no reboot."
+            )
         self.reboot()
 
     def get_cache_folder(self) -> Path:
@@ -67,20 +68,20 @@ class VimRebootExecutor:
         ui_enum = get_ui_enum()
         if ui_enum == ui_enum.VSCODE:
             from pytoy.ui.vscode.api import Api
+
             api = Api()
             api.action("vscode-neovim.restart")
-            return 
-        rebooter = VimRebooter() 
+            return
+        rebooter = VimRebooter()
 
         rebooter()
-        #if is_gui and sys.platform.startswith("win32"):
+        # if is_gui and sys.platform.startswith("win32"):
         #    if self.package:
         #        self.package.restart(with_vimrc=True, kill_myprocess=True)
         #    else:
         #        raise ValueError("Current folder is not within a plugin folder.")
-        #else:
+        # else:
         #    vim.command("qall!")
-
 
 
 @CommandManager.register(name="VimReboot")
@@ -89,6 +90,7 @@ class VimReboot:
 
     def __call__(self):
         from pytoy.ui.vscode.api import Api
+
         executor = VimRebootExecutor()
         executor()
 
@@ -103,7 +105,7 @@ class VimReboot:
             try:
                 package = VimPluginPackage()
                 plugin_folder = package.root_folder.as_posix()
-            except ValueError as e:
+            except ValueError:
                 plugin_folder = None
             path = Path(vim.eval("stdpath('cache')")) / "vscode_restarted.json"
             path = to_filename(path)

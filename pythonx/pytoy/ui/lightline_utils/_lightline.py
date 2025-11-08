@@ -4,7 +4,8 @@ import vim
 # Commit: 893bd90787abfec52a2543074e444fc6a9e0cf78
 # Github: https://github.com/itchyny/lightline.vim
 # Copyright: Copyright (c) 2013-2020 itchyny
-vim.command(r"""let g:_lightline={
+vim.command(
+    r"""let g:_lightline={
       \   'active': {
       \     'left': [['mode', 'paste'], ['readonly', 'filename', 'modified']],
       \     'right': [['lineinfo'], ['percent'], ['fileformat', 'fileencoding', 'filetype']]
@@ -64,8 +65,9 @@ vim.command(r"""let g:_lightline={
       \   'palette': {},
       \   'winwidth': winwidth(0),
       \ }
-""".replace("\n", " ").replace("\\", " "))
-# 
+""".replace("\n", " ").replace("\\", " ")
+)
+#
 # If `g:lightline` is not defined, then default value is used.
 
 vim.command("""
@@ -76,9 +78,10 @@ endif
 
 _G_LIGHTLINE = vim.eval("g:lightline")
 
+
 class _Lightline:
-    """ This class is intended to be a wrapper for `g:lightline`.
-    """
+    """This class is intended to be a wrapper for `g:lightline`."""
+
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -87,7 +90,7 @@ class _Lightline:
         return cls._instance
 
     def __init__(self, arg=None, **kwargs):
-        if getattr(self, '_initialized', False):
+        if getattr(self, "_initialized", False):
             return
 
         if not arg:
@@ -101,8 +104,7 @@ class _Lightline:
         self._initialized = True
 
     def _sync(self):
-        """Synchronize `self.data` with `g:lightline`.
-        """
+        """Synchronize `self.data` with `g:lightline`."""
         d = vim.eval("g:lightline")
         d.update(self.data)
         self.data = d
@@ -113,53 +115,53 @@ class _Lightline:
         if key not in self.data:
             raise ValueError(f"Invalid key. `{key}`")
         self.data[key] = value
-        
+
     def __getitem__(self, key):
         return self.data[key]
 
-    def init(self): 
-        # Here, synchronize `self.data` and `g:lightline`. 
+    def init(self):
+        # Here, synchronize `self.data` and `g:lightline`.
         self._sync()
         if int(vim.eval("exists('lightline#init')")):
             vim.command("call lightline#init()")
 
-    def mode(self): 
+    def mode(self):
         return vim.eval("lightline#mode()")
 
-    def enable(self): 
+    def enable(self):
         self._sync()
         vim.command("call lightline#enable()")
 
-    def disable(self): 
+    def disable(self):
         self._sync()
         vim.command("call lightline#disable()")
 
-    def toggle(self): 
+    def toggle(self):
         self._sync()
         vim.command("call lightline#toggle()")
 
-    def link(self, mode): 
+    def link(self, mode):
         vim.command(f"call lightline#link('{mode}')")
 
-    def highlight(self): 
-        vim.command(f"call lightline#highlight()")
+    def highlight(self):
+        vim.command("call lightline#highlight()")
 
-    def statusline(self, inactive=0): 
+    def statusline(self, inactive=0):
         return vim.eval(f"lightline#statusline({inactive})")
 
-    def tabline(self): 
-        return vim.eval(f"lightline#tabline()")
+    def tabline(self):
+        return vim.eval("lightline#tabline()")
 
-    def concatenate(self, list, num=0): 
+    def concatenate(self, list, num=0):
         return vim.eval(f"lightline#concatenate({list}, {num})")
 
-    def palette(self): 
-        return vim.eval(f"lightline#palette()")
+    def palette(self):
+        return vim.eval("lightline#palette()")
 
-    def colorscheme(self): 
+    def colorscheme(self):
         vim.command(f"let g:lightline={self.data}")
         ret = vim.command("call lightline#colorscheme()")
 
-    def update(self): 
+    def update(self):
         self._sync()
         vim.command("call lightline#update()")

@@ -9,7 +9,7 @@ try:
         MainCommandSpec,
         CompletionContext,
         ContextType,
-        ParsedArguments
+        ParsedArguments,
     )
     from pytoy.infra.sub_commands.completion_context_maker import CompletionContextMaker
 except ImportError:
@@ -18,17 +18,12 @@ except ImportError:
         ArgumentSpec,
         OptionSpec,
         OptionType,
-        Completion,
         SubCommandSpec,
         MainCommandSpec,
-        CompletionContext,
-        ContextType,
-        ParsedArguments
+        ParsedArguments,
     )
-    from completion_context_maker import CompletionContextMaker
 
 from dataclasses import dataclass
-from typing import Literal
 
 
 @dataclass(frozen=True)
@@ -42,8 +37,6 @@ class ParsedCommand:
     sub_arguments: list[str]
 
 
-
-
 class _OptionParser:
     def __init__(self, spec: MainCommandSpec | SubCommandSpec, arg_line: str):
         self.spec = spec
@@ -53,10 +46,13 @@ class _OptionParser:
 
         self.non_value_options = {
             option.name: option for option in spec.options if not option.expects_value
-                }
+        }
 
-        self.char_to_option: dict[str, str]  = {option.short_option: option.name for option in spec.options
-                                                 if option.short_option}
+        self.char_to_option: dict[str, str] = {
+            option.short_option: option.name
+            for option in spec.options
+            if option.short_option
+        }
 
         self.arg_line = arg_line
 
@@ -108,12 +104,14 @@ class _OptionParser:
             if last_char not in self.char_to_option:
                 raise ValueError(f"{last_char=} is not related to options.")
             option_name = self.char_to_option[last_char]
-            if option_name in self.expect_value_options: # -f filename.
+            if option_name in self.expect_value_options:  # -f filename.
                 if next_token:
                     options[option_name] = next_token.value
                     additional_idx = 2  # Consumed one more token
                 else:
-                    options[option_name] = self.expect_value_options[option_name].default
+                    options[option_name] = self.expect_value_options[
+                        option_name
+                    ].default
             elif option_name in self.non_value_options:
                 options[option_name] = self.non_value_options[option_name].default
             else:
@@ -124,9 +122,8 @@ class _OptionParser:
 
 
 def make_parsed_command(main_spec: MainCommandSpec, arg_line: str) -> ParsedCommand:
-    
     tokens = tokenize(arg_line)
-    #print("tokens", tokens, arg_line)
+    # print("tokens", tokens, arg_line)
     # `token` starts from `0`, this is differnt from `cmd_line`.
     idx = 0
 
@@ -139,15 +136,13 @@ def make_parsed_command(main_spec: MainCommandSpec, arg_line: str) -> ParsedComm
 
     while idx < len(tokens):
         token = tokens[idx]
-        #print("token", token, idx)
+        # print("token", token, idx)
 
         if token.value in sub_names:
             sub_spec = sub_names[token.value]
             idx = idx + 1
             break
-        idx = main_parser.parse(
-            idx, tokens, main_options, main_arguments
-        )
+        idx = main_parser.parse(idx, tokens, main_options, main_arguments)
 
     if not sub_spec:
         return ParsedCommand(
@@ -165,9 +160,7 @@ def make_parsed_command(main_spec: MainCommandSpec, arg_line: str) -> ParsedComm
 
     while idx < len(tokens):
         token = tokens[idx]
-        idx = sub_parser.parse(
-            idx, tokens, sub_options, sub_arguments
-        )
+        idx = sub_parser.parse(idx, tokens, sub_options, sub_arguments)
 
     return ParsedCommand(
         sub_command=sub_spec.name,
@@ -181,13 +174,14 @@ def make_parsed_command(main_spec: MainCommandSpec, arg_line: str) -> ParsedComm
 def to_parsed_arguments(
     main_spec: MainCommandSpec, parsed_command: ParsedCommand
 ) -> ParsedArguments:
-    """
+    (
+        """
     [NOTE]:
     1. Currently, non-existent check is not performed in this layer. 
     2. Currently, inconsistency of definition is not yet checked.
     """,
-    #print("ParsedCommand", parsed_command)
-
+    )
+    # print("ParsedCommand", parsed_command)
 
     def _type_conversion(
         spec: MainCommandSpec | SubCommandSpec, options: dict[str, str | None]
@@ -259,6 +253,7 @@ if __name__ == "__main__":
             assert "flag" in parsed.main_options
             assert "run" == parsed.sub_command
             assert parsed.sub_arguments[0] == "command"
+
     test_1()
 
     def test_2():
@@ -267,6 +262,5 @@ if __name__ == "__main__":
         assert parsed.main_options["app"] == "appname"
         assert "run" == parsed.sub_command
         assert parsed.sub_arguments[0] == "command"
+
     test_2()
-
-

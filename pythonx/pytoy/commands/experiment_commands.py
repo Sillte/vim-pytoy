@@ -1,10 +1,8 @@
 import vim
 from pytoy.ui import make_buffer
-from pytoy.command import CommandManager, OptsArgument 
+from pytoy.command import CommandManager, OptsArgument
 
 from pytoy.lib_tools.terminal_backend.executor import TerminalExecutor
-
-
 
 
 class CommandTerminal:
@@ -20,7 +18,10 @@ class CommandTerminal:
         from pytoy.lib_tools.terminal_backend import TerminalBackendProvider
         from pytoy.lib_tools.terminal_backend.application import ShellApplication
 
-        from pytoy.lib_tools.terminal_backend.line_buffers import LineBufferPyte, LineBufferNaive
+        from pytoy.lib_tools.terminal_backend.line_buffers import (
+            LineBufferNaive,
+        )
+
         app = ShellApplication()
         backend = TerminalBackendProvider().make_terminal(app, LineBufferNaive())
         buffer = make_buffer(CommandTerminal.name)
@@ -28,7 +29,6 @@ class CommandTerminal:
 
         CommandTerminal.executor = executor
         return executor
-
 
     @CommandManager.register(name="CMD", range=True)
     @staticmethod
@@ -39,7 +39,7 @@ class CommandTerminal:
 
         # [NOTE]: this specification should be discussed.
         cmd = opts.args
-        #if not cmd.strip():
+        # if not cmd.strip():
         #    executor.interrupt()
 
         line1, line2 = opts.line1, opts.line2
@@ -48,5 +48,3 @@ class CommandTerminal:
             cmd = "\n".join(lines)
 
         executor.send(cmd)
-
-

@@ -1,10 +1,11 @@
 """Since this sending key codes may interrupt
 the global state of process.
-So, 
+So,
 
-**multiprocessing** is not yet tried, 
-but it seems work when this is called via `subprocess`. 
+**multiprocessing** is not yet tried,
+but it seems work when this is called via `subprocess`.
 """
+
 import sys
 import ctypes
 import time

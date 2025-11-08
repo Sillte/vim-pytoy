@@ -1,16 +1,17 @@
-"""git_commands
-"""
-import vim 
+"""git_commands"""
+
+import vim
 from pathlib import Path
 from pytoy.command import CommandManager, OptsArgument
 from pytoy.tools.git import get_remote_link
 from pytoy.ui import to_filename
 
+
 @CommandManager.register(name="GitAddress", range="")
 def get_gitaddress(opts: OptsArgument):
     line1 = opts.line1
     line2 = opts.line2
-    
+
     filepath = Path(vim.current.buffer.name)
     filepath = to_filename(filepath)
     remote_link = get_remote_link(filepath, line1, line2)
@@ -18,4 +19,3 @@ def get_gitaddress(opts: OptsArgument):
     vim.command(f'let @*="{remote_link}"')
     print("@c/@*", remote_link)
     return remote_link
-

@@ -37,17 +37,18 @@ class VimBufferJob(BufferJobProtocol):
         self, command: str, on_start_callable: Callable, on_closed_callable: Callable
     ):
         from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
+
         options = dict()
         if self.stdout is not None:
             options["out_io"] = "buffer"
             impl = self.stdout.impl
-            assert isinstance(impl,  PytoyBufferVim)
+            assert isinstance(impl, PytoyBufferVim)
             options["out_buf"] = impl.buffer.number
 
         if self.stderr is not None:
             options["err_io"] = "buffer"
             impl = self.stderr.impl
-            assert isinstance(impl,  PytoyBufferVim)
+            assert isinstance(impl, PytoyBufferVim)
             options["err_buf"] = impl.buffer.number
 
         if self.env is not None:

@@ -4,7 +4,10 @@ from typing import Optional, Callable
 from pytoy.ui import PytoyBuffer
 
 from pytoy.lib_tools.buffer_executor.command_wrapper import CommandWrapper
-from pytoy.lib_tools.buffer_executor.buffer_job import make_buffer_job, BufferJobProtocol
+from pytoy.lib_tools.buffer_executor.buffer_job import (
+    make_buffer_job,
+    BufferJobProtocol,
+)
 
 naive_wrapper = CommandWrapper()
 
@@ -94,8 +97,9 @@ class BufferExecutor:
             command_wrapper = naive_wrapper
         self._command = command
 
-
-        self._buffer_job = make_buffer_job(name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd)
+        self._buffer_job = make_buffer_job(
+            name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd
+        )
 
         command = command_wrapper(command)
 
@@ -104,7 +108,6 @@ class BufferExecutor:
         if self.is_running:
             raise ValueError(f"`{self.name=}` is already running")
         self._buffer_job.job_start(command, self.prepare, self.on_closed)
-        
 
     @property
     def is_running(self):
@@ -119,11 +122,12 @@ class BufferExecutor:
             return
         self.buffer_job.stop()
 
-
-    def init_buffers(self, wrapped_command: str, 
-                          stdout: PytoyBuffer | None = None,
-                          stderr: PytoyBuffer | None = None,
-                          ):
+    def init_buffers(
+        self,
+        wrapped_command: str,
+        stdout: PytoyBuffer | None = None,
+        stderr: PytoyBuffer | None = None,
+    ):
         if stderr is not None:
             stderr.init_buffer()
 
@@ -151,4 +155,3 @@ class BufferExecutor:
 
 if __name__ == "__main__":
     pass
-

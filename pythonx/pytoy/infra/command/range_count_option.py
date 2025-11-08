@@ -36,7 +36,9 @@ class RangeCountOption:
     def set_pair(self, type_: RangeCountType, value: str | int):
         """Setter of the instance values."""
         if self._type is not RangeCountType.NONE:
-            raise ValueError("`set_pair` can only be called if the type is NONE (unset).")
+            raise ValueError(
+                "`set_pair` can only be called if the type is NONE (unset)."
+            )
         self._type = type_
         self._value = value
 

@@ -1,12 +1,12 @@
 import sys
 from typing import Type, Sequence
 from .protocol import ApplicationProtocol, LINE_WAITTIME
-from .utils import force_kill, send_ctrl_c
+from .utils import force_kill
+
 
 class AppClassManagerClass:
-    """Register and creation of the `Application` with` the given name.
+    """Register and creation of the `Application` with` the given name."""
 
-    """
     def __init__(self):
         self._app_types: dict[str, Type[ApplicationProtocol]] = {}
 
@@ -18,6 +18,7 @@ class AppClassManagerClass:
         def _inner(application_cls: Type[ApplicationProtocol]):
             self._app_types[name] = application_cls
             return application_cls
+
         return _inner
 
     def is_registered(self, name: str) -> bool:
@@ -30,20 +31,21 @@ class AppClassManagerClass:
     def create(self, name: str, **kwargs) -> ApplicationProtocol:
         return self.app_types[name](**kwargs)
 
-AppManager = AppClassManagerClass()
 
+AppManager = AppClassManagerClass()
 
 
 # Below is the example of applications.
 
 DEFAULT_SHELL_APPLICATION_NAME = "shell"
 
+
 @AppManager.register(name=DEFAULT_SHELL_APPLICATION_NAME)
 class ShellApplication(ApplicationProtocol):
     WIN_DEFAULT_SHELL_COMMAND = "cmd.exe"
     LINUX_DEFAULT_SHELL_COMMAND = "bash"
 
-    def __init__(self, command: str | None = None , line_suffix: str="\r\n"):
+    def __init__(self, command: str | None = None, line_suffix: str = "\r\n"):
         if command is None:
             command = self._get_default_shell_command()
         self._command = command
@@ -51,15 +53,14 @@ class ShellApplication(ApplicationProtocol):
 
     @property
     def command(self) -> str:
-        return self._command 
+        return self._command
 
     def is_busy(self, children_pids: list[int], lastline: str) -> bool:
         _ = lastline
         return bool(children_pids)
 
-    def make_lines(self, input_str: str) -> Sequence[str | LINE_WAITTIME]: 
-        """Modify the command before sending to `terminal`
-        """
+    def make_lines(self, input_str: str) -> Sequence[str | LINE_WAITTIME]:
+        """Modify the command before sending to `terminal`"""
         raw_lines = [line.rstrip("\r") for line in input_str.split("\n")]
         joined_lines: list[str] = []
         buffer = ""
@@ -88,7 +89,7 @@ class ShellApplication(ApplicationProtocol):
         for child in children_pids:
             force_kill(child)
 
-    def filter(self,  lines: Sequence[str]) -> Sequence[str]:
+    def filter(self, lines: Sequence[str]) -> Sequence[str]:
         return lines
 
     def _get_default_shell_command(self) -> str:
@@ -96,5 +97,3 @@ class ShellApplication(ApplicationProtocol):
             return self.WIN_DEFAULT_SHELL_COMMAND
         else:
             return self.LINUX_DEFAULT_SHELL_COMMAND
-
-

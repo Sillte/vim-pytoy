@@ -8,6 +8,7 @@ from pytoy.lib_tools.terminal_backend.protocol import (
 class LineBufferPyte(LineBufferProtocol):
     def __init__(self, columns: int = DEFAULT_COLUMNS, lines: int = DEFAULT_LINES):
         import pyte
+
         self._screen = pyte.Screen(columns, lines)
         self._stream = pyte.Stream(self._screen)
 
@@ -22,7 +23,7 @@ class LineBufferPyte(LineBufferProtocol):
         for s in range(start, cy):
             line = self.screen.display[s]
             lines.append(line.rstrip())
-        #print("lines", lines, self.screen.dirty, cy)
+        # print("lines", lines, self.screen.dirty, cy)
         self.screen.dirty.clear()
 
         if cy == self.lines - 1:  # End of cursor.

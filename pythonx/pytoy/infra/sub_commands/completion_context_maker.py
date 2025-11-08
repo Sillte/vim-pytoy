@@ -12,10 +12,6 @@ try:
 except ImportError:
     from tokenizer import Token, tokenize
     from specs import (
-        ArgumentSpec,
-        OptionSpec,
-        Completion,
-        SubCommandSpec,
         MainCommandSpec,
         CompletionContext,
         ContextType,
@@ -128,7 +124,7 @@ class CompletionContextMaker:
 
     def _token_to_opt(self, token: Token) -> tuple[str | None, str | None]:
         """If `token` is related to `Option`,
-           then it returns the key and value."""
+        then it returns the key and value."""
         if not token.value.startswith("-"):
             return (None, None)
         elif token.value.startswith("--"):

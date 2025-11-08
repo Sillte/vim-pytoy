@@ -1,10 +1,11 @@
-
 from pytoy.ui import PytoyBuffer
 from pytoy.ui.pytoy_buffer.queue_updater import QueueUpdater
 from pytoy.ui.pytoy_buffer import make_buffer
 from pytoy.lib_tools.terminal_backend import TerminalBackend, TerminalBackendProvider
-from pytoy.lib_tools.terminal_backend.application import AppClassManagerClass, AppManager
-
+from pytoy.lib_tools.terminal_backend.application import (
+    AppClassManagerClass,
+    AppManager,
+)
 
 
 class TerminalExecutor:
@@ -25,10 +26,12 @@ class TerminalExecutor:
     def updater(self) -> QueueUpdater | None:
         return self._updater
 
-    def start(self, ):
+    def start(
+        self,
+    ):
         if self.alive:
             print("Already running")
-            return 
+            return
         queue = self.backend.queue
         self.backend.start()
         self._updater = QueueUpdater(self.buffer, queue)
@@ -38,31 +41,27 @@ class TerminalExecutor:
         self.backend.send(cmd)
 
     @property
-    def alive(self) -> bool: 
+    def alive(self) -> bool:
         return self.backend.alive and self.buffer.valid
 
     @property
-    def busy(self) -> bool: 
-        """Whether the somework is performed or not.
-        """
+    def busy(self) -> bool:
+        """Whether the somework is performed or not."""
         return self.backend.busy
 
     def interrupt(self) -> None:
-        """Stop the child process.
-        """
+        """Stop the child process."""
         self.backend.interrupt()
 
     def terminate(self) -> None:
-        """Kill the terminal.
-        """
+        """Kill the terminal."""
         if not self.alive:
             print("Already terminated.")
-            return 
+            return
 
         self.backend.terminate()
-        assert self.updater 
+        assert self.updater
         self.updater.deregister()
-
 
 
 class TerminalExecutorManagerClass:
@@ -73,7 +72,7 @@ class TerminalExecutorManagerClass:
         self._cache: dict[tuple[str, str], TerminalExecutor] = dict()
         self._app_manager = app_manager
         self._current_executor = None
-        self._current_key : tuple[str, str] | None = None
+        self._current_key: tuple[str, str] | None = None
 
     @property
     def app_manager(self):
@@ -131,6 +130,3 @@ class TerminalExecutorManagerClass:
 
 
 TerminalExecutorManager = TerminalExecutorManagerClass(AppManager)
-
-
-

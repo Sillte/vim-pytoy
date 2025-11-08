@@ -1,6 +1,6 @@
 """Personal utility functions for using `lightline`.
 
-This module assumes the following plugin is already installed. 
+This module assumes the following plugin is already installed.
 * https://github.com/itchyny/lightline.vim
 
 Policy
@@ -16,7 +16,7 @@ Copyright of `lightline`.:
 * https://github.com/itchyny/lightline.vim
 * Copyright: Copyright (c) 2013-2020 itchyny
 
-Thank you for the great plugin! 
+Thank you for the great plugin!
 """
 
 import vim
@@ -32,6 +32,7 @@ class LightlineUser:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
+
     def __init__(self):
         if getattr(self, "_initialized", False):
             return
@@ -43,7 +44,7 @@ class LightlineUser:
         if callable(func):
             vimfunc_name = PytoyVimFunctions.register(func)
             vim.command(f"echo exists('{vimfunc_name}')")
-            vim.command(f"echo exists('g:lightline')")
+            vim.command("echo exists('g:lightline')")
         else:
             vimfunc_name = func
         return vimfunc_name
@@ -167,11 +168,13 @@ def register(
 ):
     return lightline_user.register(func, mode, direction, level, index, name)
 
+
 def deregister(
     key: str | Callable,
     strict_error: bool = False,
 ):
     return lightline_user.deregister(key, strict_error)
+
 
 def is_registered(key: str | Callable):
     return lightline_user.is_registered(key)

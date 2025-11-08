@@ -1,17 +1,18 @@
-from pytoy.lib_tools.terminal_backend.executor import TerminalExecutorManager, TerminalExecutor
+from pytoy.lib_tools.terminal_backend.executor import (
+    TerminalExecutorManager,
+    TerminalExecutor,
+)
 from pytoy.tools import terminal_applications  # noqa
-from pytoy.tools.terminal_applications import get_default_app_name 
+from pytoy.tools.terminal_applications import get_default_app_name
 from pytoy.infra.command import Command, OptsArgument
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 
 from pytoy.infra.sub_commands import (
     MainCommandSpec,
     SubCommandSpec,
-    ArgumentSpec,
     OptionSpec,
     SubCommandsHandler,
 )
-
 
 
 @Command.register(name="Console", range=True)
@@ -25,7 +26,7 @@ class TerminalContoller:
             SubCommandSpec("terminate"),
         ]
 
-        app_candidates =  self.terminal_manager.app_manager.app_names
+        app_candidates = self.terminal_manager.app_manager.app_names
 
         main_options = [
             OptionSpec("app", expects_value=True, completion=app_candidates),
@@ -38,7 +39,6 @@ class TerminalContoller:
         self.handler = SubCommandsHandler(command_spec)
 
     def __call__(self, opts: OptsArgument):
-
         args: str = opts.args
         parsed_arguments = self.handler.parse(args)
         sub_command = parsed_arguments.sub_command
@@ -50,7 +50,7 @@ class TerminalContoller:
                 # Todo, select the default app.
                 app_name = get_default_app_name()
             if buffer is None:
-                buffer =  "__CMD__"
+                buffer = "__CMD__"
             self._connect(str(app_name), str(buffer))
 
         if sub_command == "run":
@@ -62,7 +62,7 @@ class TerminalContoller:
             self.terminate()
         else:
             assert opts.line1 is not None and opts.line2 is not None
-            line1, line2 =  opts.line1, opts.line2
+            line1, line2 = opts.line1, opts.line2
             lines = PytoyBuffer.get_current().get_lines(line1, line2)
             content = "\n".join(lines)
             self.run(content)
@@ -91,8 +91,7 @@ class TerminalContoller:
         executor.terminate()
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
-        """This is defined by `Command`.
-        """
+        """This is defined by `Command`."""
         return self.handler.complete(arg_lead, cmd_line, cursor_pos)
 
     def _connect(
@@ -100,9 +99,7 @@ class TerminalContoller:
     ) -> TerminalExecutor:
         if not app_name:
             app_name = get_default_app_name()
-        executor = self.terminal_manager.get_executor(
-            app_name, buffer_name=buffer_name
-        )
+        executor = self.terminal_manager.get_executor(app_name, buffer_name=buffer_name)
         if not executor.alive:
             executor.start()
         return executor

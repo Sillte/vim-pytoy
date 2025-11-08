@@ -1,6 +1,6 @@
-"""2025/6/11: Currently, Quickfix does not work correctly `neovim` + `vscode`, so  
-it takes workaround. 
-Due to specification, In case of VSCode, only quickfix-like code is used.  
+"""2025/6/11: Currently, Quickfix does not work correctly `neovim` + `vscode`, so
+it takes workaround.
+Due to specification, In case of VSCode, only quickfix-like code is used.
 """
 
 from typing import Any

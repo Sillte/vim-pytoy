@@ -1,12 +1,15 @@
-import time 
+import time
 from pathlib import Path
 
-def wait_until_true(condition_func, timeout: float=3.0, n_trials: int=3, initial_wait=None) -> bool:
-    """Wait the `condition_func` returns true.  
-    If `timeout` passes and this func returns False. 
+
+def wait_until_true(
+    condition_func, timeout: float = 3.0, n_trials: int = 3, initial_wait=None
+) -> bool:
+    """Wait the `condition_func` returns true.
+    If `timeout` passes and this func returns False.
     """
 
-    interval = timeout / n_trials  
+    interval = timeout / n_trials
     if initial_wait is None:
         initial_wait = interval // 10
     time.sleep(initial_wait)
@@ -19,6 +22,7 @@ def wait_until_true(condition_func, timeout: float=3.0, n_trials: int=3, initial
 
 def is_remote_vscode() -> bool:
     from pytoy.ui.vscode.api import Api
+
     api = Api()
     code = """
 (async () => {
@@ -30,9 +34,11 @@ def is_remote_vscode() -> bool:
 """
     return api.eval_with_return(code)
 
+
 def open_file(path: str | Path):
     path = Path(path)
     from pytoy.ui.vscode.api import Api
+
     if is_remote_vscode():
         code = """
     (async (path) => {
@@ -62,4 +68,5 @@ def open_file(path: str | Path):
         Api().eval_with_return(code, args={"args": {"path": path.as_posix()}})
     else:
         import vim
+
         vim.command(f"Edit {path.as_posix()}")

@@ -4,20 +4,20 @@ import os
 # `import psutil` may take time.
 
 
-
-
 def find_children(parent_pid: int) -> list[int]:
-    """Return the list of children process.
-    """
+    """Return the list of children process."""
     import psutil
+
     try:
         parent = psutil.Process(parent_pid)
         return [elem.pid for elem in parent.children(recursive=True)]
     except psutil.NoSuchProcess:
         return []
 
+
 def force_kill(pid: int, timeout: float = 1.0):
     import psutil
+
     try:
         proc = psutil.Process(pid)
 
@@ -47,7 +47,7 @@ def force_kill(pid: int, timeout: float = 1.0):
     except psutil.NoSuchProcess:
         pass
     except psutil.AccessDenied:
-        print(f"pid cannot be handled.")
+        print("pid cannot be handled.")
     except Exception as e:
         print(f"Unexpected error: {e}")
 
@@ -55,10 +55,10 @@ def force_kill(pid: int, timeout: float = 1.0):
 def send_ctrl_c(pid: int):
     if sys.platform == "win32":
         from pathlib import Path
+
         _this_folder = Path(__file__).absolute().parent
         path = _this_folder / "ctrl_c_isolated.py"
-        ret = subprocess.run(["python", str(path), str(pid)]) 
+        ret = subprocess.run(["python", str(path), str(pid)])
         return ret.returncode == 0
     else:
         os.kill(pid, signal.SIGINT)
-

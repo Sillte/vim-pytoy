@@ -1,5 +1,5 @@
-"""Terminal, which is used by python.
-"""
+"""Terminal, which is used by python."""
+
 from pathlib import Path
 from typing import Sequence
 import winpty
@@ -40,7 +40,6 @@ class PseudoTerminalProviderWin(PseudoTerminalProviderProtocol):
         cwd: str | Path | None = None,
         env: dict[str, str] | None = None,
     ) -> PseudoTerminalProtocol:
-
         if cwd is None:
             cwd = str(get_current_directory())
         pty = winpty.PtyProcess.spawn(argv, dimensions=dimensions, cwd=cwd, env=env)

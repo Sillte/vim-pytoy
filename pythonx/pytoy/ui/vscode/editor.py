@@ -17,7 +17,9 @@ class Editor(BaseModel):
     @staticmethod
     def get_editors() -> list["Editor"]:
         api = Api()
-        data_list = api.eval_with_return("vscode.window.visibleTextEditors", with_await=False)
+        data_list = api.eval_with_return(
+            "vscode.window.visibleTextEditors", with_await=False
+        )
         return [Editor(**data) for data in data_list]
 
     @property
@@ -93,7 +95,6 @@ class Editor(BaseModel):
         # [NOTE]: return of `True` or `False` must be considered.
         return api.eval_with_return(jscode, with_await=True, args=args)
 
-    
     def focus(self):
         jscode = """
         (async (uri_dict, viewColumn) => {
@@ -118,18 +119,17 @@ class Editor(BaseModel):
         args = {"args": {"uri": dict(self.uri), "viewColumn": self.viewColumn}}
         return api.eval_with_return(jscode, with_await=True, args=args)
 
-
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Editor):
             return NotImplemented
-        # [NOTE]: We have to be careful since viewColumn corresponds to the one 
+        # [NOTE]: We have to be careful since viewColumn corresponds to the one
         # when this class is created.
-        return (self.document == other.document) and (self.viewColumn == other.viewColumn)
-    
+        return (self.document == other.document) and (
+            self.viewColumn == other.viewColumn
+        )
 
-    def unique(self, within_tab: bool=False):
-        """Make it an unique editor. 
-        """
+    def unique(self, within_tab: bool = False):
+        """Make it an unique editor."""
         jscode = """
         (async (uri_dict, viewColumn, withinTab) => {
             function findEditorByUriAndColumn(uri, viewColumn) {
@@ -170,7 +170,13 @@ class Editor(BaseModel):
 
         })(args.uri, args.viewColumn, args.withinTab)
         """
-        args = {"args": {"uri": dict(self.uri), "viewColumn": self.viewColumn, "withinTab": within_tab}}
+        args = {
+            "args": {
+                "uri": dict(self.uri),
+                "viewColumn": self.viewColumn,
+                "withinTab": within_tab,
+            }
+        }
         api = Api()
 
         return api.eval_with_return(jscode, with_await=True, args=args)

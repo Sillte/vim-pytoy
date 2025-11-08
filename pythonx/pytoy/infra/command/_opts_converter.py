@@ -1,19 +1,19 @@
-""" The role of `_OptsConverter` is the 2 below two. 
+"""The role of `_OptsConverter` is the 2 below two.
 1. convert the return of `opts` (Lua-like return of the command in neovim)
-so that the given `callable` can accept them as the argument.   
+so that the given `callable` can accept them as the argument.
 
-2. Infer the options of `VimFunction` (such as nargs/count/range) or verify the values of them. 
-   When there is no specification regarding the options, this converter infers the appropriate one.   
-   When there is specified in the `Command`, this converter verifies the compatibility of python functions 
+2. Infer the options of `VimFunction` (such as nargs/count/range) or verify the values of them.
+   When there is no specification regarding the options, this converter infers the appropriate one.
+   When there is specified in the `Command`, this converter verifies the compatibility of python functions
    and the option of commands.
    If invalid, it raises Exception.
 
-To resolve the correspondence of `signature` of python functions and command options. 
+To resolve the correspondence of `signature` of python functions and command options.
 `_ConverterProvider` is defined this function. If any `_ConverterProvider` can state
-that it is able to map the signature of functions and `opts`. 
+that it is able to map the signature of functions and `opts`.
 
-Note that the Role 1 is carried out at the execution time of the function,  
-whle the Role 2 is is carried out at the definition time of the Command. 
+Note that the Role 1 is carried out at the execution time of the function,
+whle the Role 2 is is carried out at the definition time of the Command.
 """
 
 import inspect
@@ -21,6 +21,7 @@ from inspect import _empty as empty
 from inspect import Signature
 from typing import Type, Callable
 from pytoy.infra.command.range_count_option import RangeCountOption
+
 
 def _signature(target):
     if isinstance(target, staticmethod):
@@ -55,7 +56,9 @@ class _OptsConverter:
     def nargs(self) -> str | int:
         return self._nargs
 
-    def _decide_converter(self, target: Callable | classmethod | staticmethod, nargs, rc_opt, providers):
+    def _decide_converter(
+        self, target: Callable | classmethod | staticmethod, nargs, rc_opt, providers
+    ):
         """
         * Decide how to convert `opts` to the parameters of python.
             - Selection of `nargs` are mandatory.
@@ -181,17 +184,21 @@ class OneStringArgumentConverter(_ConverterProvider):
         else:
             return tuple(), {}
 
+
 from dataclasses import dataclass
+
+
 @dataclass
 class OptsArgument:
-    """This is a naive wrapper of `dict` as `opts`. 
-    """
+    """This is a naive wrapper of `dict` as `opts`."""
+
     args: str
-    fargs: list  
+    fargs: list
     count: int | None = None
     line1: int | None = None
     line2: int | None = None
     range: tuple[int, int] | int | None = None
+
 
 @_OptsConverter.register
 class OpsDataclassArgumentConverter(_ConverterProvider):
@@ -214,7 +221,6 @@ class OpsDataclassArgumentConverter(_ConverterProvider):
     def __call__(self, opts: dict) -> tuple[tuple, dict]:
         opts_argument = OptsArgument(**opts)
         return (opts_argument,), {}
-
 
 
 if __name__ == "__main__":

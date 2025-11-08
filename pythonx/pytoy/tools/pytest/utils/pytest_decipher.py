@@ -43,7 +43,7 @@ class PytestDecipher:
         """Separate `each` sections."""
         section_to_lines = {key: [] for key in self._SEPARATORS}
         lines = text.split("\n")
-        lines = [line.strip("\r") for line in lines] # maybe...
+        lines = [line.strip("\r") for line in lines]  # maybe...
         current = None
         for line in lines:
             for key, pattern in self._SEPARATORS.items():
@@ -90,7 +90,6 @@ class PytestDecipher:
             r'^E\s*File\s*"(?P<filename>.*)",\s*line\s*(?P<lnum>\d+)\s*$'
         )
 
-
         def _to_record(summary, details: list) -> dict:
             row = summary.groupdict()
             row["lnum"] = int(row["lnum"])
@@ -99,7 +98,7 @@ class PytestDecipher:
             if "text" not in row:
                 row["text"] = "No Text"
             return row
-        
+
         details = []
         records = []
         summary = None
@@ -113,7 +112,7 @@ class PytestDecipher:
                     details = []
                     break
             else:
-                if m:= detail_specifier.match(line):
+                if m := detail_specifier.match(line):
                     details.append(m)
         if summary:
             records.append(_to_record(summary, details))
@@ -124,8 +123,8 @@ class PytestDecipher:
 
 if __name__ == "__main__":
     # makeshift test.
-    #import subprocess
-    #from subprocess import PIPE
+    # import subprocess
+    # from subprocess import PIPE
 
     # proc = subprocess.run("pytest", stdout=PIPE, shell=True, text=True)
     # instance = PytestDecipher(proc.stdout)

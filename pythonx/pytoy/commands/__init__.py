@@ -1,5 +1,5 @@
-"""In this submodule, `commands` 
-"""
+"""In this submodule, `commands`"""
+
 # Registration of commands
 from pytoy.commands.pytools_commands import PyTestCommand, MypyCommand  # NOQA
 from pytoy.commands.devtools_commands import VimReboot  # NOQA
@@ -12,5 +12,3 @@ from pytoy.commands.vscode_mock import *
 
 from pytoy.commands.console_command import TerminalContoller  # NOQA
 from pytoy.commands.unique_command import UniqueCommand  # NOQA
-
-

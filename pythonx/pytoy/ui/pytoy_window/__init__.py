@@ -36,7 +36,6 @@ class PytoyWindow(PytoyWindowProtocol):
     def focus(self) -> bool:
         return self.impl.focus()
 
-    
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PytoyWindow):
             return NotImplemented
@@ -57,7 +56,6 @@ class PytoyWindow(PytoyWindowProtocol):
     def get_windows() -> list["PytoyWindow"]:
         impls = PytoyWindowProvider().get_windows()
         return [PytoyWindow(elem) for elem in impls]
-
 
 
 class PytoyWindowProvider(PytoyWindowProviderProtocol):
@@ -84,5 +82,10 @@ class PytoyWindowProvider(PytoyWindowProviderProtocol):
     def get_windows(self) -> list[PytoyWindowProtocol]:
         return self._impl.get_windows()
 
-    def create_window(self, bufname: str, mode: str = "vertical", base_window: PytoyWindowProtocol | None = None) -> PytoyWindowProtocol:
+    def create_window(
+        self,
+        bufname: str,
+        mode: str = "vertical",
+        base_window: PytoyWindowProtocol | None = None,
+    ) -> PytoyWindowProtocol:
         return self.impl.create_window(bufname, mode, base_window)

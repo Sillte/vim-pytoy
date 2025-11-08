@@ -22,10 +22,10 @@ class PytoyVimFunctions:
 
     @classmethod
     def to_vimfuncname(cls, func, *, prefix=None, name: str | None = None) -> str:
-        """This function returns the same `vimfuncname`, 
+        """This function returns the same `vimfuncname`,
         when we call `register`.
-        Sometimes, we have to know the name for deregister in prior to register.  
-        In these cases, we use them. 
+        Sometimes, we have to know the name for deregister in prior to register.
+        In these cases, we use them.
         """
         # You should consider this with auto-deregister mechanism.
         # if name in cls.FUNCTION_MAPS:
@@ -62,7 +62,7 @@ class PytoyVimFunctions:
         # Notice that `python3  << EOF` starts without `spaces`.
         sig = inspect.signature(func)
         if len(sig.parameters) == 0:
-            procedures = f"python3 {__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}']()"  #NOQA
+            procedures = f"python3 {__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}']()"  # NOQA
         else:
             procedures = f"""
 python3 << EOF
@@ -83,7 +83,10 @@ EOF
 
     @classmethod
     def is_registered(cls, vim_funcname: str):
-        return bool(vim_funcname in cls.FUNCTION_MAPS or int(vim.eval(f"exists('{vim_funcname}')")))
+        return bool(
+            vim_funcname in cls.FUNCTION_MAPS
+            or int(vim.eval(f"exists('{vim_funcname}')"))
+        )
 
     @classmethod
     def deregister(cls, vim_funcname: str):
