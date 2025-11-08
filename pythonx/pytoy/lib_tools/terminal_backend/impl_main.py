@@ -2,12 +2,13 @@
 """
 import sys
 import time 
+from pathlib import Path
 from queue import Queue, Empty
 from threading import Thread, Lock
 
 from .protocol import TerminalBackendProtocol, ApplicationProtocol, LineBufferProtocol, PseudoTerminalProtocol, PseudoTerminalProviderProtocol
 from .line_buffers.line_buffer_naive import LineBufferNaive
-from .utils import find_children  
+from .utils import find_children
 
 
 class TerminalBackendMain(TerminalBackendProtocol):
@@ -30,12 +31,14 @@ class TerminalBackendMain(TerminalBackendProtocol):
 
     def start(
         self,
+        cwd: str | Path | None = None, 
+        env: dict[str, str] | None = None
     ) -> None:
         if self.alive:
             print("Already `started`.")
             return
         with self._lock:
-            self._proc = self._pseudo_provider.spawn(self._app.command, dimensions=(self._line_buffer.lines, self._line_buffer.columns))
+            self._proc = self._pseudo_provider.spawn(self._app.command, dimensions=(self._line_buffer.lines, self._line_buffer.columns), cwd=cwd, env=env)
             _focus_assure()
 
             self._stdout_thread = Thread(target=self._stdout_loop, daemon=True)

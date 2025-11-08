@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Sequence
 import winpty
 
+from pytoy.lib_tools.utils import get_current_directory
 from .protocol import (
     PseudoTerminalProtocol,
     PseudoTerminalProviderProtocol,
@@ -39,7 +40,10 @@ class PseudoTerminalProviderWin(PseudoTerminalProviderProtocol):
         cwd: str | Path | None = None,
         env: dict[str, str] | None = None,
     ) -> PseudoTerminalProtocol:
-        pty = winpty.PtyProcess.spawn(argv, dimensions=dimensions)
+
+        if cwd is None:
+            cwd = str(get_current_directory())
+        pty = winpty.PtyProcess.spawn(argv, dimensions=dimensions, cwd=cwd, env=env)
         return PseudoTerminalWin(pty)
 
 

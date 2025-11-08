@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Sequence
 import pexpect
 
+from pytoy.lib_tools.utils import get_current_directory
+
 from .protocol import (
     PseudoTerminalProtocol,
     PseudoTerminalProviderProtocol,
@@ -52,6 +54,10 @@ class PseudoTerminalProviderUnix(PseudoTerminalProviderProtocol):
             raise RuntimeError("Implementation Error") 
         assert isinstance(command, str)
         assert isinstance(argv, list)
+
+        if cwd is None:
+            cwd = get_current_directory()
+
         pty = pexpect.spawn(command, argv, cwd=cwd, env=env, encoding="utf-8", dimensions=dimensions)
         return PseudoTerminalUnix(pty)
 

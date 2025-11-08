@@ -83,7 +83,7 @@ class TerminalExecutorManagerClass:
         self, app_name: str, buffer_name: str | None = None, **app_init_kwargs
     ) -> TerminalExecutor:
         """Get the executor and change the current_exector.
-        When the specified executor is not existent, 
+        When the specified executor is not existent, the new exector is created.
         """
 
         if buffer_name is None:
