@@ -29,8 +29,7 @@ class CommandManager:
         *,
         exist_ok: bool = False,
     ):
-        """Register the commands
-        """
+        """Register the commands"""
         rc_opt = RangeCountOption(range, count)
 
         def _inner(target):
@@ -85,12 +84,10 @@ class CommandManager:
 
         return _inner
 
-
     @classmethod
     def deregister(cls, name: str, no_exist_ok: bool = True):
-        """De-register the `name` commmand.
-        """
-        if not name in cls.COMMAND_MAPS:
+        """De-register the `name` commmand."""
+        if name not in cls.COMMAND_MAPS:
             if no_exist_ok:
                 return
             else:
@@ -295,7 +292,7 @@ EOF""".strip()
                 cls.deregister(name=name, no_exist_ok=False)
             else:
                 raise ValueError(f"The same `command` is already registered. `{name=}`")
-            
+
 
 Command: TypeAlias = CommandManager
 

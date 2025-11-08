@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import List, Callable
 from subprocess import PIPE
 from pathlib import Path
-from urllib import parse 
+from urllib import parse
 
 
 class GitUser:
@@ -56,6 +56,7 @@ class GitUser:
         default.update(kwargs)
         return subprocess.run(cmd, **default)
 
+
 @dataclass
 class GitInfo:
     rootpath: str
@@ -72,7 +73,11 @@ def get_git_info(local_filepath) -> GitInfo:
     cwd = str(local_filepath.parent)
 
     def _run_git(args):
-        return subprocess.check_output(["git"] + args, cwd=cwd, shell=True).decode().strip()
+        return (
+            subprocess.check_output(["git"] + args, cwd=cwd, shell=True)
+            .decode()
+            .strip()
+        )
 
     result = dict()
     result["rootpath"] = _run_git(["rev-parse", "--show-toplevel"])
@@ -84,6 +89,7 @@ def get_git_info(local_filepath) -> GitInfo:
     result["commit"] = _run_git(["rev-parse", "HEAD"])
     result["remote"] = _run_git(["remote", "get-url", "origin"])
     return GitInfo(**result)
+
 
 @dataclass
 class LinkOption:
@@ -115,7 +121,9 @@ def _to_azure_address(info: GitInfo, option: LinkOption):
     branch = info.branch
     relpath = info.relpath.strip("/")
     if remote.find("https:") != -1:
-        m = re.match(r"https://([^/]*)@dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)", remote)
+        m = re.match(
+            r"https://([^/]*)@dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)", remote
+        )
         if not m:
             raise ValueError(f"Invalid Azure Address {remote=}")
         _, org, project, repo = m.groups()
@@ -152,7 +160,12 @@ def _to_azure_address(info: GitInfo, option: LinkOption):
 REMOTE_TO_MAKER["github.com"] = _to_github_address
 REMOTE_TO_MAKER["dev.azure.com"] = _to_azure_address
 
-def get_remote_link(local_filepath: str | Path, line_start: int | None = None, line_end: int | None = None):
+
+def get_remote_link(
+    local_filepath: str | Path,
+    line_start: int | None = None,
+    line_end: int | None = None,
+):
     info = get_git_info(local_filepath)
     options = dict()
     if line_start is not None:

@@ -29,7 +29,6 @@ class NVimBufferJob(BufferJobProtocol):
         self.env = env
         self.cwd = cwd
 
-
     @property
     def stdout(self) -> PytoyBuffer | None:
         return self._stdout
@@ -41,7 +40,6 @@ class NVimBufferJob(BufferJobProtocol):
     def job_start(
         self, command: str, on_start_callable: Callable, on_closed_callable: Callable
     ) -> None:
-
         def _make_buffer_handler(buffer: PytoyBuffer, suffix: str) -> NvimBufferHandler:
             queue = Queue()
             putter = NVimJobStartQueuePutter(f"{self.name}_{suffix}", queue)
@@ -65,13 +63,11 @@ class NVimBufferJob(BufferJobProtocol):
         else:
             stderr_handler = None
 
-
         if self.env is not None:
             options["env"] = self.env
         if self.cwd is not None:
             options["cwd"] = Path(self.cwd).as_posix()
 
-        
         def wrapped_on_closed(*args):
             start = time.time()
             while time.time() - start < 0.5:
@@ -88,9 +84,11 @@ class NVimBufferJob(BufferJobProtocol):
             vim.command(f"unlet g:{self.jobname}")
             # It is required to de-register this function in the different context.
             this_funcname = PytoyVimFunctions.to_vimfuncname(wrapped_on_closed)
-            TimerTask.execute_oneshot(lambda: PytoyVimFunctions.deregister(this_funcname))
+            TimerTask.execute_oneshot(
+                lambda: PytoyVimFunctions.deregister(this_funcname)
+            )
 
-        # [NOTE]: `deregister` is performed inside `wrapped_on_closed`. 
+        # [NOTE]: `deregister` is performed inside `wrapped_on_closed`.
         vimfunc_name = PytoyVimFunctions.register(wrapped_on_closed)
         options["on_exit"] = vimfunc_name
 
@@ -145,6 +143,7 @@ class NVimJobStartQueuePutter:
     def register(self) -> str:
         """Register the putting job.``"""
         buffer = ""
+
         def _on_stdout(job_id, data, event):
             nonlocal buffer
             if data:
@@ -169,7 +168,6 @@ class NVimJobStartQueuePutter:
         if not self.vim_function:
             raise ValueError("`NVimJobStartQueuePutter is not yet registered.`")
         PytoyVimFunctions.deregister(self.vim_function)
-
 
 
 class NvimBufferHandler:

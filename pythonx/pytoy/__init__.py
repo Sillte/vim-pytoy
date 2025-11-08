@@ -22,7 +22,7 @@ def run(path=None):
         path = to_filename(path)
     executor = PythonExecutor()
     if executor.is_running:
-        raise RuntimeError(f"Currently, `PythonExecutor` is running.")
+        raise RuntimeError("Currently, `PythonExecutor` is running.")
 
     from pytoy.ui import make_duo_buffers, PytoyBuffer
 

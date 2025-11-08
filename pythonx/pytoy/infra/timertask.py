@@ -1,27 +1,29 @@
 import vim
 
 import inspect
+
+
 class TimerTask:
-    """Using `timer_start` function, it enables asyncronous process 
-    executed in VIM main loop. 
+    """Using `timer_start` function, it enables asyncronous process
+    executed in VIM main loop.
     Especially, it is expected to use updating UI of VIM.
 
     """
-    FUNCTION_MAP = dict() # name -> function
-    TIMER_MAP = dict()  # name -> timer-id 
-    VIMFUNCNAME_MAP = dict() # name -> vim_funcname
+
+    FUNCTION_MAP = dict()  # name -> function
+    TIMER_MAP = dict()  # name -> timer-id
+    VIMFUNCNAME_MAP = dict()  # name -> vim_funcname
 
     counter = 0
 
     @classmethod
-    def register(cls, func, interval:int=100, name: str | None = None) -> str:
-        """Register the function without the argument. 
-        """
+    def register(cls, func, interval: int = 100, name: str | None = None) -> str:
+        """Register the function without the argument."""
         interval = int(interval)
         sig = inspect.signature(func)
         if len(sig.parameters) != 0:
             raise ValueError("Callback must be without parameters.")
-        
+
         if name is None:
             name = f"AUTONAME{cls.counter}"
 
@@ -30,16 +32,20 @@ class TimerTask:
             prefix = f"{__name__}."
             import_prefix = f"from {__name__} import TimerTask; "
         else:
-            prefix = "" 
-            import_prefix = f" "
-        
-        procedures = f"python3 {import_prefix} {prefix}TimerTask.FUNCTION_MAP['{name}']()"
+            prefix = ""
+            import_prefix = " "
+
+        procedures = (
+            f"python3 {import_prefix} {prefix}TimerTask.FUNCTION_MAP['{name}']()"
+        )
 
         vim.command(f"""function! {vim_funcname}(timer) 
             {procedures}
             endfunction
             """)
-        timer_id = int(vim.eval(f"timer_start({interval}, '{vim_funcname}', {{'repeat': -1}})"))
+        timer_id = int(
+            vim.eval(f"timer_start({interval}, '{vim_funcname}', {{'repeat': -1}})")
+        )
 
         cls.FUNCTION_MAP[name] = func
         cls.VIMFUNCNAME_MAP[name] = vim_funcname
@@ -66,14 +72,13 @@ class TimerTask:
         return name in cls.TIMER_MAP
 
     @classmethod
-    def execute_oneshot(cls, func, interval:int=100, name: str | None= None):
-        """Execute the function only one time
-        """
+    def execute_oneshot(cls, func, interval: int = 100, name: str | None = None):
+        """Execute the function only one time"""
         interval = int(interval)
         sig = inspect.signature(func)
         if len(sig.parameters) != 0:
             raise ValueError("Callback must be without parameters.")
-        
+
         if name is None:
             name = f"ONESHOT_AUTONAME{cls.counter}"
         cls.counter += 1
@@ -97,11 +102,15 @@ EOF
 
         cls.FUNCTION_MAP[name] = func
         cls.VIMFUNCNAME_MAP[name] = vim_funcname
-        timer_id = int(vim.eval(f"timer_start({interval}, '{vim_funcname}', {{'repeat': 1}})"))
+        timer_id = int(
+            vim.eval(f"timer_start({interval}, '{vim_funcname}', {{'repeat': 1}})")
+        )
         return timer_id
 
 
-if  __name__ == "__main__":
+if __name__ == "__main__":
+
     def hello():
         print("H")
+
     TimerTask.register(hello)

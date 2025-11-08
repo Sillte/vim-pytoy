@@ -1,4 +1,3 @@
-
 class CommandWrapper:
     """Callable. modify the command you execute.
     Sometimes, we would like to change the environment

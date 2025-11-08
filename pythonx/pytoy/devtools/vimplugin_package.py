@@ -19,13 +19,14 @@ class VimPluginPackage:
         """Initialize the package and detect its root directory.
 
         Args:
-            start_folder (str | Path | None): 
+            start_folder (str | Path | None):
                 The starting directory or file path to locate the Vim plugin root.
                 If not specified, the current working directory is used.
         """
         if start_folder is None:
             import vim
             from pytoy.ui import to_filename
+
             try:
                 current = to_filename(vim.eval("expand('%:p:h')"))
                 start_folder = Path(current)
@@ -45,21 +46,22 @@ class VimPluginPackage:
         """Save the current session and restart Vim/GVim/nvim with this plugin loaded.
 
         Args:
-            with_vimrc (bool): 
+            with_vimrc (bool):
                 If True, the plugin's root folder is prepended to the 'runtimepath'
                 before loading the user's vimrc with `--cmd` options.
                 If False, starts Vim with '-u NONE'.
-            kill_myprocess (bool): 
+            kill_myprocess (bool):
                 If True, terminates the current Vim process after starting the new one.
 
         Note:
             This is useful when reinitializing plugin state during development,
             especially when changes affect runtime behavior or require a clean environment.
         """
-        _VimRebooter(self.root_folder)(with_vimrc=with_vimrc, kill_myprocess=kill_myprocess)
+        _VimRebooter(self.root_folder)(
+            with_vimrc=with_vimrc, kill_myprocess=kill_myprocess
+        )
 
-
-    def _find_plugin_root(self, start_folder: Path | None =None):
+    def _find_plugin_root(self, start_folder: Path | None = None):
         """Search upward from the given folder to locate the plugin root.
 
         Args:
@@ -107,7 +109,7 @@ class VimPluginPackage:
         Returns:
             bool: True if the iterable has at least one item, otherwise False.
 
-        Note: If you invoke this function, iteration is consumed (corrupted).  
+        Note: If you invoke this function, iteration is consumed (corrupted).
         """
         it = iter(iteration)
         try:
@@ -124,14 +126,14 @@ class _VimRebooter:
     `g:pytoy_reboot = 1` is added for the spawned (n/g) vim.
 
     [NOTE]: (with_vimrc=True)
-        Sometimes, plugin loaders `prepend` their configuration path 
-        to the first `rtp` / `runtimepath`.  
-        If the plugin loader uses this kind of mechanism, 
-        the idea the path is prepended as the initialization of `(n/g)vim` fails.   
+        Sometimes, plugin loaders `prepend` their configuration path
+        to the first `rtp` / `runtimepath`.
+        If the plugin loader uses this kind of mechanism,
+        the idea the path is prepended as the initialization of `(n/g)vim` fails.
         To curcumvent this situation please use the defined variable
-        `g:pytoy_reboot=1` to notify the plugin manager, and it does not 
-        override the prepended path.  
-        
+        `g:pytoy_reboot=1` to notify the plugin manager, and it does not
+        override the prepended path.
+
     * `debug`: Please see `scriptnames` / `echo &runtimepath`.
     """
 
@@ -142,7 +144,8 @@ class _VimRebooter:
         """
         When `with_vimrc` = True, please refer to the docstring of the class.
         """
-        import vim 
+        import vim
+
         cache_folder = Path.home() / ".cache/vim"
 
         if not cache_folder.exists():
@@ -161,17 +164,19 @@ class _VimRebooter:
                 app = "vim"
         commands = [app, "--cmd", f"let g:pytoy_reboot='{self.root_folder.as_posix()}'"]
         if with_vimrc:
-            commands += ["--cmd" ,f"let &runtimepath='{self.root_folder.as_posix()},' . &runtimepath"]
+            commands += [
+                "--cmd",
+                f"let &runtimepath='{self.root_folder.as_posix()},' . &runtimepath",
+            ]
         else:
             commands += ["-u", "NONE"]
         commands += ["-S", f"{session_file.as_posix()}"]
-
 
         if not is_gui:
             if sys.platform.startswith("win"):
                 consoles = ["start", "cmd", "/k"]
             elif sys.platform.startswith("linux"):
-                consoles = ["x-terminal-emulator",  "-e"]
+                consoles = ["x-terminal-emulator", "-e"]
             else:
                 raise RuntimeError("Unrecognized platform")
             commands = consoles + commands
@@ -200,6 +205,7 @@ def _start_vim_detached(cmd):
             preexec_fn=os.setpgrp,
             shell=False,
         )
+
 
 if __name__ == "__main__":
     pass

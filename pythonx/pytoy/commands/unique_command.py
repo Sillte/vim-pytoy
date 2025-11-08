@@ -11,6 +11,7 @@ BUFFER_ARG = "buffer"
 EDITOR_ARG = "editor"
 WINDOW_ARG = "window"
 
+
 @Command.register(name="Unique")
 class UniqueCommand:
     def __init__(self):
@@ -25,9 +26,13 @@ class UniqueCommand:
     def __call__(self, opts: OptsArgument):
         args: str = opts.args
         parsed_arguments = self.handler.parse(args)
-        arg = parsed_arguments.main_arguments[0] if parsed_arguments.main_arguments else None
+        arg = (
+            parsed_arguments.main_arguments[0]
+            if parsed_arguments.main_arguments
+            else None
+        )
         within_tab = False
-        if arg in {BUFFER_ARG}: 
+        if arg in {BUFFER_ARG}:
             within_tab = False
         else:
             within_tab = True

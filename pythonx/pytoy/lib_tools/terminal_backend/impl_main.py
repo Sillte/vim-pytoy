@@ -1,18 +1,28 @@
-"""Terminal, which is used by python.
-"""
+"""Terminal, which is used by python."""
+
 import sys
-import time 
+import time
 from pathlib import Path
 from queue import Queue, Empty
 from threading import Thread, Lock
 
-from .protocol import TerminalBackendProtocol, ApplicationProtocol, LineBufferProtocol, PseudoTerminalProtocol, PseudoTerminalProviderProtocol
+from .protocol import (
+    TerminalBackendProtocol,
+    ApplicationProtocol,
+    LineBufferProtocol,
+    PseudoTerminalProviderProtocol,
+)
 from .line_buffers.line_buffer_naive import LineBufferNaive
 from .utils import find_children
 
 
 class TerminalBackendMain(TerminalBackendProtocol):
-    def __init__(self, app: ApplicationProtocol, pseudo_provider: PseudoTerminalProviderProtocol, line_buffer: LineBufferProtocol | None = None):
+    def __init__(
+        self,
+        app: ApplicationProtocol,
+        pseudo_provider: PseudoTerminalProviderProtocol,
+        line_buffer: LineBufferProtocol | None = None,
+    ):
         if line_buffer is None:
             line_buffer = LineBufferNaive()
 
@@ -30,15 +40,18 @@ class TerminalBackendMain(TerminalBackendProtocol):
         self._running = False
 
     def start(
-        self,
-        cwd: str | Path | None = None, 
-        env: dict[str, str] | None = None
+        self, cwd: str | Path | None = None, env: dict[str, str] | None = None
     ) -> None:
         if self.alive:
             print("Already `started`.")
             return
         with self._lock:
-            self._proc = self._pseudo_provider.spawn(self._app.command, dimensions=(self._line_buffer.lines, self._line_buffer.columns), cwd=cwd, env=env)
+            self._proc = self._pseudo_provider.spawn(
+                self._app.command,
+                dimensions=(self._line_buffer.lines, self._line_buffer.columns),
+                cwd=cwd,
+                env=env,
+            )
             _focus_assure()
 
             self._stdout_thread = Thread(target=self._stdout_loop, daemon=True)
@@ -61,7 +74,6 @@ class TerminalBackendMain(TerminalBackendProtocol):
             return False
         children_pids = find_children(self._proc.pid)
         return self._app.is_busy(children_pids, self.last_line)
-        
 
     def send(self, input_str: str):
         if not self.alive:
@@ -79,20 +91,19 @@ class TerminalBackendMain(TerminalBackendProtocol):
     def interrupt(self) -> None:
         """Stop the child process."""
         if not self._proc:
-            return 
+            return
         if not self._proc.pid:
             return
         pid = self._proc.pid
         children_pids = find_children(self._proc.pid)
         self._app.interrupt(pid, children_pids)
 
-
     def terminate(self) -> None:
         """Kill the terminate."""
         with self._lock:
             if not self._proc:
                 return
-            #self._proc.terminate(force=True)
+            # self._proc.terminate(force=True)
             self._proc.terminate()
 
     @property
@@ -129,7 +140,6 @@ class TerminalBackendMain(TerminalBackendProtocol):
                 else:
                     time.sleep(0.01)
 
-
     def _stdout_loop(self):
         while self.alive and self._running:
             if not self._proc:
@@ -141,7 +151,7 @@ class TerminalBackendMain(TerminalBackendProtocol):
                 self._running = False
                 chunk = None
 
-            #print("chunk", chunk)
+            # print("chunk", chunk)
             if chunk:
                 lines = self._line_buffer.feed(chunk)
             else:
@@ -164,19 +174,25 @@ class TerminalBackendImplProvider:
     def __init__(self):
         pass
 
-    def provide(self, app: str | ApplicationProtocol | None = None, line_buffer: LineBufferProtocol | None = None) -> TerminalBackendProtocol: 
+    def provide(
+        self,
+        app: str | ApplicationProtocol | None = None,
+        line_buffer: LineBufferProtocol | None = None,
+    ) -> TerminalBackendProtocol:
         from .application import ShellApplication, DEFAULT_SHELL_APPLICATION_NAME
         from .line_buffers import LineBufferNaive
+
         def make_win32() -> PseudoTerminalProviderProtocol:
             from .impl_win import PseudoTerminalProviderWin
+
             return PseudoTerminalProviderWin()
 
         def make_linux():
             from .impl_unix import PseudoTerminalProviderUnix
-            return PseudoTerminalProviderUnix()
-            
 
-        if not line_buffer: 
+            return PseudoTerminalProviderUnix()
+
+        if not line_buffer:
             line_buffer = LineBufferNaive()
         if app is None:
             app = DEFAULT_SHELL_APPLICATION_NAME
@@ -190,16 +206,20 @@ class TerminalBackendImplProvider:
         if not creator:
             raise RuntimeError(f"TerminalBackend cannot be used in {sys.platform}")
         pseudo_provider = creator()
-        return TerminalBackendMain(app, pseudo_provider=pseudo_provider, line_buffer=line_buffer)
+        return TerminalBackendMain(
+            app, pseudo_provider=pseudo_provider, line_buffer=line_buffer
+        )
 
 
 def _focus_assure():
     import vim
     import sys
+
     is_gui = vim.eval('has("gui_running")')
     if is_gui:
         if sys.platform == "win32":
             from .win_utils import focus_gvim
+
             focus_gvim()
     # In case of `gui` or `linux`, this operation is not necessary.
 

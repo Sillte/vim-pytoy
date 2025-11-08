@@ -1,5 +1,5 @@
-"""Terminal, which is used by python.
-"""
+"""Terminal, which is used by python."""
+
 from pathlib import Path
 from typing import Sequence
 import pexpect
@@ -44,21 +44,23 @@ class PseudoTerminalProviderUnix(PseudoTerminalProviderProtocol):
         cwd: str | Path | None = None,
         env: dict[str, str] | None = None,
     ) -> PseudoTerminalProtocol:
-        if isinstance(argv, Sequence) and (not isinstance(argv ,str)):
+        if isinstance(argv, Sequence) and (not isinstance(argv, str)):
             command = argv[0]
             argv = list(argv[1:])
         elif isinstance(argv, str):
             command = argv
             argv = []
         else:
-            raise RuntimeError("Implementation Error") 
+            raise RuntimeError("Implementation Error")
         assert isinstance(command, str)
         assert isinstance(argv, list)
 
         if cwd is None:
             cwd = get_current_directory()
 
-        pty = pexpect.spawn(command, argv, cwd=cwd, env=env, encoding="utf-8", dimensions=dimensions)
+        pty = pexpect.spawn(
+            command, argv, cwd=cwd, env=env, encoding="utf-8", dimensions=dimensions
+        )
         return PseudoTerminalUnix(pty)
 
 

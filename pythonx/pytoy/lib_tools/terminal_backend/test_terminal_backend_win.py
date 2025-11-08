@@ -27,9 +27,9 @@ def test_start_and_send_echo(terminal=None):
         result_lines += lines
 
     joined = "\n".join(result_lines)
-    assert (
-        "HelloTest" in joined
-    ), f"Expected 'HelloTest' in output, got:\n{joined} \n{terminal._line_buffer.chunk}"
+    assert "HelloTest" in joined, (
+        f"Expected 'HelloTest' in output, got:\n{joined} \n{terminal._line_buffer.chunk}"
+    )
     terminal.terminate()
 
 
@@ -52,9 +52,9 @@ def test_send_multiple_lines():
     terminal.terminate()
 
     output = "\n".join(result)
-    assert (
-        "Line1" in output and "Line2" in output and "Line3" in output
-    ), "Expected all lines in output"
+    assert "Line1" in output and "Line2" in output and "Line3" in output, (
+        "Expected all lines in output"
+    )
 
 
 def test_interrupt_safe_call():

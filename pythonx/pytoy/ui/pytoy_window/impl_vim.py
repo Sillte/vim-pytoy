@@ -1,4 +1,3 @@
-from typing import Self
 from pathlib import Path
 import vim
 from pytoy.ui.pytoy_buffer import PytoyBuffer
@@ -90,9 +89,8 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
         horizontally.
 
         """
-        if window:=self._get_window_by_bufname(bufname):
+        if window := self._get_window_by_bufname(bufname):
             return window
-
 
         if base_window is None:
             base_window = PytoyWindowVim(vim.current.window)
@@ -131,7 +129,9 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
             vim.command(f":call win_gotoid({storedwin})")
         return PytoyWindowVim(window)
 
-    def _get_window_by_bufname(self, bufname: str, *, only_non_file: bool = True) -> PytoyWindowVim | None:
+    def _get_window_by_bufname(
+        self, bufname: str, *, only_non_file: bool = True
+    ) -> PytoyWindowVim | None:
         """If there exists a visible window displaying a buffer named `bufname` and that buffer
         is not a file buffer, return the corresponding PytoyWindowVim.
         """
@@ -145,4 +145,3 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
                     continue
                 return PytoyWindowVim(window)
         return None
-

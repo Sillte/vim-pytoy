@@ -1,7 +1,8 @@
 import inspect
 import vim
 import json
-from typing import Callable 
+from typing import Callable
+
 
 def _signature(target):
     if isinstance(target, (staticmethod, classmethod)):
@@ -12,8 +13,8 @@ def _signature(target):
 
 
 class _CustomListManager:
-    """This class handles python complete function with custom-list settings. 
-    """
+    """This class handles python complete function with custom-list settings."""
+
     @classmethod
     def get_class_uri(cls):
         try:
@@ -28,8 +29,7 @@ class _CustomListManager:
 
     @classmethod
     def register(cls, name: str, target: Callable | staticmethod) -> str:
-        """Return `vimfunc_name` which is used for `completion`.
-        """
+        """Return `vimfunc_name` which is used for `completion`."""
         if name in cls.FUNCTION_MAP:
             cls.deregister(name)
 
@@ -43,7 +43,8 @@ class _CustomListManager:
 
         class_uri = cls.get_class_uri()
 
-        vim.command(f"""function! {vimfunc_name}(ArgLead, CmdLine, CursorPos) 
+        vim.command(
+            f"""function! {vimfunc_name}(ArgLead, CmdLine, CursorPos) 
 python3 << EOF
 import vim
 arg_lead = vim.eval("a:ArgLead")
@@ -53,13 +54,15 @@ cursor_pos = int(vim.eval("a:CursorPos"))
 EOF
 return {cls.V_CUSTOMLIST_VARIABLE}
 endfunction
-""".strip())
+""".strip()
+        )
         return vimfunc_name
 
     @classmethod
     def _invoke_customlist(cls, name, arg_lead, cmd_line, cursor_pos):
-        # Internally, this function is called. 
+        # Internally, this function is called.
         import vim
+
         target = cls.FUNCTION_MAP[name]
         result = target(arg_lead, cmd_line, cursor_pos)
         result = json.dumps(result)
@@ -73,9 +76,8 @@ endfunction
     @classmethod
     def deregister(cls, name: str) -> None:
         if name not in cls.VIMFUNC_TABLE:
-            return 
+            return
         vimfunc_name = cls.VIMFUNC_TABLE[name]
         vim.command(f"delfunction {vimfunc_name}")
         del cls.VIMFUNC_TABLE[name]
         del cls.FUNCTION_MAP[name]
-

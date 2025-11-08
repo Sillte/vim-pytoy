@@ -41,7 +41,9 @@ class Document(BaseModel):
     @classmethod
     def get_current(cls):
         api = Api()
-        doc = api.eval_with_return("vscode.window.activeTextEditor.document", with_await=False)
+        doc = api.eval_with_return(
+            "vscode.window.activeTextEditor.document", with_await=False
+        )
         return Document(**doc)
 
     @classmethod

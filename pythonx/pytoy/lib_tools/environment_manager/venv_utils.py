@@ -1,14 +1,11 @@
-"""Utility functions as for virtual environments.
+"""Utility functions as for virtual environments."""
 
-"""
-
-import os 
+import os
 import sys
 from pathlib import Path
 from typing import List, Optional
 
 import vim
-
 
 
 def search(
@@ -21,8 +18,8 @@ def search(
 
     Return:
         List of `virtualenv` folders, which resides proximities of `n_depth`.
-        * The index of `Path` is as smaller as it is closer to `root_folder`. 
-        * The index of `Path` of descendant is smaller  when `distance` equals.  
+        * The index of `Path` is as smaller as it is closer to `root_folder`.
+        * The index of `Path` of descendant is smaller  when `distance` equals.
     """
 
     def _is_virtualenv(folder):
@@ -84,19 +81,19 @@ def pick(name, root_folder: Optional[Path] = None, n_depth: int = 1) -> Path:
 
 
 class VenvManager:
-    """Handles `virtual environments` for 
-    """
+    """Handles `virtual environments` for"""
+
     __cache = None
 
     def __new__(cls):
-        if  cls.__cache is None:
+        if cls.__cache is None:
             self = object.__new__(cls)
             cls.__cache = self
             self._init()
         else:
             self = cls.__cache
         return self
-    
+
     def _init(self):
         self.name = None
         self.path = None
@@ -114,8 +111,7 @@ class VenvManager:
             return (self.name, str(self.path))
 
     def activate(self, name=None, path=None, root=None, n_depth=3):
-        """Activate `name` virtualenv with `path`.
-        """
+        """Activate `name` virtualenv with `path`."""
         if name is None:
             if path is None:
                 paths = search(root_folder=root, n_depth=n_depth)
@@ -123,7 +119,9 @@ class VenvManager:
                     path = paths[0]
                     name = path.name
                 else:
-                    raise ValueError(f"`name` is not given, and cannot estimate.({n_depth=})")
+                    raise ValueError(
+                        f"`name` is not given, and cannot estimate.({n_depth=})"
+                    )
             else:
                 name = Path(path).name
         if path:
@@ -142,13 +140,12 @@ class VenvManager:
 
         activate(path)
 
-
     def deactivate(self):
         if not self.is_activated:
-            return 
+            return
 
         vim.command(f"let $PATH='{self.prev_vimpath}'")
-        
+
         self._init()
 
         deactivate()
@@ -165,17 +162,20 @@ class VenvManager:
         else:
             activate_path = self.path / "bin" / "activate"
 
-        if external: 
+        if external:
             import subprocess
+
             subprocess.run(["start", str(activate_path)], shell=True)
         else:
-            number = vim.eval(rf'term_start(&shell)')
+            number = vim.eval(r"term_start(&shell)")
+
             def _to_slash_path(path):
                 path = Path(path)
                 result = str(path).replace("\\", "/")
                 return result
+
             path = _to_slash_path(activate_path)
-            keys = rf'{_to_slash_path(path)} \<CR>'
+            keys = rf"{_to_slash_path(path)} \<CR>"
             vim.eval(rf'term_sendkeys({number}, "{keys}")')
 
 
@@ -184,7 +184,6 @@ class VenvManager:
     Refer to `https://github.com/jmcantrell/vim-virtualenv/blob/master/autoload/pyvenv.py`. 
 """
 
-import os, sys
 
 prev_syspath = None
 
@@ -218,10 +217,13 @@ for item in list(sys.path):
 sys.path[:0] = new_sys_path
 """
 
+
 def activate(env):
     global prev_syspath
     prev_syspath = list(sys.path)
-    activate = os.path.join(env, (sys.platform == 'win32') and 'Scripts' or 'bin', 'activate_this.py')
+    activate = os.path.join(
+        env, (sys.platform == "win32") and "Scripts" or "bin", "activate_this.py"
+    )
     try:
         fo = open(activate)
         f = fo.read()
@@ -229,7 +231,7 @@ def activate(env):
     except:
         f = activate_content
 
-    code = compile(f, activate, 'exec')
+    code = compile(f, activate, "exec")
     exec(code, dict(__file__=activate))
 
 
@@ -242,9 +244,10 @@ def deactivate():
     except:
         pass
 
+
 if __name__ == "__main__":
     pass
-    #vm = VenvManager()
-    #vm.activate()
-    #vm.term_start()
-    #print(pick("black", n_depth=3))
+    # vm = VenvManager()
+    # vm.activate()
+    # vm.term_start()
+    # print(pick("black", n_depth=3))

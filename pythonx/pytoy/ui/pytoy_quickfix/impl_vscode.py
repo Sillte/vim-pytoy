@@ -32,7 +32,7 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
 
     def setlist(self, records: list[dict], win_id: int | None = None):
         if win_id is None:
-            basepath = Path(vim.eval(f"getcwd()"))
+            basepath = Path(vim.eval("getcwd()"))
         else:
             basepath = Path(vim.eval(f"getcwd({win_id})"))
         basepath = to_filename(basepath)
@@ -110,7 +110,7 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
         path = Path(record["filename"])
 
         # As of 2025/10/21, this `_edit_file` is the workaround, but I hope this is addressed in the plugin.
-        #vim.command(f"Edit {path.as_posix()}")
+        # vim.command(f"Edit {path.as_posix()}")
         self._edit_file(path)
         lnum, col = int(record.get("lnum", 1)), int(record.get("col", 1))
 
@@ -124,10 +124,8 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
 
         TimerTask.execute_oneshot(func, 300)
 
-
-    def _edit_file(self, path: Path): 
-        """This path is not the uri of vscode, but  
-        """
+    def _edit_file(self, path: Path):
+        """This path is not the uri of vscode, but"""
         from pytoy.ui.vscode.utils import open_file
-        open_file(path)
 
+        open_file(path)

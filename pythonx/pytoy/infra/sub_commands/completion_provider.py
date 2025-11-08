@@ -1,10 +1,23 @@
 try:
-    from pytoy.infra.sub_commands.specs import ArgumentSpec, OptionSpec, Completion, SubCommandSpec, MainCommandSpec, CompletionContext, ContextType
-    from pytoy.infra.sub_commands.completion_context_maker import CompletionContextMaker 
+    from pytoy.infra.sub_commands.specs import (
+        ArgumentSpec,
+        OptionSpec,
+        Completion,
+        SubCommandSpec,
+        MainCommandSpec,
+        CompletionContext,
+        ContextType,
+    )
+    from pytoy.infra.sub_commands.completion_context_maker import CompletionContextMaker
 except ImportError:
-    from specs import ArgumentSpec, OptionSpec, Completion, SubCommandSpec, MainCommandSpec, CompletionContext, ContextType
-    from pytoy.infra.sub_commands.completion_context_maker import CompletionContextMaker 
-
+    from specs import (
+        OptionSpec,
+        Completion,
+        MainCommandSpec,
+        CompletionContext,
+        ContextType,
+    )
+    from pytoy.infra.sub_commands.completion_context_maker import CompletionContextMaker
 
 
 class _OptionCandidatesProvider:
@@ -105,6 +118,7 @@ class _ArgumentCandidatesProvider:
             return valid_candidates
         return candidates
 
+
 def _remove_range(cmd_line: str, cursor_pos: int) -> tuple[str, int]:
     """Return the `cmd_line`, whose `range` is trimmed and modified `
 
@@ -128,7 +142,6 @@ class CompletionProvider:
         return self._main_command_spec
 
     def __call__(self, arg_lead: str, cmd_line: str, cursor_pos: int) -> list[str]:
-
         cmd_line, cursor_pos = _remove_range(cmd_line, cursor_pos)
 
         # Here, `cmd_line` starts the command like `Command ...`
@@ -149,5 +162,3 @@ class CompletionProvider:
             argument_provider = _ArgumentCandidatesProvider(self.main_spec, context)
             return argument_provider(arg_lead, cmd_line, cursor_pos)
         return [arg_lead]
-
-

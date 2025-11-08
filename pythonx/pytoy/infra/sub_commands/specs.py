@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing  import Callable, Type
+from typing import Callable, Type
 
 
 try:
@@ -21,19 +21,21 @@ class ArgumentSpec:
     description: str = ""
 
 
-
 class _DefaultSentinel:
     def __repr__(self):
         return "DEFAULT"
+
+
 DEFAULT = _DefaultSentinel()
+
 
 @dataclass
 class OptionSpec:
     name: str  # This becomes the key to get value.
     type: Type[OptionType] = str
     aliases: list[str] = field(default_factory=list)  # the different names.
-    short_option: str | None =  None  # short option
-    completion: Completion | None = None # used for completion
+    short_option: str | None = None  # short option
+    completion: Completion | None = None  # used for completion
     expects_value: bool = False
     description: str = ""
     default: OptionType | None | _DefaultSentinel = DEFAULT
