@@ -13,15 +13,12 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
 
     @property
     def path(self) -> Path:
-        """Return the file path, if buffer corresponds to `file`.
-        If not, it returns None.
-        """
         return Path(self.document.uri.path)
 
     @property
     def is_file(self) -> bool:
         """Return True if the buffer corresponds to a file on disk."""
-        return self.document.uri.scheme == "file"
+        return self.document.uri.scheme in {"file", "vscode-remote"}
 
 
     def init_buffer(self, content: str = "") -> None:

@@ -14,6 +14,33 @@ def mywindow_func():
     #print(window.buffer)
     #print(window.buffer.content)
     #window.focus()
+    from pytoy.lib_tools.utils import get_current_directory
+    val = Api().eval_with_return("vscode.env.remoteName")
+    print("GETCURRENT", get_current_directory())
+    return 
+
+
+    from pytoy.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
+    from pytoy.ui.pytoy_window.impl_vscode import PytoyBufferVSCode, PytoyWindowProviderProtocol   
+    PytoyBufferVSCode
+
+    windows = PytoyWindowProvider().get_windows()
+    for elem in windows:
+        print(elem.buffer._impl.document)
+    for elem in PytoyWindowProvider().get_windows():
+        print(elem.buffer._impl.document.uri.path)
+
+@CommandManager.register(name="IsRemote")
+def mywindow_func():
+    print("hgoegege")
+    from pytoy.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
+    from pytoy.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
+    from pytoy.ui.vscode.editor import Editor
+    #window = PytoyWindow.get_current()
+    #PytoyWindowProvider().create_window("hgoehoge", "s")
+    #print(window.buffer)
+    #print(window.buffer.content)
+    #window.focus()
 
     from pytoy.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
     from pytoy.ui.pytoy_window.impl_vscode import PytoyBufferVSCode, PytoyWindowProviderProtocol   
@@ -29,7 +56,6 @@ def mywindow_func():
     #print(window.valid, window.impl.editor.document.uri)
     #window.buffer
     #window.unique()    
-
 
 
 from pytoy.lib_tools.terminal_backend import TerminalBackendProvider
@@ -90,7 +116,4 @@ if get_ui_enum() == UIEnum.VSCODE:
                 with_await=True,
             )
             print(commands)
-
-
-
 
