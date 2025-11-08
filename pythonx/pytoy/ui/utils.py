@@ -23,6 +23,17 @@ def to_filename(path: str | Path) -> Path:
         path_str = _pattern.sub("", path_str)
     return Path(path_str)
 
+def is_remote() -> bool:
+    """Return whther the environment is remote or not.
+    """
+    if get_ui_enum() == UIEnum.VSCODE:
+        pass
+    from pytoy.ui.vscode.api import Api
+    val = Api().eval_with_return("vscode.env.remoteName")
+    return bool(val)
+
+
+
 
 
 if __name__ == "__main__":

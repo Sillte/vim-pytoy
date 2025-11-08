@@ -13,8 +13,18 @@ It focuses on using python tools within vim-buffers.
 * pytest
 * lightline
 * psutil / pydantic / pywinpty
-    - `python` is available for the environment these libraries are installed (VIM). 
-    - In the specified python environment, these libraries are available (NVIM).  
+    - `python` is available for the environment these libraries should be installed (VIM). 
+    - In the specified python environment, these libraries should be available (NVIM).  
+* vscode + neovim extension 
+    - [VSCode](https://code.visualstudio.com/)
+    - [VSCode+neovim](https://github.com/vscode-neovim/vscode-neovim)
+    - When you would like to use `WSL`, the following settings are necessary.
+    - ```json
+    {
+     "vscode-neovim.useWSL": true, 
+     "vscode-neovim.neovimExecutablePaths.linux": "/home/zaube/.local/bin/nvim",
+    }
+      ```
 
 
 
@@ -77,6 +87,4 @@ graph TD
 ### Comments
 
 This is no more than personal hobbies, so do not have any expectation. 
-
-
 
