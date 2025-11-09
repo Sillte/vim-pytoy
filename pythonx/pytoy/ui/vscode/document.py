@@ -269,15 +269,15 @@ def delete_untitles():
 class BufferURISolver:
     @classmethod
     def _to_uri(cls, buf_name: str):
-        # [NOTE]: This is imcomplete. 
+        # [NOTE]: This is imcomplete.
         path = Path(buf_name)
         if path.name.startswith("untitled:"):
             scheme = "untitled"
             path = Path(path).name.strip(f"{scheme}:")
             return Uri(path=path, scheme=scheme, fsPath=path)
-        elif (i:= buf_name.find(":")) != -1:
-            scheme = buf_name[:i]
-            remain = buf_name[i + 1:]
+        elif ((i:=buf_name.find("//")) != -1) and ((j:= buf_name.find(":")) != -1):
+            scheme = buf_name[:j]
+            remain = buf_name[j + 1:]
             if remain.startswith("//"):
                remain = remain[2:]
             i = remain.find("/")
