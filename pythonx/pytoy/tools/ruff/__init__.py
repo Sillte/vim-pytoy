@@ -27,7 +27,7 @@ class RuffExecutor(BufferExecutor):
         assert self.stdout is not None
         messages = self.stdout.content
         qflist = self._make_qflist(messages)
-        handle_records(PytoyQuickFix(), records=qflist, win_id=None, is_open=True)
+        handle_records(PytoyQuickFix(cwd=self.cwd), records=qflist, win_id=None, is_open=True)
 
     def _make_qflist(self, string):
         records = []

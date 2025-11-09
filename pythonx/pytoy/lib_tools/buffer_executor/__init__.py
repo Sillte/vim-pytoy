@@ -51,10 +51,19 @@ class BufferExecutor:
         self._stderr = None
         self._command = None
         self._buffer_job = None
+        self._cwd = None 
 
     @property
     def name(self) -> str:
         return self._name
+    
+    @property
+    def cwd(self) -> None | Path:
+        """Working director, the command is executed.
+        """
+        if self._cwd:
+            return Path(self._cwd)
+        return None
 
     @property
     def stdout(self) -> Optional[PytoyBuffer]:
@@ -101,6 +110,7 @@ class BufferExecutor:
         if cwd is None:
             cwd = get_current_directory()
 
+        self._cwd = cwd
         self._buffer_job = make_buffer_job(
             name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd
         )

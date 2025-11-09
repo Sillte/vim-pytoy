@@ -15,9 +15,11 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
 
     def __init__(
         self,
+        cwd: str | Path | None = None
     ):
         self.records = []
         self.current_idx: int | None = None  # It starts from 1.
+        self.cwd = cwd
 
     def _convert_filename(self, basepath: Path, record: dict):
         filename = record.get("filename")
@@ -32,10 +34,14 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
 
     def setlist(self, records: list[dict], win_id: int | None = None):
         if win_id is None:
-            basepath = Path(vim.eval("getcwd()"))
+            if self.cwd is None:
+                basepath = Path(vim.eval("getcwd()"))
+            else:
+                basepath = Path(self.cwd) 
         else:
             basepath = Path(vim.eval(f"getcwd({win_id})"))
-        basepath = to_filename(basepath)
+
+        basepath = to_filename(basepath)  # Just to be safe, maybe it is not necessary.
 
         records = [self._convert_filename(basepath, record) for record in records]
         self.records = records

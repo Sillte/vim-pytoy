@@ -3,6 +3,7 @@ it takes workaround.
 Due to specification, In case of VSCode, only quickfix-like code is used.
 """
 
+from pathlib import Path
 from typing import Any
 
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
@@ -15,11 +16,12 @@ class PytoyQuickFix(PytoyQuickFixProtocol):
         impl: PytoyQuickFixProtocol | None = None,
         *,
         name: str | None = "$default",
+        cwd: str | Path | None = None,
     ):
         if impl is None:
             if name is None:
                 raise ValueError("impl or name must be set.")
-            impl = _get_protocol(name)
+            impl = _get_protocol(name, cwd)
         self._impl = impl
 
     @property
@@ -51,7 +53,7 @@ class PytoyQuickFix(PytoyQuickFixProtocol):
 _quickfix_protocol_cache = dict()
 
 
-def _get_protocol(name: str) -> PytoyQuickFixProtocol:
+def _get_protocol(name: str, cwd: str | Path | None = None) -> PytoyQuickFixProtocol:
     if name in _quickfix_protocol_cache:
         return _quickfix_protocol_cache[name]
 
@@ -60,12 +62,12 @@ def _get_protocol(name: str) -> PytoyQuickFixProtocol:
     def make_vscode():
         from pytoy.ui.pytoy_quickfix.impl_vscode import PytoyQuickFixVSCode
 
-        return PytoyQuickFixVSCode()
+        return PytoyQuickFixVSCode(cwd=cwd)
 
     def make_vim():
         from pytoy.ui.pytoy_quickfix.impl_vim import PytoyQuickFixVim
 
-        return PytoyQuickFixVim()
+        return PytoyQuickFixVim(cwd=cwd)
 
     creators = {UIEnum.VSCODE: make_vscode, UIEnum.VIM: make_vim, UIEnum.NVIM: make_vim}
     _quickfix_protocol_cache[name] = creators[ui_enum]()

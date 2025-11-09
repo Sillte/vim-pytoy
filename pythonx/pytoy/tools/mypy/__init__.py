@@ -26,7 +26,7 @@ class MypyExecutor(BufferExecutor):
         messages = self.stdout.content
 
         qflist = self._make_qflist(messages)
-        handle_records(PytoyQuickFix(), qflist, win_id=None, is_open=True)
+        handle_records(PytoyQuickFix(cwd=self.cwd), qflist, win_id=None, is_open=True)
 
     def _make_qflist(self, string):
         # Record of `mypy`.
