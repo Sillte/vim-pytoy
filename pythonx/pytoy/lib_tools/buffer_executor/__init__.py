@@ -9,6 +9,8 @@ from pytoy.lib_tools.buffer_executor.buffer_job import (
     BufferJobProtocol,
 )
 
+from pytoy.lib_tools.utils import get_current_directory
+
 naive_wrapper = CommandWrapper()
 
 
@@ -96,6 +98,8 @@ class BufferExecutor:
         if command_wrapper is None:
             command_wrapper = naive_wrapper
         self._command = command
+        if cwd is None:
+            cwd = get_current_directory()
 
         self._buffer_job = make_buffer_job(
             name=self.name, stdout=stdout, stderr=stderr, env=env, cwd=cwd
