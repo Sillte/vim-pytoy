@@ -156,7 +156,8 @@ class CompletionProvider:
             option_provider = _OptionCandidatesProvider(self.main_spec, context)
             return option_provider(arg_lead, cmd_line, cursor_pos)
         elif context.completion_type == ContextType.SUB_COMMAND:
-            candidates = [sub_command.name for sub_command in self.main_spec.commands]
+            candidates = [sub_command.name for sub_command in self.main_spec.commands
+                          if sub_command.name.startswith(arg_lead)]
             return candidates if candidates else [arg_lead]
         elif context.completion_type == ContextType.ARGUMENT:
             argument_provider = _ArgumentCandidatesProvider(self.main_spec, context)
