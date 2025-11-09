@@ -57,7 +57,6 @@ class EnvironmentManager:
         """
         if path is None:
             path = get_current_directory()
-        print("path", path)
             
         def _to_python_path() -> Path | None:
             ret = subprocess.run(
