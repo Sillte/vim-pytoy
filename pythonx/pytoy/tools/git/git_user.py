@@ -5,6 +5,7 @@ from typing import List, Callable
 from subprocess import PIPE
 from pathlib import Path
 from urllib import parse
+from pytoy.lib_tools.utils import get_current_directory
 
 
 class GitUser:
@@ -16,7 +17,7 @@ class GitUser:
 
     def __init__(self, cwd: None | Path = None):
         if cwd is None:
-            cwd = Path.cwd().absolute()
+            cwd = get_current_directory()
         self.cwd = Path(cwd)
         if not self.cwd.exists():
             raise ValueError("Given `cwd` is not existent.")
@@ -47,7 +48,7 @@ class GitUser:
         paths = [Path(line.strip()).absolute() for line in ret.stdout.split("\n")]
         return paths
 
-    def _run(self, cmd, **kwargs):
+    def _run(self, cmd: str, **kwargs):
         default = dict()
         default["text"] = True
         default["cwd"] = self.cwd
@@ -73,11 +74,12 @@ def get_git_info(local_filepath) -> GitInfo:
     cwd = str(local_filepath.parent)
 
     def _run_git(args):
-        return (
-            subprocess.check_output(["git"] + args, cwd=cwd, shell=True)
+        ret = (
+            subprocess.check_output(' '.join(["git"] + args), cwd=cwd, shell=True)
             .decode()
             .strip()
         )
+        return ret
 
     result = dict()
     result["rootpath"] = _run_git(["rev-parse", "--show-toplevel"])

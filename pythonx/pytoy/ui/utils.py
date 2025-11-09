@@ -8,7 +8,7 @@ from pytoy.ui.ui_enum import UIEnum, get_ui_enum
 _pattern = re.compile(r"^vscode\-remote://[^/]+")
 
 
-def to_filename(path: str | Path) -> Path:
+def to_filepath(path: str | Path) -> Path:
     """Normalize vscode-remote URI into an in-container absolute path.
     Example:
       vscode-remote://wsl%2BUbuntu/home/user/foo.py -> /home/user/foo.py
