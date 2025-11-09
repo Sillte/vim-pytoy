@@ -1,6 +1,7 @@
 from pathlib import Path
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeSelectorProtocol
 from pytoy.ui.vscode.document import Document, BufferURISolver
+from pytoy.ui.utils import to_filepath
 
 
 class PytoyBufferVSCode(PytoyBufferProtocol):
@@ -14,11 +15,11 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     @property
     def path(self) -> Path:
         if self.document.uri.fsPath:
-            fsPath = self.document.uri.fsPath
-            fsPath = fsPath.replace('\\', "/")
-            return Path(fsPath)
+            elem = self.document.uri.fsPath
+            elem = elem.replace("\\", "/") # required to replace.
+            return to_filepath(elem)
         else:
-            return Path(self.document.uri.path)
+            return to_filepath(self.document.uri.path)
 
     @property
     def is_file(self) -> bool:

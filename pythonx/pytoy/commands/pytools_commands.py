@@ -5,7 +5,7 @@ from pytoy.command import CommandManager
 from pytoy.ui import make_buffer
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.ui.pytoy_window import PytoyWindow
-from pytoy.ui.utils import to_filename
+from pytoy.ui.utils import to_filepath
 
 
 @CommandManager.register(name="Pytest")
@@ -20,7 +20,7 @@ class PyTestCommand:
         executor = PytestExecutor()
         # `make_buffer` may change the current buffer.
         path = vim.current.buffer.name
-        path = to_filename(path)
+        path = to_filepath(path)
         line = int(vim.eval("line('.')"))
 
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
@@ -49,7 +49,7 @@ class MypyCommand:
         import vim
 
         path = vim.current.buffer.name
-        path = to_filename(path)
+        path = to_filepath(path)
         executor = MypyExecutor()
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
         executor.runfile(path, pytoy_buffer)
@@ -132,7 +132,7 @@ class RuffChecker:
         arguments = [elem for elem in fargs if not elem.startswith("-")]
         if not arguments:
             path = vim.current.buffer.name
-            path = to_filename(path)
+            path = to_filepath(path)
             fargs.append(path)
 
         executor = RuffExecutor()
@@ -155,9 +155,9 @@ class CSpellCommand:
         from pathlib import Path
         from pytoy import TERM_STDOUT
         from pytoy.tools.cspell import CSpellOneFileChecker
-        from pytoy.ui import to_filename
+        from pytoy.ui import to_filepath
 
-        path = to_filename(vim.current.buffer.name)
+        path = to_filepath(vim.current.buffer.name)
         if Path(path).suffix == ".py":
             checker = CSpellOneFileChecker(only_python_string=True)
         else:

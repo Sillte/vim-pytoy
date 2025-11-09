@@ -4,7 +4,8 @@ import copy
 
 from pytoy.infra.timertask import TimerTask
 from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol
-from pytoy.ui import to_filename
+from pytoy.ui import to_filepath
+from pytoy.lib_tools.utils import get_current_directory
 
 
 class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
@@ -25,7 +26,7 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
         filename = record.get("filename")
         if not filename:
             filename = basepath
-        filename = to_filename(filename)
+        filename = to_filepath(filename)
         if filename.is_absolute():
             record["filename"] = filename.as_posix()
         else:
@@ -35,13 +36,13 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
     def setlist(self, records: list[dict], win_id: int | None = None):
         if win_id is None:
             if self.cwd is None:
-                basepath = Path(vim.eval("getcwd()"))
+                basepath = get_current_directory()
             else:
                 basepath = Path(self.cwd) 
         else:
             basepath = Path(vim.eval(f"getcwd({win_id})"))
 
-        basepath = to_filename(basepath)  # Just to be safe, maybe it is not necessary.
+        basepath = to_filepath(basepath)  # Just to be safe, maybe it is not necessary.
 
         records = [self._convert_filename(basepath, record) for record in records]
         self.records = records
