@@ -10,12 +10,27 @@ import subprocess
 from enum import Enum
 import vim
 from pytoy.ui import lightline_utils
+from pytoy.lib_tools.utils import get_current_directory
 
 
 class UvMode(str, Enum):
     UNDEFINED = "undefined"
     ON = "on"
     OFF = "off"
+    
+def _add_uv_path_fallback() -> bool:
+    """
+    side-effects: updating of `os.envioron['PATH']
+    """
+    ret = subprocess.run("bash -lic 'which uv'", shell=True, stdout=subprocess.PIPE, text=True)
+    if ret.returncode != 0:
+        return False
+    folder = Path(ret.stdout.strip()).parent.as_posix()
+    current_path = os.environ.get('PATH', '')
+    new_path = f"{folder}{os.pathsep}{current_path}"
+    os.environ['PATH'] = new_path
+    vim.command(f'let $PATH="{new_path}"')
+    return True
 
 
 class EnvironmentManager:
@@ -41,21 +56,28 @@ class EnvironmentManager:
         # [TODO] handling of `--package`.
         """
         if path is None:
-            path = Path.cwd()
-
-        ret = subprocess.run(
-            'uv run python -c "import sys; print(sys.executable)"',
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            env=os.environ,
-            text=True,
-            shell=True,
-        )
-        try:
-            python_path = Path(ret.stdout.strip())
-        except Exception as e:
-            print(e)
+            path = get_current_directory()
+            
+        def _to_python_path() -> Path | None:
+            ret = subprocess.run(
+                'uv run python -c "import sys; print(sys.executable)"',
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                env=os.environ,
+                cwd=path, 
+                text=True,
+                shell=True,
+            )
+            if ret.returncode == 0:
+                return Path(ret.stdout.strip())
             return None
+
+        if not (python_path := _to_python_path()):
+            _add_uv_path_fallback()
+            python_path = _to_python_path()
+        if not python_path:
+            return None
+
         if all(
             (python_path.parent / name).exists()
             for name in ["activate", "activate.bat"]
