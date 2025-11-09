@@ -13,7 +13,10 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
 
     @property
     def path(self) -> Path:
-        return Path(self.document.uri.path)
+        if self.document.uri.fsPath:
+            return Path(self.document.uri.fsPath)
+        else:
+            return Path(self.document.uri.path)
 
     @property
     def is_file(self) -> bool:
