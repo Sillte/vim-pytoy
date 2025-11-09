@@ -1,4 +1,5 @@
 import vim
+from pathlib import Path
 
 import json
 from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol
@@ -7,6 +8,11 @@ from shlex import quote
 
 
 class PytoyQuickFixVim(PytoyQuickFixProtocol):
+    def __init__(
+        self,
+        cwd: str | Path | None = None
+    ):
+        self.cwd = cwd  # [NOTE] Currently, this is not used, but it may be better to use this?
     def setlist(self, records: list[dict], win_id: int | None = None):
         # This is NOT smart code,
         # If `value` is `complex` type, it may cause inconsistency of the data type.

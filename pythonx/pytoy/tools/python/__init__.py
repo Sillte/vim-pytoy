@@ -9,6 +9,7 @@ from pytoy.lib_tools.buffer_executor import BufferExecutor
 
 # `set_default_execution_mode` is carried out only in `__init__.py`
 from pytoy.lib_tools.environment_manager import EnvironmentManager
+from pytoy.lib_tools.utils import get_current_directory
 
 
 from pytoy.ui import PytoyBuffer, PytoyQuickFix, handle_records
@@ -27,7 +28,7 @@ class PythonExecutor(BufferExecutor):
     ):
         """Execute `"""
         if cwd is None:
-            cwd = vim.eval("getcwd()")
+            cwd = get_current_directory()
 
         # States of class. They are used at `prepare`.
         self.run_path = path
@@ -53,7 +54,7 @@ class PythonExecutor(BufferExecutor):
 
         error_msg = self.stderr.content.strip()
         qflist = self._make_qflist(error_msg)
-        handle_records(PytoyQuickFix(), records=qflist, win_id=None, is_open=False)
+        handle_records(PytoyQuickFix(cwd=self.run_cwd), records=qflist, win_id=None, is_open=False)
 
         if not error_msg:
             self.stderr.hide()
