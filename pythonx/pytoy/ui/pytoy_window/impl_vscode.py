@@ -73,12 +73,10 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         base_window.focus()
 
         api = Api()
-        if mode == "vertical":
-            vim.command("Vsplit")
-        else:
-            vim.command("Split")
 
+        vim.command("noautocmd Vsplit" if mode == "vertical" else "noautocmd Split")
         vim.command(f"Edit {bufname}")
+        vim.command("wincmd p")  
 
         wait_until_true(lambda: _current_uri_check(bufname), timeout=1.0)
 
