@@ -3,6 +3,7 @@ import re
 from pytoy.lib_tools.buffer_executor import BufferExecutor
 
 from pytoy.lib_tools.environment_manager import EnvironmentManager
+from pytoy.lib_tools.utils import get_current_directory
 from pytoy.ui import PytoyQuickFix, handle_records
 
 
@@ -21,7 +22,8 @@ class RuffExecutor(BufferExecutor):
         if isinstance(args, list):
             args = " ".join(map(str, args))
         command = f"ruff check {args} --output-format=concise"
-        return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
+        cwd = get_current_directory()
+        return super().run(command, stdout, stdout, command_wrapper=command_wrapper, cwd=cwd)
 
     def on_closed(self):
         assert self.stdout is not None
