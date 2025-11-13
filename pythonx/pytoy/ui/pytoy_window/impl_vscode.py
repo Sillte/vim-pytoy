@@ -44,8 +44,8 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
             return NotImplemented
         return self.editor == other.editor
 
-    def unique(self, within_tab: bool = False) -> None:
-        self.editor.unique(within_tab=within_tab)
+    def unique(self, within_tab: bool = False, within_windows: bool = True) -> None:
+        self.editor.unique(within_tab=within_tab, within_windows=within_windows)
 
 
 class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):

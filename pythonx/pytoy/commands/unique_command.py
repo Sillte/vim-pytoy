@@ -10,6 +10,7 @@ from pytoy.infra.sub_commands import (
 BUFFER_ARG = "buffer"
 EDITOR_ARG = "editor"
 WINDOW_ARG = "window"
+TAB_ARG = "tab"
 
 
 @Command.register(name="Unique")
@@ -19,6 +20,7 @@ class UniqueCommand:
             SubCommandSpec(BUFFER_ARG),
             SubCommandSpec(EDITOR_ARG),
             SubCommandSpec(WINDOW_ARG),
+            SubCommandSpec(TAB_ARG),
         ]
         command_spec = MainCommandSpec(sub_commands)
         self.handler = SubCommandsHandler(command_spec)
@@ -32,12 +34,22 @@ class UniqueCommand:
             else None
         )
         within_tab = False
+        within_tab = False
         if arg in {BUFFER_ARG}:
-            within_tab = False
-        else:
             within_tab = True
+            within_windows = True
+        elif arg in {EDITOR_ARG, WINDOW_ARG}:
+            within_tab = False
+            within_windows = True
+        elif arg in {TAB_ARG}:
+            within_tab = True
+            within_windows = False
+        else:
+            within_tab = False
+            within_windows = False
+
         current = PytoyWindow.get_current()
-        current.unique(within_tab=within_tab)
+        current.unique(within_tab=within_tab, within_windows=within_windows)
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         return self.handler.complete(arg_lead, cmd_line, cursor_pos)
