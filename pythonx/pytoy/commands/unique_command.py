@@ -1,3 +1,4 @@
+    
 from pytoy.infra.command import Command, OptsArgument
 from pytoy.ui.pytoy_window import PytoyWindow
 
@@ -28,20 +29,18 @@ class UniqueCommand:
     def __call__(self, opts: OptsArgument):
         args: str = opts.args
         parsed_arguments = self.handler.parse(args)
-        arg = (
-            parsed_arguments.main_arguments[0]
-            if parsed_arguments.main_arguments
-            else None
-        )
+        print(parsed_arguments, flush=True)
+        sub_command = parsed_arguments.sub_command
+
         within_tab = False
         within_tab = False
-        if arg in {BUFFER_ARG}:
+        if sub_command in {BUFFER_ARG}:
             within_tab = True
             within_windows = True
-        elif arg in {EDITOR_ARG, WINDOW_ARG}:
+        elif sub_command in {EDITOR_ARG, WINDOW_ARG}:
             within_tab = False
             within_windows = True
-        elif arg in {TAB_ARG}:
+        elif sub_command in {TAB_ARG}:
             within_tab = True
             within_windows = False
         else:
