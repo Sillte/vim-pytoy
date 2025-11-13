@@ -25,7 +25,7 @@ class PytoyWindow(PytoyWindowProtocol):
         """Return whether this is leftwindow or not."""
         return self.impl.is_left()
 
-    def unique(self, within_tab: bool = False) -> None:
+    def unique(self, within_tab: bool = False, within_windows: bool = True) -> None:
         """Isolate the window.
 
         NOTE: Unfortunately, due to affairs of vscode,

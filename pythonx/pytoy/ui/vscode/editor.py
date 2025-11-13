@@ -128,10 +128,10 @@ class Editor(BaseModel):
             self.viewColumn == other.viewColumn
         )
 
-    def unique(self, within_tab: bool = False):
+    def unique(self, within_tab: bool = False, within_windows: bool = True):
         """Make it an unique editor."""
         jscode = """
-        (async (uri_dict, viewColumn, withinTab) => {
+        (async (uri_dict, viewColumn, withinTab, withinWindows) => {
             function findEditorByUriAndColumn(uri, viewColumn) {
                 return vscode.window.visibleTextEditors.find(
                     editor => editor.document.uri.path == uri.path &&
@@ -164,17 +164,18 @@ class Editor(BaseModel):
             const uri = vscode.Uri.from({"scheme": uri_dict.scheme, "path": uri_dict.path})
             const editor = findEditorByUriAndColumn(uri, viewColumn);
             await revertCloseExcept(editor, withinTab)
-            if (!withinTab) {
+            if (withinWindows) {
               await vscode.commands.executeCommand('workbench.action.closeEditorsInOtherGroups');
             }
 
-        })(args.uri, args.viewColumn, args.withinTab)
+        })(args.uri, args.viewColumn, args.withinTab, args.withinWindows)
         """
         args = {
             "args": {
                 "uri": dict(self.uri),
                 "viewColumn": self.viewColumn,
                 "withinTab": within_tab,
+                "withinWindows": within_windows,
             }
         }
         api = Api()
