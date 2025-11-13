@@ -140,32 +140,38 @@ class Editor(BaseModel):
                 );
             }
             
-            async function revertCloseExcept(editor, withinTab) {
+            async function revertCloseExcept(editor) {
 
               for (const group of vscode.window.tabGroups.all) {
-                if (!withinTab && group.viewColumn === editor.viewColumn) continue;
+              if (group.viewColumn != editor.viewColumn) continue;
                 for (const tab of group.tabs) {
                   const uri = tab.input?.uri?.toString();
                     if (!uri) continue;
                     if (uri  == editor.document.uri.toString()) {
-                        if (group.viewColumn === editor.viewColumn){
-                            continue;
-                        } 
-                        await vscode.window.showTextDocument(tab.input.uri, { preview: false });
-                        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+                        continue
+
                     }
                     else{
+
                         await vscode.window.showTextDocument(tab.input.uri, { preview: false });
-                        await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+                        let scheme = tab.input?.uri.scheme
+                        if (scheme == "untitled") {
+                            await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+                        }
+                        else {
+                            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+                        }
                     }
                 }
              }
            }
             const uri = vscode.Uri.from({"scheme": uri_dict.scheme, "path": uri_dict.path})
             const editor = findEditorByUriAndColumn(uri, viewColumn);
-            await revertCloseExcept(editor, withinTab)
             if (withinWindows) {
               await vscode.commands.executeCommand('workbench.action.closeEditorsInOtherGroups');
+            }
+            if (withinTab){
+                await revertCloseExcept(editor)
             }
 
         })(args.uri, args.viewColumn, args.withinTab, args.withinWindows)
