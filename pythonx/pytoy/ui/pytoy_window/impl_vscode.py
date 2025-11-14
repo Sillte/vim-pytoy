@@ -83,8 +83,9 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         editor = Editor.get_current()
         editor.unique(within_tab=True,  within_windows=False)
         current.focus()
-        #uri = Uri(**uri)
-        #wait_until_true(lambda: BufferURISolver.get_bufnr(uri) != None, timeout=1.0)
+        # The below is mandatory to syncronize  neovim and vscode
+        uri = Uri(**uri)
+        wait_until_true(lambda: BufferURISolver.get_bufnr(uri) != None, timeout=1.0)
         return PytoyWindowVSCode(editor)
 
     def _get_editors(self):
