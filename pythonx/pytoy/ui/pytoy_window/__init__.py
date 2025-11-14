@@ -31,7 +31,7 @@ class PytoyWindow(PytoyWindowProtocol):
         NOTE: Unfortunately, due to affairs of vscode,
         this cannot be realiazed with `close` and `__eq__`.
         """
-        return self.impl.unique(within_tab)
+        return self.impl.unique(within_tab, within_windows=within_windows)
 
     def focus(self) -> bool:
         return self.impl.focus()
