@@ -76,21 +76,16 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
 
         vim.command("noautocmd Vsplit" if mode == "vertical" else "noautocmd Split")
         vim.command(f"Edit {bufname}")
-        vim.command("wincmd p")  
-
         wait_until_true(lambda: _current_uri_check(bufname), timeout=1.0)
-
         uri = api.eval_with_return(
             "vscode.window.activeTextEditor.document.uri", with_await=False
         )
-        uri = Uri(**uri)
-        wait_until_true(lambda: BufferURISolver.get_bufnr(uri) != None, timeout=1.0)
-        vim.command("Tabonly")
         editor = Editor.get_current()
-        result = PytoyWindowVSCode(editor)
-
+        editor.unique(within_tab=True,  within_windows=False)
         current.focus()
-        return result
+        #uri = Uri(**uri)
+        #wait_until_true(lambda: BufferURISolver.get_bufnr(uri) != None, timeout=1.0)
+        return PytoyWindowVSCode(editor)
 
     def _get_editors(self):
         editors = Editor.get_editors()
