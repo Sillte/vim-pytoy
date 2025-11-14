@@ -140,19 +140,16 @@ class Editor(BaseModel):
                 );
             }
             
-            async function revertCloseExcept(editor) {
-
+            async function revertCloseTabWithinEditor(editor) {
               for (const group of vscode.window.tabGroups.all) {
               if (group.viewColumn != editor.viewColumn) continue;
                 for (const tab of group.tabs) {
                   const uri = tab.input?.uri?.toString();
                     if (!uri) continue;
                     if (uri  == editor.document.uri.toString()) {
-                        continue
-
+                        continue;
                     }
                     else{
-
                         await vscode.window.showTextDocument(tab.input.uri, { preview: false });
                         let scheme = tab.input?.uri.scheme
                         if (scheme == "untitled") {
@@ -165,13 +162,54 @@ class Editor(BaseModel):
                 }
              }
            }
+
+
+            async function closeOtherWindows(targetEditor) {
+                const targetColumn = targetEditor.viewColumn;
+
+                const tabsToClose = [];
+
+                for (const group of vscode.window.tabGroups.all) {
+                    if (group.viewColumn === targetColumn) continue;
+
+                    for (const tab of group.tabs) {
+                        const input = tab.input;
+                        if (!input || !input.uri) continue;
+                        const uri = input.uri;
+                        tabsToClose.push({
+                            uri: uri,
+                            viewColumn: group.viewColumn,
+                            scheme: uri.scheme
+                        });
+                    }
+                }
+
+                // 2. viewColumn の降順で sort（右→左で閉じる）
+                tabsToClose.sort((a, b) => (b.viewColumn || 0) - (a.viewColumn || 0));
+
+                // 3. 安定した順で閉じる
+                for (const tab of tabsToClose) {
+                    await vscode.window.showTextDocument(tab.uri, {
+                        preview: true,
+                        viewColumn: tab.viewColumn
+                    });
+
+                    if (tab.scheme === "untitled") {
+                        await vscode.commands.executeCommand("workbench.action.revertAndCloseActiveEditor");
+                    } else {
+                        await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+                    }
+                }
+            }
+
+
             const uri = vscode.Uri.from({"scheme": uri_dict.scheme, "path": uri_dict.path})
             const editor = findEditorByUriAndColumn(uri, viewColumn);
             if (withinWindows) {
-              await vscode.commands.executeCommand('workbench.action.closeEditorsInOtherGroups');
+              await closeOtherWindows(editor)
             }
             if (withinTab){
-                await revertCloseExcept(editor)
+                await revertCloseTabWithinEditor(editor)
             }
 
         })(args.uri, args.viewColumn, args.withinTab, args.withinWindows)
