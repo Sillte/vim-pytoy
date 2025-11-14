@@ -275,23 +275,23 @@ class Editor(BaseModel):
  * 外部から受け取った引数に基づき、タブを閉じる操作を実行します。
  * @param {object} args - 実行に必要な引数
  */
-async function executeCloseOperations(args) {
+async function executeCloseOperations(uri_dict, viewColumn, withinTab, withinWindows) {
     // 必須引数のチェック
+
+    console.log(`${viewColumn}`)
     if (!args || !args.uri || !args.viewColumn) return;
 
-    const uri_dict = args.uri;
-    const viewColumn = args.viewColumn;
-    const withinTab = args.withinTab;
-    const withinWindows = args.withinWindows;
 
-    // 必要なエディタインスタンスを特定（元のコードの findEditorByUriAndColumn の代替）
-    // vscode.window.activeTextEditorを信頼する代わりに、tabs APIを使ってターゲットエディタを特定する方が堅牢ですが、
-    // ここでは便宜上、元のコードの意図通りにアクティブなエディタリストから探します。
+
     const uri = vscode.Uri.from({ "scheme": uri_dict.scheme, "path": uri_dict.path });
     const editor = vscode.window.visibleTextEditors.find(
-        editor => editor.document.uri.toString() === uri.toString() &&
+        editor => editor.document.uri.path === uri.path &&
+                  editor.document.uri.scheme == uri.scheme &&   
                   editor.viewColumn === viewColumn
     );
+
+    if (!editor) return;
+
 
     // 両方の操作で必要となるため、一度だけURIカウントマップを作成
     const uriToCount = countAllDocumentInstances(vscode);
@@ -306,7 +306,7 @@ async function executeCloseOperations(args) {
         await revertCloseTabWithinEditor(editor, uriToCount);
     }
 }
-    await executeCloseOperations(args)
+    await executeCloseOperations(uri_dict, viewColumn, withinTab, withinWindows)
     })(args.uri, args.viewColumn, args.withinTab, args.withinWindows)
     """
         args = {
