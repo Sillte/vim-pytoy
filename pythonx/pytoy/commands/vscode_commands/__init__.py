@@ -22,11 +22,3 @@ def QQ():
     PytoyQuickFix().go()
 
 
-# [PROD]: `Unique`: Unique environment is created like below.
-# However, this is not a vscode-spcific, so it moves to common location.
-
-# @CommandManager.register(name="UniqueWindow")
-# def unique_window_command():
-#    from pytoy.ui.pytoy_window import PytoyWindow
-#    current = PytoyWindow.get_current()
-#    current.unique(within_tab=True)
