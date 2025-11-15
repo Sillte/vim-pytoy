@@ -1,4 +1,3 @@
-    
 from pytoy.infra.command import Command, OptsArgument
 from pytoy.ui.pytoy_window import PytoyWindow
 
@@ -30,7 +29,6 @@ class UniqueCommand:
         args: str = opts.args
         parsed_arguments = self.handler.parse(args)
         sub_command = parsed_arguments.sub_command
-
 
         if sub_command in {BUFFER_ARG}:
             within_tabs = True

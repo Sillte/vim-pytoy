@@ -73,6 +73,7 @@ class EnvironmentManager:
             return None
 
         if not (python_path := _to_python_path()):
+            # Maybe `bash` is not applied here.
             _add_uv_path_fallback()
             python_path = _to_python_path()
         if not python_path:
@@ -82,7 +83,7 @@ class EnvironmentManager:
             (python_path.parent / name).exists()
             for name in ["activate", "activate.bat"]
         ):
-            # It should be virual environment.
+            # It should be virtual environment.
             return python_path.parent.parent
         else:
             # Not virtual environment.
@@ -159,3 +160,4 @@ class EnvironmentManager:
 if __name__ == "__main__":
     manager = EnvironmentManager()
     print(manager.get_command_wrapper()("cmd"))
+

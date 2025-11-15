@@ -59,7 +59,6 @@ def mywindow_func():
     # window.unique()
 
 
-
 from pytoy.command import CommandManager
 
 

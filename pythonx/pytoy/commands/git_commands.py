@@ -15,6 +15,7 @@ def get_gitaddress(opts: OptsArgument):
 
     filepath = to_filepath(PytoyBuffer.get_current().path)
     import subprocess
+
     remote_link = get_remote_link(filepath, line1, line2)
     vim.command(f'let @c="{remote_link}"')
     vim.command(f'let @*="{remote_link}"')

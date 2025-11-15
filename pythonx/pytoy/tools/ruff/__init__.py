@@ -1,4 +1,5 @@
 import re
+import subprocess
 
 from pytoy.lib_tools.buffer_executor import BufferExecutor
 
@@ -23,13 +24,35 @@ class RuffExecutor(BufferExecutor):
             args = " ".join(map(str, args))
         command = f"ruff check {args} --output-format=concise"
         cwd = get_current_directory()
-        return super().run(command, stdout, stdout, command_wrapper=command_wrapper, cwd=cwd)
+        return super().run(
+            command, stdout, stdout, command_wrapper=command_wrapper, cwd=cwd
+        )
+
+    def format(self, args: str | list, stdout, command_wrapper=None):
+        if command_wrapper is None:
+            command_wrapper = EnvironmentManager().get_command_wrapper()
+
+        if isinstance(args, list):
+            args = " ".join(map(str, args))
+        command = f"ruff format {args}"
+        cwd = get_current_directory()
+        result = subprocess.run(
+            command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=cwd,
+            text=True,
+        )
+        stdout.init_buffer(result.stdout)
 
     def on_closed(self):
         assert self.stdout is not None
         messages = self.stdout.content
         qflist = self._make_qflist(messages)
-        handle_records(PytoyQuickFix(cwd=self.cwd), records=qflist, win_id=None, is_open=True)
+        handle_records(
+            PytoyQuickFix(cwd=self.cwd), records=qflist, win_id=None, is_open=True
+        )
 
     def _make_qflist(self, string):
         records = []

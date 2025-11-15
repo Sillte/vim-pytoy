@@ -1,4 +1,6 @@
 import re
+from pathlib import Path   
+from typing import Sequence
 
 from pytoy.lib_tools.buffer_executor import BufferExecutor
 
@@ -14,12 +16,16 @@ class MypyExecutor(BufferExecutor):
             r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<_type>(.+)):(?P<text>(.+))"
         )
 
-    def runfile(self, path, stdout, command_wrapper=None):
+    def check(self, arg: list[str | Path] | str | Path, stdout, command_wrapper=None) -> None:
         """Execute `pytest` for only one file."""
         if command_wrapper is None:
             command_wrapper = EnvironmentManager().get_command_wrapper()
-        command = f'mypy --show-traceback --show-column-numbers "{path}"'
+        if isinstance(arg, (str, Path)): 
+            command = f'mypy --show-traceback --show-column-numbers "{arg}"'
+        else:
+            command = f'mypy --show-traceback --show-column-numbers {' '.join(map(str, arg))}'
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
+
 
     def on_closed(self):
         assert self.stdout is not None
