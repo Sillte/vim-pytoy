@@ -23,7 +23,7 @@ class MypyExecutor(BufferExecutor):
         if isinstance(arg, (str, Path)): 
             command = f'mypy --show-traceback --show-column-numbers "{arg}"'
         else:
-            command = f'mypy --show-traceback --show-column-numbers {' '.join(map(str, arg))}'
+            command = f'mypy --show-traceback --show-column-numbers {" ".join(map(str, arg))}'
         return super().run(command, stdout, stdout, command_wrapper=command_wrapper)
 
 
