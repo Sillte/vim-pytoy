@@ -4,6 +4,7 @@ import os
 import json
 import vim
 from pytoy.command import CommandManager
+from pytoy.command import  OptsArgument
 from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.devtools.vim_rebooter import VimRebooter
 from pytoy.infra.timertask import TimerTask
@@ -148,3 +149,16 @@ class TimerTaskManagerDebug:
             print("Deregistered.")
         else:
             print("NotStarted")
+
+
+@CommandManager.register(name="PytoyExecute")
+def execute_pytoy(opts: OptsArgument):
+    import pytoy 
+    from pytoy.ui.utils import to_filepath
+    from pathlib import Path
+    name = " ".join([elem.strip() for elem in opts.fargs])
+    if not name:
+        path = to_filepath(vim.current.buffer.name)
+    else:
+        path = to_filepath(name)
+    exec(Path.read_text(path))
