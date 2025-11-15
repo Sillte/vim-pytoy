@@ -43,16 +43,41 @@ class PyTestCommand:
 
 @CommandManager.register(name="Mypy")
 class MypyCommand:
-    def __call__(self):
+    def __call__(self, opts: dict):
         from pytoy.tools.mypy import MypyExecutor
         from pytoy import TERM_STDOUT
+        from pytoy.lib_tools.environment_manager import EnvironmentManager
         import vim
 
-        path = vim.current.buffer.name
-        path = to_filepath(path)
+        fargs = opts["fargs"]
+        if "workspace" in fargs:
+            # This is using the knowledge that
+            # `The parent of virtualenv folder is the root of the project`.
+            venv_folder = EnvironmentManager().get_uv_venv()
+            if not venv_folder:
+                raise ValueError("This is not under UV workspace.")
+            root_folder = venv_folder.parent
+            path = root_folder
+            fargs.remove("workspace")
+            fargs.append(str(path))
+
+        arguments = [elem for elem in fargs if not elem.startswith("-")]
+        if not arguments:
+            path = vim.current.buffer.name
+            path = to_filepath(path)
+            fargs.append(path)
+
         executor = MypyExecutor()
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
-        executor.runfile(path, pytoy_buffer)
+        print(fargs, type(fargs), flush=True)
+        executor.check(fargs, pytoy_buffer)
+
+    def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
+        candidates = ["workspace"]
+        valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
+        if valid_candidates:
+            return valid_candidates
+        return candidates
 
 
 @CommandManager.register(name="GotoDefinition")
@@ -117,6 +142,9 @@ class RuffChecker:
         from pytoy.tools.ruff import RuffExecutor
         from pytoy.lib_tools.environment_manager import EnvironmentManager
 
+        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
+        executor = RuffExecutor()
+
         fargs = opts["fargs"]
         if "workspace" in fargs:
             # This is using the knowledge that
@@ -135,12 +163,15 @@ class RuffChecker:
             path = to_filepath(path)
             fargs.append(path)
 
-        executor = RuffExecutor()
-        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
+        if "--format" in fargs:
+            fargs.remove("--format")
+            # All other options corresond
+            executor.format(arguments, pytoy_buffer, command_wrapper=None)
+
         executor.check(fargs, pytoy_buffer)
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
-        candidates = ["workspace", "--fix"]
+        candidates = ["workspace", "--fix", "--format", "--unsafe-fixes"]
         valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
         if valid_candidates:
             return valid_candidates

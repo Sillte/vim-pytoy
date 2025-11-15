@@ -20,5 +20,3 @@ def QQ():
     from pytoy.ui.pytoy_quickfix import PytoyQuickFix
 
     PytoyQuickFix().go()
-
-
