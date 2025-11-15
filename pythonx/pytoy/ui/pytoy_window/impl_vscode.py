@@ -44,8 +44,8 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
             return NotImplemented
         return self.editor == other.editor
 
-    def unique(self, within_tab: bool = False, within_windows: bool = True) -> None:
-        self.editor.unique(within_tab=within_tab, within_windows=within_windows)
+    def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
+        self.editor.unique(within_tabs=within_tabs, within_windows=within_windows)
 
 
 class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
@@ -81,7 +81,7 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
             "vscode.window.activeTextEditor.document.uri", with_await=False
         )
         editor = Editor.get_current()
-        editor.unique(within_tab=True,  within_windows=False)
+        editor.unique(within_tabs=True,  within_windows=False)
         current.focus()
         # The below is mandatory to syncronize  neovim and vscode
         uri = Uri(**uri)

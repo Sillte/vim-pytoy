@@ -62,13 +62,13 @@ class PytoyWindowVim(PytoyWindowProtocol):
             return NotImplemented
         return self.window == other.window
 
-    def unique(self, within_tab: bool = False, within_windows: bool = True) -> None:
+    def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
         windows = PytoyWindowProviderVim().get_windows()
         if within_windows:
             for window in windows:
                 if window != self:
                     window.close()
-        if not within_tab:
+        if not within_tabs:
             vim.command("tabonly!")
 
 

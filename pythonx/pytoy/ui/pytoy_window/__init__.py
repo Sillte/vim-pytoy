@@ -25,13 +25,13 @@ class PytoyWindow(PytoyWindowProtocol):
         """Return whether this is leftwindow or not."""
         return self.impl.is_left()
 
-    def unique(self, within_tab: bool = False, within_windows: bool = True) -> None:
+    def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
         """Isolate the window.
 
         NOTE: Unfortunately, due to affairs of vscode,
         this cannot be realiazed with `close` and `__eq__`.
         """
-        return self.impl.unique(within_tab, within_windows=within_windows)
+        return self.impl.unique(within_tabs, within_windows=within_windows)
 
     def focus(self) -> bool:
         return self.impl.focus()

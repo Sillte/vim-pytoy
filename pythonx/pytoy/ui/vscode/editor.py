@@ -131,7 +131,7 @@ class Editor(BaseModel):
             self.viewColumn == other.viewColumn
         )
 
-    def unique(self, within_tab: bool = False, within_windows: bool = True):
+    def unique(self, within_tabs: bool = False, within_windows: bool = True):
         """Make it an unique editor."""
         jscode = """
         (async (uri_dict, viewColumn, withinTab, withinWindows) => {
@@ -291,7 +291,7 @@ class Editor(BaseModel):
  * 外部から受け取った引数に基づき、タブを閉じる操作を実行します。
  */
 async function executeCloseOperations(uri_dict, viewColumn, withinTab, withinWindows) {
-    if (!uri_dict || !viewColumn) return;
+    if (!uri_dict || !args.viewColumn) return;
 
     const uri = vscode.Uri.from({ "scheme": uri_dict.scheme, "path": uri_dict.path });
     const editor = vscode.window.visibleTextEditors.find(
@@ -322,7 +322,7 @@ async function executeCloseOperations(uri_dict, viewColumn, withinTab, withinWin
             "args": {
                 "uri": dict(self.uri),
                 "viewColumn": self.viewColumn,
-                "withinTab": within_tab,
+                "withinTab": within_tabs,
                 "withinWindows": within_windows,
             }
         }
