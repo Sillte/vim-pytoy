@@ -45,3 +45,4 @@ class MypyExecutor(BufferExecutor):
             record["type"] = record["_type"].strip(" ")[0].upper()
             records.append(record)
         return records
+
