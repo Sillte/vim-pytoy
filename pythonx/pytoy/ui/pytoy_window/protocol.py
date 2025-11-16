@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Protocol, Sequence
 
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 
@@ -28,7 +28,7 @@ class PytoyWindowProtocol(Protocol):
 class PytoyWindowProviderProtocol(Protocol):
     def get_current(self) -> PytoyWindowProtocol: ...
 
-    def get_windows(self) -> list[PytoyWindowProtocol]: ...
+    def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]: ...
 
     def create_window(
         self,

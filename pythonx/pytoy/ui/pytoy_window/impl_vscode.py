@@ -5,6 +5,7 @@
 
 from pathlib import Path
 import vim  # (vscode-neovim extention)
+from typing import Sequence
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_buffer.impl_vscode import PytoyBufferVSCode
 from pytoy.ui.pytoy_window.protocol import (
@@ -52,9 +53,12 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
     def get_current(self) -> PytoyWindowProtocol:
         return PytoyWindowVSCode(Editor.get_current())
 
-    def get_windows(self) -> list[PytoyWindowProtocol]:
+    def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
         editors = self._get_editors()
-        return [PytoyWindowVSCode(elem) for elem in editors]
+        windows = [PytoyWindowVSCode(elem) for elem in editors]
+        if only_normal_buffers: 
+            windows = [win for win in windows if win.buffer.is_normal_type]
+        return windows 
 
     def _get_editors(self):
         editors = Editor.get_editors()

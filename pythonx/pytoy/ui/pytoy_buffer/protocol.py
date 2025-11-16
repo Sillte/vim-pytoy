@@ -27,6 +27,12 @@ class PytoyBufferProtocol(Protocol):
         Return False for scratch buffers, unnamed buffers, etc.
         """
         ...
+    @property
+    def is_normal_type(self) -> bool:
+        """Return whether the buffer is regarded as ediable and can be created in the  domain of `pytoy`.
+        """
+        ...
+
 
     def append(self, content: str) -> None: ...
 

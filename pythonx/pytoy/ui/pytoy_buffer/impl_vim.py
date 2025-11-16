@@ -1,5 +1,9 @@
 import vim
 from pathlib import Path
+
+
+VIM_ERROR = getattr(vim, "error", Exception)
+
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeSelectorProtocol
 
 
@@ -25,6 +29,20 @@ class PytoyBufferVim(PytoyBufferProtocol):
         buftype = vim.eval(f"getbufvar({self.buffer.number}, '&buftype')")
         return buftype == "" and bool(self.buffer.name)
 
+    @property
+    def is_normal_type(self) -> bool:
+        """Return whether the buffer is regarded as editable by pytoy.
+
+        Treat buffers with non-empty 'buftype' or non-modifiable buffers as
+        non-normal.
+        """
+        try:
+            buftype = vim.eval(f"getbufvar({self.buffer.number}, '&buftype')")
+            return buftype in {"", "nofile"}
+        except VIM_ERROR:
+            return False
+        except (AttributeError, TypeError):
+            return False
     @property
     def valid(self) -> bool:
         return self.buffer.valid

@@ -1,5 +1,6 @@
 from pathlib import Path
 import vim
+from typing import Sequence
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
 
@@ -68,8 +69,9 @@ class PytoyWindowVim(PytoyWindowProtocol):
             for window in windows:
                 if window != self:
                     window.close()
-        if not within_tabs:
-            vim.command("tabonly!")
+        if within_tabs:
+            self.focus()
+            vim.command("tabonly")
 
 
 class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
@@ -77,8 +79,15 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
         win = vim.current.window
         return PytoyWindowVim(win)
 
-    def get_windows(self) -> list[PytoyWindowProtocol]:
-        return [PytoyWindowVim(elem) for elem in vim.windows]
+    def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
+        def _is_normal_buffer(buf: "vim.Buffer") -> bool:
+            buftype = buf.options.get("buftype", "")
+            return buftype in {"", "nofile"}
+
+        windows =  vim.windows
+        if only_normal_buffers:
+            return [PytoyWindowVim(elem) for elem in windows if _is_normal_buffer(elem.buffer)]
+        return [PytoyWindowVim(elem) for elem in windows]
 
     def create_window(
         self,
