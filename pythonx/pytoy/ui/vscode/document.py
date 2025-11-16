@@ -2,7 +2,7 @@
 import vim
 import re
 from pathlib import Path
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from pytoy.ui.vscode.api import Api
 
@@ -13,7 +13,6 @@ class Uri(BaseModel):
     fsPath: str | None = None
 
     model_config = ConfigDict(extra="allow", frozen=True)
-    
     @classmethod
     def from_bufname(cls, bufname: str): 
         """Convert the name of buffer to `Uri`.
@@ -31,6 +30,13 @@ class Uri(BaseModel):
                 return cls(path=path, scheme=scheme)
         # without scheme.
         return cls(path=unquote(bufname), scheme="file")
+
+    @model_validator(mode='after')
+    def set_fs_path_if_file(self) -> 'Uri':
+        if self.scheme == 'file':
+            if self.fsPath is None:
+                object.__setattr__(self, 'fsPath', self.path)
+        return self
 
     def __eq__(self, other):
         if isinstance(other, Uri):
