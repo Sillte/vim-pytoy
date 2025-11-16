@@ -62,4 +62,5 @@ class Uri(BaseModel):
             return hash((self.path, self.scheme))
 
     def _norm_filepath(self, filepath: str) -> str:
-        return Path(filepath.strip("/")).resolve().as_posix()
+        # There is a discrepancy for `case-sensitivy` and strip of `/`.
+        return str(Path(filepath.strip("/")).resolve()).lower()

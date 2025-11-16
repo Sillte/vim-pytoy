@@ -1,11 +1,12 @@
 
 
 
+
 def test_function():
     from pytoy.ui.pytoy_window import PytoyWindowProvider
     from pytoy.ui.pytoy_window import PytoyWindow
     from pytoy.ui.vscode.editor import Editor
-    from pytoy.ui.vscode.document import Uri
+    from pytoy.ui.vscode.uri import Uri
     from pytoy.ui.vscode.api import Api
     
     target = "test_window"
@@ -20,7 +21,7 @@ def test_unique():
     from pytoy.ui.pytoy_window import PytoyWindowProvider
     from pytoy.ui.pytoy_window import PytoyWindow
     from pytoy.ui.vscode.editor import Editor
-    from pytoy.ui.vscode.document import Uri
+    from pytoy.ui.vscode.uri import Uri
     from pytoy.ui.vscode.api import Api
     
     current = PytoyWindow.get_current()
