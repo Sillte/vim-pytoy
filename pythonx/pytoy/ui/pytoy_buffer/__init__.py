@@ -39,6 +39,11 @@ class PytoyBuffer(PytoyBufferProtocol):
         return self.impl.is_file
 
     @property
+    def is_normal_type(self) -> bool:
+        """Expose implementation's `is_normal_type` property."""
+        return self.impl.is_normal_type
+
+    @property
     def valid(self) -> bool:
         return self.impl.valid
 

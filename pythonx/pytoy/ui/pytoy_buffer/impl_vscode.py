@@ -26,6 +26,18 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         """Return True if the buffer corresponds to a file on disk."""
         return self.document.uri.scheme in {"file", "vscode-remote"}
 
+    @property
+    def is_normal_type(self) -> bool:
+        """Return whether this buffer is editable/usable by pytoy.
+
+        Treat file-backed buffers and untitled editors as normal.
+        """
+        try:
+            scheme = self.document.uri.scheme
+            return scheme in {"file", "vscode-remote", "untitled"}
+        except AttributeError:
+            return False
+
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
         if content and content[-1] != "\n":

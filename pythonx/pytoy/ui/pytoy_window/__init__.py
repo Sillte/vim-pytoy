@@ -4,6 +4,7 @@ from pytoy.ui.pytoy_window.protocol import (
 )
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
+from typing import Sequence
 
 
 class PytoyWindow(PytoyWindowProtocol):
@@ -79,8 +80,8 @@ class PytoyWindowProvider(PytoyWindowProviderProtocol):
     def get_current(self) -> PytoyWindowProtocol:
         return self._impl.get_current()
 
-    def get_windows(self) -> list[PytoyWindowProtocol]:
-        return self._impl.get_windows()
+    def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
+        return self._impl.get_windows(only_normal_buffers=only_normal_buffers)
 
     def create_window(
         self,
