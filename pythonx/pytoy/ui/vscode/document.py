@@ -1,69 +1,11 @@
 # Experimental codes related to VSCode
 import vim
-import re
+from typing import Self, Mapping
 from pathlib import Path
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict
 
 from pytoy.ui.vscode.api import Api
-
-
-class Uri(BaseModel):
-    path: str = ""  # Some `scheme` does not have the path.
-    scheme: str
-    fsPath: str | None = None
-
-    model_config = ConfigDict(extra="allow", frozen=True)
-
-    @classmethod
-    def from_bufname(cls, bufname: str):
-        """Convert the name of buffer to `Uri`.
-        This strongly depends specifications of `vscode-neovim extension`.
-        """
-        from urllib.parse import unquote
-
-        # See the test.
-        # For windows path case, the first is not regarded as the scheme.
-        pattern1 = r"^[a-zA-Z]:[\\\/](.*)[\\\/](?P<scheme>[a-zA-Z-_]+):(?P<path>.*)#?(?P<fragment>.*)"
-        # Non-windows path with scheme
-        pattern2 = r"(?![a-zA-Z]:[\\\/])(?:(.*?)[\\\/])?(?P<scheme>[a-zA-Z-_]+):(?P<path>.*)#?(?P<fragment>.*)"
-        for pattern in [pattern1, pattern2]:
-            if m := re.match(pattern, bufname):
-                path = m.group("path")
-                scheme = m.group("scheme")
-                # Remove `Authority`.
-                if path.startswith("//"):
-                    if (start := path[2:].find("/")) != -1:
-                        path = path[2 + start :]
-                return cls(path=unquote(path), scheme=scheme)
-        # without scheme.
-        return cls(path=unquote(bufname), scheme="file")
-
-    @model_validator(mode="after")
-    def set_fs_path_if_file(self) -> "Uri":
-        if self.scheme == "file":
-            if self.fsPath is None:
-                object.__setattr__(self, "fsPath", self.path)
-        return self
-
-    def __eq__(self, other):
-        if isinstance(other, Uri):
-            if self.scheme == "file":
-                return (self._norm_filepath(self.path), self.scheme) == (
-                    self._norm_filepath(other.path),
-                    other.scheme,
-                )
-            else:
-                return (self.path, self.scheme) == (other.path, other.scheme)
-        return False
-
-    def __hash__(self):
-        if self.scheme == "file":
-            return hash((self._norm_filepath(self.path), self.scheme))
-        else:
-            return hash((self.path, self.scheme))
-
-    def _norm_filepath(self, filepath: str) -> str:
-        return Path(filepath.strip("/")).resolve().as_posix()
+from pytoy.ui.vscode.uri import Uri
 
 
 class Document(BaseModel):
@@ -71,15 +13,15 @@ class Document(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     @classmethod
-    def get_current(cls):
+    def get_current(cls) -> Self:
         api = Api()
         doc = api.eval_with_return(
             "vscode.window.activeTextEditor.document", with_await=False
         )
-        return Document(**doc)
+        return cls.model_validate(doc)
 
     @classmethod
-    def create(cls, path: None | str | Path = None):
+    def create(cls, path: None | str | Path = None) -> Self:
         api = Api()
         js_code = """
     (async () => {
@@ -98,10 +40,10 @@ class Document(BaseModel):
             path = path.as_posix()
         args = {"args": {"path": path}}
         doc = api.eval_with_return(js_code, with_await=True, opts=args)
-        return Document(**doc)
+        return cls.model_validate(**doc)
 
     @classmethod
-    def from_path(cls, path: str | Path):
+    def from_path(cls, path: str | Path) -> Self:
         js_code = """
         (async () => {
           const path = args.path;
@@ -119,9 +61,9 @@ class Document(BaseModel):
         api = Api()
         args = {"args": {"path": str(path)}}
         doc = api.eval_with_return(js_code, with_await=True, opts=args)
-        return doc
+        return cls.model_validate(doc)
 
-    def append(self, text: str):
+    def append(self, text: str) -> Mapping[str, str]:
         """Append text at the end of the document."""
         api = Api()
         js_code = """
@@ -194,7 +136,7 @@ class Document(BaseModel):
         return result
 
     @content.setter
-    def content(self, value):
+    def content(self, value: str) -> None:
         api = Api()
         js_code = """
         (async (path, content) => {
@@ -229,7 +171,7 @@ class Document(BaseModel):
         )
         return result
 
-    def show(self, with_focus: bool = False):
+    def show(self, with_focus: bool = False) -> None:
         api = Api()
         js_code = """
     (async (uri, preserveFocus) => {
@@ -253,7 +195,6 @@ class Document(BaseModel):
         args = {"args": {"uri": dict(self.uri), "preserveFocus": not with_focus}}
 
         result = api.eval_with_return(js_code, with_await=True, opts=args)
-        return result
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Document):
@@ -276,26 +217,6 @@ def get_uris() -> list[Uri]:
     return [Uri(**elem) for elem in api.eval_with_return(js_code, with_await=True)]
 
 
-def delete_untitles():
-    """Delete `untitle` documents without warning."""
-    api = Api()
-    js_code = """
-(async () => {
-  for (const doc of vscode.workspace.textDocuments) {
-    if (doc.isUntitled) {
-      const editors = vscode.window.visibleTextEditors.filter(e => e.document === doc);
-      if (editors.length > 0) {
-        await vscode.window.showTextDocument(doc, { preview: false });
-        await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
-      } else {
-        const editor = await vscode.window.showTextDocument(doc, { preview: false });
-        await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
-      }
-    }
-  }
-})();
-"""
-    return api.eval_with_return(js_code, with_await=True)
 
 
 class BufferURISolver:

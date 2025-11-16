@@ -1,5 +1,5 @@
 from pathlib import Path
-from pytoy.ui.vscode.document import Uri
+from pytoy.ui.vscode.uri import Uri
 
 uri = Uri.from_bufname(r"c:\LocalLibrary\PublicLibrary\vim-pytoy\search-editor:#0.8964251299312702")
 assert uri.scheme == "search-editor", uri
