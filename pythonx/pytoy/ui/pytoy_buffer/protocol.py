@@ -16,9 +16,7 @@ class PytoyBufferProtocol(Protocol):
 
     @property
     def path(self) -> Path:
-        """Return the file path, if buffer corresponds to `file`.
-        If not, it returns None.
-        """
+        """Return the file path."""
         ...
 
     @property
@@ -27,12 +25,11 @@ class PytoyBufferProtocol(Protocol):
         Return False for scratch buffers, unnamed buffers, etc.
         """
         ...
+
     @property
     def is_normal_type(self) -> bool:
-        """Return whether the buffer is regarded as ediable and can be created in the  domain of `pytoy`.
-        """
+        """Return whether the buffer is regarded as ediable and can be created in the  domain of `pytoy`."""
         ...
-
 
     def append(self, content: str) -> None: ...
 

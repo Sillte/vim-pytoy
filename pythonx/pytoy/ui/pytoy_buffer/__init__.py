@@ -11,7 +11,6 @@ Usage: BufferExecutor /
 
 from pathlib import Path
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeSelectorProtocol
-from pytoy.ui.pytoy_buffer.queue_updater import QueueUpdater  # noqa
 from pytoy.ui.pytoy_buffer.range_selector import make_selector  # noqa
 
 
@@ -30,7 +29,10 @@ class PytoyBuffer(PytoyBufferProtocol):
 
     @property
     def path(self) -> Path:
-        """Return the implementation of PytoyBuffer."""
+        """Return the path of buffer.
+        If `is_file` is True, it corresponds to the file path.
+        If not, this is related to the buffername (vim/nvim) or `uri.path` (vscode).
+        """
         return self.impl.path
 
     @property
@@ -99,7 +101,6 @@ def _get_current_impl() -> PytoyBufferProtocol:
     ui_enum = get_ui_enum()
     if ui_enum == UIEnum.VSCODE:
         from pytoy.ui.pytoy_buffer.impl_vscode import PytoyBufferVSCode
-
         current_impl = PytoyBufferVSCode.get_current()
     else:
         from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
