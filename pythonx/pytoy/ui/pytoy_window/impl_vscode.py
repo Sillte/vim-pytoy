@@ -4,6 +4,7 @@
 
 
 from pathlib import Path
+from pytoy.ui.vscode.Uri import Uri
 import vim  # (vscode-neovim extention)
 from typing import Sequence
 from pytoy.ui.pytoy_buffer import PytoyBuffer
@@ -12,7 +13,7 @@ from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
 )
-from pytoy.ui.vscode.document import BufferURISolver, Uri, Api
+from pytoy.ui.vscode.document import BufferURISolver, Api
 from pytoy.ui.vscode.editor import Editor
 from pytoy.ui.vscode.utils import wait_until_true
 
