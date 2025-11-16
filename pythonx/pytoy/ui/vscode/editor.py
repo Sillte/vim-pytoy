@@ -1,6 +1,7 @@
 from pytoy.ui.vscode.document import Api, Uri, Document
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pydantic import BaseModel, ConfigDict
+from typing import Sequence
 
 
 class Editor(BaseModel):
@@ -12,16 +13,16 @@ class Editor(BaseModel):
     def get_current() -> "Editor":
         api = Api()
         data = api.eval_with_return("vscode.window.activeTextEditor", with_await=False)
-        return Editor(**data)
+        return Editor.model_validate(data)
 
     @staticmethod
-    def get_editors() -> list["Editor"]:
+    def get_editors() -> Sequence["Editor"]:
         # As of 2025/11, there is no API to get non-visible editors in vscode.
         api = Api()
         data_list = api.eval_with_return(
             "vscode.window.visibleTextEditors", with_await=False
         )
-        return [Editor(**data) for data in data_list]
+        return [Editor.model_validate(data) for data in data_list]
 
     @property
     def uri(self) -> Uri:
@@ -40,7 +41,7 @@ class Editor(BaseModel):
         """
         api = Api()
         pairs = api.eval_with_return(jscode, with_await=True)
-        pairs = [(Uri(**pair[0]), pair[1]) for pair in pairs]
+        pairs = [(Uri.model_validate(pair[0]), pair[1]) for pair in pairs]
 
         uris = set(BufferURISolver.get_uri_to_bufnr().keys())
         uri_to_views = {pair[0]: pair[1] for pair in pairs if pair[0] in uris}
@@ -93,10 +94,9 @@ class Editor(BaseModel):
         api = Api()
 
         args = {"args": {"uri": dict(self.uri), "viewColumn": self.viewColumn}}
-        # [NOTE]: return of `True` or `False` must be considered.
         return api.eval_with_return(jscode, with_await=True, opts=args)
 
-    def focus(self):
+    def focus(self) -> None:
         jscode = """
         (async (uri_dict, viewColumn) => {
             function findEditorByUriAndColumn(uri, viewColumn) {
@@ -329,6 +329,6 @@ async function executeCloseOperations(uri_dict, viewColumn, withinTab, withinWin
         }
         api = Api()
         if self.viewColumn is None:
-            print("Illegal `viewColumn`.")
-
+            msg = "`viewColumn` must not be None in `unique`."
+            raise ValueError(msg)
         return api.eval_with_return(jscode, with_await=True, opts=args)
