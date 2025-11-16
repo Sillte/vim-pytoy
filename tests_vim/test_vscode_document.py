@@ -36,6 +36,5 @@ assert uri.path == "/home/zaube/vim-pytoy/pythonx/pytoy/ui/vscode/document.py", 
 uri1 =  Uri.from_bufname("/home/simple")
 uri2 =  Uri.from_bufname("home/simple")
 assert uri1 == uri2, (uri1, uri2)
-:
 print("Complete Test")
 
