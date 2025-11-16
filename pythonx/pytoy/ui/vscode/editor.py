@@ -16,7 +16,7 @@ class Editor(BaseModel):
 
     @staticmethod
     def get_editors() -> list["Editor"]:
-        # As of 2025/11, there is no API to get non-visible editors in vscode.  
+        # As of 2025/11, there is no API to get non-visible editors in vscode.
         api = Api()
         data_list = api.eval_with_return(
             "vscode.window.visibleTextEditors", with_await=False
@@ -94,7 +94,7 @@ class Editor(BaseModel):
 
         args = {"args": {"uri": dict(self.uri), "viewColumn": self.viewColumn}}
         # [NOTE]: return of `True` or `False` must be considered.
-        return api.eval_with_return(jscode, with_await=True, args=args)
+        return api.eval_with_return(jscode, with_await=True, opts=args)
 
     def focus(self):
         jscode = """
@@ -121,7 +121,7 @@ class Editor(BaseModel):
         """
         api = Api()
         args = {"args": {"uri": dict(self.uri), "viewColumn": self.viewColumn}}
-        return api.eval_with_return(jscode, with_await=True, args=args)
+        return api.eval_with_return(jscode, with_await=True, opts=args)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Editor):
@@ -331,4 +331,4 @@ async function executeCloseOperations(uri_dict, viewColumn, withinTab, withinWin
         if self.viewColumn is None:
             print("Illegal `viewColumn`.")
 
-        return api.eval_with_return(jscode, with_await=True, args=args)
+        return api.eval_with_return(jscode, with_await=True, opts=args)

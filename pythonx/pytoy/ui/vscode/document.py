@@ -13,34 +13,36 @@ class Uri(BaseModel):
     fsPath: str | None = None
 
     model_config = ConfigDict(extra="allow", frozen=True)
+
     @classmethod
-    def from_bufname(cls, bufname: str): 
+    def from_bufname(cls, bufname: str):
         """Convert the name of buffer to `Uri`.
         This strongly depends specifications of `vscode-neovim extension`.
         """
         from urllib.parse import unquote
+
         # See the test.
         # For windows path case, the first is not regarded as the scheme.
         pattern1 = r"^[a-zA-Z]:[\\\/](.*)[\\\/](?P<scheme>[a-zA-Z-_]+):(?P<path>.*)#?(?P<fragment>.*)"
         # Non-windows path with scheme
         pattern2 = r"(?![a-zA-Z]:[\\\/])(?:(.*?)[\\\/])?(?P<scheme>[a-zA-Z-_]+):(?P<path>.*)#?(?P<fragment>.*)"
         for pattern in [pattern1, pattern2]:
-            if m:= re.match(pattern, bufname):
+            if m := re.match(pattern, bufname):
                 path = m.group("path")
                 scheme = m.group("scheme")
-                # Remove `Authority`. 
+                # Remove `Authority`.
                 if path.startswith("//"):
-                   if (start := path[2:].find("/")) != -1:
-                      path = path[2 + start:]
+                    if (start := path[2:].find("/")) != -1:
+                        path = path[2 + start :]
                 return cls(path=unquote(path), scheme=scheme)
         # without scheme.
         return cls(path=unquote(bufname), scheme="file")
 
-    @model_validator(mode='after')
-    def set_fs_path_if_file(self) -> 'Uri':
-        if self.scheme == 'file':
+    @model_validator(mode="after")
+    def set_fs_path_if_file(self) -> "Uri":
+        if self.scheme == "file":
             if self.fsPath is None:
-                object.__setattr__(self, 'fsPath', self.path)
+                object.__setattr__(self, "fsPath", self.path)
         return self
 
     def __eq__(self, other):
@@ -95,7 +97,7 @@ class Document(BaseModel):
         if isinstance(path, Path):
             path = path.as_posix()
         args = {"args": {"path": path}}
-        doc = api.eval_with_return(js_code, with_await=True, args=args)
+        doc = api.eval_with_return(js_code, with_await=True, opts=args)
         return Document(**doc)
 
     @classmethod
@@ -116,7 +118,7 @@ class Document(BaseModel):
         """
         api = Api()
         args = {"args": {"path": str(path)}}
-        doc = api.eval_with_return(js_code, with_await=True, args=args)
+        doc = api.eval_with_return(js_code, with_await=True, opts=args)
         return doc
 
     def append(self, text: str):
@@ -158,7 +160,7 @@ class Document(BaseModel):
         result = api.eval_with_return(
             js_code,
             with_await=True,
-            args={"args": {"path": self.uri.path, "text": f"{text}"}},
+            opts={"args": {"path": self.uri.path, "text": f"{text}"}},
         )
         return result
 
@@ -183,7 +185,7 @@ class Document(BaseModel):
         result = api.eval_with_return(
             js_code,
             with_await=True,
-            args={
+            opts={
                 "args": {
                     "path": self.uri.path,
                 }
@@ -223,7 +225,7 @@ class Document(BaseModel):
         result = api.eval_with_return(
             js_code,
             with_await=True,
-            args={"args": {"path": self.uri.path, "value": value}},
+            opts={"args": {"path": self.uri.path, "value": value}},
         )
         return result
 
@@ -250,7 +252,7 @@ class Document(BaseModel):
       """
         args = {"args": {"uri": dict(self.uri), "preserveFocus": not with_focus}}
 
-        result = api.eval_with_return(js_code, with_await=True, args=args)
+        result = api.eval_with_return(js_code, with_await=True, opts=args)
         return result
 
     def __eq__(self, other: object) -> bool:
