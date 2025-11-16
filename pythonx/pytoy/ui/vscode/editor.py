@@ -1,5 +1,5 @@
 from pytoy.ui.vscode.document import Api, Uri, Document
-from pytoy.ui.vscode.document import BufferURISolver
+from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pydantic import BaseModel, ConfigDict
 
 

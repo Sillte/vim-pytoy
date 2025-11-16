@@ -1,6 +1,7 @@
 from pathlib import Path
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeSelectorProtocol
-from pytoy.ui.vscode.document import Document, BufferURISolver
+from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
+from pytoy.ui.vscode.document import Document
 from pytoy.ui.utils import to_filepath
 
 
