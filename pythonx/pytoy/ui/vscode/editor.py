@@ -16,6 +16,7 @@ class Editor(BaseModel):
 
     @staticmethod
     def get_editors() -> list["Editor"]:
+        # As of 2025/11, there is no API to get non-visible editors in vscode.  
         api = Api()
         data_list = api.eval_with_return(
             "vscode.window.visibleTextEditors", with_await=False
