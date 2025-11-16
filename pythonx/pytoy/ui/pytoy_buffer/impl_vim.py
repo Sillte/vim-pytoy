@@ -43,6 +43,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
             return False
         except (AttributeError, TypeError):
             return False
+
     @property
     def valid(self) -> bool:
         return self.buffer.valid

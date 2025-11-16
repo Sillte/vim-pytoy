@@ -17,7 +17,7 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     def path(self) -> Path:
         if self.document.uri.fsPath:
             elem = self.document.uri.fsPath
-            elem = elem.replace("\\", "/") # required to replace.
+            elem = elem.replace("\\", "/")  # required to replace.
             return to_filepath(elem)
         else:
             return to_filepath(self.document.uri.path)
