@@ -1,7 +1,4 @@
 
-
-
-
 def test_function():
     from pytoy.ui.pytoy_window import PytoyWindowProvider
     from pytoy.ui.pytoy_window import PytoyWindow
@@ -29,6 +26,6 @@ def test_unique():
     
 
 from pytoy.ui.pytoy_window import PytoyWindow
-#test_function()
+test_function()
 test_unique()
 print("OK")
