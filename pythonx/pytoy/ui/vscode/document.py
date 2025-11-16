@@ -1,5 +1,6 @@
 # Experimental codes related to VSCode
 import vim
+import re
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict
 
@@ -7,11 +8,29 @@ from pytoy.ui.vscode.api import Api
 
 
 class Uri(BaseModel):
-    path: str
+    path: str = ""  # Some `scheme` does not have the path.
     scheme: str
     fsPath: str | None = None
 
     model_config = ConfigDict(extra="allow", frozen=True)
+    
+    @classmethod
+    def from_bufname(cls, bufname: str): 
+        """Convert the name of buffer to `Uri`.
+        This strongly depends specifications of `vscode-neovim extension`.
+        """
+        from urllib.parse import unquote
+        # For windows path case, the first is not regarded as the scheme.
+        pattern1 = r"^[a-zA-Z]:[\\\/](.*)[\\\/](?P<scheme>[a-zA-Z-_]+):(?P<path>.*)#?(?P<fragment>.*)"
+        # Non-windows path with scheme
+        pattern2 = r"^(?![a-zA-Z]:[\\\/])(?P<scheme>[a-zA-Z-_]+):(?P<path>.*)#?(?P<fragment>.*)"
+        for pattern in [pattern1, pattern2]:
+            if m:= re.match(pattern, bufname):
+                path = unquote(m.group("path"))
+                scheme = m.group("scheme")
+                return cls(path=path, scheme=scheme)
+        # without scheme.
+        return cls(path=unquote(bufname), scheme="file")
 
     def __eq__(self, other):
         if isinstance(other, Uri):
