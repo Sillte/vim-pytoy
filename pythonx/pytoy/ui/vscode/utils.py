@@ -65,7 +65,7 @@ def open_file(path: str | Path):
         )
     })(args.path)
 """
-        Api().eval_with_return(code, args={"args": {"path": path.as_posix()}})
+        Api().eval_with_return(code, opts={"args": {"path": path.as_posix()}})
     else:
         import vim
 

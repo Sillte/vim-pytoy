@@ -4,7 +4,7 @@
 
 
 from pathlib import Path
-from pytoy.ui.vscode.Uri import Uri
+from pytoy.ui.vscode.uri import Uri
 import vim  # (vscode-neovim extention)
 from typing import Sequence
 from pytoy.ui.pytoy_buffer import PytoyBuffer
