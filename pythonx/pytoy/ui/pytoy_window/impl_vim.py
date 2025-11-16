@@ -80,13 +80,9 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
         return PytoyWindowVim(win)
 
     def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
-        def _is_normal_buffer(buf: "vim.Buffer") -> bool:
-            buftype = buf.options.get("buftype", "")
-            return buftype in {"", "nofile"}
-
-        windows =  vim.windows
+        windows =  vim.current.tabpage.windows # For consistey with visibleEditors in VSCode.
         if only_normal_buffers:
-            return [PytoyWindowVim(elem) for elem in windows if _is_normal_buffer(elem.buffer)]
+            return [PytoyWindowVim(elem) for elem in windows if PytoyBufferVim(elem.buffer).is_normal_type]
         return [PytoyWindowVim(elem) for elem in windows]
 
     def create_window(
