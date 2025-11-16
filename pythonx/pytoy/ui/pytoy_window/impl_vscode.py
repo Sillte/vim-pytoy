@@ -56,6 +56,11 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         editors = self._get_editors()
         return [PytoyWindowVSCode(elem) for elem in editors]
 
+    def _get_editors(self):
+        editors = Editor.get_editors()
+        uris = set(BufferURISolver.get_uri_to_bufnr())
+        return [elem for elem in editors if elem.uri in uris]
+
     def create_window(
         self,
         bufname: str,
@@ -74,6 +79,7 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
 
         api = Api()
 
+        # path: (__pystdout__), `scheme`
         vim.command("noautocmd Vsplit" if mode == "vertical" else "noautocmd Split")
         vim.command(f"Edit {bufname}")
         wait_until_true(lambda: _current_uri_check(bufname), timeout=1.0)
@@ -85,27 +91,18 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         current.focus()
         # The below is mandatory to syncronize  neovim and vscode
         uri = Uri(**uri)
-        wait_until_true(lambda: BufferURISolver.get_bufnr(uri) != None, timeout=1.0)
+        wait_until_true(lambda: BufferURISolver.get_bufnr(uri) is not None, timeout=1.0)
         return PytoyWindowVSCode(editor)
 
-    def _get_editors(self):
-        editors = Editor.get_editors()
-        uris = set(BufferURISolver.get_uri_to_bufnr())
-        return [elem for elem in editors if elem.uri in uris]
 
     def _get_window_by_bufname(
-        self, bufname: str, *, only_non_file: bool = True
+        self, bufname: str, *, scheme: str = "untitled", 
     ) -> PytoyWindowVSCode | None:
-        """If there exists a visible window displaying a buffer named `bufname` and that buffer
-        is not a file buffer, return the corresponding PytoyWindowVim.
-        """
-        editors = self._get_editors()
+        editors = Editor.get_editors()
+        buf_uri = Uri(path=bufname, scheme=scheme)
         for editor in editors:
-            if editor.document.uri.path != bufname:
-                continue
-            if only_non_file and PytoyBufferVSCode(editor.document).is_file:
-                continue
-            return PytoyWindowVSCode(editor)
+            if editor.document.uri == buf_uri:
+                return PytoyWindowVSCode(editor)
         return None
 
 

@@ -142,6 +142,8 @@ class RuffChecker:
         from pytoy.tools.ruff import RuffExecutor
         from pytoy.lib_tools.environment_manager import EnvironmentManager
 
+        # Maybe, `make_buffer` changes the current buffer, even if it tries to revert to the original state.
+        current_path = to_filepath(vim.current.buffer.name)
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
         executor = RuffExecutor()
 
@@ -159,9 +161,7 @@ class RuffChecker:
 
         arguments = [elem for elem in fargs if not elem.startswith("-")]
         if not arguments:
-            path = vim.current.buffer.name
-            path = to_filepath(path)
-            fargs.append(path)
+            fargs.append(current_path)
 
         if "--format" in fargs:
             fargs.remove("--format")

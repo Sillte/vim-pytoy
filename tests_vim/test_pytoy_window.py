@@ -15,9 +15,3 @@ for window in PytoyWindow.get_windows():
 
 
 
-
-
-
-
-
-

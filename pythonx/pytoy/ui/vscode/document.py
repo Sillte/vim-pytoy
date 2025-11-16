@@ -19,15 +19,20 @@ class Uri(BaseModel):
         This strongly depends specifications of `vscode-neovim extension`.
         """
         from urllib.parse import unquote
+        # See the test.
         # For windows path case, the first is not regarded as the scheme.
         pattern1 = r"^[a-zA-Z]:[\\\/](.*)[\\\/](?P<scheme>[a-zA-Z-_]+):(?P<path>.*)#?(?P<fragment>.*)"
         # Non-windows path with scheme
-        pattern2 = r"^(?![a-zA-Z]:[\\\/])(?P<scheme>[a-zA-Z-_]+):(?P<path>.*)#?(?P<fragment>.*)"
+        pattern2 = r"(?![a-zA-Z]:[\\\/])(?:(.*?)[\\\/])?(?P<scheme>[a-zA-Z-_]+):(?P<path>.*)#?(?P<fragment>.*)"
         for pattern in [pattern1, pattern2]:
             if m:= re.match(pattern, bufname):
-                path = unquote(m.group("path"))
+                path = m.group("path")
                 scheme = m.group("scheme")
-                return cls(path=path, scheme=scheme)
+                # Remove `Authority`. 
+                if path.startswith("//"):
+                   if (start := path[2:].find("/")) != -1:
+                      path = path[2 + start:]
+                return cls(path=unquote(path), scheme=scheme)
         # without scheme.
         return cls(path=unquote(bufname), scheme="file")
 

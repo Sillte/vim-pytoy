@@ -1,5 +1,14 @@
 from pytoy.command import CommandManager, OptsArgument
 from pytoy.ui import get_ui_enum, UIEnum
+from pytoy.ui.utils import to_filepath
+
+
+@CommandManager.register(name="Source")
+def source(opts: OptsArgument):
+    import vim
+    vals = [vim.eval(f'expand("{elem}")') for elem in opts.fargs]
+    vals = [to_filepath(elem) for elem in vals]
+    vim.command(f'source {" ".join(map(str, vals))}') 
 
 
 @CommandManager.register(name="MyWindow", range=True)
