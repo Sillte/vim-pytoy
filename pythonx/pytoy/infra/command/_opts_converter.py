@@ -1,4 +1,4 @@
-"""The role of `_OptsConverter` is the 2 below two.
+"""The role of `_OptsConverter` is the below two points.
 1. convert the return of `opts` (Lua-like return of the command in neovim)
 so that the given `callable` can accept them as the argument.
 
@@ -17,13 +17,20 @@ whle the Role 2 is is carried out at the definition time of the Command.
 """
 
 import inspect
-from inspect import _empty as empty
 from inspect import Signature
-from typing import Type, Callable
+from typing import Any, Sequence, Mapping
+from pytoy.infra.command.protocol import ConverterProviderProtocol, CommandFunction 
 from pytoy.infra.command.range_count_option import RangeCountOption
+from pytoy.infra.command._opts_arguments_converters import (
+    NoArgumentConverter,
+    OptArgumentConverter,
+    OneStringArgumentConverter,
+    OpsDataclassArgumentConverter,
+    OptsArgument,  # NOQA
+)
 
 
-def _signature(target):
+def _signature(target: CommandFunction) -> Signature:
     if isinstance(target, staticmethod):
         func = target.__func__
     else:
@@ -32,32 +39,32 @@ def _signature(target):
 
 
 class _OptsConverter:
-    __converter_providers = []
-
-    @classmethod
-    def register(cls, reg_cls: Type["_ConverterProvider"]):
-        cls.__converter_providers.append(reg_cls)
-        return reg_cls
+    _provider_classes: list[type[ConverterProviderProtocol]] = [NoArgumentConverter, OptArgumentConverter, OneStringArgumentConverter, OpsDataclassArgumentConverter] 
 
     def __init__(
         self,
-        target,
+        target: CommandFunction,
         nargs: str | int | None,
         range_count_option: RangeCountOption,
     ):
         self.target = target
-        self.range_count_option = range_count_option
-        providers = [cls() for cls in self.__converter_providers]
+        self._range_count_option = range_count_option
         self._converter = self._decide_converter(
-            target, nargs, self.range_count_option, providers
+            target, nargs, self.range_count_option
         )
 
     @property
     def nargs(self) -> str | int:
+        if self._nargs is None:
+            raise ValueError("nargs is not decided yet.")
         return self._nargs
 
+    @property
+    def range_count_option(self) -> RangeCountOption:
+        return self._range_count_option
+
     def _decide_converter(
-        self, target: Callable | classmethod | staticmethod, nargs, rc_opt, providers
+        self, target: CommandFunction, nargs: str | int | None, rc_opt: RangeCountOption
     ):
         """
         * Decide how to convert `opts` to the parameters of python.
@@ -65,163 +72,20 @@ class _OptsConverter:
         * If the options of `Command` is not given, infer them.
             - If contradiction exists, raise Exception.
         """
-        sig = _signature(target)
-        for provider in providers:
-            flag, nargs, rc_opt = provider.condition(sig, nargs, rc_opt)
+        for provider_cls in self._provider_classes:
+            provider = provider_cls()
+            flag, nargs, rc_opt = provider.condition(target, nargs, rc_opt)
             if flag:
                 self._nargs = nargs
-                self.range_count_option = rc_opt
+                self._range_count_option = rc_opt
                 return provider
+
+        sig = _signature(target)
         raise NotImplementedError(
             f"Currently, cannnot handle the signature provided in {sig.parameters=}, {target=}, {nargs=}"
         )
 
-    def __call__(self, opts: dict) -> tuple[tuple, dict]:
+    def __call__(self, opts: dict[str, Any]) -> tuple[Sequence[Any], Mapping[str, Any]]:
         """Interpret `opts` and"""
         return self._converter(opts)
-
-
-class _ConverterProvider:
-    """The class which clarifies the siganture of `_ConverterProvider`."""
-
-    def __init__(self):
-        self._nargs = None
-
-    def condition(
-        self,
-        signature: Signature,
-        nargs: str | int | None,
-        range_count_option: RangeCountOption,
-    ) -> tuple[bool, str | int, RangeCountOption]:
-        """
-        1. Return true if the `__call__` is appropriate for the conversion of `opt` to the signature of `target`.
-        2. Set `self._nargs`.
-        """
-        if nargs is None:
-            nargs = "*"
-        return False, nargs, range_count_option
-
-    def __call__(self, opts: dict) -> tuple[tuple, dict]:
-        """`opts` includes parameters of `Command` in vim-world in a very similar way
-        to `lua` lanaguage of `neovim`.
-        This function must return (*args, **kwags), which are appropriate for the target.
-
-        """
-        return tuple(), dict()
-
-
-@_OptsConverter.register
-class NoArgumentConverter(_ConverterProvider):
-    def condition(
-        self,
-        signature: Signature,
-        nargs: str | int | None,
-        range_count_option: RangeCountOption,
-    ) -> tuple[bool, str | int, RangeCountOption]:
-        parameters = signature.parameters
-        if len(parameters) == 0:
-            assert nargs == 0 or nargs is None, "Consistency"
-            nargs = 0
-            return True, nargs, range_count_option
-        return False, "*", range_count_option
-
-    def __call__(self, opts: dict) -> tuple[tuple, dict]:
-        return tuple(), dict()
-
-
-@_OptsConverter.register
-class OptArgumentConverter(_ConverterProvider):
-    """Basically, give the opt as dict naively."""
-
-    def condition(
-        self,
-        signature: Signature,
-        nargs: str | int | None,
-        range_count_option: RangeCountOption,
-    ) -> tuple[bool, str | int, RangeCountOption]:
-        parameters = signature.parameters
-        if len(parameters) != 1:
-            return False, "*", range_count_option
-        first_parameter = list(parameters.values())[0]
-        if issubclass(first_parameter.annotation, dict):
-            if nargs is None:
-                nargs = "*"
-            return True, nargs, range_count_option
-        return False, "*", range_count_option
-
-    def __call__(self, opts: dict) -> tuple[tuple, dict]:
-        return (opts,), {}
-
-
-@_OptsConverter.register
-class OneStringArgumentConverter(_ConverterProvider):
-    def condition(
-        self,
-        signature: Signature,
-        nargs: str | int | None,
-        range_count_option: RangeCountOption,
-    ) -> tuple[bool, str | int, RangeCountOption]:
-        parameters = signature.parameters
-        if len(parameters) != 1:
-            return False, "*", range_count_option
-        first_parameter = list(parameters.values())[0]
-        if not issubclass(first_parameter.annotation, str):
-            return False, "*", range_count_option
-        if first_parameter.default is empty:
-            if nargs is None:
-                nargs = 1
-            assert str(nargs) != str(0), "Consistency"
-            self._propagate_empty = True
-            return True, nargs, range_count_option
-        else:
-            nargs = "?" if nargs is None else nargs
-            self._propagate_empty = False
-            return True, nargs, range_count_option
-
-    def __call__(self, opts: dict) -> tuple[tuple, dict]:
-        if self._propagate_empty or bool(opts["args"]):
-            return (opts["args"],), {}
-        else:
-            return tuple(), {}
-
-
-from dataclasses import dataclass
-
-
-@dataclass
-class OptsArgument:
-    """This is a naive wrapper of `dict` as `opts`."""
-
-    args: str
-    fargs: list
-    count: int | None = None
-    line1: int | None = None
-    line2: int | None = None
-    range: tuple[int, int] | int | None = None
-
-
-@_OptsConverter.register
-class OpsDataclassArgumentConverter(_ConverterProvider):
-    def condition(
-        self,
-        signature: Signature,
-        nargs: str | int | None,
-        range_count_option: RangeCountOption,
-    ) -> tuple[bool, str | int, RangeCountOption]:
-        parameters = signature.parameters
-        if len(parameters) != 1:
-            return False, "*", range_count_option
-        first_parameter = list(parameters.values())[0]
-        if issubclass(first_parameter.annotation, OptsArgument):
-            if nargs is None:
-                nargs = "*"
-            return True, nargs, range_count_option
-        return False, "*", range_count_option
-
-    def __call__(self, opts: dict) -> tuple[tuple, dict]:
-        opts_argument = OptsArgument(**opts)
-        return (opts_argument,), {}
-
-
-if __name__ == "__main__":
-    pass
+    
