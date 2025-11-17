@@ -3,29 +3,30 @@ from typing import Callable
 from typing import TypeAlias
 import inspect
 
+from pytoy.infra.command.models import RangeCountOption, CommandFunction
 import vim
 
-from pytoy.infra.command.range_count_option import RangeCountOption, RangeCountType
+from pytoy.infra.command.models import RangeCountType
 from pytoy.infra.command._opts_converter import _OptsConverter
 from pytoy.infra.command._customlist_manager import _CustomListManager
 
-from pytoy.infra.command._opts_converter import OptsArgument  # NOQA
+from pytoy.infra.command.models import OptsArgument, NARGS, CommandFunction  # NOQA
 
 
 class CommandManager:
-    FUNCTION_MAPS = dict()
-    COMMAND_MAPS = dict()
-    CONVERTER_MAPS = dict()
+    FUNCTION_MAPS: dict[str, CommandFunction] = dict()
+    COMMAND_MAPS: dict[str, str] = dict()
+    CONVERTER_MAPS: dict[str, _OptsConverter] = dict()
 
     @classmethod
     def register(
         cls,
         name: str,
-        nargs=None,
-        range=None,
-        count=None,
-        complete=None,
-        addr=None,
+        nargs: NARGS | None = None,
+        range: str | int | None = None,
+        count: int | None = None,
+        complete: CommandFunction | str | None = None,
+        addr: None = None,
         *,
         exist_ok: bool = False,
     ):
@@ -35,7 +36,7 @@ class CommandManager:
         def _inner(target):
             nonlocal complete
 
-            def _is_function_target(target):
+            def _is_function_target(target: str | CommandFunction | None) -> bool:
                 return inspect.isfunction(target) or isinstance(target, staticmethod)
 
             if isinstance(target, classmethod):
@@ -46,15 +47,20 @@ class CommandManager:
             if _is_function_target(target):
                 cls._handle_existent_command(name=name, exist_ok=exist_ok)
                 if _is_function_target(complete):
+                    assert not isinstance(complete, str) and complete is not None
                     c_vimfunc_name = _CustomListManager.register(name, complete)
-                    complete = f"customlist,{c_vimfunc_name}"
+                    complete_str = f"customlist,{c_vimfunc_name}"
+                elif isinstance(complete, str):
+                    complete_str = complete
+                else:
+                    complete_str = None
 
                 return cls._register_for_func(
                     target,
                     name,
                     nargs,
                     range_count_option=rc_opt,
-                    complete=complete,
+                    complete=complete_str,
                     addr=addr,
                 )
             elif inspect.isclass(target):
@@ -69,14 +75,15 @@ class CommandManager:
                     c_vimfunc_name = _CustomListManager.register(
                         name, getattr(instance, "customlist")
                     )
-                    complete = f"customlist,{c_vimfunc_name}"
-
+                    complete_vimname = f"customlist,{c_vimfunc_name}"
+                else:
+                    complete_vimname = None
                 return cls._register_for_func(
                     instance,
                     name,
                     nargs,
                     range_count_option=rc_opt,
-                    complete=complete,
+                    complete=complete_vimname,
                     addr=addr,
                 )
             else:
@@ -103,12 +110,12 @@ class CommandManager:
     @classmethod
     def _register_for_func(
         cls,
-        func: Callable,
+        func: CommandFunction,
         name: str,
-        nargs=None,
+        nargs: NARGS | None = None,
         range_count_option: None | RangeCountOption = None,
-        complete=None,
-        addr=None,
+        complete: str | None =None,
+        addr: None =None,
     ) -> Callable:
         # vim_funcname = f"PytoyFunc_FOR_COMMAND_{name}"
         vim_funcname = cls.to_vimfunc_name(name)
@@ -177,13 +184,13 @@ EOF""".strip()
     @classmethod
     def _make_command(
         cls,
-        nargs: str | int,
+        nargs: NARGS,
         command_name: str,
         function_name: str,
         range_count_option: RangeCountOption,
         complete: str | None = None,
         addr: str | None = None,
-    ):
+    ) -> str:
         """Note that the"""
 
         if isinstance(nargs, str):
@@ -306,7 +313,7 @@ if __name__ == "__main__":
         print("Hellomock")
 
     @CommandManager.register(name="MockCommandDictArg")
-    def mock_command(opts: dict):
+    def mock_command2(opts: dict):
         print("Hellomock", opts)
 
     def crude(a, b, c):
@@ -315,7 +322,7 @@ if __name__ == "__main__":
     @CommandManager.register(
         name="MockCommandStrArg", complete=lambda a, b, c: [str(a), str(b), str(c)]
     )
-    def mock_command(s: str):
+    def mock_command3(s: str):
         print("HelloStr", s)
 
     @CommandManager.register(name="MockClass")

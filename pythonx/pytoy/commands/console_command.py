@@ -1,10 +1,11 @@
+from pytoy.infra.command.models import OptsArgument
 from pytoy.lib_tools.terminal_backend.executor import (
     TerminalExecutorManager,
     TerminalExecutor,
 )
 from pytoy.tools import terminal_applications  # noqa
 from pytoy.tools.terminal_applications import get_default_app_name
-from pytoy.infra.command import Command, OptsArgument
+from pytoy.infra.command import Command
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 
 from pytoy.infra.sub_commands import (

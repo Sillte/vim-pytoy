@@ -1,6 +1,7 @@
+from pytoy.infra.command.models import OptsArgument
 import vim
 from pytoy.ui import make_buffer
-from pytoy.command import CommandManager, OptsArgument
+from pytoy.command import CommandManager
 
 from pytoy.lib_tools.terminal_backend.executor import TerminalExecutor
 

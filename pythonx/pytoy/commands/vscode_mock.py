@@ -1,4 +1,5 @@
-from pytoy.command import CommandManager, OptsArgument
+from pytoy.command import CommandManager
+from pytoy.infra.command.models import OptsArgument
 from pytoy.ui import get_ui_enum, UIEnum
 from pytoy.ui.utils import to_filepath
 

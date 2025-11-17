@@ -19,14 +19,13 @@ whle the Role 2 is is carried out at the definition time of the Command.
 import inspect
 from inspect import Signature
 from typing import Any, Sequence, Mapping
-from pytoy.infra.command.protocol import ConverterProviderProtocol, CommandFunction 
-from pytoy.infra.command.range_count_option import RangeCountOption
+from pytoy.infra.command.protocol import ConverterProviderProtocol, CommandFunction
+from pytoy.infra.command.models import OptsArgument, RangeCountOption, NARGS
 from pytoy.infra.command._opts_arguments_converters import (
     NoArgumentConverter,
     OptArgumentConverter,
     OneStringArgumentConverter,
-    OpsDataclassArgumentConverter,
-    OptsArgument,  # NOQA
+    OpsDataclassArgumentConverter,  # NOQA
 )
 
 
@@ -39,22 +38,25 @@ def _signature(target: CommandFunction) -> Signature:
 
 
 class _OptsConverter:
-    _provider_classes: list[type[ConverterProviderProtocol]] = [NoArgumentConverter, OptArgumentConverter, OneStringArgumentConverter, OpsDataclassArgumentConverter] 
+    _provider_classes: list[type[ConverterProviderProtocol]] = [
+        NoArgumentConverter,
+        OptArgumentConverter,
+        OneStringArgumentConverter,
+        OpsDataclassArgumentConverter,
+    ]
 
     def __init__(
         self,
         target: CommandFunction,
-        nargs: str | int | None,
+        nargs: NARGS | None,
         range_count_option: RangeCountOption,
     ):
         self.target = target
         self._range_count_option = range_count_option
-        self._converter = self._decide_converter(
-            target, nargs, self.range_count_option
-        )
+        self._converter = self._decide_converter(target, nargs, self.range_count_option)
 
     @property
-    def nargs(self) -> str | int:
+    def nargs(self) -> NARGS:
         if self._nargs is None:
             raise ValueError("nargs is not decided yet.")
         return self._nargs
@@ -64,7 +66,7 @@ class _OptsConverter:
         return self._range_count_option
 
     def _decide_converter(
-        self, target: CommandFunction, nargs: str | int | None, rc_opt: RangeCountOption
+        self, target: CommandFunction, nargs: NARGS| None, rc_opt: RangeCountOption
     ):
         """
         * Decide how to convert `opts` to the parameters of python.
@@ -88,4 +90,3 @@ class _OptsConverter:
     def __call__(self, opts: dict[str, Any]) -> tuple[Sequence[Any], Mapping[str, Any]]:
         """Interpret `opts` and"""
         return self._converter(opts)
-    

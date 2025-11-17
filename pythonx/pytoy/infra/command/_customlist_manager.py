@@ -1,12 +1,12 @@
 import inspect
 import vim
 import json
-from typing import Callable
-import textwrap 
+import textwrap
+from pytoy.infra.command.models import CommandFunction
 
 
 def _signature(target) -> inspect.Signature:
-    if isinstance(target, (staticmethod, classmethod)):
+    if isinstance(target, staticmethod):
         func = target.__func__
     else:
         func = target
@@ -24,12 +24,12 @@ class _CustomListManager:
             _prefix = ""
         return f"{_prefix}_CustomListManager"
 
-    FUNCTION_MAP = dict()
-    VIMFUNC_TABLE = dict()
+    FUNCTION_MAP: dict[str, CommandFunction] = dict()
+    VIMFUNC_TABLE: dict[str, str] = dict()
     V_CUSTOMLIST_VARIABLE = "g:customlist_manager_result"
 
     @classmethod
-    def register(cls, name: str, target: Callable | staticmethod) -> str:
+    def register(cls, name: str, target: CommandFunction) -> str:
         """Return `vimfunc_name` which is used for `completion`."""
         if name in cls.FUNCTION_MAP:
             cls.deregister(name)
@@ -45,13 +45,16 @@ class _CustomListManager:
 
         class_uri = cls.get_class_uri()
 
-
-        vim.command(cls.WRAP_INVOKE_CUSTOMLIST_TEMPLATE.format(vimfunc_name=vimfunc_name,
-                                        class_uri=class_uri,
-                                        name=name,
-                                        result_var=cls.V_CUSTOMLIST_VARIABLE))
+        vim.command(
+            cls.WRAP_INVOKE_CUSTOMLIST_TEMPLATE.format(
+                vimfunc_name=vimfunc_name,
+                class_uri=class_uri,
+                name=name,
+                result_var=cls.V_CUSTOMLIST_VARIABLE,
+            )
+        )
         return vimfunc_name
-    
+
     WRAP_INVOKE_CUSTOMLIST_TEMPLATE = textwrap.dedent(r"""
         function! {vimfunc_name}(ArgLead, CmdLine, CursorPos)
         python3 << EOF
@@ -66,10 +69,10 @@ class _CustomListManager:
         """)
 
     @classmethod
-    def _invoke_customlist(cls, name: str, arg_lead: str, cmd_line: str, cursor_pos: int) -> None:
+    def _invoke_customlist(
+        cls, name: str, arg_lead: str, cmd_line: str, cursor_pos: int
+    ) -> None:
         # Internally, this function is called.
-        import vim
-
         target = cls.FUNCTION_MAP[name]
         try:
             result = target(arg_lead, cmd_line, cursor_pos)

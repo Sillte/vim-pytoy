@@ -1,5 +1,11 @@
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Callable, Any, TypeAlias
+
+
+# Type alias for command functions (can be callable, classmethod, or staticmethod)
+CommandFunction: TypeAlias = Callable[..., Any] | staticmethod
+NARGS: TypeAlias = str | int 
 
 
 class RangeCountType(Enum):
@@ -18,7 +24,7 @@ class RangeCountOption:
     _type: RangeCountType = field(init=False, default=RangeCountType.NONE)
     _value: str | int | None = field(init=False, default=None)
 
-    def __init__(self, range: None | str = None, count: str | int | None = None):
+    def __init__(self, range: None | str | int = None, count: int | None = None):
         if range is not None and count is not None:
             raise ValueError("Either of `range` or `count` can be set")
 
@@ -60,3 +66,15 @@ class RangeCountOption:
         if self._type is RangeCountType.COUNT:
             result[RangeCountType.COUNT.value] = self._value
         return result
+
+
+@dataclass
+class OptsArgument:
+    """This is a naive wrapper of `dict` as `opts`."""
+
+    args: str
+    fargs: list
+    count: int | None = None
+    line1: int | None = None
+    line2: int | None = None
+    range: tuple[int, int] | int | None = None
