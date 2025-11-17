@@ -10,7 +10,7 @@ class RangeCountType(Enum):
 
 @dataclass
 class RangeCountOption:
-    """In definition of commands, only onde of `range` and `count`
+    """In definition of commands, only one of `range` and `count`
     can be set.
     This class handles this relationship.
     """
