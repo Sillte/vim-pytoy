@@ -1,28 +1,21 @@
-try:
-    from pytoy.infra.sub_commands.tokenizer import Token, tokenize
-    from pytoy.infra.sub_commands.specs import (
-        ArgumentSpec,
-        OptionSpec,
-        Completion,
-        SubCommandSpec,
-        MainCommandSpec,
-        CompletionContext,
-        ContextType,
-    )
-except ImportError:
-    from tokenizer import Token, tokenize
-    from specs import (
-        MainCommandSpec,
-        CompletionContext,
-        ContextType,
-    )
+from pytoy.infra.sub_commands.tokenizer import Token, tokenize
+from pytoy.infra.sub_commands.specs import (
+    ArgumentSpec,
+    OptionSpec,
+    Completion,
+    SubCommandSpec,
+    MainCommandSpec,
+    CompletionContext,
+    ContextType,
+)
+
 
 
 class CompletionContextMaker:
-    def __init__(self, main_spec: MainCommandSpec):
+    def __init__(self, main_spec: MainCommandSpec) -> None:
         self.main_spec = main_spec
 
-    def __call__(self, arg_lead: str, cmd_line: str, cursor_pos: int):
+    def __call__(self, arg_lead: str, cmd_line: str, cursor_pos: int) -> CompletionContext:
         _ = arg_lead
         tokens = tokenize(cmd_line)
         sub_command_token, current_token, prev_token = self._fetch_pivot_tokens(

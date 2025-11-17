@@ -40,9 +40,6 @@ class PytoyBufferProtocol(Protocol):
 
     def hide(self) -> None: ... 
 
-    def get_lines(self, line1: int, line2: int) -> list[str]: ...
-
-    def get_range(self, line1: int, pos1: int, line2: int, pos2: int) -> str: ...
 
 
 class RangeSelectorProtocol(Protocol):

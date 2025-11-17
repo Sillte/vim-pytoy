@@ -13,7 +13,7 @@ class PytoyQuickFixVim(PytoyQuickFixProtocol):
         cwd: str | Path | None = None
     ):
         self.cwd = cwd  # [NOTE] Currently, this is not used, but it may be better to use this?
-    def setlist(self, records: list[dict], win_id: int | None = None):
+    def setlist(self, records: list[dict], win_id: int | None = None) -> None:
         # This is NOT smart code,
         # If `value` is `complex` type, it may cause inconsistency of the data type.
         records = [
@@ -39,7 +39,7 @@ class PytoyQuickFixVim(PytoyQuickFixProtocol):
         else:
             return vim.eval(f"call getloclist({win_id})")
 
-    def close(self, win_id: int | None = None):
+    def close(self, win_id: int | None = None) -> None:
         if win_id is None:
             vim.command("cclose")
             vim.command("call setqflist([])")
@@ -55,7 +55,7 @@ class PytoyQuickFixVim(PytoyQuickFixProtocol):
             else:
                 vim.command("lclose")
 
-    def open(self, win_id: int | None = None):
+    def open(self, win_id: int | None = None) -> None:
         if win_id is None:
             vim.command("copen")
         else:
