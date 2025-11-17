@@ -1,8 +1,7 @@
 from collections.abc import Mapping as AbcMapping
 from typing import Annotated, Any, get_args, get_origin
-from pytoy.infra.command.protocol import ConverterProviderProtocol, CommandFunction  
-from pytoy.infra.command.range_count_option import RangeCountOption
-from dataclasses import dataclass
+from pytoy.infra.command.protocol import ConverterProviderProtocol, CommandFunction
+from pytoy.infra.command.models import OptsArgument, RangeCountOption, NARGS
 
 
 import inspect
@@ -17,12 +16,11 @@ def _signature(target: CommandFunction) -> Signature:
     return inspect.signature(func)
 
 
-
 class NoArgumentConverter(ConverterProviderProtocol):
     def condition(
         self,
         target: CommandFunction,
-        nargs: str | int | None,
+        nargs: NARGS | None,
         range_count_option: RangeCountOption,
     ) -> tuple[bool, str | int, RangeCountOption]:
         signature = _signature(target)
@@ -44,7 +42,7 @@ def _unwrapped_annotation_origin_type(annotation: Any) -> type:
     if annotation is empty:
         return empty
     if get_origin(annotation) is Annotated:
-         annotation = get_args(annotation)[0]
+        annotation = get_args(annotation)[0]
     origin = get_origin(annotation) or annotation
     return origin
 
@@ -55,7 +53,7 @@ class OptArgumentConverter(ConverterProviderProtocol):
     def condition(
         self,
         target: CommandFunction,
-        nargs: str | int | None,
+        nargs: NARGS | None,
         range_count_option: RangeCountOption,
     ) -> tuple[bool, str | int, RangeCountOption]:
         signature = _signature(target)
@@ -86,7 +84,7 @@ class OneStringArgumentConverter(ConverterProviderProtocol):
     def condition(
         self,
         target: CommandFunction,
-        nargs: str | int | None,
+        nargs: NARGS | None,
         range_count_option: RangeCountOption,
     ) -> tuple[bool, str | int, RangeCountOption]:
         signature = _signature(target)
@@ -115,23 +113,11 @@ class OneStringArgumentConverter(ConverterProviderProtocol):
             return tuple(), {}
 
 
-@dataclass
-class OptsArgument:
-    """This is a naive wrapper of `dict` as `opts`."""
-
-    args: str
-    fargs: list
-    count: int | None = None
-    line1: int | None = None
-    line2: int | None = None
-    range: tuple[int, int] | int | None = None
-
-
 class OpsDataclassArgumentConverter(ConverterProviderProtocol):
     def condition(
         self,
         target: CommandFunction,
-        nargs: str | int | None,
+        nargs: NARGS | None,
         range_count_option: RangeCountOption,
     ) -> tuple[bool, str | int, RangeCountOption]:
         signature = _signature(target)

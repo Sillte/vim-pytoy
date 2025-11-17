@@ -4,7 +4,7 @@ import os
 import json
 import vim
 from pytoy.command import CommandManager
-from pytoy.command import  OptsArgument
+from pytoy.infra.command.models import  OptsArgument
 from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.devtools.vim_rebooter import VimRebooter
 from pytoy.infra.timertask import TimerTask

@@ -1,4 +1,5 @@
-from pytoy.infra.command import Command, OptsArgument
+from pytoy.infra.command import Command
+from pytoy.infra.command.models import OptsArgument
 from pytoy.ui.pytoy_window import PytoyWindow
 
 from pytoy.infra.sub_commands import (

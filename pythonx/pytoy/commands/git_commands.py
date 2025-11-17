@@ -1,8 +1,9 @@
 """git_commands"""
 
+from pytoy.infra.command.models import OptsArgument
 import vim
 from pathlib import Path
-from pytoy.command import CommandManager, OptsArgument
+from pytoy.command import CommandManager
 from pytoy.tools.git import get_remote_link
 from pytoy.ui import to_filepath
 from pytoy.ui.pytoy_buffer import PytoyBuffer
