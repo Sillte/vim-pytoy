@@ -17,7 +17,7 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
     def __init__(
         self,
         cwd: str | Path | None = None
-    ):
+    ) -> None:
         self.records = []
         self.current_idx: int | None = None  # It starts from 1.
         self.cwd = cwd
@@ -33,7 +33,7 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
             record["filename"] = (basepath / filename).resolve().as_posix()
         return record
 
-    def setlist(self, records: list[dict], win_id: int | None = None):
+    def setlist(self, records: list[dict], win_id: int | None = None) -> None:
         if win_id is None:
             if self.cwd is None:
                 basepath = get_current_directory()
@@ -51,14 +51,14 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
         else:
             self.current_idx = 1
 
-    def getlist(self, win_id: int | None = None):
+    def getlist(self, win_id: int | None = None) -> list[dict]:
         return copy.deepcopy(self.records)
 
-    def close(self, win_id: int | None = None):
+    def close(self, win_id: int | None = None) -> None:
         self.records = []
         self.current_idx = None
 
-    def open(self, win_id: int | None = None):
+    def open(self, win_id: int | None = None) -> None:
         pass
 
     def go(self, idx: int | None = None, win_id: int | None = None) -> None:
@@ -67,13 +67,13 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
             return
         self._update_cursor(diff_idx=0, fixed_idx=idx)
 
-    def next(self, win_id: int | None = None):
+    def next(self, win_id: int | None = None) -> None:
         if self.current_idx is None:
             print("QuickFix is not SET.")
             return
         self._update_cursor(diff_idx=+1)
 
-    def prev(self, win_id: int | None = None):
+    def prev(self, win_id: int | None = None) -> None:
         if self.current_idx is None:
             print("QuickFix is not SET.")
             return

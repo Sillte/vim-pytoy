@@ -153,6 +153,7 @@ class TimerTaskManagerDebug:
 
 @CommandManager.register(name="PytoyExecute")
 def execute_pytoy(opts: OptsArgument):
+    import vim
     import pytoy 
     from pytoy.ui.utils import to_filepath
     from pathlib import Path
@@ -161,4 +162,4 @@ def execute_pytoy(opts: OptsArgument):
         path = to_filepath(vim.current.buffer.name)
     else:
         path = to_filepath(name)
-    exec(Path.read_text(path))
+    vim.command(f"py3file {path.as_posix()}")

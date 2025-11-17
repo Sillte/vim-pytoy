@@ -95,3 +95,13 @@ class MockVimModule:
         if expr.startswith("win_getid("):
             return 1001
         return self._eval_results.get(expr, "")
+
+    def exec_lua(self, command: str) -> Any:
+        return None
+
+    @property
+    def lua(self) -> Any:
+        from unittest.mock import MagicMock
+        mock = MagicMock()
+        mock.__call__ = MagicMock(return_value=None) 
+        return mock
