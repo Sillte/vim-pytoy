@@ -1,4 +1,6 @@
 import vim
+from typing import Callable
+from textwrap import dedent
 
 import inspect
 
@@ -10,9 +12,9 @@ class TimerTask:
 
     """
 
-    FUNCTION_MAP = dict()  # name -> function
-    TIMER_MAP = dict()  # name -> timer-id
-    VIMFUNCNAME_MAP = dict()  # name -> vim_funcname
+    FUNCTION_MAP: dict[str, Callable] = dict()  # name -> function
+    TIMER_MAP: dict[str, int] = dict()  # name -> timer-id
+    VIMFUNCNAME_MAP: dict[str, str] = dict()  # name -> vim_funcname
 
     counter = 0
 
@@ -38,11 +40,13 @@ class TimerTask:
         procedures = (
             f"python3 {import_prefix} {prefix}TimerTask.FUNCTION_MAP['{name}']()"
         )
+        
 
-        vim.command(f"""function! {vim_funcname}(timer) 
-            {procedures}
+        vim.command(dedent(f"""
+            function! {vim_funcname}(timer)
+                {procedures}
             endfunction
-            """)
+            """).strip())
         timer_id = int(
             vim.eval(f"timer_start({interval}, '{vim_funcname}', {{'repeat': -1}})")
         )
@@ -85,20 +89,21 @@ class TimerTask:
 
         vim_funcname = f"OneShotTask_{name}_{id(func)}"
 
-        procedures = f"""
-python3 << EOF
-from {__name__} import TimerTask
-TimerTask.FUNCTION_MAP['{name}']()
-del TimerTask.FUNCTION_MAP['{name}']
-del TimerTask.VIMFUNCNAME_MAP['{name}']
-EOF
-    """.strip()
+        procedures = dedent(f"""
+            python3 << EOF
+            from {__name__} import TimerTask
+            TimerTask.FUNCTION_MAP['{name}']()
+            del TimerTask.FUNCTION_MAP['{name}']
+            del TimerTask.VIMFUNCNAME_MAP['{name}']
+            EOF
+            """).strip()
 
-        vim.command(f"""function! {vim_funcname}(timer) 
-            {procedures}
-            call timer_start(10, {{ -> execute('delfunction! {vim_funcname}') }})
+        vim.command(dedent(f"""
+            function! {vim_funcname}(timer)
+                {procedures}
+                call timer_start(10, {{ -> execute('delfunction! {vim_funcname}') }})
             endfunction
-            """)
+            """).strip())
 
         cls.FUNCTION_MAP[name] = func
         cls.VIMFUNCNAME_MAP[name] = vim_funcname
