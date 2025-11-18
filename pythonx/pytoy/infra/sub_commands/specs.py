@@ -1,17 +1,12 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Type
+from pytoy.infra.sub_commands.tokenizer import Token
 
 
-try:
-    from pytoy.infra.sub_commands.tokenizer import Token
-except ImportError:
-    from tokenizer import Token
+type Completion = list[str] | Callable[[], list[str]]
 
 
-Completion = list[str] | Callable[[], list[str]]
-
-OptionType = str | int | float | bool
 
 
 @dataclass
@@ -28,6 +23,11 @@ class _DefaultSentinel:
 
 DEFAULT = _DefaultSentinel()
 
+type RealOptionType = str | int | float | bool
+type FakeOptionType = _DefaultSentinel | None
+type OptionType = RealOptionType | FakeOptionType
+
+
 
 @dataclass
 class OptionSpec:
@@ -38,7 +38,7 @@ class OptionSpec:
     completion: Completion | None = None  # used for completion
     expects_value: bool = False
     description: str = ""
-    default: OptionType | None | _DefaultSentinel = DEFAULT
+    default: OptionType = DEFAULT
 
 
 @dataclass

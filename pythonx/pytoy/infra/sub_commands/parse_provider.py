@@ -1,28 +1,17 @@
-try:
-    from pytoy.infra.sub_commands.tokenizer import Token, tokenize
-    from pytoy.infra.sub_commands.specs import (
-        ArgumentSpec,
-        OptionSpec,
-        OptionType,
-        Completion,
-        SubCommandSpec,
-        MainCommandSpec,
-        CompletionContext,
-        ContextType,
-        ParsedArguments,
-    )
-    from pytoy.infra.sub_commands.completion_context_maker import CompletionContextMaker
-except ImportError:
-    from tokenizer import Token, tokenize
-    from specs import (
-        ArgumentSpec,
-        OptionSpec,
-        OptionType,
-        SubCommandSpec,
-        MainCommandSpec,
-        ParsedArguments,
-    )
-
+from pytoy.infra.sub_commands.tokenizer import Token, tokenize
+from pytoy.infra.sub_commands.specs import (
+    ArgumentSpec,
+    OptionSpec,
+    OptionType,
+    Completion,
+    SubCommandSpec,
+    MainCommandSpec,
+    CompletionContext,
+    ContextType,
+    ParsedArguments,
+    _DefaultSentinel,
+)
+from pytoy.infra.sub_commands.completion_context_maker import CompletionContextMaker
 from dataclasses import dataclass
 
 
@@ -174,28 +163,26 @@ def make_parsed_command(main_spec: MainCommandSpec, arg_line: str) -> ParsedComm
 def to_parsed_arguments(
     main_spec: MainCommandSpec, parsed_command: ParsedCommand
 ) -> ParsedArguments:
-    (
-        """
-    [NOTE]:
+    """[NOTE]:
     1. Currently, non-existent check is not performed in this layer. 
     2. Currently, inconsistency of definition is not yet checked.
-    """,
-    )
+    """
     # print("ParsedCommand", parsed_command)
 
     def _type_conversion(
-        spec: MainCommandSpec | SubCommandSpec, options: dict[str, str | None]
-    ) -> dict[str, OptionType | None]:
+        spec: MainCommandSpec | SubCommandSpec, options: dict[str, str]
+    ) -> dict[str, OptionType]:
         result = dict()
         name_to_spec = {spec.name: spec for spec in spec.options}
 
         for key, value in options.items():
             if key in name_to_spec:
                 opt_spec = name_to_spec[key]
-                if opt_spec.type and value is not None:
-                    value = opt_spec.type(value)
-                else:
-                    value = value
+                if opt_spec.type and value:
+                    try:
+                        value = opt_spec.type(value)
+                    except TypeError:
+                        pass
             result[key] = value
         return result
 
@@ -207,6 +194,8 @@ def to_parsed_arguments(
         name_to_spec = {spec.name: spec for spec in main_spec.commands}
         sub_spec = name_to_spec[parsed_command.sub_command]
         sub_options = _type_conversion(sub_spec, sub_options)
+    else:
+        sub_options = dict()
     return ParsedArguments(
         sub_command=parsed_command.sub_command,
         main_options=main_options,

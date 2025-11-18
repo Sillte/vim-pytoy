@@ -1,9 +1,5 @@
 from pytoy.infra.sub_commands.tokenizer import Token, tokenize
 from pytoy.infra.sub_commands.specs import (
-    ArgumentSpec,
-    OptionSpec,
-    Completion,
-    SubCommandSpec,
     MainCommandSpec,
     CompletionContext,
     ContextType,

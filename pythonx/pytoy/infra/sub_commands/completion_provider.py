@@ -1,23 +1,14 @@
-try:
-    from pytoy.infra.sub_commands.specs import (
-        ArgumentSpec,
-        OptionSpec,
-        Completion,
-        SubCommandSpec,
-        MainCommandSpec,
-        CompletionContext,
-        ContextType,
-    )
-    from pytoy.infra.sub_commands.completion_context_maker import CompletionContextMaker
-except ImportError:
-    from specs import (
-        OptionSpec,
-        Completion,
-        MainCommandSpec,
-        CompletionContext,
-        ContextType,
-    )
-    from pytoy.infra.sub_commands.completion_context_maker import CompletionContextMaker
+from pytoy.infra.sub_commands.specs import (
+    ArgumentSpec,
+    OptionSpec,
+    Completion,
+    SubCommandSpec,
+    MainCommandSpec,
+    CompletionContext,
+    ContextType,
+)
+from pytoy.infra.sub_commands.completion_context_maker import CompletionContextMaker
+
 
 
 class _OptionCandidatesProvider:
