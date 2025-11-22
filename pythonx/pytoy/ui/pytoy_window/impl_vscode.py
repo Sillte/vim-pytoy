@@ -14,7 +14,7 @@ from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
 )
-from pytoy.ui.vscode.document import Api
+from pytoy.ui.vscode.document import Api, Document
 from pytoy.ui.vscode.editor import Editor
 from pytoy.ui.vscode.utils import wait_until_true
 
@@ -48,6 +48,12 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         return self.editor == other.editor
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
+        uris = self.editor.get_clean_target_uris_for_unique(within_tabs=within_tabs, within_windows=within_windows)
+        documents = [Document(uri=uri) for uri in uris]
+        buffers = [PytoyBufferVSCode(doc) for doc in documents]
+        for buffer in buffers:
+            buffer.init_buffer(content="")
+            print("buffer", buffer.content)
         self.editor.unique(within_tabs=within_tabs, within_windows=within_windows)
 
 
