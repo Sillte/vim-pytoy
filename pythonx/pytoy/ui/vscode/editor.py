@@ -131,193 +131,157 @@ class Editor(BaseModel):
         return (self.document == other.document) and (
             self.viewColumn == other.viewColumn
         )
+        
+    def get_clean_target_uris_for_unique(self, within_tabs: bool = False, within_windows: bool = True) -> Sequence[Uri]:
+        """Return the `dirty` uris which should be empty for the smooth `unique`.
+        """
+        jscode = """
+        (async (args) => {
+            
+            /**
+             * すべてのUntitledドキュメントを収集します。
+             * @returns {vscode.TextDocument[]} 
+             */
+            function collectUntitled() {
+                // vscodeはグローバルに存在すると仮定
+                return vscode.workspace.textDocuments.filter(
+                    doc => doc.uri.scheme === "untitled"
+                );
+            }
+
+            /**
+             * 削除対象から除外（キープ）すべきUntitledドキュメントのURIのSetを収集します。
+             * @param {vscode.TextEditor} targetEditor 
+             * @param {boolean} withinTab 
+             * @param {boolean} withinWindows 
+             * @returns {Set} URI文字列のSet
+             */
+            function collectUntitledToKeep(targetEditor, withinTab, withinWindows) {
+                const targetColumn = targetEditor.viewColumn;
+
+                const keep = new Set(); // JS構文に修正
+
+                for (const group of vscode.window.tabGroups.all) {
+                    const isSameGroup = group.viewColumn === targetColumn;
+
+                    for (const tab of group.tabs) {
+                        // tab.input が存在し、uriプロパティを持ち、schemeが"untitled"であるかチェック
+                        // tab.input.uri が存在しない場合があるため、安全にアクセス
+                        const uri = tab.input && tab.input.uri;
+                        if (!uri || uri.scheme !== "untitled") continue;
+
+                        const isTargetTab = uri.toString() === targetEditor.document.uri.toString();
+
+                        // 削除ゾーンの条件:
+                        // 1. (withinWindowsがtrue かつ ターゲットと同じグループではない)
+                        // 2. または (withinTabがtrue かつ ターゲットと同じグループ かつ ターゲットのタブではない)
+                        const inRemovalZone =
+                            (args.withinWindows && !isSameGroup) ||
+                            (args.withinTab && isSameGroup && !isTargetTab);
+
+                        // 削除対象でない（キープすべき）場合、Setに追加
+                        if (!inRemovalZone) {
+                            keep.add(uri.toString());
+                        }
+                    }
+                }
+                return keep;
+            }
+
+            /**
+             * ダーティであり、かつクリーンアップ対象となるUntitledドキュメントのURIの配列を返します。
+             * @param {vscode.TextEditor} targetEditor 
+             * @param {boolean} withinTab 
+             * @param {boolean} withinWindows 
+             * @returns {any[]} URIのJSONオブジェクトの配列
+             */
+            function getCleanUntitledTargets(targetEditor, withinTab, withinWindows) {
+                const dirty = collectUntitled();
+                const keep = collectUntitledToKeep(targetEditor, withinTab, withinWindows);
+
+                // クリーンアップ対象 (キープリストに含まれていないもの)
+                const toCleanDocs = dirty.filter(doc => !keep.has(doc.uri.toString()));
+
+                // URIオブジェクトの配列に変換して返却
+                return toCleanDocs.map(doc => doc.uri.toJSON()); 
+            }
+
+            // --- メイン処理 ---
+            
+            // args.uri は Lua 側から渡されたディクショナリ形式（または文字列）を想定
+            const targetUri = vscode.Uri.from(args.uri);
+            
+            
+            // ターゲットエディタを見つける
+            const editor = vscode.window.visibleTextEditors.find(
+                e => e.document.uri.toString() === targetUri.toString() &&
+                e.viewColumn === args.viewColumn
+            );
+
+
+            if (!editor) return [];
+
+            // クリーンアップ対象のURIリストを取得
+            return getCleanUntitledTargets(editor, args.withinTab, args.withinWindows);
+
+        })(args)
+        """
+
+        args = {
+            "args": {
+                "uri": dict(self.uri),
+                "viewColumn": self.viewColumn,
+                "withinTab": within_tabs,
+                "withinWindows": within_windows,
+            }
+        }
+        api = Api()
+        if self.viewColumn is None:
+            msg = "`viewColumn` must not be None in `unique`."
+            raise ValueError(msg)
+        result = api.eval_with_return(jscode, with_await=True, opts=args)
+        return [Uri.model_validate(elem) for elem in result]
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True):
         """Make it an unique editor."""
         jscode = """
-        (async (uri_dict, viewColumn, withinTab, withinWindows) => {
+    (async (args) => {
 
-    function countAllDocumentInstances() {
-        const uriToCount = new Map();
-        for (const group of vscode.window.tabGroups.all) {
-            for (const tab of group.tabs) {
-                // tab.input がテキスト入力（ファイルまたは untitled）であることを確認
-                if (tab.input && tab.input.uri) {
-                    const uriStr = tab.input.uri.toString();
-                    uriToCount.set(uriStr, (uriToCount.get(uriStr) || 0) + 1);
-                }
-            }
-        }
-        return uriToCount;
-    }
-
-    async function waitForViewColumn(entity, maxRetry = 8, interval = 60) {
-        for (let i = 0; i < maxRetry; i++) {
-            if (entity.viewColumn !== undefined && entity.viewColumn !== null) {
-                return entity.viewColumn;
-            }
-            await new Promise(resolve => setTimeout(resolve, interval));
-        }
-        return null
-}
-
-    /**
-     * 特定のエディタと同じグループにある、そのエディタ以外のすべてのタブを閉じます。
-     * untitled ファイルについては、それがそのURIの最後のインスタンスである場合にのみ
-     * 'revertAndCloseActiveEditor' を使用して閉じます。
-     * * @param {vscode.TextEditor} editor - 基準となるエディタ
-     * @param {Map<string, number>} uriToCount - 全ドキュメントのインスタンスカウント
-     */
-    async function revertCloseTabWithinEditor(editor, uriToCount) {
-        const targetColumn = editor.viewColumn;
-        const targetUriStr = editor.document.uri.toString();
+        // --- メイン処理 ---
         
-        // ターゲット Group を特定
-        const targetGroup = vscode.window.tabGroups.all.find(
-            g => g.viewColumn === targetColumn
+        // args.uri は Lua 側から渡されたディクショナリ形式（または文字列）を想定
+        const targetUri = vscode.Uri.from(args.uri);
+        
+        // ターゲットエディタを見つける
+        const editor = vscode.window.visibleTextEditors.find(
+            e => e.document.uri.toString() === targetUri.toString() &&
+            e.viewColumn === args.viewColumn
         );
-        if (!targetGroup) return;
 
-        // 閉じる対象のタブを収集。元のエディタ（targetUriStr）は除く
-        const tabsToClose = targetGroup.tabs.filter(tab => {
-            return tab.input && tab.input.uri && tab.input.uri.toString() !== targetUriStr;
-        });
+        if (!editor) return; // ターゲットエディタが見つからなければ終了
 
-        // 削除処理を実行
-        for (const tab of tabsToClose) {
-            const uri = tab.input.uri;
-            const uriStr = uri.toString();
-            const scheme = uri.scheme;
-            
-            let currentCount = uriToCount.get(uriStr) || 0;
-            
-            // 1. タブをアクティブ化（特定 column を維持）
-            await vscode.window.showTextDocument(uri, {
-                viewColumn: targetColumn,
-                preview: true // "上書き可能タブ"として扱う
-            });
 
-            // このタブを閉じると、そのURIの開かれている数が1以下になるかどうか
-            const isLastEditorForUri = currentCount <= 1;
-
-            // 2. 削除処理を実行
-            if (scheme === "untitled" && isLastEditorForUri) {
-                 // 最後の untitled インスタンスの場合: revertAndClose
-                await vscode.commands.executeCommand("workbench.action.revertAndCloseActiveEditor");
-            } else {
-                // 通常のファイル、または他の場所でも開かれている untitled の場合: close
-                await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-            }
-            
-            // 3. 辞書のカウントをデクリメント
-            if (currentCount > 0) {
-                uriToCount.set(uriStr, currentCount - 1);
-            }
+        // withinWindowsがtrueの場合、他のグループのエディタを閉じる
+        if (args.withinWindows) {
+            await vscode.commands.executeCommand(
+                "workbench.action.closeEditorsInOtherGroups"
+            );
         }
-        
-        // 最後に “元の editor” にフォーカスを戻して安定状態に戻す
-        let originalViewColumn = await waitForViewColumn(editor);
-        if (!originalViewColumn) return;
 
+        // ターゲットエディタを再度アクティブにしてフォーカスを維持
         await vscode.window.showTextDocument(editor.document, {
-            viewColumn: originalViewColumn, // アクティブエディタのviewColumnに戻す
-            preview: false // 固定タブとして開く
+            viewColumn: args.viewColumn,
+            preserveFocus: true
         });
-    }
 
-    /**
-     * ターゲットエディタが開かれているグループ以外の、全てのタブを閉じます。
-     *
-     * @param {vscode.TextEditor} targetEditor - 残したいエディタグループを特定するための基準エディタ
-     * @param {Map<string, number>} uriToCount - 全ドキュメントのインスタンスカウント
-     */
-    async function closeOtherWindows(targetEditor, uriToCount) {
-        const targetColumn = targetEditor.viewColumn;
-        if (!targetEditor.viewColumn) {
-            console.log(`viewColumn is undefined.`)
+        // withinTabがtrueの場合、同じグループ内の他のエディタを閉じる
+        if (args.withinTab) {
+            await vscode.commands.executeCommand(
+                "workbench.action.closeOtherEditors"
+            );
         }
 
-        const tabsToClose = [];
-        for (const group of vscode.window.tabGroups.all) {
-            // `viewColumn` is required for groups.
-            if (group.viewColumn === targetColumn) continue; 
-
-            for (const tab of group.tabs) {
-                const input = tab.input;
-                if (input && input.uri) {
-                    const uri = input.uri;
-                    tabsToClose.push({
-                        uri: uri,
-                        viewColumn: group.viewColumn,
-                        scheme: uri.scheme
-                    });
-                }
-            }
-        }
-        
-        // viewColumn の降順で sort（右→左で閉じることで安定性を高める）
-        tabsToClose.sort((a, b) => (b.viewColumn || 0) - (a.viewColumn || 0));
-
-        // 安定した順で閉じる
-        for (const tabTarget of tabsToClose) {
-            const uriStr = tabTarget.uri.toString();
-            let currentCount = uriToCount.get(uriStr) || 0;
-
-            let tabViewColumn = await waitForViewColumn(tabTarget);
-            if (!tabViewColumn) continue;
-            // 1. タブをアクティブ化
-            await vscode.window.showTextDocument(tabTarget.uri, {
-                preview: false,
-                viewColumn: tabViewColumn // 閉じる対象のグループでアクティブ化
-            });
-
-            // このタブを閉じると、そのURIの開かれている数が1以下になるかどうか
-            const isLastEditorForUri = currentCount <= 1;
-
-            // 2. 削除処理を実行
-            if (tabTarget.scheme === "untitled" && isLastEditorForUri) {
-                await vscode.commands.executeCommand("workbench.action.revertAndCloseActiveEditor");
-            } else {
-                await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-            }
-
-            // 3. 辞書のカウントをデクリメント
-            if (currentCount > 0) {
-                uriToCount.set(uriStr, currentCount - 1);
-            }
-        }
-    }
-
-/**
- * 外部から受け取った引数に基づき、タブを閉じる操作を実行します。
- */
-async function executeCloseOperations(uri_dict, viewColumn, withinTab, withinWindows) {
-    if (!uri_dict || !args.viewColumn) return;
-
-    const uri = vscode.Uri.from({ "scheme": uri_dict.scheme, "path": uri_dict.path });
-    const editor = vscode.window.visibleTextEditors.find(
-        editor => editor.document.uri.path === uri.path &&
-                  editor.document.uri.scheme == uri.scheme &&   
-                  editor.viewColumn === viewColumn
-    );
-
-    if (!editor) return;
-
-    // 両方の操作で必要となるため、一度だけURIカウントマップを作成
-    const uriToCount = countAllDocumentInstances();
-    
-    // closeOtherWindows (他のグループを閉じる) を先に実行
-    if (withinWindows) {
-        await closeOtherWindows(editor, uriToCount);
-    }
-    
-    // revertCloseTabWithinEditor (現在のグループの他のタブを閉じる) を実行
-    if (withinTab) {
-        await revertCloseTabWithinEditor(editor, uriToCount);
-    }
-}
-    await executeCloseOperations(uri_dict, viewColumn, withinTab, withinWindows)
-    })(args.uri, args.viewColumn, args.withinTab, args.withinWindows)
+    })(args);
     """
         args = {
             "args": {
@@ -332,3 +296,4 @@ async function executeCloseOperations(uri_dict, viewColumn, withinTab, withinWin
             msg = "`viewColumn` must not be None in `unique`."
             raise ValueError(msg)
         return api.eval_with_return(jscode, with_await=True, opts=args)
+    

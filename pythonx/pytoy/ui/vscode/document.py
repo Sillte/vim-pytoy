@@ -123,10 +123,6 @@ class Document(BaseModel):
         d => d.uri.path === path
       );
 
-      if (!doc) {
-        return false;
-      }
-
       const editors = vscode.window.visibleTextEditors.filter(e => e.document === doc);
       if (editors.length == 0) {
         return false;
@@ -141,6 +137,7 @@ class Document(BaseModel):
           editBuilder.delete(fullRange);
           editBuilder.insert(new vscode.Position(0, 0), content);
       });
+      
     })(args.path, args.value)
     """
         result = api.eval_with_return(
