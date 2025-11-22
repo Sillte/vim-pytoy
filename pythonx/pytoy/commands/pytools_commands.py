@@ -1,11 +1,13 @@
 """Python related commands."""
 
+from typing import Sequence
 import vim
 from pytoy.command import CommandManager
 from pytoy.ui import make_buffer
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.ui.pytoy_window import PytoyWindow
 from pytoy.ui.utils import to_filepath
+from pytoy.ui.pytoy_quickfix import QuickFixRecord
 
 
 @CommandManager.register(name="Pytest")
@@ -14,25 +16,31 @@ class PyTestCommand:
 
     def __call__(self, command_type: str = "func"):
         import vim
-        from pytoy.tools import PytestExecutor
+        from pytoy.lib_tools import BufferExecutor
         from pytoy import TERM_STDOUT
 
-        executor = PytestExecutor()
-        # `make_buffer` may change the current buffer.
-        path = vim.current.buffer.name
-        path = to_filepath(path)
+        path = to_filepath(vim.current.buffer.name)
+        cwd = path.parent
         line = int(vim.eval("line('.')"))
 
+        from pytoy.tools.pytest.utils import to_func_command, PytestDecipher
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
-        if command_type == "func":
-            executor.runfunc(path, line, pytoy_buffer)
-        elif command_type == "file":
-            executor.runfile(path, pytoy_buffer)
-        elif command_type == "all":
-            executor.runall(pytoy_buffer)
-        else:
-            raise ValueError("Specified `command_type` is not valid.")
 
+        command_type_to_func = {}
+        suffix = "--capture=no --quiet"
+        command_type_to_func["func"] = lambda path, line: to_func_command(path, line, suffix)
+        command_type_to_func["file"] = lambda path, line: f"pytest '{path}' {suffix}"
+        command_type_to_func["all"] = lambda path, line: f"pytest {suffix}"
+
+        def make_qf_records(content: str) -> Sequence[QuickFixRecord]:
+            rows = PytestDecipher(content).records
+            return [QuickFixRecord.from_dict(row) for row in rows]
+        
+        command = command_type_to_func[command_type](path, line)
+        
+        executor = BufferExecutor("PytestCommand", stdout=pytoy_buffer)
+        executor.run(command, make_qf_records, cwd=cwd)
+        
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         candidates = ["func", "file", "all"]
         valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
@@ -44,7 +52,7 @@ class PyTestCommand:
 @CommandManager.register(name="Mypy")
 class MypyCommand:
     def __call__(self, opts: dict):
-        from pytoy.tools.mypy import MypyExecutor
+        from pytoy.lib_tools import BufferExecutor
         from pytoy import TERM_STDOUT
         from pytoy.lib_tools.environment_manager import EnvironmentManager
         import vim
@@ -67,10 +75,14 @@ class MypyCommand:
             path = to_filepath(path)
             fargs.append(path)
 
-        executor = MypyExecutor()
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
-        #print(fargs, type(fargs), flush=True)
-        executor.check(fargs, pytoy_buffer)
+        arg = " ".join(map(str, fargs))
+        command = f'mypy --show-traceback --show-column-numbers "{arg}"'
+        executor = BufferExecutor("MypyExecutor", pytoy_buffer)
+
+        quickfix_regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<_type>(.+)):(?P<text>(.+))"
+        executor.run(command, quickfix_regex)
+
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         candidates = ["workspace"]
@@ -135,17 +147,40 @@ class GotoDefinitionCommand:
             raise ValueError("Cannot use `jedi_vim.goto`")
 
 
+
+@CommandManager.register(name="CSpell")
+class CSpellCommand:
+    def __call__(self):
+
+        from pathlib import Path
+        from pytoy import TERM_STDOUT
+        from pytoy.tools.cspell import CSpellOneFileChecker
+        from pytoy.ui import to_filepath
+        from pytoy.ui.pytoy_quickfix import PytoyQuickFix, handle_records, to_quickfix_creator
+
+        path = to_filepath(vim.current.buffer.name)
+
+        if Path(path).suffix == ".py":
+            checker = CSpellOneFileChecker(only_python_string=True)
+        else:
+            checker = CSpellOneFileChecker(only_python_string=False)
+        output = checker(path)
+        regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+).*\((?P<text>(.+))\)"
+        maker = to_quickfix_creator(regex)
+        records = maker(output)
+        handle_records(PytoyQuickFix(cwd=path.parent), records, win_id=None)
+
+
 @CommandManager.register(name="RuffCheck")
 class RuffChecker:
     def __call__(self, opts: dict):
         from pytoy import TERM_STDOUT
-        from pytoy.tools.ruff import RuffExecutor
+        from pytoy.lib_tools.buffer_executor import BufferExecutor
         from pytoy.lib_tools.environment_manager import EnvironmentManager
 
-        # Maybe, `make_buffer` changes the current buffer, even if it tries to revert to the original state.
         current_path = to_filepath(vim.current.buffer.name)
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
-        executor = RuffExecutor()
+        executor = BufferExecutor("RuffChecer", pytoy_buffer)
 
         fargs = opts["fargs"]
         if "workspace" in fargs:
@@ -165,10 +200,14 @@ class RuffChecker:
 
         if "--format" in fargs:
             fargs.remove("--format")
-            # All other options corresond
-            executor.format(arguments, pytoy_buffer, command_wrapper=None)
+            # All other options
+            command = f"ruff format {fargs[0]}"
+            executor.sync_run(command)
 
-        executor.check(fargs, pytoy_buffer)
+        command = f"ruff check {' '.join(map(str, fargs))} --output-format=concise"
+        print("command", command)
+        regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<text>(.+))"
+        executor.run(command, quickfix_creator=regex)
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         candidates = ["workspace", "--fix", "--format", "--unsafe-fixes"]
@@ -176,46 +215,3 @@ class RuffChecker:
         if valid_candidates:
             return valid_candidates
         return candidates
-
-
-@CommandManager.register(name="CSpell")
-class CSpellCommand:
-    def __call__(self):
-        import re
-
-        from pathlib import Path
-        from pytoy import TERM_STDOUT
-        from pytoy.tools.cspell import CSpellOneFileChecker
-        from pytoy.ui import to_filepath
-
-        path = to_filepath(vim.current.buffer.name)
-        if Path(path).suffix == ".py":
-            checker = CSpellOneFileChecker(only_python_string=True)
-        else:
-            checker = CSpellOneFileChecker(only_python_string=False)
-        output = checker(path)
-
-        records = []
-        pattern = re.compile(
-            r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+).*\((?P<text>(.+))\)"
-        )
-        lines = output.split("\n")
-        for line in lines:
-            m = pattern.match(line)
-            if m:
-                record = m.groupdict()
-                records.append(record)
-
-        # [TODO]: It cannot be used in nvim.
-        setloclist = vim.bindeval('function("setloclist")')
-
-        win_id = vim.eval("win_getid()")
-        if records:
-            setloclist(win_id, records)
-            unknow_words = list(set(str(item["text"]) for item in records))
-            buffer = make_buffer(TERM_STDOUT, "vertical")
-            buffer.init_buffer()
-            buffer.append("**UNKNOWN WORDS**")
-            buffer.append(f"{unknow_words}")
-        else:
-            print("No unknown words.")

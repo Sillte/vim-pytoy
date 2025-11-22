@@ -91,6 +91,9 @@ class PythonExecutor():
 
         if BufferJobManager.is_running(self.job_name):
             raise ValueError(f"`{self.job_name=}` is already running")
+
+        stdout.init_buffer(wrapped_command)
+        stderr.init_buffer()
         BufferJobManager.create(self.job_name, param)
         
 
@@ -103,7 +106,7 @@ class PythonExecutor():
         if not error_msg:
             buffer_job.stderr.hide()
 
-    def _make_qflist(self, string) -> list[QuickFixRecord]:
+    def _make_qflist(self, string: str) -> list[QuickFixRecord]:
         _pattern = re.compile(r'\s+File "(.+)", line (\d+)')
         result = list()
         lines = string.split("\n")
@@ -118,7 +121,6 @@ class PythonExecutor():
                 index += 1
                 text = lines[index].strip()
                 row["text"] = text
-                result.append(row)
                 record = QuickFixRecord(filename=filename, lnum=int(lnum), text=text)
                 result.append(record)
             index += 1
