@@ -3,7 +3,10 @@ from typing import Optional, Callable, Any
 
 from pytoy.ui import PytoyBuffer
 
-from pytoy.lib_tools.buffer_executor.command_wrapper import CommandWrapper, naive_command_wrapper
+from pytoy.lib_tools.buffer_executor.command_wrapper import (
+    CommandWrapper,
+    naive_command_wrapper,
+)
 from pytoy.lib_tools.buffer_executor.buffer_job import (
     make_buffer_job,
     BufferJobProtocol,

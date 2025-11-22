@@ -38,11 +38,12 @@ class NVimBufferJob(BufferJobProtocol):
 
     def job_start(
         self,
-        command: str, on_start_callable: Callable[[], Mapping], on_closed_callable: Callable[[Self], Any],
-         cwd: Path | str | None = None,
-         env: Mapping[str, str] | None = None,
+        command: str,
+        on_start_callable: Callable[[], Mapping],
+        on_closed_callable: Callable[[Self], Any],
+        cwd: Path | str | None = None,
+        env: Mapping[str, str] | None = None,
     ) -> None:
-
         def _make_buffer_handler(buffer: PytoyBuffer, suffix: str) -> NvimBufferHandler:
             queue = Queue()
             putter = NVimJobStartQueuePutter(f"{self.name}_{suffix}", queue)

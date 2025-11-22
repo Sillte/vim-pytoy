@@ -11,13 +11,13 @@ class BufferJobProtocol(Protocol):
         stdout: PytoyBuffer | None = None,
         stderr: PytoyBuffer | None = None,
     ): ...
-    
+
     @property
-    def cwd(self) -> Path | str | None: 
-        ...
+    def cwd(self) -> Path | str | None: ...
 
     def job_start(
-        self, command: str,
+        self,
+        command: str,
         on_start_callable: Callable[[], Mapping],
         on_closed_callable: Callable[[Self], Any],
         cwd: Path | str | None = None,
