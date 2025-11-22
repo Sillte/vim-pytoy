@@ -5,7 +5,7 @@ import json
 import re
 from shlex import quote
 from pathlib import  Path
-from typing import Callable, Mapping
+from typing import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from pytoy.lib_tools.buffer_executor import BufferJobManager, BufferJobCreationParam, BufferJobProtocol
@@ -15,7 +15,7 @@ from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.lib_tools.utils import get_current_directory
 
 
-from pytoy.ui import PytoyBuffer, PytoyQuickFix, handle_records
+from pytoy.ui import PytoyBuffer, PytoyQuickFix, handle_records, QuickFixRecord
 
 @dataclass
 class PrevRunningState:
@@ -103,7 +103,7 @@ class PythonExecutor():
         if not error_msg:
             buffer_job.stderr.hide()
 
-    def _make_qflist(self, string):
+    def _make_qflist(self, string) -> list[QuickFixRecord]:
         _pattern = re.compile(r'\s+File "(.+)", line (\d+)')
         result = list()
         lines = string.split("\n")
@@ -119,6 +119,8 @@ class PythonExecutor():
                 text = lines[index].strip()
                 row["text"] = text
                 result.append(row)
+                record = QuickFixRecord(filename=filename, lnum=int(lnum), text=text)
+                result.append(record)
             index += 1
         result = list(reversed(result))
         return result

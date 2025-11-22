@@ -6,7 +6,7 @@ from pytoy.lib_tools.buffer_executor import BufferJobProtocol, BufferJobManager,
 
 from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.lib_tools.utils import get_current_directory
-from pytoy.ui import PytoyQuickFix, handle_records
+from pytoy.ui import PytoyQuickFix, handle_records, QuickFixRecord
 
 
 class RuffExecutor:
@@ -61,12 +61,12 @@ class RuffExecutor:
             PytoyQuickFix(cwd=buffer_job.cwd), records=qflist, win_id=None, is_open=True
         )
 
-    def _make_qflist(self, string):
+    def _make_qflist(self, string) -> list[QuickFixRecord]:
         records = []
         for line in string.split("\n"):
             match = self._pattern.match(line.strip())
             if not match:
                 continue
-            record = match.groupdict()
-            records.append(record)
+            row = match.groupdict()
+            records.append(QuickFixRecord.from_dict(row))
         return records

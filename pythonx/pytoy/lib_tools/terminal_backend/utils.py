@@ -61,4 +61,5 @@ def send_ctrl_c(pid: int):
         ret = subprocess.run(["python", str(path), str(pid)])
         return ret.returncode == 0
     else:
+        import signal
         os.kill(pid, signal.SIGINT)

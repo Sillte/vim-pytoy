@@ -11,6 +11,7 @@ from pytoy.lib_tools.utils import get_current_directory
 
 from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.ui import PytoyQuickFix, handle_records
+from pytoy.ui import QuickFixRecord
 
 
 class MypyExecutor:
@@ -50,14 +51,15 @@ class MypyExecutor:
             PytoyQuickFix(cwd=buffer_job.cwd), qflist, win_id=None, is_open=True
         )
 
-    def _make_qflist(self, string):
+    def _make_qflist(self, string: str) -> list[QuickFixRecord]:
         # Record of `mypy`.
         records = []
         for line in string.split("\n"):
             match = self._pattern.match(line.strip())
             if not match:
                 continue
-            record = match.groupdict()
-            record["type"] = record["_type"].strip(" ")[0].upper()
+            row = match.groupdict()
+            row["type"] = row["_type"].strip(" ")[0].upper()
+            record = QuickFixRecord.from_dict(row)
             records.append(record)
         return records

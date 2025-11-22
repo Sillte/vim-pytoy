@@ -1,12 +1,13 @@
-from typing import Protocol, Any
+from typing import Protocol, Any, Sequence
+from pytoy.ui.pytoy_quickfix.models import QuickFixRecord
 
 
 class PytoyQuickFixProtocol(Protocol):
     """QuickFix-like Protocol."""
 
-    def setlist(self, records: list[dict], win_id: int | None = None) -> None: ...
+    def setlist(self, records: Sequence[QuickFixRecord], win_id: int | None = None) -> None: ...
 
-    def getlist(self, win_id: int | None = None) -> list[dict[str, Any]]: ...
+    def getlist(self, win_id: int | None = None) -> Sequence[QuickFixRecord]: ...
 
     def close(self, win_id: int | None = None) -> None: ...
 
