@@ -4,10 +4,11 @@ Due to specification, In case of VSCode, only quickfix-like code is used.
 """
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol
+from pytoy.ui.pytoy_quickfix.models import QuickFixRecord
 
 
 class PytoyQuickFix(PytoyQuickFixProtocol):
@@ -28,10 +29,10 @@ class PytoyQuickFix(PytoyQuickFixProtocol):
     def impl(self) -> PytoyQuickFixProtocol:
         return self._impl
 
-    def setlist(self, records: list[dict], win_id: int | None = None) -> None:
+    def setlist(self, records: Sequence[QuickFixRecord], win_id: int | None = None) -> None:
         return self.impl.setlist(records, win_id)
 
-    def getlist(self, win_id: int | None = None) -> list[dict[str, Any]]:
+    def getlist(self, win_id: int | None = None) -> Sequence[QuickFixRecord]:
         return self.impl.getlist(win_id)
 
     def close(self, win_id: int | None = None) -> None:
@@ -81,7 +82,7 @@ def get_pytoy_quickfix(name: str) -> PytoyQuickFix:
 
 def handle_records(
     pytoy_quickfix: PytoyQuickFix,
-    records: list[dict],
+    records: list[QuickFixRecord],
     win_id: int | None = None,
     is_open: bool = True,
 ):

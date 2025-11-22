@@ -3,7 +3,7 @@ from pytoy.lib_tools.buffer_executor import BufferJobManager, BufferJobCreationP
 
 from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.lib_tools.utils import get_current_directory
-from pytoy.ui import PytoyBuffer, PytoyQuickFix, handle_records
+from pytoy.ui import PytoyBuffer, PytoyQuickFix, handle_records, QuickFixRecord
 from pytoy.tools.pytest.utils import PytestDecipher, ScriptDecipher
 
 
@@ -48,6 +48,6 @@ class PytestExecutor:
         qflist = self._make_qflist(messages)
         handle_records(PytoyQuickFix(cwd=buffer_job.cwd), qflist, win_id=None, is_open=True)
 
-    def _make_qflist(self, string):
-        records = PytestDecipher(string).records
-        return records
+    def _make_qflist(self, string) -> list[QuickFixRecord]:
+        rows = PytestDecipher(string).records
+        return [QuickFixRecord.from_dict(row) for row in rows]

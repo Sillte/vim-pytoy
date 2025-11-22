@@ -1,9 +1,11 @@
 from pathlib import Path
 import vim
 import copy
+from typing import Sequence
 
 from pytoy.infra.timertask import TimerTask
 from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol
+from pytoy.ui.pytoy_quickfix.models import QuickFixRecord
 from pytoy.ui import to_filepath
 from pytoy.lib_tools.utils import get_current_directory
 
@@ -22,18 +24,18 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
         self.current_idx: int | None = None  # It starts from 1.
         self.cwd = cwd
 
-    def _convert_filename(self, basepath: Path, record: dict):
-        filename = record.get("filename")
+    def _convert_filename(self, basepath: Path, record: QuickFixRecord):
+        filename = record.filename
         if not filename:
             filename = basepath
         filename = to_filepath(filename)
         if filename.is_absolute():
-            record["filename"] = filename.as_posix()
+            record.filename = filename.as_posix()
         else:
-            record["filename"] = (basepath / filename).resolve().as_posix()
+            record.filename = (basepath / filename).resolve().as_posix()
         return record
 
-    def setlist(self, records: list[dict], win_id: int | None = None) -> None:
+    def setlist(self, records: Sequence[QuickFixRecord], win_id: int | None = None) -> None:
         if win_id is None:
             if self.cwd is None:
                 basepath = get_current_directory()
@@ -51,7 +53,7 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
         else:
             self.current_idx = 1
 
-    def getlist(self, win_id: int | None = None) -> list[dict]:
+    def getlist(self, win_id: int | None = None) -> Sequence[QuickFixRecord]:
         return copy.deepcopy(self.records)
 
     def close(self, win_id: int | None = None) -> None:
@@ -81,7 +83,7 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
 
     def _move_idx(
         self, diff_idx: int = 0, *, fixed_idx: int | None = None
-    ) -> dict | None:
+    ) -> QuickFixRecord | None:
         """
         1. Move `idx` of Quicklist per `diff_idx`.
         2. If fixed_idx is set, this number is set to
@@ -114,16 +116,16 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
         if not record:
             print("No record in QuickFix.")
             return
-        path = Path(record["filename"])
+        path = Path(record.filename)
 
         # As of 2025/10/21, this `_edit_file` is the workaround, but I hope this is addressed in the plugin.
         # vim.command(f"Edit {path.as_posix()}")
         self._edit_file(path)
-        lnum, col = int(record.get("lnum", 1)), int(record.get("col", 1))
+        lnum, col = record.lnum, record.col
 
         length = len(self.records)
         idx = self.current_idx
-        text = record.get("text", "")
+        text = record.text
 
         def func():
             print(f"({idx}/{length}):{text}", flush=True)

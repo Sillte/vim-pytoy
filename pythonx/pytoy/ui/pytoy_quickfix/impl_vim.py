@@ -1,8 +1,10 @@
 import vim
 from pathlib import Path
+from typing import Sequence
 
 import json
 from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol
+from pytoy.ui.pytoy_quickfix.models import QuickFixRecord
 
 from shlex import quote
 
@@ -14,17 +16,11 @@ class PytoyQuickFixVim(PytoyQuickFixProtocol):
     ):
         self.cwd = cwd  # [NOTE] Currently, this is not used, but it may be better to use this?
 
-    def setlist(self, records: list[dict], win_id: int | None = None) -> None:
+    def setlist(self, records: Sequence[QuickFixRecord], win_id: int | None = None) -> None:
         # This is NOT smart code,
         # If `value` is `complex` type, it may cause inconsistency of the data type.
-        records = [
-            {
-                key: (str(value).replace("'", '"') if isinstance(value, str) else value)
-                for key, value in row.items()
-            }
-            for row in records
-        ]
-        safe_json = quote(json.dumps(records))
+        rows = [record.to_dict() for record in records]
+        safe_json = quote(json.dumps(rows))
         if win_id is None:
             vim.command(f"call setqflist(json_decode({safe_json}))")
         else:
