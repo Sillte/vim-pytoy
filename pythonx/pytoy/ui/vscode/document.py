@@ -119,24 +119,32 @@ class Document(BaseModel):
         api = Api()
         js_code = """
         (async (path, content) => {
-      const doc = vscode.workspace.textDocuments.find(
-        d => d.uri.path === path
-      );
+          const doc = vscode.workspace.textDocuments.find(
+                d => d.uri.path === path
+            );
+          if (!doc) {
+              return false;
+          }
+    
+          // 2. WorkspaceEditを作成
+          const edit = new vscode.WorkspaceEdit();
 
-      const editors = vscode.window.visibleTextEditors.filter(e => e.document === doc);
-      if (editors.length == 0) {
-        return false;
-      }
-      const editor = editors[0];
-
-      await editor.edit(editBuilder => {
+          // 3. ドキュメント全体を対象とするRangeを計算
           const fullRange = new vscode.Range(
               doc.positionAt(0),
               doc.positionAt(doc.getText().length)
           );
-          editBuilder.delete(fullRange);
-          editBuilder.insert(new vscode.Position(0, 0), content);
-      });
+
+          // 4. WorkspaceEditに対象ドキュメント全体を削除し、新しい内容を挿入する編集操作を追加
+          edit.delete(doc.uri, fullRange); 
+          //   - 0, 0の位置に新しい内容を挿入
+          edit.insert(doc.uri, new vscode.Position(0, 0), content);
+          
+          // 5. 編集を適用 (awaitで同期を取る)
+          const success = await vscode.workspace.applyEdit(edit);
+
+          // 6. 成功を返す
+          return success;
       
     })(args.path, args.value)
     """

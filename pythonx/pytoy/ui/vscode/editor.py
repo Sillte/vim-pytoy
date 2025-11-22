@@ -261,13 +261,6 @@ class Editor(BaseModel):
         if (!editor) return; // ターゲットエディタが見つからなければ終了
 
 
-        // withinWindowsがtrueの場合、他のグループのエディタを閉じる
-        if (args.withinWindows) {
-            await vscode.commands.executeCommand(
-                "workbench.action.closeEditorsInOtherGroups"
-            );
-        }
-
         // ターゲットエディタを再度アクティブにしてフォーカスを維持
         await vscode.window.showTextDocument(editor.document, {
             viewColumn: args.viewColumn,
@@ -280,6 +273,15 @@ class Editor(BaseModel):
                 "workbench.action.closeOtherEditors"
             );
         }
+
+        // withinWindowsがtrueの場合、他のグループのエディタを閉じる
+        if (args.withinWindows) {
+            await vscode.commands.executeCommand(
+                "workbench.action.closeEditorsInOtherGroups"
+            );
+        }
+
+
 
     })(args);
     """

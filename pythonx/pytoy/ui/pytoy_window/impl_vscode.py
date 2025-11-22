@@ -53,7 +53,6 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         buffers = [PytoyBufferVSCode(doc) for doc in documents]
         for buffer in buffers:
             buffer.init_buffer(content="")
-            print("buffer", buffer.content)
         self.editor.unique(within_tabs=within_tabs, within_windows=within_windows)
 
 
