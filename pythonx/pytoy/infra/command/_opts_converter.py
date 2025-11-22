@@ -66,7 +66,7 @@ class _OptsConverter:
         return self._range_count_option
 
     def _decide_converter(
-        self, target: CommandFunction, nargs: NARGS| None, rc_opt: RangeCountOption
+        self, target: CommandFunction, nargs: NARGS | None, rc_opt: RangeCountOption
     ):
         """
         * Decide how to convert `opts` to the parameters of python.

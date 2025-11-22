@@ -3,52 +3,59 @@ from typing import Callable, Any, Literal
 from textwrap import dedent
 from dataclasses import dataclass
 
-import sys  #noqa:  it is required in vim script. 
 
 type TaskName = str
 type VimFuncName = str
 
-type NormalStopReason = Literal["finished", "stopped"] # `repeat` is comsued or exeception is raised. 
+type NormalStopReason = Literal[
+    "finished", "stopped"
+]  # `repeat` is comsued or exeception is raised.
 
 type OnTaskCallback = Callable[[], None]
-type OnFinishCallback = Callable[[NormalStopReason], None]  | Callable[[], None]
-type OnErrorCallback = Callable[[tuple], None]  | Callable[[], None]
-
+type OnFinishCallback = Callable[[NormalStopReason], None] | Callable[[], None]
+type OnErrorCallback = Callable[[tuple], None] | Callable[[], None]
 
 
 class TimerStopException(Exception):
     """Exception raised inside the timer callback to stop the registered loop.
-    Note that when this exception is raised, `on_finish` callback is invoked with 'stopped' reason. 
+    Note that when this exception is raised, `on_finish` callback is invoked with 'stopped' reason.
     """
+
     pass
 
-def _wrap_to_one_argument_func(func: Callable[[], Any] | Callable[[Any], Any]) -> Callable[[Any], Any]:
+
+def _wrap_to_one_argument_func(
+    func: Callable[[], Any] | Callable[[Any], Any],
+) -> Callable[[Any], Any]:
     """Wrap the function to one accepting one argument."""
-    import inspect # inspcet requires a little bit long  
+    import inspect  # inspcet requires a little bit long
+
     sig = inspect.signature(func)
     if len(sig.parameters) == 0:
+
         def wrapper(_: Any) -> Any:
             return func()
+
         return wrapper
     elif len(sig.parameters) == 1:
         return func  # type: ignore[return-value]
     else:
         raise ValueError("Function must accept either zero or one argument.")
-                               
 
 
 @dataclass(frozen=True)
 class _TaskConfig:
     """Static configuration for a TimerTask, which does not change after registration."""
+
     on_finish: Callable[[NormalStopReason], None] | None = None
     on_error: Callable[[tuple], None] | None = None
-    initial_repeat: int = -1 
+    initial_repeat: int = -1
 
 
 @dataclass
 class _TaskStatus:
-    """Status of a TimerTask, which may change during execution.
-    """
+    """Status of a TimerTask, which may change during execution."""
+
     repeat: int
 
 
@@ -60,28 +67,31 @@ class TimerTask:
     FUNCTION_MAP: dict[TaskName, Callable[[], None]] = dict()  # name -> function
     TIMER_MAP: dict[TaskName, int] = dict()
     VIMFUNCNAME_MAP: dict[TaskName, VimFuncName] = dict()
-    
+
     # Given configuration.
-    CONFIG_MAP: dict[TaskName, _TaskConfig] = dict() 
-    # NEW: Dynamic status of the `TASK`. 
-    STATUS_MAP: dict[TaskName, _TaskStatus] = dict() 
+    CONFIG_MAP: dict[TaskName, _TaskConfig] = dict()
+    # NEW: Dynamic status of the `TASK`.
+    STATUS_MAP: dict[TaskName, _TaskStatus] = dict()
 
     counter: int = 0
 
     @classmethod
     def _create_vim_code(cls, name: TaskName, vim_funcname: VimFuncName) -> str:
         """Helper to generate the complex VimL function block with error/repeat logic."""
-        
+
         if __name__ != "__main__":
             prefix = f"{__name__}."
             import_prefix = f"from {__name__} import TimerTask, TimerStopException; "
         else:
             prefix = ""
             import_prefix = " "
-        
-        python_procedures = dedent(f"""
+
+        python_procedures = dedent(
+            f"""
             python3 << EOF
             {import_prefix}
+            import sys  
+
             def work():
                 name = '{name}'
                 config = {prefix}TimerTask.CONFIG_MAP.get(name)
@@ -115,52 +125,55 @@ class TimerTask:
                         return
             work()
             EOF
-        """.strip())
+        """).strip()
 
         vim_code = dedent(f"""
             function! {vim_funcname}(timer)
                 {python_procedures}
             endfunction
         """)
-        
+
         return vim_code.strip()
 
-    # Vim Function, which is used as an ending function for the task.   
-    vim.command(dedent(f"""
+    # Vim Function, which is used as an ending function for the task.
+    vim.command(
+        dedent("""
     function! VimPytoyTimerTaskDeleteFunction_private(name, timer_id)
         call timer_stop(a:timer_id)
         execute 'delfunction!' . a:name
     endfunction
-    """).strip())
+    """).strip()
+    )
 
     @classmethod
     def _schedule_deregister(cls, name: TaskName):
         """Deregisters the task from the timer thread asynchronously."""
-        
+
         timer_id = cls.TIMER_MAP.get(name)
         vim_funcname = cls.VIMFUNCNAME_MAP.get(name)
         if not timer_id or not vim_funcname:
             return
-        vim.command(dedent(f"""
+        vim.command(
+            dedent(f"""
             call timer_start(1, {{ -> VimPytoyTimerTaskDeleteFunction_private('{vim_funcname}', {timer_id}) }} )
-        """).strip())
-        
+        """).strip()
+        )
+
         cls.TIMER_MAP.pop(name, None)
         cls.VIMFUNCNAME_MAP.pop(name, None)
         cls.FUNCTION_MAP.pop(name, None)
         cls.CONFIG_MAP.pop(name, None)
         cls.STATUS_MAP.pop(name, None)
 
-
     @classmethod
     def register(
-        cls, 
-        func: OnTaskCallback, 
-        interval: int = 100, 
+        cls,
+        func: OnTaskCallback,
+        interval: int = 100,
         name: TaskName | None = None,
-        repeat: int = -1, 
-        on_finish: OnFinishCallback | None = None, 
-        on_error: OnErrorCallback | None = None 
+        repeat: int = -1,
+        on_finish: OnFinishCallback | None = None,
+        on_error: OnErrorCallback | None = None,
     ) -> str:
         """Register the function with optional repeat count and callbacks."""
         import inspect  # inspect requires a little bit long.
@@ -178,23 +191,23 @@ class TimerTask:
             name = f"AUTONAME{cls.counter}"
 
         config = _TaskConfig(
-            on_finish=on_finish,
-            on_error=on_error,
-            initial_repeat=repeat
+            on_finish=on_finish, on_error=on_error, initial_repeat=repeat
         )
         cls.CONFIG_MAP[name] = config
         cls.STATUS_MAP[name] = _TaskStatus(repeat=repeat)
-        
+
         vim_funcname = f"LoopTask_{name}_{id(func)}_{cls.counter}"
-        
+
         # VimLコードの生成と実行
         vim_code = cls._create_vim_code(name, vim_funcname)
         vim.command(vim_code)
-        
+
         # Vim側の repeat オプションは常に -1 (無限) に設定し、管理は Python 側で行う
-        vim_repeat_opt = -1 
+        vim_repeat_opt = -1
         timer_id = int(
-            vim.eval(f"timer_start({interval}, '{vim_funcname}', {{'repeat': {vim_repeat_opt}}})")
+            vim.eval(
+                f"timer_start({interval}, '{vim_funcname}', {{'repeat': {vim_repeat_opt}}})"
+            )
         )
 
         cls.FUNCTION_MAP[name] = func
@@ -206,7 +219,7 @@ class TimerTask:
     @classmethod
     def deregister(cls, name: TaskName, *, strict: bool = False):
         if name not in cls.FUNCTION_MAP:
-            if strict: 
+            if strict:
                 raise ValueError(f"No timer task registered with name: '{name}'")
         cls._schedule_deregister(name)
 
@@ -221,6 +234,9 @@ class TimerTask:
 
 
 if __name__ == "__main__":
+
     def hello():
         print("H")
+
     TimerTask.register(hello)
+#noqa:  it is required in vim script. 

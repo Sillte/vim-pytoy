@@ -4,7 +4,7 @@ from queue import Queue
 from pytoy.infra.timertask import TimerTask
 
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Any, Mapping, Self
 
 from pytoy.infra.vim_function import PytoyVimFunctions
 
@@ -19,15 +19,14 @@ class NVimBufferJob(BufferJobProtocol):
         name: str,
         stdout: PytoyBuffer | None = None,
         stderr: PytoyBuffer | None = None,
-        *,
-        env=None,
-        cwd=None,
     ):
         self.name = name
         self._stdout = stdout
         self._stderr = stderr
-        self.env = env
-        self.cwd = cwd
+
+    @property
+    def cwd(self) -> Path | str | None:
+        return self._cwd
 
     @property
     def stdout(self) -> PytoyBuffer | None:
@@ -38,8 +37,12 @@ class NVimBufferJob(BufferJobProtocol):
         return self._stderr
 
     def job_start(
-        self, command: str, on_start_callable: Callable, on_closed_callable: Callable
+        self,
+        command: str, on_start_callable: Callable[[], Mapping], on_closed_callable: Callable[[Self], Any],
+         cwd: Path | str | None = None,
+         env: Mapping[str, str] | None = None,
     ) -> None:
+
         def _make_buffer_handler(buffer: PytoyBuffer, suffix: str) -> NvimBufferHandler:
             queue = Queue()
             putter = NVimJobStartQueuePutter(f"{self.name}_{suffix}", queue)
@@ -63,10 +66,11 @@ class NVimBufferJob(BufferJobProtocol):
         else:
             stderr_handler = None
 
-        if self.env is not None:
-            options["env"] = self.env
-        if self.cwd is not None:
-            options["cwd"] = Path(self.cwd).as_posix()
+        if env is not None:
+            options["env"] = env
+        if cwd is not None:
+            options["cwd"] = Path(cwd).as_posix()
+            self._cwd = cwd
 
         def wrapped_on_closed(*args):
             start = time.time()
@@ -80,7 +84,8 @@ class NVimBufferJob(BufferJobProtocol):
                 stdout_handler.deregister()
             if stderr_handler:
                 stderr_handler.deregister()
-            on_closed_callable()
+            on_closed_callable(self)
+            self._cwd = None
             vim.command(f"unlet g:{self.jobname}")
             # It is required to de-register this function in the different context.
             this_funcname = PytoyVimFunctions.to_vimfuncname(wrapped_on_closed)

@@ -1,4 +1,5 @@
-from typing import Callable, Protocol
+from typing import Callable, Protocol, Any, Mapping, Self
+from pathlib import Path
 
 from pytoy.ui import PytoyBuffer
 
@@ -9,13 +10,18 @@ class BufferJobProtocol(Protocol):
         name: str,
         stdout: PytoyBuffer | None = None,
         stderr: PytoyBuffer | None = None,
-        *,
-        env=None,
-        cwd=None,
     ): ...
+    
+    @property
+    def cwd(self) -> Path | str | None: 
+        ...
 
     def job_start(
-        self, command: str, on_start_callable: Callable, on_closed_callable: Callable
+        self, command: str,
+        on_start_callable: Callable[[], Mapping],
+        on_closed_callable: Callable[[Self], Any],
+        cwd: Path | str | None = None,
+        env: Mapping[str, str] | None = None,
     ) -> None: ...
 
     @property

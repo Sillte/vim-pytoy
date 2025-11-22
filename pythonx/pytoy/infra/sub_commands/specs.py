@@ -7,8 +7,6 @@ from pytoy.infra.sub_commands.tokenizer import Token
 type Completion = list[str] | Callable[[], list[str]]
 
 
-
-
 @dataclass
 class ArgumentSpec:
     name: str
@@ -26,7 +24,6 @@ DEFAULT = _DefaultSentinel()
 type RealOptionType = str | int | float | bool
 type FakeOptionType = _DefaultSentinel | None
 type OptionType = RealOptionType | FakeOptionType
-
 
 
 @dataclass

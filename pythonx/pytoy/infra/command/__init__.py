@@ -114,8 +114,8 @@ class CommandManager:
         name: str,
         nargs: NARGS | None = None,
         range_count_option: None | RangeCountOption = None,
-        complete: str | None =None,
-        addr: None =None,
+        complete: str | None = None,
+        addr: None = None,
     ) -> Callable:
         # vim_funcname = f"PytoyFunc_FOR_COMMAND_{name}"
         vim_funcname = cls.to_vimfunc_name(name)
