@@ -5,8 +5,6 @@ This module is intended to provide the common interface for bufffer.
 * neovim
 * neovim+vscode
 
-Usage: BufferExecutor /
-
 """
 
 from pathlib import Path

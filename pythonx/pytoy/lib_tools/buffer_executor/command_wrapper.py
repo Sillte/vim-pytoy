@@ -1,11 +1,5 @@
-class CommandWrapper:
-    """Callable. modify the command you execute.
-    Sometimes, we would like to change the environment
-    where the command is executed.
-    * not naive python, but the python of virtual environment.
-    * not naive invocation, but with `uv run`.
-    `CommandWrapper` handles this kind of request with depndency injection.
-    """
+from typing import Callable
+type CommandWrapper = Callable[[str], str]
 
-    def __call__(self, cmd: str) -> str:
-        return cmd
+naive_command_wrapper = lambda cmd: cmd
+

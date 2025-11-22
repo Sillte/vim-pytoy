@@ -5,7 +5,7 @@ from typing import Callable, Any, TypeAlias
 
 # Type alias for command functions (can be callable, classmethod, or staticmethod)
 CommandFunction: TypeAlias = Callable[..., Any] | staticmethod
-NARGS: TypeAlias = str | int 
+NARGS: TypeAlias = str | int
 
 
 class RangeCountType(Enum):

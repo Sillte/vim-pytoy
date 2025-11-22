@@ -1,8 +1,11 @@
 import vim
-import inspect
+from textwrap import dedent
+from typing import Callable
+
+type VimFunctionName = str
 
 
-_PYTOY_VIM_FUNCTION_MAPS = dict()
+_PYTOY_VIM_FUNCTION_MAPS: dict[VimFunctionName, Callable]  = dict()
 
 
 class PytoyVimFunctions:
@@ -15,13 +18,13 @@ class PytoyVimFunctions:
     Usage
     ------------------------------
     * You have to import this class so that `:python3 PytoyVimFunctions` is valid.
-    * The wrapped python function signature must be `def func().`
+    * The wrapped python function signature must be `def func(*args).`
     """
 
     FUNCTION_MAPS = _PYTOY_VIM_FUNCTION_MAPS
 
     @classmethod
-    def to_vimfuncname(cls, func, *, prefix=None, name: str | None = None) -> str:
+    def to_vimfuncname(cls, func: Callable, *, prefix:str | None = None, name: str | None = None) -> str:
         """This function returns the same `vimfuncname`,
         when we call `register`.
         Sometimes, we have to know the name for deregister in prior to register.
@@ -44,7 +47,7 @@ class PytoyVimFunctions:
         return vim_funcname
 
     @classmethod
-    def register(cls, func, *, prefix=None, name: str | None = None) -> str:
+    def register(cls, func, *, prefix: str | None =None, name: str | None = None) -> str:
         """Register python `func` with `name` identifier.
 
         Args:
@@ -56,40 +59,33 @@ class PytoyVimFunctions:
         """
         vim_funcname = cls.to_vimfuncname(func, prefix=prefix, name=name)
 
-        # Depending of the number of parameters, change the
-        # definition and calling of functions.
-        # Currently(2022/02/26), only `*args` and  `<f-args>` are dealt with.
-        # Notice that `python3  << EOF` starts without `spaces`.
-        sig = inspect.signature(func)
-        if len(sig.parameters) == 0:
-            procedures = f"python3 {__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}']()"  # NOQA
-        else:
-            procedures = f"""
-python3 << EOF
-args = vim.eval("a:000")
-{__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}'](*args)
-EOF
-    """.strip()
+        procedures = dedent(f"""
+        python3 << EOF
+        args = vim.eval("a:000")
+        {__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}'](*args)
+        EOF
+        """).strip()
 
-        vim.command(
-            f"""function! {vim_funcname}(...)
+        vim.command(dedent(
+            f"""
+            function! {vim_funcname}(...)
             {procedures}
             endfunction
-            """
+            """).strip()
         )
         cls.FUNCTION_MAPS[vim_funcname] = func
 
         return vim_funcname
 
     @classmethod
-    def is_registered(cls, vim_funcname: str):
+    def is_registered(cls, vim_funcname: VimFunctionName) -> bool:
         return bool(
             vim_funcname in cls.FUNCTION_MAPS
             or int(vim.eval(f"exists('{vim_funcname}')"))
         )
 
     @classmethod
-    def deregister(cls, vim_funcname: str):
+    def deregister(cls, vim_funcname: VimFunctionName) -> None:
         if vim_funcname in cls.FUNCTION_MAPS:
             del cls.FUNCTION_MAPS[vim_funcname]
         vim.command(f"delfunction! {vim_funcname}")

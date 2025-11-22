@@ -13,6 +13,7 @@ class PytoyQuickFixVim(PytoyQuickFixProtocol):
         cwd: str | Path | None = None
     ):
         self.cwd = cwd  # [NOTE] Currently, this is not used, but it may be better to use this?
+
     def setlist(self, records: list[dict], win_id: int | None = None) -> None:
         # This is NOT smart code,
         # If `value` is `complex` type, it may cause inconsistency of the data type.

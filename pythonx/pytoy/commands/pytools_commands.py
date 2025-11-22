@@ -69,7 +69,7 @@ class MypyCommand:
 
         executor = MypyExecutor()
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
-        print(fargs, type(fargs), flush=True)
+        #print(fargs, type(fargs), flush=True)
         executor.check(fargs, pytoy_buffer)
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):

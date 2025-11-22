@@ -7,9 +7,6 @@ def make_buffer_job(
     name: str,
     stdout: PytoyBuffer | None = None,
     stderr: PytoyBuffer | None = None,
-    *,
-    env=None,
-    cwd=None,
 ) -> BufferJobProtocol:
     """
     Factory function to create a BufferJobProtocol implementation based on UIEnum.
@@ -27,11 +24,11 @@ def make_buffer_job(
     if ui_enum == UIEnum.VIM:
         from pytoy.lib_tools.buffer_executor.impl_vim import VimBufferJob
 
-        return VimBufferJob(name, stdout, stderr, env=env, cwd=cwd)
+        return VimBufferJob(name, stdout, stderr)
     elif ui_enum in {UIEnum.NVIM, UIEnum.VSCODE}:
         from pytoy.lib_tools.buffer_executor.impl_nvim import NVimBufferJob
 
-        return NVimBufferJob(name, stdout, stderr, env=env, cwd=cwd)
+        return NVimBufferJob(name, stdout, stderr)
     else:
         assert False, "Implementation Error"
 

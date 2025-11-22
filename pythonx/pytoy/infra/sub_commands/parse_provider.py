@@ -164,7 +164,7 @@ def to_parsed_arguments(
     main_spec: MainCommandSpec, parsed_command: ParsedCommand
 ) -> ParsedArguments:
     """[NOTE]:
-    1. Currently, non-existent check is not performed in this layer. 
+    1. Currently, non-existent check is not performed in this layer.
     2. Currently, inconsistency of definition is not yet checked.
     """
     # print("ParsedCommand", parsed_command)

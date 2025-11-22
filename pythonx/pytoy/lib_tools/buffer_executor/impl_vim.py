@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Mapping, Any, Self
 
 import vim
 
@@ -15,15 +15,15 @@ class VimBufferJob(BufferJobProtocol):
         name: str,
         stdout: None | PytoyBuffer = None,
         stderr: None | PytoyBuffer = None,
-        *,
-        env=None,
-        cwd=None,
     ):
         self.name = name
         self._stdout = stdout
         self._stderr = stderr
-        self.env = env
-        self.cwd = cwd
+        self._cwd = None
+        
+    @property
+    def cwd(self) -> Path | str | None:
+        return self._cwd
 
     @property
     def stdout(self) -> PytoyBuffer | None:
@@ -34,7 +34,11 @@ class VimBufferJob(BufferJobProtocol):
         return self._stderr
 
     def job_start(
-        self, command: str, on_start_callable: Callable, on_closed_callable: Callable
+        self, command: str,
+        on_start_callable: Callable[[], Mapping],
+        on_closed_callable: Callable[[Self], Any],
+        cwd: Path | str | None = None,
+        env: Mapping[str, str] | None = None,
     ):
         from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
 
@@ -51,14 +55,16 @@ class VimBufferJob(BufferJobProtocol):
             assert isinstance(impl, PytoyBufferVim)
             options["err_buf"] = impl.buffer.number
 
-        if self.env is not None:
-            options["env"] = self.env
-        if self.cwd is not None:
-            options["cwd"] = Path(self.cwd).as_posix()
+        if env is not None:
+            options["env"] = env
+        if cwd is not None:
+            cwd = Path(cwd).as_posix()
+            options["cwd"] = cwd
 
         def wrapped_on_closed():
-            on_closed_callable()
+            on_closed_callable(self)
             vim.command(f"unlet g:{self.jobname}")
+            self._cwd = None
 
         vimfunc_name = PytoyVimFunctions.register(
             wrapped_on_closed, name=f"{self.jobname}_VIMFUNC"
@@ -72,6 +78,7 @@ class VimBufferJob(BufferJobProtocol):
 
         # Register of `Job`.
         vim.command(f"let g:{self.jobname} = job_start('{command}', {options})")
+        self._cwd = cwd
 
     @property
     def jobname(self) -> str:

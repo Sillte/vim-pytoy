@@ -1,15 +1,17 @@
 import re
 import subprocess
 
-from pytoy.lib_tools.buffer_executor import BufferExecutor
+from pytoy.lib_tools.buffer_executor import BufferJobProtocol  
+from pytoy.lib_tools.buffer_executor import BufferJobProtocol, BufferJobManager, BufferJobCreationParam
 
 from pytoy.lib_tools.environment_manager import EnvironmentManager
 from pytoy.lib_tools.utils import get_current_directory
 from pytoy.ui import PytoyQuickFix, handle_records
 
 
-class RuffExecutor(BufferExecutor):
+class RuffExecutor:
     """Execute Ruff."""
+    job_name = "RuffExecutor"
 
     def __init__(self):
         self._pattern = re.compile(
@@ -24,9 +26,14 @@ class RuffExecutor(BufferExecutor):
             args = " ".join(map(str, args))
         command = f"ruff check {args} --output-format=concise"
         cwd = get_current_directory()
-        return super().run(
-            command, stdout, stdout, command_wrapper=command_wrapper, cwd=cwd
-        )
+        wrapped_command = command_wrapper(command)
+        param = BufferJobCreationParam(command=wrapped_command,
+                                       cwd=cwd,
+                                       stdout=stdout,
+                                       stderr=stdout,
+                                       on_closed=self.on_closed)
+        BufferJobManager.create(self.job_name, param)
+
 
     def format(self, args: str | list, stdout, command_wrapper=None):
         if command_wrapper is None:
@@ -46,12 +53,12 @@ class RuffExecutor(BufferExecutor):
         )
         stdout.init_buffer(result.stdout)
 
-    def on_closed(self):
-        assert self.stdout is not None
-        messages = self.stdout.content
+    def on_closed(self, buffer_job: BufferJobProtocol) -> None:
+        assert buffer_job.stdout is not None
+        messages = buffer_job.stdout.content
         qflist = self._make_qflist(messages)
         handle_records(
-            PytoyQuickFix(cwd=self.cwd), records=qflist, win_id=None, is_open=True
+            PytoyQuickFix(cwd=buffer_job.cwd), records=qflist, win_id=None, is_open=True
         )
 
     def _make_qflist(self, string):
