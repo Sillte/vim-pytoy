@@ -20,7 +20,7 @@ class VimBufferJob(BufferJobProtocol):
         self._stdout = stdout
         self._stderr = stderr
         self._cwd = None
-        
+
     @property
     def cwd(self) -> Path | str | None:
         return self._cwd
@@ -34,7 +34,8 @@ class VimBufferJob(BufferJobProtocol):
         return self._stderr
 
     def job_start(
-        self, command: str,
+        self,
+        command: str,
         on_start_callable: Callable[[], Mapping],
         on_closed_callable: Callable[[Self], Any],
         cwd: Path | str | None = None,
@@ -61,13 +62,12 @@ class VimBufferJob(BufferJobProtocol):
             cwd = Path(cwd).as_posix()
             options["cwd"] = cwd
 
-        def wrapped_on_closed():
+        # Additional arguments are given.
+        def wrapped_function(*_):
             on_closed_callable(self)
-            vim.command(f"unlet g:{self.jobname}")
-            self._cwd = None
 
         vimfunc_name = PytoyVimFunctions.register(
-            wrapped_on_closed, name=f"{self.jobname}_VIMFUNC"
+            wrapped_function, name=f"{self.jobname}_VIMFUNC"
         )
         options["exit_cb"] = vimfunc_name
 
@@ -83,6 +83,7 @@ class VimBufferJob(BufferJobProtocol):
     @property
     def jobname(self) -> str:
         cls_name = self.__class__.__name__
+        cls_name = cls_name.replace(".", "_")
         return f"__{cls_name}_{self.name}"
 
     @property
