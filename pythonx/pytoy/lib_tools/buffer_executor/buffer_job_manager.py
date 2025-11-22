@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from typing import Mapping
 
 
+type OnClosedCallable = Callable[[BufferJobProtocol], Any]
+
 @dataclass
 class BufferJobCreationParam:
     command: str | list[str]
@@ -20,7 +22,7 @@ class BufferJobCreationParam:
     stderr: PytoyBuffer | None = None
     cwd: Path | str | None = None
     env: Mapping[str, str] | None = None
-    on_closed: Callable[[BufferJobProtocol], Any] | None = None
+    on_closed: OnClosedCallable | None = None
 
 
 type BufferJobName = str
@@ -49,10 +51,6 @@ class BufferJobManager:
         if not isinstance(command, str):
             command = " ".join(command)
 
-        if stdout:
-            stdout.init_buffer(command)
-        if stderr:
-            stderr.init_buffer()
 
         BufferJobManager.buffer_jobs[name] = buffer_job
 

@@ -3,8 +3,10 @@ it takes workaround.
 Due to specification, In case of VSCode, only quickfix-like code is used.
 """
 
+import re
+
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Sequence, Callable
 
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol
@@ -82,7 +84,7 @@ def get_pytoy_quickfix(name: str) -> PytoyQuickFix:
 
 def handle_records(
     pytoy_quickfix: PytoyQuickFix,
-    records: list[QuickFixRecord],
+    records: Sequence[QuickFixRecord],
     win_id: int | None = None,
     is_open: bool = True,
 ):
@@ -93,6 +95,25 @@ def handle_records(
             PytoyQuickFix().open(win_id=win_id)
     else:
         PytoyQuickFix().close(win_id=win_id)
+
+
+type QuickFixRecordRegex = str  # Regarded as 
+type QuickFixCreator = QuickFixRecordRegex | Callable[[str], Sequence[QuickFixRecord]]
+
+def to_quickfix_creator(regex: str) -> Callable[[str], Sequence[QuickFixRecord]]:
+    import re
+    pattern = re.compile(regex)
+    def creator(content: str) -> Sequence[QuickFixRecord]:
+        records = []
+        lines = content.split("\n")
+        for line in lines:
+            m = pattern.match(line)
+            if m:
+                row = m.groupdict()
+                record = QuickFixRecord.from_dict(row)
+                records.append(record)
+        return records
+    return creator
 
 
 if __name__ == "__main__":

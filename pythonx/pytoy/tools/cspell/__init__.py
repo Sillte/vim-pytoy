@@ -38,11 +38,13 @@ class CSpellOneFileChecker:
                 text=True,
                 cwd=in_path.parent,
             )
+            if ret.returncode != 0:
+                raise ValueError("`cpell` may not be installed?")
             return ret.stdout
         else:
             return self._apply_on_python_string(in_path)
 
-    def _apply_on_python_string(self, in_path: Path):
+    def _apply_on_python_string(self, in_path: Path) -> str:
         if in_path.suffix != ".py":
             raise ValueError("This option can only handle `python` file.")
 
@@ -115,6 +117,8 @@ class CSpellOneFileChecker:
                 input=text,
                 text=True,
             )
+            if ret.returncode != 0:
+                raise ValueError("`cpell` may not be installed?")
             pattern = re.compile(r"(.*):(?P<line>\d+):(?P<col>\d+).*\((?P<word>(.+))\)")
             infos = []
             for line in ret.stdout.split("\n"):

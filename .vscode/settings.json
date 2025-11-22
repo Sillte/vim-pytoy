@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
         "./pythonx"
-    ]
+    ],
+    "remote.autoForwardPortsFallback": 0
 }
