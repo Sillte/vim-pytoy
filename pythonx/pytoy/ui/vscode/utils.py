@@ -59,7 +59,7 @@ def open_file(path: str | Path):
         else {
             uri = vscode.Uri.file(path);
         }
-        vscode.commands.executeCommand(
+        await vscode.commands.executeCommand(
             'vscode.open',
             uri,
         )
