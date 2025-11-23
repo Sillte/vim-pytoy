@@ -35,13 +35,13 @@ def is_remote_vscode() -> bool:
     return api.eval_with_return(code)
 
 
-def open_file(path: str | Path):
+def open_file(path: str | Path, position: tuple[int, int] | None = None) -> None:
     path = Path(path)
     from pytoy.ui.vscode.api import Api
 
     if is_remote_vscode():
         code = """
-    (async (path) => {
+    (async (path, position) => {
         function getRemoteScheme() {
             const folders = vscode.workspace.workspaceFolders;
             if (!folders || folders.length === 0) return undefined;
@@ -51,7 +51,7 @@ def open_file(path: str | Path):
             }
             return undefined;
         }
-        const scheme = getRemoteScheme()
+        const scheme = getRemoteScheme();
         let uri; 
         if (scheme){
             uri = vscode.Uri.parse(`${scheme}${path}`);
@@ -59,14 +59,36 @@ def open_file(path: str | Path):
         else {
             uri = vscode.Uri.file(path);
         }
+        
+        const openOptions = {};
+
+        if (position) {
+            const [lnum, lcol] = position;
+            if (typeof lnum === 'number' && lnum > 0 && typeof lcol === 'number' && lcol > 0) {
+                // VS CodeのPositionは0-basedなので、-1します。
+                const line = lnum - 1;
+                const character = lcol - 1;
+
+                const position = new vscode.Position(line, character);
+                openOptions.selection = new vscode.Range(position, position);
+            }
+        }
+
         await vscode.commands.executeCommand(
             'vscode.open',
             uri,
+            openOptions
         )
-    })(args.path)
+    })(args.path, args.position)
 """
-        Api().eval_with_return(code, opts={"args": {"path": path.as_posix()}})
+        Api().eval_with_return(code, opts={"args": {"path": path.as_posix(),
+                                                    "position": position}})
     else:
         import vim
 
         vim.command(f"Edit {path.as_posix()}")
+        if position:
+            lnum, col = position
+            vim.command(f"call cursor({lnum}, {col})")
+
+

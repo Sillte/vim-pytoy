@@ -1,6 +1,6 @@
 from pytoy.ui.vscode.document import Api, Uri, Document
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 from typing import Sequence
 
 
@@ -41,7 +41,10 @@ class Editor(BaseModel):
         """
         api = Api()
         pairs = api.eval_with_return(jscode, with_await=True)
-        pairs = [(Uri.model_validate(pair[0]), pair[1]) for pair in pairs]
+        try:
+            pairs = [(Uri.model_validate(pair[0]), pair[1]) for pair in pairs]
+        except ValidationError:
+            return False
 
         uris = set(BufferURISolver.get_uri_to_bufnr().keys())
         uri_to_views = {pair[0]: pair[1] for pair in pairs if pair[0] in uris}

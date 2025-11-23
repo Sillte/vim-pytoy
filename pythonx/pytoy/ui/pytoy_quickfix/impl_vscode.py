@@ -10,6 +10,7 @@ from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.ui.vscode.editor import Editor
 from pytoy.ui import to_filepath
 from pytoy.lib_tools.utils import get_current_directory
+from pytoy.ui.vscode.utils import open_file
 
 
 class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
@@ -119,11 +120,12 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
             print("No record in QuickFix.")
             return
         path = Path(record.filename)
+        lnum, col = record.lnum, record.col
 
         # As of 2025/10/21, this `_edit_file` is the workaround, but I hope this is addressed in the plugin.
         # vim.command(f"Edit {path.as_posix()}")
-        self._edit_file(path)
-        lnum, col = record.lnum, record.col
+        position = (lnum, col)
+        open_file(path, position=position)
 
         length = len(self.records)
         idx = self.current_idx
