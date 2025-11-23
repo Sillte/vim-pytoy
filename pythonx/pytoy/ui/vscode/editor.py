@@ -189,7 +189,7 @@ class Editor(BaseModel):
             }
 
             /**
-             * ダーティであり、かつクリーンアップ対象となるUntitledドキュメントのURIの配列を返します。
+             * クリーンアップ対象となるUntitledドキュメントのURIの配列を返します。
              * @param {vscode.TextEditor} targetEditor 
              * @param {boolean} withinTab 
              * @param {boolean} withinWindows 
@@ -280,9 +280,6 @@ class Editor(BaseModel):
                 "workbench.action.closeEditorsInOtherGroups"
             );
         }
-
-
-
     })(args);
     """
         args = {
@@ -298,4 +295,36 @@ class Editor(BaseModel):
             msg = "`viewColumn` must not be None in `unique`."
             raise ValueError(msg)
         return api.eval_with_return(jscode, with_await=True, opts=args)
-    
+
+    @property
+    def cursor_position(self) -> tuple[int, int] | None:
+        """Return the (lnum, lcol) of the editor.
+        """
+        jscode = """
+        (async (args) => {
+            function findEditorByUriAndColumn(uri, viewColumn) {
+                return vscode.window.visibleTextEditors.find(
+                    editor => editor.document.uri.path == uri.path &&
+                              editor.document.uri.scheme == uri.scheme && 
+                              editor.viewColumn == viewColumn
+                );
+            }
+            const uri = vscode.Uri.from({"scheme": args.uri_dict.scheme, "path": args.uri_dict.path})
+            const editor = findEditorByUriAndColumn(uri, args.viewColumn);
+
+            if (!editor) return null;
+            const pos = editor.selection.active;
+            return [pos.line + 1, pos.character + 1];
+        })(args)
+        """
+        args = {
+            "args": {
+                "uri_dict": dict(self.uri),
+                "viewColumn": self.viewColumn,
+            }
+        }
+        api = Api()
+        ret = api.eval_with_return(jscode, with_await=True, opts=args)
+        if ret is None:
+            return None
+        return (ret[0], ret[1])

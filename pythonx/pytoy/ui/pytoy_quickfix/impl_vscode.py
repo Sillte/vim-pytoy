@@ -3,9 +3,11 @@ import vim
 import copy
 from typing import Sequence
 
-from pytoy.infra.timertask import TimerTask
+from pytoy.infra.timertask import TimerTask, TimerStopException
 from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol
 from pytoy.ui.pytoy_quickfix.models import QuickFixRecord
+from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
+from pytoy.ui.vscode.editor import Editor
 from pytoy.ui import to_filepath
 from pytoy.lib_tools.utils import get_current_directory
 
@@ -128,10 +130,19 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
         text = record.text
 
         def func():
-            print(f"({idx}/{length}):{text}", flush=True)
-            vim.command(f"call cursor({lnum}, {col})")
-
-        TimerTask.execute_oneshot(func, 300)
+            editor = Editor.get_current()
+            uri = editor.uri
+            bufnames = BufferURISolver.get_uri_to_bufnames()
+            bufname = bufnames.get(uri)
+            cursor_pos = editor.cursor_position 
+            if bufname and path == to_filepath(bufname):
+                print(f"({idx}/{length}):{text}", flush=True)
+                vim.command(f"call cursor({lnum}, {col})")
+                if cursor_pos and cursor_pos == (lnum, col):
+                    raise TimerStopException
+            else:
+                pass
+        TimerTask.register(func, interval=20, repeat=10)
 
     def _edit_file(self, path: Path):
         """This path is not the uri of vscode, but"""

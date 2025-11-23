@@ -1,5 +1,6 @@
 import vim
 
+from typing import Mapping
 from pytoy.ui.vscode.uri import Uri
 
 
@@ -13,12 +14,20 @@ class BufferURISolver:
         return (uri.scheme, uri.path)
 
     @classmethod
-    def get_bufnr_to_uris(cls) -> dict[int, Uri]:
+    def get_bufnr_to_uris(cls) -> Mapping[int, Uri]:
         return {buf.number: cls._to_uri(buf.name) for buf in vim.buffers}
 
     @classmethod
-    def get_uri_to_bufnr(cls) -> dict[Uri, int]:
+    def get_uri_to_bufnr(cls) -> Mapping[Uri, int]:
         return {cls._to_uri(buf.name): buf.number for buf in vim.buffers}
+
+    @classmethod
+    def get_uri_to_bufnames(cls) -> Mapping[Uri, str]:
+        return {cls._to_uri(buf.name): buf.name for buf in vim.buffers}
+
+    @classmethod
+    def get_bufname_to_uris(cls) -> Mapping[str, Uri]:
+        return {buf.name: cls._to_uri(buf.name) for buf in vim.buffers}
 
     @classmethod
     def get_bufnr(cls, uri: Uri) -> int | None:
