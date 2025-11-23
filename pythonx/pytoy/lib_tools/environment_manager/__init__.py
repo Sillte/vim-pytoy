@@ -187,5 +187,4 @@ def term_start():
 
 if __name__ == "__main__":
     manager = EnvironmentManager()
-    print(manager.get_command_wrapper()("cmd"))
 

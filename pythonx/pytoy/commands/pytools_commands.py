@@ -55,25 +55,15 @@ class MypyCommand:
         from pytoy.lib_tools import BufferExecutor
         from pytoy import TERM_STDOUT
         from pytoy.lib_tools.environment_manager import EnvironmentManager
+        from pytoy.commands.utils import override, workspace_func, fallback_argument
         import vim
 
-        fargs = opts["fargs"]
-        if "workspace" in fargs:
-            # This is using the knowledge that
-            # `The parent of virtualenv folder is the root of the project`.
-            venv_folder = EnvironmentManager().get_uv_venv()
-            if not venv_folder:
-                raise ValueError("This is not under UV workspace.")
-            root_folder = venv_folder.parent
-            path = root_folder
-            fargs.remove("workspace")
-            fargs.append(str(path))
 
-        arguments = [elem for elem in fargs if not elem.startswith("-")]
-        if not arguments:
-            path = vim.current.buffer.name
-            path = to_filepath(path)
-            fargs.append(path)
+        current_path = str(to_filepath(vim.current.buffer.name))
+        
+        fargs = opts["fargs"]
+        fargs = override(fargs, {"workspace": workspace_func})
+        fargs = fallback_argument(fargs, current_path)
 
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
         arg = " ".join(map(str, fargs))
@@ -177,35 +167,21 @@ class RuffChecker:
         from pytoy import TERM_STDOUT
         from pytoy.lib_tools.buffer_executor import BufferExecutor
         from pytoy.lib_tools.environment_manager import EnvironmentManager
+        from pytoy.commands.utils import override, workspace_func, fallback_argument
 
-        current_path = to_filepath(vim.current.buffer.name)
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
         executor = BufferExecutor("RuffChecer", pytoy_buffer)
 
+        current_path = str(to_filepath(vim.current.buffer.name))
+
         fargs = opts["fargs"]
-        if "workspace" in fargs:
-            # This is using the knowledge that
-            # `The parent of virtualenv folder is the root of the project`.
-            venv_folder = EnvironmentManager().get_uv_venv()
-            if not venv_folder:
-                raise ValueError("This is not under UV workspace.")
-            root_folder = venv_folder.parent
-            path = root_folder
-            fargs.remove("workspace")
-            fargs.append(str(path))
-
-        arguments = [elem for elem in fargs if not elem.startswith("-")]
-        if not arguments:
-            fargs.append(current_path)
-
-        if "--format" in fargs:
-            fargs.remove("--format")
-            # All other options
-            command = f"ruff format {fargs[0]}"
-            executor.sync_run(command)
+        fargs = override(fargs, {"workspace": workspace_func})
+        fargs = fallback_argument(fargs, current_path)
+        def _format() -> None:
+            executor.sync_run(f"ruff format {fargs[0]}")
+        fargs = override(fargs, {"--format": _format})
 
         command = f"ruff check {' '.join(map(str, fargs))} --output-format=concise"
-        print("command", command)
         regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<text>(.+))"
         executor.run(command, quickfix_creator=regex)
 

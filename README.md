@@ -7,9 +7,10 @@ It focuses on using python tools within vim-buffers.
 
 ## Environment
 
+
 * Vim9.1+ 
 * uv
-* python
+* python3.13+
 * pytest
 * lightline
 * psutil / pydantic / pywinpty
