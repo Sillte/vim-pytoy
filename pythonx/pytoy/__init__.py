@@ -43,8 +43,8 @@ def rerun():
 
 
 def stop():
-    executor = PythonExecutor()
-    executor.stop()
+    from pytoy.lib_tools.buffer_executor.buffer_job_manager import BufferJobManager
+    BufferJobManager.stop_all()
 
 
 def is_running() -> int:
@@ -63,38 +63,12 @@ def reset():
             vim.command(f":{nr}close")
 
 
-## Virtual Environment Interface
-def activate():
-    args = vim.eval("a:000")
-    if args:
-        name = args[0]
-    else:
-        name = None
-    venv_manager = VenvManager()
-    venv_manager.activate(name)
-    if venv_manager.name:
-        lightline_utils.register(venv_manager.name)
-
-
-def deactivate():
-    venv_manager = VenvManager()
-    if venv_manager.name:
-        lightline_utils.deregister(venv_manager.name)
-
-
-def envinfo():
-    venv_manager = VenvManager()
-    info = str(venv_manager.envinfo)
-    print(info)
-    return venv_manager.envinfo
-
-
 def term():
     """Open the terminal window
     with virtual environment.
     """
-    venv_manager = VenvManager()
-    venv_manager.term_start()
+    from pytoy.lib_tools.environment_manager import EnvironmentManager, term_start
+    term_start()
 
 
 # Command definitions.

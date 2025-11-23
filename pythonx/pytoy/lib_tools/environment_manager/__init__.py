@@ -155,6 +155,34 @@ class EnvironmentManager:
             return self.set_uv_mode(UvMode.OFF)
         else:
             return self.set_uv_mode(UvMode.ON)
+        
+
+def term_start():
+    import sys
+    from pytoy.ui.utils import to_filepath
+    from pytoy.ui.ui_enum import get_ui_enum, UIEnum
+    if get_ui_enum() != UIEnum.VIM:
+        raise ValueError("This funciton is only for `VIM`.")
+    
+    venv_folder = EnvironmentManager().get_uv_venv()
+    if not venv_folder:
+        raise ValueError("Cannot find the `venv_folder`.")
+    if sys.platform == "win32":
+
+        activate_path = venv_folder / "Scripts" / "activate"
+    else:
+        activate_path = venv_folder / "bin" / "activate"
+
+    number = vim.eval(r"term_start(&shell)")
+
+    def _to_slash_path(path):
+        path = Path(path)
+        result = str(path).replace("\\", "/")
+        return result
+
+    path = _to_slash_path(activate_path)
+    keys = rf"{_to_slash_path(path)} \<CR>"
+    vim.eval(rf'term_sendkeys({number}, "{keys}")')
 
 
 if __name__ == "__main__":

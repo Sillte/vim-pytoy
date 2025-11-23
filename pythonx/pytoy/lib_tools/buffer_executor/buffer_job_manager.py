@@ -43,8 +43,7 @@ class BufferJobManager:
             stderr=creation_param.stderr,
         )
 
-        stdout = creation_param.stdout
-        stderr = creation_param.stderr
+
         command = creation_param.command
         env = creation_param.env
         cwd = creation_param.cwd
@@ -57,7 +56,7 @@ class BufferJobManager:
         def prepare() -> Mapping:
             return {}
 
-        def dummy_on_closed(buffer_job: BufferJobProtocol) -> None:
+        def dummy_on_closed(_: BufferJobProtocol) -> None:
             return None
 
         on_closed = creation_param.on_closed or dummy_on_closed
@@ -77,8 +76,17 @@ class BufferJobManager:
     def stop(name: str) -> None:
         buffer_job = BufferJobManager.get(name)
         if buffer_job:
-            buffer_job.stop()
+            if buffer_job.is_running:
+                buffer_job.stop()
+            
+    @staticmethod
+    def stop_all() -> None:
+        for job in BufferJobManager.buffer_jobs.values():
+            if job.is_running:
+                job.stop()
+        BufferJobManager.buffer_jobs = {}
 
+ 
 
 if __name__ == "__main__":
     pass
