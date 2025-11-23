@@ -162,4 +162,11 @@ def execute_pytoy(opts: OptsArgument):
         path = to_filepath(vim.current.buffer.name)
     else:
         path = to_filepath(name)
-    vim.command(f"py3file {path.as_posix()}")
+
+    match path.suffix:
+        case ".py" | ".pyi":
+            vim.command(f"py3file {path.as_posix()}")
+        case ".vim":
+            vim.command(f"source {path.as_posix()}")
+        case _:
+            raise ValueError("Cannot identify the apt execution for ``") 

@@ -54,42 +54,7 @@ function! pytoy#reset()
 python3 pytoy.reset()
 endfunction
 
-" Virtual Environment handling.
-function! pytoy#activate(...)
-python3 pytoy.activate()
-endfunction
-
-function! pytoy#deactivate()
-python3 pytoy.deactivate()
-endfunction
-
-function! pytoy#envinfo()
-return py3eval('pytoy.envinfo()')
-endfunction
-
 " Open Terminal with the specified virtual environment.
 function! pytoy#term()
 python3 pytoy.term()
-endfunction
-
-
-" Related to ipython handling
-function! pytoy#ipython_send_line()
-python3 pytoy.ipython_send_line()
-endfunction
-
-function! pytoy#ipython_send_range()
-python3 pytoy.ipython_send_range()
-endfunction
-
-function! pytoy#ipython_reset()
-python3 pytoy.ipython_reset()
-endfunction
-
-function! pytoy#ipython_stop()
-python3 pytoy.ipython_stop()
-endfunction
-
-function! pytoy#ipython_history()
-python3 pytoy.ipython_history()
 endfunction
