@@ -1,5 +1,7 @@
 import time
 from pathlib import Path
+from pytoy.ui.vscode.uri import Uri
+from pytoy.ui.vscode.api import Api
 
 
 def wait_until_true(
@@ -19,70 +21,43 @@ def wait_until_true(
         time.sleep(interval)
     return False
 
-
 def is_remote_vscode() -> bool:
-    from pytoy.ui.vscode.api import Api
+    return bool(Api().eval_with_return("vscode.env.remoteName"))
 
+def get_remote_authority() -> str:
+    if not is_remote_vscode():
+        return ""
+    
+    uris = Uri.get_uris()
+    uris = [uri for uri in uris if uri.scheme == "vscode-remote"]
+    authorities = set(uri.authority for uri in uris)
+    if 2 <= len(authorities):
+        msg = f"`{authorities}` are found, it is impossible to determine autority."
+        raise ValueError(msg)
+    elif 1 == len(authorities): 
+        return list(authorities)[0]
+
+    # Inference based on working folder.
     api = Api()
-    code = """
-(async () => {
-    const folders = vscode.workspace.workspaceFolders;
-    if (!folders || folders.length === 0) return false;
-    const uri = folders[0].uri;
-    return uri.scheme === 'vscode-remote';
-})()
-"""
-    return api.eval_with_return(code)
-
+    jscode = "vscode.workspace.workspaceFolders.map(folder => {folder.uri});"
+    uris = [Uri.model_validate(elem) for elem in api.eval_with_return(jscode, with_await=False)]
+    uris = [uri for uri in uris if uri.scheme == "vscode-remote"]
+    authorities = set(uri.authority for uri in uris)
+    if 2 <= len(authorities):
+        msg = f"`{authorities}` are found, it is impossible to determine autority."
+        raise ValueError(msg)
+    elif 1 == len(authorities): 
+        return list(authorities)[0]
+    return ""
 
 def open_file(path: str | Path, position: tuple[int, int] | None = None) -> None:
     path = Path(path)
     from pytoy.ui.vscode.api import Api
+    from pytoy.ui.vscode.document import Document
 
     if is_remote_vscode():
-        code = """
-    (async (path, position) => {
-        function getRemoteScheme() {
-            const folders = vscode.workspace.workspaceFolders;
-            if (!folders || folders.length === 0) return undefined;
-            const uri = folders[0].uri;
-            if (uri.scheme === 'vscode-remote') {
-                return `vscode-remote://${uri.authority}`;
-            }
-            return undefined;
-        }
-        const scheme = getRemoteScheme();
-        let uri; 
-        if (scheme){
-            uri = vscode.Uri.parse(`${scheme}${path}`);
-        }
-        else {
-            uri = vscode.Uri.file(path);
-        }
-        
-        const openOptions = {};
-
-        if (position) {
-            const [lnum, lcol] = position;
-            if (typeof lnum === 'number' && lnum > 0 && typeof lcol === 'number' && lcol > 0) {
-                // VS CodeのPositionは0-basedなので、-1します。
-                const line = lnum - 1;
-                const character = lcol - 1;
-
-                const position = new vscode.Position(line, character);
-                openOptions.selection = new vscode.Range(position, position);
-            }
-        }
-
-        await vscode.commands.executeCommand(
-            'vscode.open',
-            uri,
-            openOptions
-        )
-    })(args.path, args.position)
-"""
-        Api().eval_with_return(code, opts={"args": {"path": path.as_posix(),
-                                                    "position": position}})
+        uri = Uri.from_filepath(path)
+        Document.open(uri, position)
     else:
         import vim
 
@@ -90,5 +65,3 @@ def open_file(path: str | Path, position: tuple[int, int] | None = None) -> None
         if position:
             lnum, col = position
             vim.command(f"call cursor({lnum}, {col})")
-
-
