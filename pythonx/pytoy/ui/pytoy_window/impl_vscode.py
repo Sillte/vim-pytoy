@@ -109,8 +109,9 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
     def _get_window_by_bufname(
         self, bufname: str, *, scheme: str = "untitled", 
     ) -> PytoyWindowVSCode | None:
+        assert scheme == "untitled"
         editors = Editor.get_editors()
-        buf_uri = Uri(path=bufname, scheme=scheme)
+        buf_uri = Uri(path=bufname, scheme=scheme, authority="")
         for editor in editors:
             if editor.document.uri == buf_uri:
                 return PytoyWindowVSCode(editor)

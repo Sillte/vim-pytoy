@@ -1,5 +1,5 @@
 # Experimental codes related to VSCode
-from typing import Self
+from typing import Self, Literal
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict
 
@@ -20,69 +20,120 @@ class Document(BaseModel):
         return cls.model_validate(doc)
 
     @classmethod
-    def create(cls, path: None | str | Path = None) -> Self:
+    def create(cls, uri: Uri) -> Self:
         api = Api()
         js_code = """
-    (async () => {
-      const path = args.path;
-      let doc; 
-      if (path === undefined || path === null || path === "") {
-        doc = await vscode.workspace.openTextDocument({ language: 'plaintext', content: '' });
-      } else {
-        const uri = vscode.Uri.file(path);
-        doc = await vscode.workspace.openTextDocument(uri);
-      }
-      return doc;
-    })()
-    """
-        if isinstance(path, Path):
-            path = path.as_posix()
-        args = {"args": {"path": path}}
-        doc = api.eval_with_return(js_code, with_await=True, opts=args)
-        return cls.model_validate(doc)
+        (async (scheme, authority, path) => {
+
+          let uriStr;
+          if (authority) {
+              uriStr = scheme + "://" + authority + path;
+          } else {
+              uriStr = scheme + ":" + path;
+          }
+          const uri = vscode.Uri.parse(uriStr);
+          try {
+              const doc = await vscode.workspace.openTextDocument(uri);
+              return doc;
+          } catch (err) {
+              // not found → fallback to create new file
+              // VSCode cannot create a new (yet-not-existing) file directly by openTextDocument
+          }
+
+          // -----------------------------
+          // New file creation via WorkspaceEdit
+          // -----------------------------
+          const edit = new vscode.WorkspaceEdit();
+          edit.createFile(uri, { overwrite: false });
+
+          const success = await vscode.workspace.applyEdit(edit);
+          if (!success) {
+              throw new Error("Failed to create new file: " + uri.toString());
+          }
+
+          // Now the file exists
+          const newDoc = await vscode.workspace.openTextDocument(uri);
+          return newDoc;
+
+        })(args.scheme, args.authority, args.path)
+        """
+        args = {"args": {"scheme": uri.scheme, "path": uri.path, "authority": uri.authority}}
+        ret = api.eval_with_return(js_code, with_await=True, opts=args)
+        return cls.model_validate(ret)
+      
+    @classmethod
+    def open(self, uri: Uri, position: tuple[int, int] | None = None):
+      """posistion=(lnum, lcol)""" 
+      jscode = """
+      (async (scheme, path, authority, position) => {
+          const separator = authority ? "://" : ":";
+          const uriStr = scheme + separator + (authority || "") + path;
+          const uri = vscode.Uri.parse(uriStr);
+          
+          const openOptions = {};
+
+          if (position) {
+              const [lnum, lcol] = position;
+              if (typeof lnum === 'number' && lnum > 0 && typeof lcol === 'number' && lcol > 0) {
+                  // VS CodeのPositionは0-basedなので、-1します。
+                  const line = lnum - 1;
+                  const character = lcol - 1;
+
+                  const position = new vscode.Position(line, character);
+                  openOptions.selection = new vscode.Range(position, position);
+              }
+          }
+          await vscode.commands.executeCommand(
+              'vscode.open',
+              uri,
+              openOptions
+          )
+      })(args.scheme, args.path, args.authority, args.position)
+      """
+      api = Api()
+      result = api.eval_with_return(
+          jscode,
+          with_await=True,
+            opts={"args": {"path": uri.path, "scheme": uri.scheme, "authority": uri.authority, "position": position}},
+        )
+      return result
 
     def append(self, text: str) -> bool:
         """Append text at the end of the document."""
         api = Api()
         js_code = """
-        (async () => {
-        const path = args.path; 
+        (async (args) => {
+
+          const scheme = args.scheme;
+          const path   = args.path;
 
           const doc = vscode.workspace.textDocuments.find(
-          d => d.uri.path === path
+              d => d.uri.scheme === scheme && d.uri.path === path
           );
 
-      if (!doc) {
-        return { success: false, message: "Untitled document not found." };
-      }
+          const edit = new vscode.WorkspaceEdit();
 
-        const edit = new vscode.WorkspaceEdit();
+          let pos;
+          if (doc.lineCount === 0) {
+            pos = new vscode.Position(0, 0);
+          } else {
+            const lastLine = doc.lineCount - 1;
+            const lastLineText = doc.lineAt(lastLine).text;
+            pos = new vscode.Position(lastLine, lastLineText.length);
+          }
 
-        let pos;
-        if (doc.lineCount === 0) {
-          pos = new vscode.Position(0, 0);
-        } else {
-          const lastLine = doc.lineCount - 1;
-          const lastLineText = doc.lineAt(lastLine).text;
-          pos = new vscode.Position(lastLine, lastLineText.length);
-        }
-
-        edit.insert(doc.uri, pos, args.text);
+          edit.insert(doc.uri, pos, args.text);
 
 
-      const ok = await vscode.workspace.applyEdit(edit);
-      return {
-        success: ok,
-        message: ok ? "Appended to untitled." : "Edit failed."
-      };
-    })()
+          return await vscode.workspace.applyEdit(edit);
+      })(args)
       """
         result = api.eval_with_return(
             js_code,
             with_await=True,
-            opts={"args": {"path": self.uri.path, "text": f"{text}"}},
+            opts={"args": {"path": self.uri.path, "scheme": self.uri.scheme, "text": f"{text}"}},
         )
-        return bool(result["success"])
+        return result
 
 
     @property
