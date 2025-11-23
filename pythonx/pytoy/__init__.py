@@ -1,7 +1,6 @@
 import vim
 
 from pytoy.lib_tools.environment_manager import EnvironmentManager
-from pytoy.lib_tools.environment_manager.venv_utils import VenvManager
 from pytoy.ui import lightline_utils
 from pytoy.ui import to_filepath
 

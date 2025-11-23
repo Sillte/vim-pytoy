@@ -76,13 +76,6 @@ class VimRebootExecutor:
         rebooter = VimRebooter()
 
         rebooter()
-        # if is_gui and sys.platform.startswith("win32"):
-        #    if self.package:
-        #        self.package.restart(with_vimrc=True, kill_myprocess=True)
-        #    else:
-        #        raise ValueError("Current folder is not within a plugin folder.")
-        # else:
-        #    vim.command("qall!")
 
 
 @CommandManager.register(name="VimReboot")
