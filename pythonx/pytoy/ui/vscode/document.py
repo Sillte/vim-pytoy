@@ -23,15 +23,9 @@ class Document(BaseModel):
     def create(cls, uri: Uri) -> Self:
         api = Api()
         js_code = """
-        (async (scheme, authority, path) => {
+        (async (uriKey) => {
+          const uri = vscode.Uri.parse(uriKey);
 
-          let uriStr;
-          if (authority) {
-              uriStr = scheme + "://" + authority + path;
-          } else {
-              uriStr = scheme + ":" + path;
-          }
-          const uri = vscode.Uri.parse(uriStr);
           try {
               const doc = await vscode.workspace.openTextDocument(uri);
               return doc;
@@ -55,20 +49,19 @@ class Document(BaseModel):
           const newDoc = await vscode.workspace.openTextDocument(uri);
           return newDoc;
 
-        })(args.scheme, args.authority, args.path)
+        })(args.uriKey)
         """
-        args = {"args": {"scheme": uri.scheme, "path": uri.path, "authority": uri.authority}}
+        args = {"args": {"uriKey": uri.to_key_str()}}
         ret = api.eval_with_return(js_code, with_await=True, opts=args)
         return cls.model_validate(ret)
       
     @classmethod
-    def open(self, uri: Uri, position: tuple[int, int] | None = None):
+    def open(cls, uri: Uri, position: tuple[int, int] | None = None) -> Self:
       """posistion=(lnum, lcol)""" 
       jscode = """
-      (async (scheme, path, authority, position) => {
-          const separator = authority ? "://" : ":";
-          const uriStr = scheme + separator + (authority || "") + path;
-          const uri = vscode.Uri.parse(uriStr);
+      (async (uriKey, position) => {
+          const uri = vscode.Uri.parse(uriKey);
+          const doc = await vscode.workspace.openTextDocument(uri);
           
           const openOptions = {};
 
@@ -83,55 +76,53 @@ class Document(BaseModel):
                   openOptions.selection = new vscode.Range(position, position);
               }
           }
-          await vscode.commands.executeCommand(
-              'vscode.open',
-              uri,
-              openOptions
-          )
-      })(args.scheme, args.path, args.authority, args.position)
+          await vscode.window.showTextDocument( doc, openOptions);
+          return doc;
+
+      })(args.uriKey, args.position)
       """
       api = Api()
       result = api.eval_with_return(
           jscode,
           with_await=True,
-            opts={"args": {"path": uri.path, "scheme": uri.scheme, "authority": uri.authority, "position": position}},
+            opts={"args": {"uriKey": uri.to_key_str(), "position": position}},
         )
-      return result
+      return cls.model_validate(result)
 
     def append(self, text: str) -> bool:
         """Append text at the end of the document."""
         api = Api()
         js_code = """
         (async (args) => {
+            const uriKey = args.uriKey;
+            const text = args.text;
 
-          const scheme = args.scheme;
-          const path   = args.path;
+            const uri = vscode.Uri.parse(uriKey);
 
-          const doc = vscode.workspace.textDocuments.find(
-              d => d.uri.scheme === scheme && d.uri.path === path
-          );
+            const doc = await vscode.workspace.openTextDocument(uri);
+            
+            let pos;
+            if (doc.lineCount === 0) {
+                // ドキュメントが空の場合、(0, 0)
+                pos = new vscode.Position(0, 0);
+            } else {
+                // 最終行の行番号と、最終行のテキストの長さを取得
+                const lastLine = doc.lineCount - 1;
+                const lastLineText = doc.lineAt(lastLine).text;
+                pos = new vscode.Position(lastLine, lastLineText.length);
+            }
 
-          const edit = new vscode.WorkspaceEdit();
+            const edit = new vscode.WorkspaceEdit();
+            edit.insert(doc.uri, pos, text);
 
-          let pos;
-          if (doc.lineCount === 0) {
-            pos = new vscode.Position(0, 0);
-          } else {
-            const lastLine = doc.lineCount - 1;
-            const lastLineText = doc.lineAt(lastLine).text;
-            pos = new vscode.Position(lastLine, lastLineText.length);
-          }
-
-          edit.insert(doc.uri, pos, args.text);
-
-
-          return await vscode.workspace.applyEdit(edit);
-      })(args)
-      """
+            return await vscode.workspace.applyEdit(edit);
+        })(args)
+        """
+      
         result = api.eval_with_return(
             js_code,
             with_await=True,
-            opts={"args": {"path": self.uri.path, "scheme": self.uri.scheme, "text": f"{text}"}},
+            opts={"args": {"uriKey": self.uri.to_key_str(), "text": text}},
         )
         return result
 
@@ -141,95 +132,105 @@ class Document(BaseModel):
         """Return the string of document."""
         api = Api()
         js_code = """
-        (async () => {
-        const path = args.path; 
-      const doc = vscode.workspace.textDocuments.find(
-        d => d.uri.path === path
-      );
-
-      if (!doc) {
-        return "Untitled document not found.";
-      }
-      const fullText = doc.getText();
-      return fullText;
-    })()
-    """
+        (async (args) => {
+            const uri = vscode.Uri.parse(args.uriKey);
+            const doc = await vscode.workspace.openTextDocument(uri);
+            return doc.getText();
+        })(args)
+        """
         result = api.eval_with_return(
             js_code,
             with_await=True,
             opts={
                 "args": {
-                    "path": self.uri.path,
+                    "uriKey": self.uri.to_key_str(), 
                 }
             },
         )
         return result
 
     @content.setter
-    def content(self, value: str) -> None:
+    def content(self, value: str):
         api = Api()
         js_code = """
-        (async (path, content) => {
-          const doc = vscode.workspace.textDocuments.find(
-                d => d.uri.path === path
-            );
-          if (!doc) {
-              return false;
-          }
-    
-          // 2. WorkspaceEditを作成
-          const edit = new vscode.WorkspaceEdit();
+        (async (args) => {
+            const uri = vscode.Uri.parse(args.uriKey);
+            const content = args.content;
+            
+            try {
+                const doc = await vscode.workspace.openTextDocument(uri);
+                
+                const edit = new vscode.WorkspaceEdit();
+                
+                const startPos = doc.positionAt(0);
+                const endPos = doc.positionAt(doc.getText().length); 
+                
+                const fullRange = new vscode.Range(startPos, endPos);
+                edit.replace(doc.uri, fullRange, content);
 
-          // 3. ドキュメント全体を対象とするRangeを計算
-          const fullRange = new vscode.Range(
-              doc.positionAt(0),
-              doc.positionAt(doc.getText().length)
-          );
+                await vscode.workspace.applyEdit(edit);
+                
+            } catch (err) {
+                console.error("Failed to set content: ", err, uri);
+            }
 
-          // 4. WorkspaceEditに対象ドキュメント全体を削除し、新しい内容を挿入する編集操作を追加
-          edit.delete(doc.uri, fullRange); 
-          //   - 0, 0の位置に新しい内容を挿入
-          edit.insert(doc.uri, new vscode.Position(0, 0), content);
-          
-          // 5. 編集を適用 (awaitで同期を取る)
-          const success = await vscode.workspace.applyEdit(edit);
-
-          // 6. 成功を返す
-          return success;
-      
-    })(args.path, args.value)
-    """
-        result = api.eval_with_return(
+        })(args)
+        """
+   
+        api.eval_with_return(
             js_code,
             with_await=True,
-            opts={"args": {"path": self.uri.path, "value": value}},
+            opts={"args": {"uriKey": self.uri.to_key_str(), "content": value}},
         )
-        return result
 
-    def show(self, with_focus: bool = False) -> None:
+
+    def show(self, with_focus: bool = False):
         api = Api()
         js_code = """
-    (async (uri, preserveFocus) => {
-    async function showDocumentIfVisibleOrOpen(uri) {
-    const visibleEditor = vscode.window.visibleTextEditors.find(
-      editor => editor.document.uri.toString() === uri.toString()
-    );
+    (async (uriKey, preserveFocus) => {
+        function IsSameDocument(targetUri, editorUri) {
+                const targetAuthority = targetUri.authority || "";
+                const targetPath = targetUri.path;
+                
+                const docAuthority = editorUri.authority || "";
+                const docPath = editorUri.path;
+                
+                return targetUri.scheme === editorUri.scheme &&
+                       targetAuthority === docAuthority &&
+                       targetPath === docPath;
+            }
 
-    if (visibleEditor) {
-      return await vscode.window.showTextDocument(visibleEditor.document, {
-        viewColumn: visibleEditor.viewColumn,
+        const uri = vscode.Uri.parse(uriKey);
+
+        //If already, the editor is visible, it is prioritized.
+        const visibleEditor = vscode.window.visibleTextEditors.find(
+                    editor => IsSameDocument(uri, editor.document.uri)
+                );
+        if (visibleEditor) {
+            return await vscode.window.showTextDocument(visibleEditor.document, {
+                viewColumn: visibleEditor.viewColumn,
+                preserveFocus: preserveFocus,
+                preview: false
+            });
+        }
+
+        // If there is no editors, `newly` opened.
+        let doc; 
+        try {
+            doc = await vscode.workspace.openTextDocument(uri);
+        } catch (err) {
+          console.log("Cannot find", uri)
+          return; 
+        }
+
+        return await vscode.window.showTextDocument(doc, {
         preserveFocus: preserveFocus,
         preview: false
       });
-      }
-    return null;
-    }
-    return await showDocumentIfVisibleOrOpen(uri);
-    })(args.uri, args.preserveFocus)
+    })(args.uriKey, args.preserveFocus)
       """
-        args = {"args": {"uri": dict(self.uri), "preserveFocus": not with_focus}}
-
-        result = api.eval_with_return(js_code, with_await=True, opts=args)
+        args = {"args": {"uriKey": self.uri.to_key_str(), "preserveFocus": not with_focus}}
+        api.eval_with_return(js_code, with_await=True, opts=args)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Document):
