@@ -52,7 +52,7 @@ class Editor(BaseModel):
 
     def close(self) -> bool:
         jscode = """
-        (async (uri_dict, viewColumn) => {
+        (async (uriKey, viewColumn) => {
             async function closeUntitledEditorSafely(editor) {
                 const current = vscode.window.activeTextEditor;
 
@@ -77,12 +77,13 @@ class Editor(BaseModel):
                 return vscode.window.visibleTextEditors.find(
                     editor => editor.document.uri.path == uri.path &&
                               editor.document.uri.scheme == uri.scheme && 
+                              (editor.document.uri.authority || "") == (uri.authority  || "") && 
                               editor.viewColumn == viewColumn
                 );
             }
 
-            async function forceCloseEditorByUri(uri_dict, column) {
-                const uri = vscode.Uri.from({"scheme": uri_dict.scheme, "path": uri_dict.path})
+            async function forceCloseEditorByUri(uriKey, column) {
+                const uri = vscode.Uri.parse(uriKey);
                 const editor = findEditorByUriAndColumn(uri, column);
 
                 if (!editor) return false;
@@ -91,26 +92,27 @@ class Editor(BaseModel):
                 return true;
             }
 
-            return forceCloseEditorByUri(uri_dict, viewColumn)
-        })(args.uri, args.viewColumn)
+            return forceCloseEditorByUri(uriKey, viewColumn)
+        })(args.uriKey, args.viewColumn)
         """
         api = Api()
 
-        args = {"args": {"uri": dict(self.uri), "viewColumn": self.viewColumn}}
+        args = {"args": {"uriKey": self.uri.to_key_str(), "viewColumn": self.viewColumn}}
         return api.eval_with_return(jscode, with_await=True, opts=args)
 
     def focus(self) -> None:
         jscode = """
-        (async (uri_dict, viewColumn) => {
+        (async (uriKey, viewColumn) => {
             function findEditorByUriAndColumn(uri, viewColumn) {
                 return vscode.window.visibleTextEditors.find(
                     editor => editor.document.uri.path == uri.path &&
                               editor.document.uri.scheme == uri.scheme && 
+                              (editor.document.uri.authority || "") == (uri.authority  || "") && 
                               editor.viewColumn == viewColumn
                 );
             }
-            async function FocusEditor(uri_dict, column) {
-                const uri = vscode.Uri.from({"scheme": uri_dict.scheme, "path": uri_dict.path})
+            async function FocusEditor(uriKey, column) {
+                const uri = vscode.Uri.parse(uriKey);
                 const editor = findEditorByUriAndColumn(uri, column);
                 if (!editor) return false;
                 await vscode.window.showTextDocument(editor.document, {
@@ -119,11 +121,11 @@ class Editor(BaseModel):
                 });
                 return true;
             }
-            return FocusEditor(uri_dict, viewColumn)
-        })(args.uri, args.viewColumn)
+            return FocusEditor(uriKey, viewColumn)
+        })(args.uriKey, args.viewColumn)
         """
         api = Api()
-        args = {"args": {"uri": dict(self.uri), "viewColumn": self.viewColumn}}
+        args = {"args": {"uriKey": self.uri.to_key_str(), "viewColumn": self.viewColumn}}
         return api.eval_with_return(jscode, with_await=True, opts=args)
 
     def __eq__(self, other: object) -> bool:
@@ -209,18 +211,23 @@ class Editor(BaseModel):
                 return toCleanDocs.map(doc => doc.uri.toJSON()); 
             }
 
+            function findEditorByUriAndColumn(uri, viewColumn) {
+                return vscode.window.visibleTextEditors.find(
+                    editor => editor.document.uri.path == uri.path &&
+                              editor.document.uri.scheme == uri.scheme && 
+                              (editor.document.uri.authority || "") == (uri.authority  || "") && 
+                              editor.viewColumn == viewColumn
+                );
+            }
+
             // --- メイン処理 ---
             
             // args.uri は Lua 側から渡されたディクショナリ形式（または文字列）を想定
-            const targetUri = vscode.Uri.from(args.uri);
+            const targetUri = vscode.Uri.parse(args.uriKey);
             
             
             // ターゲットエディタを見つける
-            const editor = vscode.window.visibleTextEditors.find(
-                e => e.document.uri.toString() === targetUri.toString() &&
-                e.viewColumn === args.viewColumn
-            );
-
+            const editor = findEditorByUriAndColumn(targetUri, args.viewColumn)
 
             if (!editor) return [];
 
@@ -232,7 +239,7 @@ class Editor(BaseModel):
 
         args = {
             "args": {
-                "uri": dict(self.uri),
+                "uriKey": self.uri.to_key_str(),
                 "viewColumn": self.viewColumn,
                 "withinTab": within_tabs,
                 "withinWindows": within_windows,
@@ -250,19 +257,23 @@ class Editor(BaseModel):
         jscode = """
     (async (args) => {
 
+        function findEditorByUriAndColumn(uri, viewColumn) {
+            return vscode.window.visibleTextEditors.find(
+                editor => editor.document.uri.path == uri.path &&
+                          editor.document.uri.scheme == uri.scheme && 
+                          (editor.document.uri.authority || "") == (uri.authority  || "") && 
+                          editor.viewColumn == viewColumn
+            );
+        }
+
         // --- メイン処理 ---
         
         // args.uri は Lua 側から渡されたディクショナリ形式（または文字列）を想定
-        const targetUri = vscode.Uri.from(args.uri);
+        const targetUri = vscode.Uri.parse(args.uriKey);
         
         // ターゲットエディタを見つける
-        const editor = vscode.window.visibleTextEditors.find(
-            e => e.document.uri.toString() === targetUri.toString() &&
-            e.viewColumn === args.viewColumn
-        );
-
+        const editor = findEditorByUriAndColumn(targetUri, args.viewColumn)
         if (!editor) return; // ターゲットエディタが見つからなければ終了
-
 
         // ターゲットエディタを再度アクティブにしてフォーカスを維持
         await vscode.window.showTextDocument(editor.document, {
@@ -287,7 +298,7 @@ class Editor(BaseModel):
     """
         args = {
             "args": {
-                "uri": dict(self.uri),
+                "uriKey": self.uri.to_key_str(), 
                 "viewColumn": self.viewColumn,
                 "withinTab": within_tabs,
                 "withinWindows": within_windows,
@@ -309,10 +320,11 @@ class Editor(BaseModel):
                 return vscode.window.visibleTextEditors.find(
                     editor => editor.document.uri.path == uri.path &&
                               editor.document.uri.scheme == uri.scheme && 
+                              (editor.document.uri.authority || "") == (uri.authority  || "") && 
                               editor.viewColumn == viewColumn
                 );
             }
-            const uri = vscode.Uri.from({"scheme": args.uri_dict.scheme, "path": args.uri_dict.path})
+            const uri = vscode.Uri.parse(args.uriKey);
             const editor = findEditorByUriAndColumn(uri, args.viewColumn);
 
             if (!editor) return null;
@@ -322,7 +334,7 @@ class Editor(BaseModel):
         """
         args = {
             "args": {
-                "uri_dict": dict(self.uri),
+                "uriKey": self.uri.to_key_str(),
                 "viewColumn": self.viewColumn,
             }
         }
