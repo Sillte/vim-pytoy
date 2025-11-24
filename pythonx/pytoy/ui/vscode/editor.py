@@ -1,7 +1,7 @@
 from pytoy.ui.vscode.document import Api, Uri, Document
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pydantic import BaseModel, ConfigDict, ValidationError
-from typing import Sequence
+from typing import Sequence, Self
 
 
 class Editor(BaseModel):
@@ -49,6 +49,42 @@ class Editor(BaseModel):
         uris = set(BufferURISolver.get_uri_to_bufnr().keys())
         uri_to_views = {pair[0]: pair[1] for pair in pairs if pair[0] in uris}
         return uri_to_views.get(self.uri, -1) == self.viewColumn
+    
+    @classmethod
+    def create(cls, uri: Uri, split_mode: str = "vertical") -> Self:
+        jscode = """
+        (async (args) => {
+            const uri = vscode.Uri.parse(args.uriKey);
+            const doc = await vscode.workspace.openTextDocument(uri);
+
+            let editor;
+            if (args.splitMode.startsWith("v")){
+                await vscode.commands.executeCommand("workbench.action.splitEditorDown");
+                editor = await vscode.window.showTextDocument(doc, {
+                    preview: false
+                });
+            }
+            else {
+                editor = await vscode.window.showTextDocument(doc, {
+                viewColumn: vscode.ViewColumn.Beside, // 今開いているエディタの横
+                preview: true,
+            });
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 0));
+            if (!editor.viewColumn){
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            if (!editor.viewColumn){
+                throw new Error("viewColumn not assigned in time");
+            }
+            return [doc, editor.viewColumn]
+        })(args)
+        """
+        api = Api()
+        opts = {"args": {"uriKey": uri.to_key_str(), "splitMode": split_mode}}
+        doc_dict, view_column = api.eval_with_return(jscode, opts)
+        return cls.model_validate({"document":doc_dict, "viewColumn":view_column})
 
     def close(self) -> bool:
         jscode = """
