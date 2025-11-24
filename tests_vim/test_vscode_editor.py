@@ -13,6 +13,11 @@ uris = current.get_clean_target_uris_for_unique()
 
 current.close()
 
+uri = Uri.from_untitled_name("hogehgeo")
+editor = Editor.create(uri)
+assert editor.valid
+
 doc.show()
+
 print("Test Complete")
 
