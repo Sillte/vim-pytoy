@@ -1,7 +1,7 @@
 """Terminal, which is used by python."""
 
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Mapping
 import winpty
 
 from pytoy.lib_tools.utils import get_current_directory
@@ -38,7 +38,7 @@ class PseudoTerminalProviderWin(PseudoTerminalProviderProtocol):
         argv: str | Sequence[str],
         dimensions: tuple[int, int] | None = None,
         cwd: str | Path | None = None,
-        env: dict[str, str] | None = None,
+        env: Mapping[str, str] | None = None,
     ) -> PseudoTerminalProtocol:
         if cwd is None:
             cwd = str(get_current_directory())

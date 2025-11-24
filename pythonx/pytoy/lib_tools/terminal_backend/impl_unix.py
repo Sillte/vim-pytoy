@@ -1,7 +1,7 @@
 """Terminal, which is used by python."""
 
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Mapping
 import pexpect
 
 from pytoy.lib_tools.utils import get_current_directory
@@ -42,7 +42,7 @@ class PseudoTerminalProviderUnix(PseudoTerminalProviderProtocol):
         argv: str | Sequence[str],
         dimensions: tuple[int, int] | None = None,
         cwd: str | Path | None = None,
-        env: dict[str, str] | None = None,
+        env: Mapping[str, str] | None = None,
     ) -> PseudoTerminalProtocol:
         if isinstance(argv, Sequence) and (not isinstance(argv, str)):
             command = argv[0]
@@ -57,11 +57,39 @@ class PseudoTerminalProviderUnix(PseudoTerminalProviderProtocol):
 
         if cwd is None:
             cwd = get_current_directory()
-
-        pty = pexpect.spawn(
-            command, argv, cwd=cwd, env=env, encoding="utf-8", dimensions=dimensions
-        )
+            
+        if env is not None:
+            raise NotImplementedError("env is not `None` case is not implemented yet.")
+        try:
+            pty = pexpect.spawn(
+                command, argv, cwd=cwd, env=env, encoding="utf-8", dimensions=dimensions
+            )
+        except Exception as e:
+            _add_path_fallback(command)
+            pty = pexpect.spawn(
+                command, argv, cwd=cwd, env=env, encoding="utf-8", dimensions=dimensions
+            )
         return PseudoTerminalUnix(pty)
+    
+
+    
+def _add_path_fallback(command: str) -> bool:
+    """
+    side-effects: updating of `os.envioron['PATH']
+    """
+    import subprocess
+    import os
+    import vim
+    ret = subprocess.run(f"bash -lic 'which {command}'", shell=True, stdout=subprocess.PIPE, text=True)
+    if ret.returncode != 0:
+        return False
+    first_line = ret.stdout.strip().split("\n")[0]
+    folder = Path(first_line).parent.as_posix()
+    current_path = os.environ.get('PATH', '')
+    new_path = f"{folder}{os.pathsep}{current_path}"
+    os.environ['PATH'] = new_path
+    vim.command(f'let $PATH="{new_path}"')
+    return True
 
 
 if __name__ == "__main__":

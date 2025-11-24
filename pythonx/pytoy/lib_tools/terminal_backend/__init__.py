@@ -1,4 +1,6 @@
 from queue import Queue
+from pathlib import Path
+from typing import Mapping
 from .protocol import TerminalBackendProtocol, ApplicationProtocol, LineBufferProtocol
 
 
@@ -11,10 +13,10 @@ class TerminalBackend(TerminalBackendProtocol):
         return self._impl
 
     def start(
-        self,
+        self, cwd: str | Path | None = None, env: Mapping[str, str] | None = None,
     ) -> None:
         """Start the terminal."""
-        self.impl.start()
+        self.impl.start(cwd=cwd, env=env)
 
     def send(self, input_str: str):
         self.impl.send(input_str)

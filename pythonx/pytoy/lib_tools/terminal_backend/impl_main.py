@@ -5,12 +5,14 @@ import time
 from pathlib import Path
 from queue import Queue, Empty
 from threading import Thread, Lock
+from typing import Mapping
 
 from .protocol import (
     TerminalBackendProtocol,
     ApplicationProtocol,
     LineBufferProtocol,
     PseudoTerminalProviderProtocol,
+    PseudoTerminalProtocol, 
 )
 from .line_buffers.line_buffer_naive import LineBufferNaive
 from .utils import find_children
@@ -32,7 +34,7 @@ class TerminalBackendMain(TerminalBackendProtocol):
 
         self._queue = Queue()
         self._lock = Lock()
-        self._proc: PseudoTerminalProviderProtocol | None = None
+        self._proc: PseudoTerminalProtocol | None = None
         self._stdout_thread: Thread | None = None
         self._stdin_thread: Thread | None = None
         self._stdin_queue = Queue()
@@ -40,7 +42,7 @@ class TerminalBackendMain(TerminalBackendProtocol):
         self._running = False
 
     def start(
-        self, cwd: str | Path | None = None, env: dict[str, str] | None = None
+        self, cwd: str | Path | None = None, env: Mapping[str, str] | None = None
     ) -> None:
         if self.alive:
             print("Already `started`.")
