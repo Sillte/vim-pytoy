@@ -42,7 +42,7 @@ class PseudoTerminalProviderWin(PseudoTerminalProviderProtocol):
     ) -> PseudoTerminalProtocol:
         if cwd is None:
             cwd = str(get_current_directory())
-        pty = winpty.PtyProcess.spawn(argv, dimensions=dimensions, cwd=cwd, env=env)
+        pty = winpty.PtyProcess.spawn(argv, dimensions=dimensions, cwd=str(cwd), env=env)
         return PseudoTerminalWin(pty)
 
 
