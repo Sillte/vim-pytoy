@@ -1,7 +1,7 @@
 """Terminal, which is used by python."""
 
 from pathlib import Path
-from typing import Protocol, NewType, Sequence
+from typing import Protocol, NewType, Sequence, Mapping
 from queue import Queue
 
 
@@ -10,7 +10,7 @@ LINE_WAITTIME = NewType("LINE_WAITTIME", float)  # Waitint time used for `input`
 
 class TerminalBackendProtocol(Protocol):
     def start(
-        self,
+        self, cwd: str | Path | None = None, env: Mapping[str, str] | None = None,
     ) -> None:
         """Start the terminal."""
 
@@ -132,5 +132,5 @@ class PseudoTerminalProviderProtocol:
         argv: str | Sequence[str],
         dimensions: tuple[int, int] | None = None,
         cwd: str | Path | None = None,
-        env: dict[str, str] | None = None,
+        env: Mapping[str, str] | None = None,
     ) -> PseudoTerminalProtocol: ...

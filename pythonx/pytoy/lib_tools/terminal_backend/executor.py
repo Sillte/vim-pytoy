@@ -1,3 +1,5 @@
+from pathlib import Path
+from typing import Mapping
 from pytoy.ui import PytoyBuffer
 from pytoy.ui.pytoy_buffer.queue_updater import QueueUpdater
 from pytoy.ui.pytoy_buffer import make_buffer
@@ -6,6 +8,8 @@ from pytoy.lib_tools.terminal_backend.application import (
     AppClassManagerClass,
     AppManager,
 )
+
+from pytoy.lib_tools.utils import get_current_directory
 
 
 class TerminalExecutor:
@@ -28,12 +32,16 @@ class TerminalExecutor:
 
     def start(
         self,
+        cwd: str | Path | None = None, 
+        env: Mapping[str, str] | None = None,
     ):
+        if cwd is None:
+            cwd = get_current_directory()
         if self.alive:
             print("Already running")
             return
         queue = self.backend.queue
-        self.backend.start()
+        self.backend.start(cwd=cwd, env=env)
         self._updater = QueueUpdater(self.buffer, queue)
         self._updater.register()
 
@@ -45,7 +53,7 @@ class TerminalExecutor:
         return self.backend.alive and self.buffer.valid
 
     @property
-    def busy(self) -> bool:
+    def busy(self) -> bool | None:
         """Whether the somework is performed or not."""
         return self.backend.busy
 
