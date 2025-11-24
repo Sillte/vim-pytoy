@@ -15,6 +15,14 @@ class Uri(BaseModel):
     fsPath: str | None = None
 
     model_config = ConfigDict(extra="allow", frozen=True)
+    
+    def to_key_str(self, ) -> str:
+        """Return the argement of `vscode.Uri.parse`. 
+        """
+        authority = self.authority or ""  # To be safe.  
+        separator =  "://" if authority else ":"
+        return f"{self.scheme}{separator}{authority}{self.path}"
+
 
     @classmethod
     def from_bufname(cls, bufname: str) -> Self:
