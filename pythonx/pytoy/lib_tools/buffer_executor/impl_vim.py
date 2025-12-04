@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Callable, Mapping, Any, Self
 
+import json
 import vim
 
 from pytoy.infra.vim_function import PytoyVimFunctions
@@ -76,8 +77,9 @@ class VimBufferJob(BufferJobProtocol):
             prepared_dict = {}
         options.update(prepared_dict)
 
+        command_literal = vim.eval(f"string({json.dumps(command)})")
         # Register of `Job`.
-        vim.command(f"let g:{self.jobname} = job_start('{command}', {options})")
+        vim.command(f"let g:{self.jobname} = job_start({command_literal}, {options})")
         self._cwd = cwd
 
     @property
