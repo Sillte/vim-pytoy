@@ -20,11 +20,11 @@ class PytoyQuickFixVim(PytoyQuickFixProtocol):
         # This is NOT smart code,
         # If `value` is `complex` type, it may cause inconsistency of the data type.
         rows = [record.to_dict() for record in records]
-        safe_json = quote(json.dumps(rows))
+        safe_literal = vim.eval(f"string({json.dumps(rows)})")
         if win_id is None:
-            vim.command(f"call setqflist(json_decode({safe_json}))")
+            vim.command(f"call setqflist({safe_literal})")
         else:
-            vim.command(f"call setloclist({win_id}, json_decode({safe_json}))")
+            vim.command(f"call setloclist({win_id}, {safe_literal})")
 
     def getlist(self, win_id: int | None = None):
         """
