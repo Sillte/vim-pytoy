@@ -29,7 +29,7 @@ class PyTestCommand:
         command_type_to_func = {}
         suffix = "--capture=no --quiet"
         command_type_to_func["func"] = lambda path, line: to_func_command(path, line, suffix)
-        command_type_to_func["file"] = lambda path, line: f"pytest '{path}' {suffix}"
+        command_type_to_func["file"] = lambda path, line: f'pytest "{path}" {suffix}'
         command_type_to_func["all"] = lambda path, line: f"pytest {suffix}"
 
         def make_qf_records(content: str) -> Sequence[QuickFixRecord]:
