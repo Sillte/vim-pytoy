@@ -1,6 +1,4 @@
 from typing import Sequence
-import subprocess
-import vim
 from pytoy.command import CommandManager
 from pytoy.ui import make_buffer
 from pytoy.infra.command.models import OptsArgument
@@ -30,12 +28,13 @@ class PytoyLLMCommand:
             target = content
         from pytoy_llm import completion
 
+
         buffer = make_buffer("__pytoy__stdout", mode="vertical")
 
         def task_func() -> str:
             return str(completion(target, output_format="str"))
 
-        def on_finish(output: str):
+        def on_finish(output: str) -> None:
             buffer.append(str(output))
 
         ThreadWorker.run(task_func, on_finish)
