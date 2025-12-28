@@ -1,5 +1,6 @@
 from typing import Protocol
 from pathlib import Path
+from pytoy.ui.pytoy_buffer.models import Selection, CursorPosition
 
 
 class PytoyBufferProtocol(Protocol):
@@ -48,4 +49,7 @@ class RangeSelectorProtocol(Protocol):
 
     def get_lines(self, line1: int, line2: int) -> list[str]: ...
 
-    def get_range(self, line1: int, pos1: int, line2: int, pos2: int) -> str: ...
+    def get_range(self, selection: Selection) -> str: ...
+
+    def replace_range(self, selection: Selection, text: str) -> None:
+        ...

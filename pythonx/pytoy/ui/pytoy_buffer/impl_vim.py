@@ -1,5 +1,6 @@
 import vim
 from pathlib import Path
+from pytoy.ui.pytoy_buffer.models import Selection
 
 
 VIM_ERROR = getattr(vim, "error", Exception)
@@ -94,18 +95,40 @@ class RangeSelectorVim(RangeSelectorProtocol):
         return self._buffer
 
     def get_lines(self, line1: int, line2: int) -> list[str]:
+        """Note that line1 and line2 is 0-based.
+        """
         bufnr = self._buffer.buffer.number
-        return vim.eval(f"getbufline({bufnr}, {line1}, {line2})")
+        return vim.eval(f"getbufline({bufnr}, {line1 + 1}, {line2 + 1})")
 
-    def get_range(self, line1: int, pos1: int, line2: int, pos2: int) -> str:
+    def get_range(self, selection: Selection) -> str:
         """`line` and `pos` are number acquried by `getpos`."""
+        # Note that `start.line` and `end.line` is 0-based.
+        # Note that `start.col` and `end.col` is 0-based.
+        start, end  = selection.start, selection.end
+        line1, line2 = start.line, end.line
+        col1, col2 = start.col, end.col
         lines: list[str] = self.get_lines(line1, line2)
         if not lines:
             return ""
 
         if line1 == line2:
-            return lines[0][pos1 - 1 : pos2 - 1]
+            return lines[0][col1 : col2 + 1]
 
-        lines[0] = lines[0][pos1 - 1 :]
-        lines[-1] = lines[-1][: pos2 - 1]
+        lines[0] = lines[0][col1 :]
+        lines[-1] = lines[-1][: col2 + 1]
         return "\n".join(lines)
+
+    def replace_range(self, selection: Selection, text: str) -> None:
+        start, end = selection.start, selection.end
+        lines = self.get_lines(start.line, end.line)
+        if not lines:
+            return
+
+        head = lines[0][:start.col]
+        tail = lines[-1][end.col + 1:] # Because it is inclusive.
+
+        new_content_lines = text.split("\n")
+        new_content_lines[0] = head + new_content_lines[0]
+        new_content_lines[-1] = new_content_lines[-1] + tail
+
+        self.buffer.buffer[start.line : end.line + 1] = new_content_lines
