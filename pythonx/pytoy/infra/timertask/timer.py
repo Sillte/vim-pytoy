@@ -13,7 +13,7 @@ type NormalStopReason = Literal[
 
 type OnTaskCallback = Callable[[], None]
 type OnFinishCallback = Callable[[NormalStopReason], None] | Callable[[], None]
-type OnErrorCallback = Callable[[tuple], None] | Callable[[], None]
+type OnErrorCallback = Callable[[Exception], None] | Callable[[], None]
 
 
 class TimerStopException(Exception):
@@ -90,7 +90,6 @@ class TimerTask:
             f"""
             python3 << EOF
             {import_prefix}
-            import sys  
 
             def work():
                 name = '{name}'
@@ -99,22 +98,21 @@ class TimerTask:
                 func = {prefix}TimerTask.FUNCTION_MAP.get(name)
 
                 if func is None or config is None or status is None:
-                    return 
+                    return
                 try:
                     func()
                 except {prefix}TimerStopException:
                     if config.on_finish:
                         config.on_finish('stopped')
                     {prefix}TimerTask._schedule_deregister(name)
-                    return 
+                    return
                 except Exception as e:
                     if config.on_error:
-                        config.on_error(sys.exc_info())
+                        config.on_error(e)
                     else:
                         raise e
                     {prefix}TimerTask._schedule_deregister(name)
-                    return 
-                
+                    return
                 repeat = status.repeat
                 if repeat > 0:
                     status.repeat = status.repeat - 1 
@@ -234,9 +232,6 @@ class TimerTask:
 
 
 if __name__ == "__main__":
-
     def hello():
         print("H")
-
     TimerTask.register(hello)
-#noqa:  it is required in vim script. 
