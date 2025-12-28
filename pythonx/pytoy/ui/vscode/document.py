@@ -232,6 +232,49 @@ class Document(BaseModel):
         args = {"args": {"uriKey": self.uri.to_key_str(), "preserveFocus": not with_focus}}
         api.eval_with_return(js_code, with_await=True, opts=args)
 
+    def replace_range(self, text: str, start_line: int, start_col: int, end_line: int, end_col: int) -> bool:
+        """指定された範囲(0-based)をtextで置換する。Inclusive対応は呼び出し側で行う。"""
+        api = Api()
+        js_code = """
+        (async (args) => {
+            const uri = vscode.Uri.parse(args.uriKey);
+            const { sl, sc, el, ec, text } = args;
+
+            try {
+                const doc = await vscode.workspace.openTextDocument(uri);
+                const edit = new vscode.WorkspaceEdit();
+
+                // VS CodeのRange(start, end)は、endが含まれない(exclusive)点に注意
+                const range = new vscode.Range(
+                    new vscode.Position(sl, sc),
+                    new vscode.Position(el, ec)
+                );
+
+                edit.replace(doc.uri, range, text);
+                return await vscode.workspace.applyEdit(edit);
+            } catch (err) {
+                console.error("Failed to replace range: ", err);
+                return false;
+            }
+        })(args)
+        """
+
+        result = api.eval_with_return(
+            js_code,
+            with_await=True,
+            opts={
+                "args": {
+                    "uriKey": self.uri.to_key_str(),
+                    "sl": start_line,
+                    "sc": start_col,
+                    "el": end_line,
+                    "ec": end_col,
+                    "text": text
+                }
+            },
+        )
+        return result
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Document):
             return NotImplemented

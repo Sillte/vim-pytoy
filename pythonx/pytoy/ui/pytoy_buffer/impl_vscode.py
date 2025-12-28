@@ -3,6 +3,7 @@ from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeSelectorPro
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.ui.vscode.document import Document
 from pytoy.ui.utils import to_filepath
+from pytoy.ui.pytoy_buffer.models import Selection
 
 
 class PytoyBufferVSCode(PytoyBufferProtocol):
@@ -83,18 +84,32 @@ class RangeSelectorVSCode(RangeSelectorProtocol):
     def get_lines(self, line1: int, line2: int) -> list[str]:
         bufnr = BufferURISolver.get_bufnr(self._buffer.document.uri)
         import vim  # neovim
+        # Note that `start.line` and `end.line` is 0-based.
+        # Note that `start.col` and `end.col` is 0-based.
 
-        return vim.eval(f"getbufline({bufnr}, {line1}, {line2})")
+        return vim.eval(f"getbufline({bufnr}, {line1 + 1}, {line2 + 1})")
 
-    def get_range(self, line1: int, pos1: int, line2: int, pos2: int) -> str:
+    def get_range(self, selection: Selection) -> str:
         """`line` and `pos` are number acquried by `getpos`."""
+        start, end  = selection.start, selection.end
+        line1, line2 = start.line, end.line
+        col1, col2 = start.col, end.col
         lines: list[str] = self.get_lines(line1, line2)
         if not lines:
             return ""
 
         if line1 == line2:
-            return lines[0][pos1 - 1 : pos2 - 1]
+            return lines[0][col1 : col2 + 1]
 
-        lines[0] = lines[0][pos1 - 1 :]
-        lines[-1] = lines[-1][: pos2 - 1]
+        lines[0] = lines[0][col1 :]
+        lines[-1] = lines[-1][: col2 + 1]
         return "\n".join(lines)
+
+    def replace_range(self, selection: Selection, text: str) -> None:
+        start, end = selection.start, selection.end
+        self.buffer.document.replace_range(text,
+                                           start.line,
+                                           start.col,
+                                           end.line,
+                                           end.col + 1)  # inclusive..
+

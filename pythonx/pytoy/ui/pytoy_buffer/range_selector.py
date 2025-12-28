@@ -1,5 +1,6 @@
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeSelectorProtocol
 from pytoy.ui import get_ui_enum, UIEnum
+from pytoy.ui.pytoy_buffer.models import Selection
 
 
 class RangeSelector(RangeSelectorProtocol):
@@ -15,8 +16,11 @@ class RangeSelector(RangeSelectorProtocol):
     def get_lines(self, line1: int, line2: int) -> list[str]:
         return self._impl.get_lines(line1, line2)
 
-    def get_range(self, line1: int, pos1: int, line2: int, pos2: int) -> str:
-        return self._impl.get_range(line1, pos1, line2, pos2)
+    def get_range(self, selection: Selection) -> str:
+        return self._impl.get_range(selection)
+
+    def replace_range(self, selection: Selection, text: str) -> None:
+        return self._impl.replace_range(selection, text)
 
 
 def make_selector(impl_buffer: PytoyBufferProtocol):

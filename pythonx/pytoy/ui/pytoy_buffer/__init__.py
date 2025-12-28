@@ -10,6 +10,7 @@ This module is intended to provide the common interface for bufffer.
 from pathlib import Path
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeSelectorProtocol
 from pytoy.ui.pytoy_buffer.range_selector import make_selector  # noqa
+from pytoy.ui.pytoy_buffer.models import Selection
 
 
 class PytoyBuffer(PytoyBufferProtocol):
@@ -67,9 +68,13 @@ class PytoyBuffer(PytoyBufferProtocol):
         range_selector: RangeSelectorProtocol = make_selector(self.impl)
         return range_selector.get_lines(line1, line2)
 
-    def get_range(self, line1: int, pos1: int, line2: int, pos2: int) -> str:
+    def get_range(self, selection: Selection) -> str:
         range_selector: RangeSelectorProtocol = make_selector(self.impl)
-        return range_selector.get_range(line1, pos1, line2, pos2)
+        return range_selector.get_range(selection)
+
+    def replace_range(self, selection: Selection, text: str) -> None:
+        range_selector: RangeSelectorProtocol = make_selector(self.impl)
+        return range_selector.replace_range(selection, text)
 
 
 def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
