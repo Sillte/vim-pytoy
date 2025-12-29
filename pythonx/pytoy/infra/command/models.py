@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Any, TypeAlias
+from pytoy.infra.core.models import LineRange
 
 
 # Type alias for command functions (can be callable, classmethod, or staticmethod)
@@ -78,3 +79,9 @@ class OptsArgument:
     line1: int | None = None
     line2: int | None = None
     range: tuple[int, int] | int | None = None
+
+    @property
+    def line_range(self) -> LineRange | None:
+        if self.line1 is None or self.line2 is None:
+            return None
+        return LineRange(self.line1 - 1, self.line2)  # exclusive and 1-based start.

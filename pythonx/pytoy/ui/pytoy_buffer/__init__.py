@@ -8,9 +8,9 @@ This module is intended to provide the common interface for bufffer.
 """
 
 from pathlib import Path
-from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeSelectorProtocol
-from pytoy.ui.pytoy_buffer.range_selector import make_selector  # noqa
-from pytoy.ui.pytoy_buffer.models import Selection
+from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol
+from pytoy.ui.pytoy_buffer.range_operator import make_range_operator  # noqa
+from pytoy.infra.core.models import CharacterRange, LineRange
 
 
 class PytoyBuffer(PytoyBufferProtocol):
@@ -64,17 +64,21 @@ class PytoyBuffer(PytoyBufferProtocol):
     def hide(self):
         return self._impl.hide()
 
-    def get_lines(self, line1: int, line2: int) -> list[str]:
-        range_selector: RangeSelectorProtocol = make_selector(self.impl)
-        return range_selector.get_lines(line1, line2)
+    def get_lines(self, line_range: LineRange) -> list[str]:
+        range_operator: RangeOperatorProtocol = make_range_operator(self.impl)
+        return range_operator.get_lines(line_range)
 
-    def get_range(self, selection: Selection) -> str:
-        range_selector: RangeSelectorProtocol = make_selector(self.impl)
-        return range_selector.get_range(selection)
+    def get_text(self, character_range: CharacterRange) -> str:
+        range_operator: RangeOperatorProtocol = make_range_operator(self.impl)
+        return range_operator.get_text(character_range)
 
-    def replace_range(self, selection: Selection, text: str) -> None:
-        range_selector: RangeSelectorProtocol = make_selector(self.impl)
-        return range_selector.replace_range(selection, text)
+    def replace_text(self, character_range: CharacterRange, text: str) -> None:
+        range_operator: RangeOperatorProtocol = make_range_operator(self.impl)
+        return range_operator.replace_text(character_range, text)
+
+    @property
+    def range_operator(self):
+        return make_range_operator(self.impl)
 
 
 def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:

@@ -1,9 +1,12 @@
 from pathlib import Path
-from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeSelectorProtocol
+from pytoy.infra.core.models import CursorPosition
+from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.ui.vscode.document import Document
 from pytoy.ui.utils import to_filepath
-from pytoy.ui.pytoy_buffer.models import Selection
+from pytoy.infra.core.models import CharacterRange, LineRange
+from pytoy.ui.pytoy_buffer.vim_buffer_utils import VimBufferRangeHandler
+from typing import Sequence
 
 
 class PytoyBufferVSCode(PytoyBufferProtocol):
@@ -72,8 +75,12 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         # this it not implemented.
         pass
 
+    @property
+    def range_operator(self) -> RangeOperatorProtocol:
+        return RangeOperatorVSCode(self)
 
-class RangeSelectorVSCode(RangeSelectorProtocol):
+
+class RangeOperatorVSCode(RangeOperatorProtocol):
     def __init__(self, buffer: PytoyBufferVSCode):
         self._buffer = buffer
 
@@ -81,35 +88,55 @@ class RangeSelectorVSCode(RangeSelectorProtocol):
     def buffer(self) -> PytoyBufferVSCode:
         return self._buffer
 
-    def get_lines(self, line1: int, line2: int) -> list[str]:
-        bufnr = BufferURISolver.get_bufnr(self._buffer.document.uri)
-        import vim  # neovim
+    def get_lines(self, line_range: LineRange) -> list[str]:
         # Note that `start.line` and `end.line` is 0-based.
         # Note that `start.col` and `end.col` is 0-based.
+        # Note that `line2` is exclusive.
+        bufnr = BufferURISolver.get_bufnr(self._buffer.document.uri)
+        if bufnr is None:
+            return []
+        return VimBufferRangeHandler(bufnr).get_lines(line_range)
 
-        return vim.eval(f"getbufline({bufnr}, {line1 + 1}, {line2 + 1})")
-
-    def get_range(self, selection: Selection) -> str:
+    def get_text(self, character_range: CharacterRange) -> str:
         """`line` and `pos` are number acquried by `getpos`."""
-        start, end  = selection.start, selection.end
-        line1, line2 = start.line, end.line
-        col1, col2 = start.col, end.col
-        lines: list[str] = self.get_lines(line1, line2)
-        if not lines:
-            return ""
+        # Documentを直接扱った方がよいことが判明したら、変える
+        bufnr = BufferURISolver.get_bufnr(self._buffer.document.uri)
+        if bufnr is None:
+            raise ValueError(f"`{self.buffer.document}` is invalid buffer in neovim")
+        return VimBufferRangeHandler(bufnr).get_text(character_range)
 
-        if line1 == line2:
-            return lines[0][col1 : col2 + 1]
+    def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> None:
+        bufnr = BufferURISolver.get_bufnr(self._buffer.document.uri)
+        if bufnr is None:
+            raise ValueError(f"`{self.buffer.document}` is invalid buffer in neovim")
+        return VimBufferRangeHandler(bufnr).replace_lines(line_range, lines)
 
-        lines[0] = lines[0][col1 :]
-        lines[-1] = lines[-1][: col2 + 1]
-        return "\n".join(lines)
+    def replace_text(self, character_range: CharacterRange, text: str) -> None:
+        # TODO: Documentを直接扱った方がよいことが判明したら、変える
+        # その場合、この部分の引数も`Seleciton`に リファクタしたほうがいいね。
+        #start, end = selection.start, selection.end
+        #self.buffer.document.replace_range(text,
+        #                                   start.line,
+        #                                   start.col,
+        #                                   end.line,
+        #                                   end.col)
+        bufnr = BufferURISolver.get_bufnr(self._buffer.document.uri)
+        if bufnr is None:
+            raise ValueError(f"`{self.buffer.document}` is invalid buffer in neovim")
+        return VimBufferRangeHandler(bufnr).replace_text(character_range, text)
 
-    def replace_range(self, selection: Selection, text: str) -> None:
-        start, end = selection.start, selection.end
-        self.buffer.document.replace_range(text,
-                                           start.line,
-                                           start.col,
-                                           end.line,
-                                           end.col + 1)  # inclusive..
+    def find_first(
+        self,
+        text: str,
+        start_position: CursorPosition | None = None,
+        reverse: bool = False,
+    ) -> CharacterRange | None:
+        """return the first mached selection of `text`."""
+        # TODO: Implement this.
+        return None
+
+    def find_all(self, text: str) -> list[CharacterRange]:
+        """return the all matched selections of `text`"""
+        # TODO: Implement this.
+        return []
 

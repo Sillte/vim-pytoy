@@ -89,8 +89,9 @@ class TerminalContoller:
             assert opts.line1 is not None and opts.line2 is not None
             executor = _decide_executor(app_name, buffer, none_ok=False)
             assert executor is not None
-            line1, line2 = opts.line1, opts.line2
-            lines = PytoyBuffer.get_current().get_lines(line1, line2)
+            line_range = opts.line_range
+            assert line_range 
+            lines = PytoyBuffer.get_current().get_lines(line_range)
             content = "\n".join(lines)
             executor.send(content)
 
