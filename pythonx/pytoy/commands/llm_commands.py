@@ -4,13 +4,7 @@ from pytoy.ui import make_buffer
 from pytoy.infra.command.models import OptsArgument
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 
-from pytoy.infra.timertask import TimerTask, ThreadWorker
-
-
-import threading
-from typing import Callable, Any, Optional
-
-from dataclasses import dataclass
+from pytoy.infra.timertask import  ThreadWorker
 
 
 @CommandManager.register("PytoyLLM", range="")
@@ -30,12 +24,16 @@ class PytoyLLMCommand:
 
 
         buffer = make_buffer("__pytoy__stdout", mode="vertical")
+        PREFIX = "[pytoy-llm] Thinking..."
+        buffer.append(PREFIX)
 
         def task_func() -> str:
             return str(completion(target, output_format="str"))
 
         def on_finish(output: str) -> None:
-            buffer.append(str(output))
-
+            c_range = buffer.range_operator.find_first(PREFIX, reverse=True)
+            if c_range is None:
+                buffer.append(str(output))
+            else:
+                buffer.replace_text(c_range, output)
         ThreadWorker.run(task_func, on_finish)
-
