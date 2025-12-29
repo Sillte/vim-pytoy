@@ -10,6 +10,7 @@ VIM_ERROR = getattr(vim, "error", Exception)
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol
 from pytoy.infra.core.models import CharacterRange, LineRange
 from pytoy.ui.pytoy_buffer.vim_buffer_utils import VimBufferRangeHandler
+from pytoy.ui.pytoy_buffer.text_searchers import TextSearcher
 
 
 class PytoyBufferVim(PytoyBufferProtocol):
@@ -69,6 +70,10 @@ class PytoyBufferVim(PytoyBufferProtocol):
     def content(self) -> str:
         return vim.eval("join(getbufline({}, 1, '$'), '\n')".format(self.buffer.number))
 
+    @property
+    def lines(self) -> list[str]:
+        return self.buffer[:]
+
     def show(self):
         bufnr = self.buffer.number
         winid = int(vim.eval(f"bufwinid({bufnr})"))
@@ -125,18 +130,23 @@ class RangeOperatorVim(RangeOperatorProtocol):
         handler = VimBufferRangeHandler(self.buffer.buffer)
         return handler.replace_lines(line_range, lines)
 
+
+    def _create_text_searcher(self, target_range: CharacterRange | None = None):
+        # TODO: In order to enhance efficiency, please consider `partial` handling of `lines`.
+        return TextSearcher.create(self.buffer.lines, target_range)
+
     def find_first(
         self,
         text: str,
-        start_position: CursorPosition | None = None,
+        target_range: CharacterRange | None = None,
         reverse: bool = False,
     ) -> CharacterRange | None:
         """return the first mached selection of `text`."""
-        # TODO: Implement this.
-        return None
+        searcher = self._create_text_searcher(target_range=target_range)
+        return searcher.find_first(text, reverse=reverse)
 
-    def find_all(self, text: str) -> list[CharacterRange]:
+    def find_all(self, text: str, target_range: CharacterRange | None = None) -> list[CharacterRange]:
         """return the all matched selections of `text`"""
-        # TODO: Implement this.
-        return []
+        searcher = self._create_text_searcher(target_range=target_range)
+        return searcher.find_all(text)
 

@@ -40,6 +40,9 @@ class PytoyBufferProtocol(Protocol):
     @property
     def content(self) -> str: ...
 
+    @property 
+    def lines(self) -> list[str]: ...
+
     def show(self) -> None: ...
 
     def hide(self) -> None: ...
@@ -64,11 +67,11 @@ class RangeOperatorProtocol(Protocol):
     def find_first(
         self,
         text: str,
-        start_position: CursorPosition | None = None,
+        target_range: CharacterRange | None = None,
         reverse: bool = False,
     ) -> CharacterRange | None:
-        """return the first mached selection of `text`."""
+        ...
 
-    def find_all(self, text: str) -> list[CharacterRange]:
+    def find_all(self, text: str, target_range: CharacterRange | None = None) -> list[CharacterRange]:
         """return the all matched selections of `text`"""
         ...

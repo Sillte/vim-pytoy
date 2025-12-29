@@ -58,6 +58,10 @@ class PytoyBuffer(PytoyBufferProtocol):
     def content(self) -> str:
         return self._impl.content
 
+    @property
+    def lines(self) -> list[str]:
+        return self._impl.lines
+
     def show(self):
         return self._impl.show()
 
@@ -77,7 +81,7 @@ class PytoyBuffer(PytoyBufferProtocol):
         return range_operator.replace_text(character_range, text)
 
     @property
-    def range_operator(self):
+    def range_operator(self) -> RangeOperatorProtocol:
         return make_range_operator(self.impl)
 
 

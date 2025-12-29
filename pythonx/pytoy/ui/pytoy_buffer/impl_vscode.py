@@ -7,6 +7,7 @@ from pytoy.ui.utils import to_filepath
 from pytoy.infra.core.models import CharacterRange, LineRange
 from pytoy.ui.pytoy_buffer.vim_buffer_utils import VimBufferRangeHandler
 from typing import Sequence
+from pytoy.ui.pytoy_buffer.text_searchers import TextSearcher
 
 
 class PytoyBufferVSCode(PytoyBufferProtocol):
@@ -66,6 +67,13 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     @property
     def content(self) -> str:
         return self.document.content
+    
+    @property
+    def lines(self) -> list[str]:
+        # TODO: consider the more efficient implemntation.
+        # For example, if you can get `bufnr`, 
+        # it is possible to get the `vim.buffer[:] directly.
+        return self.content.split("\n")
 
     def show(self):
         self.document.show()
@@ -125,18 +133,20 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
             raise ValueError(f"`{self.buffer.document}` is invalid buffer in neovim")
         return VimBufferRangeHandler(bufnr).replace_text(character_range, text)
 
+    def _create_text_searcher(self, target_range: CharacterRange | None = None):
+        return TextSearcher.create(self.buffer.lines, target_range)
+
     def find_first(
         self,
         text: str,
-        start_position: CursorPosition | None = None,
+        target_range: CharacterRange | None = None,
         reverse: bool = False,
     ) -> CharacterRange | None:
         """return the first mached selection of `text`."""
-        # TODO: Implement this.
-        return None
+        searcher = self._create_text_searcher(target_range=target_range)
+        return searcher.find_first(text, reverse=reverse)
 
-    def find_all(self, text: str) -> list[CharacterRange]:
+    def find_all(self, text: str, target_range: CharacterRange | None = None) -> list[CharacterRange]:
         """return the all matched selections of `text`"""
-        # TODO: Implement this.
-        return []
-
+        searcher = self._create_text_searcher(target_range=target_range)
+        return searcher.find_all(text)

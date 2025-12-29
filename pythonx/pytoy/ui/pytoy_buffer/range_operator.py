@@ -30,14 +30,15 @@ class RangeOperator(RangeOperatorProtocol):
     def find_first(
         self,
         text: str,
-        start_position: CursorPosition | None = None,
+        target_range: CharacterRange | None = None,
         reverse: bool = False,
     ) -> CharacterRange | None:
         """return the first mached selection of `text`."""
+        return self._impl.find_first(text, target_range, reverse=reverse)
 
-    def find_all(self, text: str) -> list[CharacterRange]:
+    def find_all(self, text: str, target_range: CharacterRange | None = None) -> list[CharacterRange]:
         """return the all matched selections of `text`"""
-        ...
+        return self._impl.find_all(text, target_range)
 
 
 def make_range_operator(impl_buffer: PytoyBufferProtocol) -> RangeOperator:

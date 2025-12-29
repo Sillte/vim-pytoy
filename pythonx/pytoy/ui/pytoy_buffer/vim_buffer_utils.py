@@ -47,6 +47,7 @@ class VimBufferRangeHandler:
             if not lines:
                 return ""
             lines[0] = lines[0][start.col :]
+            # NOTE: Vim buffer lines are newline-terminated
             return "\n".join(lines) + "\n"
 
         vim_buffer = self.buffer
@@ -56,7 +57,7 @@ class VimBufferRangeHandler:
             return _positive_end_col(vim_buffer, character_range)
         else:
             msg = "ImplementaionError of `VimBufferRangeSelector`"
-            raise RuntimeError(msg)
+            raise AssertionError(msg)
 
     def replace_text(self, character_range: CharacterRange, text: str) -> None:
         def _positive_end_col(
@@ -81,7 +82,7 @@ class VimBufferRangeHandler:
                 target_lines[0] = lines[0][: start.col] + target_lines[0]
                 vim_buffer[start.line : end.line] = target_lines
             else:
-                # e.g start.line == end.line, (3, 0), (3, 0)  
+                # e.g start.line == end.line, (3, 0), (3, 0)
                 vim_buffer[end.line: end.line] = target_lines
 
         vim_buffer = self.buffer
@@ -91,4 +92,4 @@ class VimBufferRangeHandler:
             return _positive_end_col(vim_buffer, character_range, text)
         else:
             msg = "ImplementaionError of `VimBufferRangeSelector`"
-            raise RuntimeError(msg)
+            raise AssertionError(msg)
