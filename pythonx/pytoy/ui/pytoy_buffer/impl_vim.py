@@ -1,11 +1,15 @@
+from pytoy.infra.core.models import CursorPosition
 import vim
 from pathlib import Path
-from pytoy.ui.pytoy_buffer.models import Selection
+from pytoy.infra.core.models import CharacterRange
+from typing import Sequence 
 
 
 VIM_ERROR = getattr(vim, "error", Exception)
 
-from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeSelectorProtocol
+from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol
+from pytoy.infra.core.models import CharacterRange, LineRange
+from pytoy.ui.pytoy_buffer.vim_buffer_utils import VimBufferRangeHandler
 
 
 class PytoyBufferVim(PytoyBufferProtocol):
@@ -85,8 +89,12 @@ class PytoyBufferVim(PytoyBufferProtocol):
             return True
         return False
 
+    @property
+    def range_operator(self) -> RangeOperatorProtocol:
+        return RangeOperatorVim(self)
 
-class RangeSelectorVim(RangeSelectorProtocol):
+
+class RangeOperatorVim(RangeOperatorProtocol):
     def __init__(self, buffer: PytoyBufferVim):
         self._buffer = buffer
 
@@ -94,41 +102,41 @@ class RangeSelectorVim(RangeSelectorProtocol):
     def buffer(self) -> PytoyBufferVim:
         return self._buffer
 
-    def get_lines(self, line1: int, line2: int) -> list[str]:
+    def get_lines(self, line_range: LineRange) -> list[str]:
         """Note that line1 and line2 is 0-based.
+        The end is exclusive.
         """
-        bufnr = self._buffer.buffer.number
-        return vim.eval(f"getbufline({bufnr}, {line1 + 1}, {line2 + 1})")
+        handler = VimBufferRangeHandler(self.buffer.buffer)
+        return handler.get_lines(line_range)
 
-    def get_range(self, selection: Selection) -> str:
+    def get_text(self, character_range: CharacterRange) -> str:
         """`line` and `pos` are number acquried by `getpos`."""
         # Note that `start.line` and `end.line` is 0-based.
         # Note that `start.col` and `end.col` is 0-based.
-        start, end  = selection.start, selection.end
-        line1, line2 = start.line, end.line
-        col1, col2 = start.col, end.col
-        lines: list[str] = self.get_lines(line1, line2)
-        if not lines:
-            return ""
+        # Note that `end` of selection is exclusive. 
+        handler = VimBufferRangeHandler(self.buffer.buffer)
+        return handler.get_text(character_range)
 
-        if line1 == line2:
-            return lines[0][col1 : col2 + 1]
+    def replace_text(self, character_range: CharacterRange, text: str) -> None:
+        handler = VimBufferRangeHandler(self.buffer.buffer)
+        return handler.replace_text(character_range, text)
 
-        lines[0] = lines[0][col1 :]
-        lines[-1] = lines[-1][: col2 + 1]
-        return "\n".join(lines)
+    def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> None:
+        handler = VimBufferRangeHandler(self.buffer.buffer)
+        return handler.replace_lines(line_range, lines)
 
-    def replace_range(self, selection: Selection, text: str) -> None:
-        start, end = selection.start, selection.end
-        lines = self.get_lines(start.line, end.line)
-        if not lines:
-            return
+    def find_first(
+        self,
+        text: str,
+        start_position: CursorPosition | None = None,
+        reverse: bool = False,
+    ) -> CharacterRange | None:
+        """return the first mached selection of `text`."""
+        # TODO: Implement this.
+        return None
 
-        head = lines[0][:start.col]
-        tail = lines[-1][end.col + 1:] # Because it is inclusive.
+    def find_all(self, text: str) -> list[CharacterRange]:
+        """return the all matched selections of `text`"""
+        # TODO: Implement this.
+        return []
 
-        new_content_lines = text.split("\n")
-        new_content_lines[0] = head + new_content_lines[0]
-        new_content_lines[-1] = new_content_lines[-1] + tail
-
-        self.buffer.buffer[start.line : end.line + 1] = new_content_lines
