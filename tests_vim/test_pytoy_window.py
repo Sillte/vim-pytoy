@@ -1,12 +1,12 @@
 from pytoy.ui.pytoy_window import PytoyWindowProvider
 from pytoy.ui.pytoy_window import PytoyWindow
 from pytoy.infra.core.models import CursorPosition
-from pytoy.ui.pytoy_window.models import ViewportMoveMode
+from pytoy.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
 
 
 def test_function():
     target = "test_window"
-    window = PytoyWindowProvider().create_window(target)
+    window = PytoyWindowProvider().open_window(target, param="horizontal")
     assert window.buffer.path.name == target
     paths = [window.buffer.path for window in PytoyWindow.get_windows()]
     assert any(path.name == target for path in paths)
@@ -18,7 +18,7 @@ def test_unique():
 
 def test_cursor():
     target = "test_window"
-    window = PytoyWindowProvider().create_window(target)
+    window = PytoyWindowProvider().open_window(target, param="vertical")
     window.buffer.append("Hello1")
     window.buffer.append("Hello2")
     window.buffer.append("Hello3")
@@ -28,7 +28,17 @@ def test_cursor():
     assert window.cursor == target
 
 from pytoy.ui.pytoy_window import PytoyWindow
-test_function()
-test_unique()
-test_cursor()
+#test_function()
+#test_unique()
+#test_cursor()
 #print("OK")
+
+#target = "test_window"
+#window = PytoyWindowProvider().open_window(target, param="vertical")
+#param2 = WindowCreationParam.for_split(split_direction="horizontal", anchor=window)
+#PytoyWindowProvider().open_window(target + "2", param=param2)
+
+from pytoy.ui.pytoy_window import PytoyWindowProvider
+from pytoy.ui.pytoy_window.models import WindowCreationParam
+
+

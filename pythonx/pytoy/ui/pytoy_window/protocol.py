@@ -1,8 +1,10 @@
-from typing import Protocol, Sequence
+from typing import Protocol, Sequence, Literal
+from pathlib import Path
 
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.infra.core.models import CursorPosition
 from pytoy.ui.pytoy_window.models import ViewportMoveMode
+from pytoy.ui.pytoy_window.models import BufferSource, WindowCreationParam
 
 
 class PytoyWindowProtocol(Protocol):
@@ -40,10 +42,8 @@ class PytoyWindowProviderProtocol(Protocol):
 
     def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
         ...
-
-    def create_window(
-        self,
-        bufname: str,
-        mode: str = "vertical",
-        base_window: PytoyWindowProtocol | None = None,
-    ) -> PytoyWindowProtocol: ...
+        
+    def open_window(self,
+                    source: str | Path | BufferSource,
+                    param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place") -> PytoyWindowProtocol:
+        ...

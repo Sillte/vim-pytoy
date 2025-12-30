@@ -8,6 +8,7 @@ This module is intended to provide the common interface for bufffer.
 """
 
 from pathlib import Path
+from typing import Literal
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol
 from pytoy.ui.pytoy_buffer.range_operator import make_range_operator  # noqa
 from pytoy.infra.core.models import CharacterRange, LineRange
@@ -85,10 +86,11 @@ class PytoyBuffer(PytoyBufferProtocol):
         return make_range_operator(self.impl)
 
 
-def make_buffer(stdout_name: str, mode: str = "vertical") -> PytoyBuffer:
+def make_buffer(stdout_name: str, mode: Literal["vertical", "horizontal"] = "vertical") -> PytoyBuffer:
     from pytoy.ui.pytoy_window import PytoyWindowProvider
 
-    stdout_window = PytoyWindowProvider().create_window(stdout_name, mode)
+    #stdout_window = PytoyWindowProvider().create_window(stdout_name, mode)
+    stdout_window = PytoyWindowProvider().open_window(stdout_name, "vertical")
     return stdout_window.buffer
 
 
@@ -98,11 +100,16 @@ def make_duo_buffers(
     """Create 2 buffers, which is intended to `STDOUT` and `STDERR`."""
 
     from pytoy.ui.pytoy_window import PytoyWindowProvider
+    from pytoy.ui.pytoy_window.models import WindowCreationParam
+    
 
-    stdout_window = PytoyWindowProvider().create_window(stdout_name, "vertical")
-    stderr_window = PytoyWindowProvider().create_window(
-        stderr_name, "horizontal", stdout_window
-    )
+    provider = PytoyWindowProvider()
+    param = WindowCreationParam.for_split("vertical", try_reuse=True, anchor=None)
+    stdout_window = provider.open_window(stdout_name, param)
+
+    param = WindowCreationParam.for_split("horizontal", try_reuse=True, anchor=stdout_window)
+    stderr_window = provider.open_window(stderr_name, param)
+    
     return (stdout_window.buffer, stderr_window.buffer)
 
 

@@ -1,7 +1,7 @@
 from pytoy.ui.vscode.document import Api, Uri, Document
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pydantic import BaseModel, ConfigDict, ValidationError, Field, PrivateAttr
-from typing import Sequence, Self
+from typing import Sequence, Self, Literal
 
 from pytoy.ui.vscode.editor.models import TextEditorRevealType
 
@@ -56,14 +56,14 @@ class Editor(BaseModel):
         return uri_to_views.get(self.uri, -1) == self.viewColumn
 
     @classmethod
-    def create(cls, uri: Uri, split_mode: str = "vertical") -> Self:
+    def create(cls, uri: Uri, split_mode: Literal["vertical", "horizontal"] = "vertical") -> Self:
         jscode = """
         (async (args) => {
             const uri = vscode.Uri.parse(args.uriKey);
             const doc = await vscode.workspace.openTextDocument(uri);
 
             let editor;
-            if (args.splitMode.startsWith("v")){
+            if (!args.splitMode.startsWith("v")){
                 await vscode.commands.executeCommand("workbench.action.splitEditorDown");
                 editor = await vscode.window.showTextDocument(doc, {
                     preview: false
@@ -72,7 +72,7 @@ class Editor(BaseModel):
             else {
                 editor = await vscode.window.showTextDocument(doc, {
                 viewColumn: vscode.ViewColumn.Beside, // 今開いているエディタの横
-                preview: true,
+                preview: false,
             });
             }
 
@@ -96,7 +96,7 @@ class Editor(BaseModel):
         uri: Uri,
         position: tuple[int , int] | None = None,
         preview: bool = False
-    ) -> None:
+    ) -> "Editor":
         """Open the document specified by `uri`."""
 
         jscode = """
@@ -135,6 +135,7 @@ class Editor(BaseModel):
         # Update of state.
         doc = Document.model_validate(doc_data)
         self._update_document(doc)
+        return Editor(document=doc, viewColumn=self.viewColumn)
 
     def close(self) -> bool:
         jscode = """
