@@ -1,13 +1,14 @@
+from pathlib import Path
 from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
 )
-from pytoy.ui.pytoy_window.models import ViewportMoveMode
+from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 
 from pytoy.infra.core.models import CursorPosition
-from typing import Sequence
+from typing import Sequence, Literal
 
 
 class PytoyWindow(PytoyWindowProtocol):
@@ -93,11 +94,9 @@ class PytoyWindowProvider(PytoyWindowProviderProtocol):
 
     def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
         return self._impl.get_windows(only_normal_buffers=only_normal_buffers)
+    
+    def open_window(self,
+                    source: str | Path | BufferSource,
+                    param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place") -> PytoyWindowProtocol:
+        return self._impl.open_window(source, param)
 
-    def create_window(
-        self,
-        bufname: str,
-        mode: str = "vertical",
-        base_window: PytoyWindowProtocol | None = None,
-    ) -> PytoyWindowProtocol:
-        return self.impl.create_window(bufname, mode, base_window)

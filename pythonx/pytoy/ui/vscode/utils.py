@@ -13,15 +13,19 @@ def wait_until_true(
     """Wait the `condition_func` returns true.
     If `timeout` passes and this func returns False.
     """
+    import vim
+
 
     interval = timeout / n_trials
     if initial_wait is None:
-        initial_wait = interval // 10
-    time.sleep(initial_wait)
+        initial_wait = interval / 10
+        vim.command(f'sleep {round(initial_wait * 1000)}m')
     for _ in range(n_trials):
         if condition_func():
             return True
-        time.sleep(interval)
+        # It is required to procced functions in other loops.
+        vim.command(f'sleep {round(interval * 1000)}m')
+        #time.sleep(interval)
     return False
 
 
