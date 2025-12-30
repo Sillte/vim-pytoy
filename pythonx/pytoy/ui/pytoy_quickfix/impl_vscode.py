@@ -4,6 +4,7 @@ import copy
 from typing import Sequence
 
 from pytoy.infra.timertask import TimerTask, TimerStopException
+from pytoy.infra.core.models import CursorPosition
 from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol
 from pytoy.ui.pytoy_quickfix.models import QuickFixRecord
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
@@ -124,7 +125,8 @@ class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
 
         # As of 2025/10/21, this `_edit_file` is the workaround, but I hope this is addressed in the plugin.
         # vim.command(f"Edit {path.as_posix()}")
-        position = (lnum, col)
+        #position = (lnum, col)
+        position = CursorPosition(lnum - 1, col - 1)
         open_file(path, position=position)
 
         length = len(self.records)
