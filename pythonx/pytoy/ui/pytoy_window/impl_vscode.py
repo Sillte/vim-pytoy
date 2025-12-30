@@ -4,6 +4,7 @@
 
 
 from pathlib import Path
+from pytoy.infra.core.models import CursorPosition
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.ui.vscode.uri import Uri
 import vim  # (vscode-neovim extention)
@@ -15,8 +16,9 @@ from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProviderProtocol,
 )
 from pytoy.ui.vscode.document import Api, Document
-from pytoy.ui.vscode.editor import Editor
+from pytoy.ui.vscode.editor import Editor, TextEditorRevealType
 from pytoy.ui.vscode.utils import wait_until_true
+from pytoy.ui.pytoy_window.models import ViewportMoveMode
 
 
 class PytoyWindowVSCode(PytoyWindowProtocol):
@@ -54,6 +56,29 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         for buffer in buffers:
             buffer.init_buffer(content="")
         self.editor.unique(within_tabs=within_tabs, within_windows=within_windows)
+
+    @property
+    def cursor(self) -> CursorPosition:
+        position  = self.editor.cursor_position
+        if position:
+            line, col = position
+        else:
+            raise RuntimeError("cursor cannot be obtained.") 
+        return CursorPosition(line - 1, col)
+
+    _REVEAL_TYPE_MAP = {
+        ViewportMoveMode.NONE: TextEditorRevealType.Default,
+        ViewportMoveMode.ENSURE_VISIBLE: TextEditorRevealType.InCenterIfOutsideViewport,
+        ViewportMoveMode.CENTER: TextEditorRevealType.InCenter,
+        ViewportMoveMode.TOP: TextEditorRevealType.AtTop,
+    }
+
+    def move_cursor(self, cursor: CursorPosition,
+                    viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None:
+        editor = self.editor
+        line, col = cursor.line, cursor.col
+        reveal_type = self._REVEAL_TYPE_MAP[viewport_mode]
+        editor.set_cursor_position(line + 1, col, reveal_type)
 
 
 class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):

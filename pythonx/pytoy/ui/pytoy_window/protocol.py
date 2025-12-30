@@ -1,6 +1,8 @@
 from typing import Protocol, Sequence
 
 from pytoy.ui.pytoy_buffer import PytoyBuffer
+from pytoy.infra.core.models import CursorPosition
+from pytoy.ui.pytoy_window.models import ViewportMoveMode
 
 
 class PytoyWindowProtocol(Protocol):
@@ -24,11 +26,20 @@ class PytoyWindowProtocol(Protocol):
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None: ...
 
+    @property
+    def cursor(self) -> CursorPosition:
+        ...
+
+    def move_cursor(self, cursor: CursorPosition,
+                    viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None:
+        ...
+
 
 class PytoyWindowProviderProtocol(Protocol):
     def get_current(self) -> PytoyWindowProtocol: ...
 
-    def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]: ...
+    def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
+        ...
 
     def create_window(
         self,

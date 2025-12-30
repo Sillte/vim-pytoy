@@ -1,8 +1,10 @@
 from pathlib import Path
 import vim
-from typing import Sequence
+from typing import Sequence, assert_never
+from pytoy.infra.core.models import CursorPosition
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
+from pytoy.ui.pytoy_window.models import ViewportMoveMode
 
 from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
@@ -19,6 +21,11 @@ class PytoyWindowVim(PytoyWindowProtocol):
     # NOTE: In neovim, `vim.Window` does not exist.
     def __init__(self, window: "vim.Window"):
         self.window = window
+        self._winid = int(vim.eval(f"win_getid({window.number})"))
+
+    @property
+    def winid(self) -> int:
+        return self._winid
 
     @property
     def buffer(self) -> PytoyBuffer:
@@ -72,6 +79,27 @@ class PytoyWindowVim(PytoyWindowProtocol):
         if within_tabs:
             self.focus()
             vim.command("tabonly")
+
+    @property
+    def cursor(self) -> CursorPosition:
+        line, col = self.window.cursor
+        return CursorPosition(line - 1, col)
+
+    def move_cursor(self, cursor: CursorPosition,
+                    viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None:
+        self.window.cursor = (cursor.line + 1, cursor.col)
+        winid = self.winid
+        match viewport_mode:
+            case ViewportMoveMode.NONE:
+                pass
+            case ViewportMoveMode.CENTER:
+                vim.command(f'call win_execute({winid}, "normal! zz")')
+            case ViewportMoveMode.TOP:
+                vim.command(f'call win_execute({winid}, "normal! zt")')
+            case ViewportMoveMode.ENSURE_VISIBLE:
+                vim.command(f'call win_execute({winid}, "normal! zv")')
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 class PytoyWindowProviderVim(PytoyWindowProviderProtocol):

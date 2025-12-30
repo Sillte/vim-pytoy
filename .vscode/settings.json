@@ -2,5 +2,6 @@
     "python.analysis.extraPaths": [
         "./pythonx"
     ],
-    "remote.autoForwardPortsFallback": 0
+    "remote.autoForwardPortsFallback": 0,
+    "editor.cursorSurroundingLines": 0
 }
