@@ -57,20 +57,22 @@ class Document(BaseModel):
       
     @classmethod
     def open(cls, uri: Uri, position: tuple[int, int] | None = None) -> Self:
-      """posistion=(lnum, lcol)""" 
+      """posistion=(lnum, lcol)
+      lnum: 0-based. 
+      lcol: 0-based, characters.
+      """ 
       jscode = """
       (async (uriKey, position) => {
           const uri = vscode.Uri.parse(uriKey);
           const doc = await vscode.workspace.openTextDocument(uri);
-          
+
           const openOptions = {};
 
           if (position) {
               const [lnum, lcol] = position;
-              if (typeof lnum === 'number' && lnum > 0 && typeof lcol === 'number' && lcol > 0) {
-                  // VS CodeのPositionは0-basedなので、-1します。
-                  const line = lnum - 1;
-                  const character = lcol - 1;
+              if (typeof lnum === 'number' && lnum >= 0 && typeof lcol === 'number' && lcol >= 0) {
+                  const line = lnum ;
+                  const character = lcol;
 
                   const position = new vscode.Position(line, character);
                   openOptions.selection = new vscode.Range(position, position);
@@ -100,7 +102,7 @@ class Document(BaseModel):
             const uri = vscode.Uri.parse(uriKey);
 
             const doc = await vscode.workspace.openTextDocument(uri);
-            
+
             let pos;
             if (doc.lineCount === 0) {
                 // ドキュメントが空の場合、(0, 0)

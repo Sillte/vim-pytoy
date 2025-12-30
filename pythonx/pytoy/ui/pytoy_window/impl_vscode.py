@@ -6,6 +6,7 @@
 from pathlib import Path
 from pytoy.infra.core.models import CursorPosition
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
+from pytoy.ui.vscode.editor.models import TextEditorRevealType
 from pytoy.ui.vscode.uri import Uri
 import vim  # (vscode-neovim extention)
 from typing import Sequence
@@ -16,7 +17,7 @@ from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProviderProtocol,
 )
 from pytoy.ui.vscode.document import Api, Document
-from pytoy.ui.vscode.editor import Editor, TextEditorRevealType
+from pytoy.ui.vscode.editor import Editor
 from pytoy.ui.vscode.utils import wait_until_true
 from pytoy.ui.pytoy_window.models import ViewportMoveMode
 
@@ -63,8 +64,8 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         if position:
             line, col = position
         else:
-            raise RuntimeError("cursor cannot be obtained.") 
-        return CursorPosition(line - 1, col)
+            raise RuntimeError("cursor cannot be obtained.")
+        return CursorPosition(line, col)
 
     _REVEAL_TYPE_MAP = {
         ViewportMoveMode.NONE: TextEditorRevealType.Default,
@@ -78,7 +79,7 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         editor = self.editor
         line, col = cursor.line, cursor.col
         reveal_type = self._REVEAL_TYPE_MAP[viewport_mode]
-        editor.set_cursor_position(line + 1, col, reveal_type)
+        editor.set_cursor_position(line, col, reveal_type)
 
 
 class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
@@ -125,7 +126,7 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         editor = Editor.get_current()
         editor.unique(within_tabs=True,  within_windows=False)
         current.focus()
-        # The below is mandatory to syncronize  neovim and vscode
+        # The below is mandatory to syncronize neovim and vscode
         uri = Uri(**uri)
         wait_until_true(lambda: BufferURISolver.get_bufnr(uri) is not None, timeout=1.0)
         return PytoyWindowVSCode(editor)

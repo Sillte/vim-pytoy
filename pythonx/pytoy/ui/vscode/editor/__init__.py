@@ -1,21 +1,18 @@
 from pytoy.ui.vscode.document import Api, Uri, Document
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError, Field, PrivateAttr
 from typing import Sequence, Self
-from enum import IntEnum, auto
 
-
-class TextEditorRevealType(IntEnum):
-    Default = 0
-    InCenter = 1
-    InCenterIfOutsideViewport = 2
-    AtTop = 3
+from pytoy.ui.vscode.editor.models import TextEditorRevealType
 
 
 class Editor(BaseModel):
     document: Document
     viewColumn: int | None = None
     model_config = ConfigDict(extra="allow", frozen=True)
+
+    def _update_document(self, doc: Document) -> None:
+        object.__setattr__(self, "document", doc)
 
     @staticmethod
     def get_current() -> "Editor":
@@ -93,6 +90,51 @@ class Editor(BaseModel):
         opts = {"args": {"uriKey": uri.to_key_str(), "splitMode": split_mode}}
         doc_dict, view_column = api.eval_with_return(jscode, opts)
         return cls.model_validate({"document":doc_dict, "viewColumn":view_column})
+
+    def show(
+        self,
+        uri: Uri,
+        position: tuple[int , int] | None = None,
+        preview: bool = False
+    ) -> None:
+        """Open the document specified by `uri`."""
+
+        jscode = """
+        (async ({ uriKey, viewColumn, preview, line, col }) => {
+            const uri = vscode.Uri.parse(uriKey);
+            const doc = await vscode.workspace.openTextDocument(uri);
+
+            const editor = await vscode.window.showTextDocument(doc, {
+                viewColumn: viewColumn,
+                preview: preview,
+                preserveFocus: false
+            });
+
+            if (line !== undefined && col !== undefined) {
+                const pos = new vscode.Position(line, col);
+                editor.selection = new vscode.Selection(pos, pos);
+                editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
+            }
+            return doc
+        })(args)
+        """
+
+        args = {
+            "args": {
+                "uriKey": uri.to_key_str(),
+                "viewColumn": self.viewColumn,
+                "preview": preview,
+                "line": position[0] if position else None,
+                "col": position[1] if position else None,
+            }
+        }
+
+        api = Api()
+        doc_data = api.eval_with_return(jscode, opts=args)
+
+        # Update of state.
+        doc = Document.model_validate(doc_data)
+        self._update_document(doc)
 
     def close(self) -> bool:
         jscode = """
@@ -180,179 +222,17 @@ class Editor(BaseModel):
         return (self.document == other.document) and (
             self.viewColumn == other.viewColumn
         )
-        
+
     def get_clean_target_uris_for_unique(self, within_tabs: bool = False, within_windows: bool = True) -> Sequence[Uri]:
-        """Return the `dirty` uris which should be empty for the smooth `unique`.
-        """
-        jscode = """
-        (async (args) => {
-            
-            /**
-             * すべてのUntitledドキュメントを収集します。
-             * @returns {vscode.TextDocument[]} 
-             */
-            function collectUntitled() {
-                // vscodeはグローバルに存在すると仮定
-                return vscode.workspace.textDocuments.filter(
-                    doc => doc.uri.scheme === "untitled"
-                );
-            }
+        from pytoy.ui.vscode.editor.clearners import EditorCleaner
+        return EditorCleaner(self).get_clean_target_uris_for_unique(within_tabs=within_tabs,
+                                                                     within_windows=within_windows)
 
-            /**
-             * 削除対象から除外（キープ）すべきUntitledドキュメントのURIのSetを収集します。
-             * @param {vscode.TextEditor} targetEditor 
-             * @param {boolean} withinTab 
-             * @param {boolean} withinWindows 
-             * @returns {Set} URI文字列のSet
-             */
-            function collectUntitledToKeep(targetEditor, withinTab, withinWindows) {
-                const targetColumn = targetEditor.viewColumn;
-
-                const keep = new Set(); // JS構文に修正
-
-                for (const group of vscode.window.tabGroups.all) {
-                    const isSameGroup = group.viewColumn === targetColumn;
-
-                    for (const tab of group.tabs) {
-                        // tab.input が存在し、uriプロパティを持ち、schemeが"untitled"であるかチェック
-                        // tab.input.uri が存在しない場合があるため、安全にアクセス
-                        const uri = tab.input && tab.input.uri;
-                        if (!uri || uri.scheme !== "untitled") continue;
-
-                        const isTargetTab = uri.toString() === targetEditor.document.uri.toString();
-
-                        // 削除ゾーンの条件:
-                        // 1. (withinWindowsがtrue かつ ターゲットと同じグループではない)
-                        // 2. または (withinTabがtrue かつ ターゲットと同じグループ かつ ターゲットのタブではない)
-                        const inRemovalZone =
-                            (args.withinWindows && !isSameGroup) ||
-                            (args.withinTab && isSameGroup && !isTargetTab);
-
-                        // 削除対象でない（キープすべき）場合、Setに追加
-                        if (!inRemovalZone) {
-                            keep.add(uri.toString());
-                        }
-                    }
-                }
-                return keep;
-            }
-
-            /**
-             * クリーンアップ対象となるUntitledドキュメントのURIの配列を返します。
-             * @param {vscode.TextEditor} targetEditor 
-             * @param {boolean} withinTab 
-             * @param {boolean} withinWindows 
-             * @returns {any[]} URIのJSONオブジェクトの配列
-             */
-            function getCleanUntitledTargets(targetEditor, withinTab, withinWindows) {
-                const dirty = collectUntitled();
-                const keep = collectUntitledToKeep(targetEditor, withinTab, withinWindows);
-
-                // クリーンアップ対象 (キープリストに含まれていないもの)
-                const toCleanDocs = dirty.filter(doc => !keep.has(doc.uri.toString()));
-
-                // URIオブジェクトの配列に変換して返却
-                return toCleanDocs.map(doc => doc.uri.toJSON()); 
-            }
-
-            function findEditorByUriAndColumn(uri, viewColumn) {
-                return vscode.window.visibleTextEditors.find(
-                    editor => editor.document.uri.path == uri.path &&
-                              editor.document.uri.scheme == uri.scheme && 
-                              (editor.document.uri.authority || "") == (uri.authority  || "") && 
-                              editor.viewColumn == viewColumn
-                );
-            }
-
-            // --- メイン処理 ---
-            
-            // args.uri は Lua 側から渡されたディクショナリ形式（または文字列）を想定
-            const targetUri = vscode.Uri.parse(args.uriKey);
-            
-            
-            // ターゲットエディタを見つける
-            const editor = findEditorByUriAndColumn(targetUri, args.viewColumn)
-
-            if (!editor) return [];
-
-            // クリーンアップ対象のURIリストを取得
-            return getCleanUntitledTargets(editor, args.withinTab, args.withinWindows);
-
-        })(args)
-        """
-
-        args = {
-            "args": {
-                "uriKey": self.uri.to_key_str(),
-                "viewColumn": self.viewColumn,
-                "withinTab": within_tabs,
-                "withinWindows": within_windows,
-            }
-        }
-        api = Api()
-        if self.viewColumn is None:
-            msg = "`viewColumn` must not be None in `unique`."
-            raise ValueError(msg)
-        result = api.eval_with_return(jscode, with_await=True, opts=args)
-        return [Uri.model_validate(elem) for elem in result]
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True):
-        """Make it an unique editor."""
-        jscode = """
-    (async (args) => {
-
-        function findEditorByUriAndColumn(uri, viewColumn) {
-            return vscode.window.visibleTextEditors.find(
-                editor => editor.document.uri.path == uri.path &&
-                          editor.document.uri.scheme == uri.scheme && 
-                          (editor.document.uri.authority || "") == (uri.authority  || "") && 
-                          editor.viewColumn == viewColumn
-            );
-        }
-
-        // --- メイン処理 ---
-        
-        // args.uri は Lua 側から渡されたディクショナリ形式（または文字列）を想定
-        const targetUri = vscode.Uri.parse(args.uriKey);
-        
-        // ターゲットエディタを見つける
-        const editor = findEditorByUriAndColumn(targetUri, args.viewColumn)
-        if (!editor) return; // ターゲットエディタが見つからなければ終了
-
-        // ターゲットエディタを再度アクティブにしてフォーカスを維持
-        await vscode.window.showTextDocument(editor.document, {
-            viewColumn: args.viewColumn,
-            preserveFocus: true
-        });
-
-        // withinTabがtrueの場合、同じグループ内の他のエディタを閉じる
-        if (args.withinTab) {
-            await vscode.commands.executeCommand(
-                "workbench.action.closeOtherEditors"
-            );
-        }
-
-        // withinWindowsがtrueの場合、他のグループのエディタを閉じる
-        if (args.withinWindows) {
-            await vscode.commands.executeCommand(
-                "workbench.action.closeEditorsInOtherGroups"
-            );
-        }
-    })(args);
-    """
-        args = {
-            "args": {
-                "uriKey": self.uri.to_key_str(), 
-                "viewColumn": self.viewColumn,
-                "withinTab": within_tabs,
-                "withinWindows": within_windows,
-            }
-        }
-        api = Api()
-        if self.viewColumn is None:
-            msg = "`viewColumn` must not be None in `unique`."
-            raise ValueError(msg)
-        return api.eval_with_return(jscode, with_await=True, opts=args)
+        from pytoy.ui.vscode.editor.clearners import EditorCleaner
+        return EditorCleaner(self).unique(within_tabs=within_tabs,
+                                          within_windows=within_windows)
 
     @property
     def cursor_position(self) -> tuple[int, int] | None:
@@ -373,7 +253,7 @@ class Editor(BaseModel):
 
             if (!editor) return null;
             const pos = editor.selection.active;
-            return [pos.line + 1, pos.character + 1];
+            return [pos.line, pos.character];
         })(args)
         """
         args = {
@@ -406,8 +286,7 @@ class Editor(BaseModel):
             const editor = findEditorByUriAndColumn(uri, args.viewColumn);
             if (!editor) return false;
 
-            // TODO: In refactor, we have to change 0-base and 1-base. 
-            const position = new vscode.Position(args.line - 1, args.col - 1);
+            const position = new vscode.Position(args.line, args.col);
             editor.selection = new vscode.Selection(position, position);
 
             editor.revealRange(
