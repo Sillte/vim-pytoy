@@ -2,8 +2,11 @@ from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
 )
+from pytoy.ui.pytoy_window.models import ViewportMoveMode
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
+
+from pytoy.infra.core.models import CursorPosition
 from typing import Sequence
 
 
@@ -41,6 +44,14 @@ class PytoyWindow(PytoyWindowProtocol):
         if not isinstance(other, PytoyWindow):
             return NotImplemented
         return self.impl.__eq__(other)
+
+    @property
+    def cursor(self) -> CursorPosition:
+        return self.impl.cursor
+
+    def move_cursor(self, cursor: CursorPosition,
+                    viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None:
+        return self.impl.move_cursor(cursor, viewport_mode)
 
     # Below functions are not defined in PytoyWindowProtocol.
 

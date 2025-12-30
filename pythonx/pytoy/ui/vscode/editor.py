@@ -2,6 +2,14 @@ from pytoy.ui.vscode.document import Api, Uri, Document
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pydantic import BaseModel, ConfigDict, ValidationError
 from typing import Sequence, Self
+from enum import IntEnum, auto
+
+
+class TextEditorRevealType(IntEnum):
+    Default = 0
+    InCenter = 1
+    InCenterIfOutsideViewport = 2
+    AtTop = 3
 
 
 class Editor(BaseModel):
@@ -49,7 +57,7 @@ class Editor(BaseModel):
         uris = set(BufferURISolver.get_uri_to_bufnr().keys())
         uri_to_views = {pair[0]: pair[1] for pair in pairs if pair[0] in uris}
         return uri_to_views.get(self.uri, -1) == self.viewColumn
-    
+
     @classmethod
     def create(cls, uri: Uri, split_mode: str = "vertical") -> Self:
         jscode = """
@@ -379,3 +387,46 @@ class Editor(BaseModel):
         if ret is None:
             return None
         return (ret[0], ret[1])
+
+    def set_cursor_position(self, line: int , col: int, reveal_type: TextEditorRevealType = TextEditorRevealType.Default) -> bool:
+        """Move the cursor to the position.
+        """
+        jscode = """
+        (async (args) => {
+            function findEditorByUriAndColumn(uri, viewColumn) {
+                return vscode.window.visibleTextEditors.find(
+                    editor => editor.document.uri.path == uri.path &&
+                              editor.document.uri.scheme == uri.scheme &&
+                              (editor.document.uri.authority || "") == (uri.authority || "") &&
+                              editor.viewColumn == viewColumn
+                );
+            }
+
+            const uri = vscode.Uri.parse(args.uriKey);
+            const editor = findEditorByUriAndColumn(uri, args.viewColumn);
+            if (!editor) return false;
+
+            // TODO: In refactor, we have to change 0-base and 1-base. 
+            const position = new vscode.Position(args.line - 1, args.col - 1);
+            editor.selection = new vscode.Selection(position, position);
+
+            editor.revealRange(
+                new vscode.Range(position, position),
+                args.revealType
+            );
+
+            return true;
+        })(args)
+        """
+
+        args = {
+            "args": {
+                "uriKey": self.uri.to_key_str(),
+                "viewColumn": self.viewColumn,
+                "line": line,
+                "col": col,
+                "revealType": int(reveal_type)
+            }
+        }
+        api = Api()
+        return api.eval_with_return(jscode, with_await=True, opts=args)
