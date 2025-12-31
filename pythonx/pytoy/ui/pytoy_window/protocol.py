@@ -2,7 +2,7 @@ from typing import Protocol, Sequence, Literal
 from pathlib import Path
 
 from pytoy.ui.pytoy_buffer import PytoyBuffer
-from pytoy.infra.core.models import CursorPosition
+from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
 from pytoy.ui.pytoy_window.models import ViewportMoveMode
 from pytoy.ui.pytoy_window.models import BufferSource, WindowCreationParam
 
@@ -34,6 +34,14 @@ class PytoyWindowProtocol(Protocol):
 
     def move_cursor(self, cursor: CursorPosition,
                     viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None:
+        ...
+
+    @property
+    def character_range(self) -> CharacterRange:
+        ...
+
+    @property
+    def line_range(self) -> LineRange:
         ...
 
 

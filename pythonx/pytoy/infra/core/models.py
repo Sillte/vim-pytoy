@@ -33,6 +33,20 @@ class CharacterRange:
     @property
     def is_empty(self) -> bool:
         return self.start == self.end
+    
+    def as_line_range(self, cut_first_line: bool = False, cut_last_line: bool = False) -> "LineRange":
+        if cut_first_line and self.start.col != 0:
+            start = self.start.line + 1
+        else:
+            start = self.start.line
+
+        if self.end.col == 0: 
+            end = self.end.line
+        elif cut_last_line:
+            end = self.end.line
+        else:
+            end = self.end.line + 1
+        return LineRange(start, max(start, end))
 
 
 @dataclass(frozen=True)

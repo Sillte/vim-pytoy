@@ -4,7 +4,7 @@ from pytoy.ui import make_buffer
 from pytoy.infra.command.models import OptsArgument
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 
-from pytoy.infra.timertask import  ThreadWorker
+from pytoy.infra.timertask import ThreadWorker
 
 
 @CommandManager.register("PytoyLLM", range="")
@@ -13,20 +13,28 @@ class PytoyLLMCommand:
         ...
         line1 = opts.line1
         line2 = opts.line2
+        
+        current_buffer = PytoyBuffer.get_current()
+        print("opts", opts)
 
-        content = PytoyBuffer.get_current().content
+        content = current_buffer.content
         lines = content.split("\n")
         if line1 is not None and line2 is not None:
             target = "\n".join(lines[line1 - 1 : line2 + 1 - 1])
         else:
             target = content
+        BUFFER_NAME = "MOCK_LLM" 
         from pytoy_llm import completion
         from pytoy_llm.models import InputMessage
+        
+        from pathlib import Path
+        if Path(current_buffer.path).name == BUFFER_NAME:
+            pass
 
-
-        buffer = make_buffer("__pytoy__stdout", mode="vertical")
+        buffer = make_buffer(BUFFER_NAME, mode="vertical")
         PREFIX = "[pytoy-llm] Thinking..."
         buffer.append(PREFIX)
+        
 
         def task_func() -> str:
             mes1 = InputMessage(role="system", content="Since this is called by vim and intended to be used by the substituted of the given message, please make it short like 4 lines. ")

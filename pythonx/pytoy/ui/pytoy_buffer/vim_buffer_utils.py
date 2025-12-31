@@ -36,9 +36,12 @@ class VimBufferRangeHandler:
             lines = vim_buffer[start.line : end.line + 1]
             if not lines:
                 return ""
-            lines[0] = lines[0][start.col :]
-            lines[-1] = lines[-1][: end.col]
-            return "\n".join(lines)
+            elif len(lines) == 1:
+                return lines[0][start.col: end.col]
+            else:
+                lines[0] = lines[0][start.col :]
+                lines[-1] = lines[-1][: end.col]
+                return "\n".join(lines)
 
         def _zero_end_col(vim_buffer: "vim.Buffer", character_range: CharacterRange):
             start, end = character_range.start, character_range.end

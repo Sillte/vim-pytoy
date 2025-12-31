@@ -4,7 +4,7 @@
 
 
 from pathlib import Path
-from pytoy.infra.core.models import CursorPosition
+from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.ui.vscode.editor.models import TextEditorRevealType
 from pytoy.ui.vscode.uri import Uri
@@ -20,6 +20,8 @@ from pytoy.ui.vscode.document import Api, Document
 from pytoy.ui.vscode.editor import Editor
 from pytoy.ui.vscode.utils import wait_until_true
 from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
+
+from pytoy.ui.pytoy_window.vim_window_utils import get_last_selection
 
 
 class PytoyWindowVSCode(PytoyWindowProtocol):
@@ -80,6 +82,29 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         line, col = cursor.line, cursor.col
         reveal_type = self._REVEAL_TYPE_MAP[viewport_mode]
         editor.set_cursor_position(line, col, reveal_type)
+
+    @property
+    def character_range(self) -> CharacterRange:
+        winid = self._to_winid()
+        if not winid:
+            return CharacterRange(self.cursor, self.cursor)
+        selection = get_last_selection(winid)
+        if selection:
+            return selection
+        return CharacterRange(self.cursor, self.cursor)
+
+    
+    def _to_winid(self) -> int | None:
+        bufnr = BufferURISolver.get_bufnr(self.editor.uri)
+        if not bufnr:
+            return None
+        winid = vim.eval(f"win_findbuf({bufnr})[0]")
+        return winid
+
+
+    @property
+    def line_range(self) -> LineRange:
+        return self.character_range.as_line_range()
 
 
 class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):

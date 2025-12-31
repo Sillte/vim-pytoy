@@ -313,3 +313,44 @@ class Editor(BaseModel):
         }
         api = Api()
         return api.eval_with_return(jscode, with_await=True, opts=args)
+
+    @property
+    def selection(self) -> tuple[tuple[int, int], tuple[int, int]] | None:
+        """Return the Selecton of the editor.
+        NOTE: This is not used and not tested,
+        this is because when command mode is activated, `Selection` is canceled.
+        """
+        jscode = """
+        (async (args) => {
+            function findEditorByUriAndColumn(uri, viewColumn) {
+                return vscode.window.visibleTextEditors.find(
+                    editor => editor.document.uri.path == uri.path &&
+                              editor.document.uri.scheme == uri.scheme && 
+                              (editor.document.uri.authority || "") == (uri.authority  || "") && 
+                              editor.viewColumn == viewColumn
+                );
+            }
+            const uri = vscode.Uri.parse(args.uriKey);
+            const editor = findEditorByUriAndColumn(uri, args.viewColumn);
+            if (!editor) return null;
+
+            const sel = editor.selection;
+            if (sel.isEmpty) return null;
+
+            return [
+              [sel.start.line, sel.start.character],
+              [sel.end.line, sel.end.character]
+            ];
+        })(args)
+        """
+        args = {
+            "args": {
+                "uriKey": self.uri.to_key_str(),
+                "viewColumn": self.viewColumn,
+            }
+        }
+        api = Api()
+        ret = api.eval_with_return(jscode, with_await=True, opts=args)
+        if ret is None:
+            return None
+        return ((ret[0][0], ret[0][1]), (ret[1][0], ret[1][1]))

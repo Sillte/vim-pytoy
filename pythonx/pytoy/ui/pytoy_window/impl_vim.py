@@ -1,10 +1,11 @@
 from pathlib import Path
 import vim
 from typing import Sequence, assert_never, cast, Literal
-from pytoy.infra.core.models import CursorPosition
+from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
 from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
+from pytoy.ui.pytoy_window.vim_window_utils import get_last_selection
 
 from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
@@ -100,6 +101,32 @@ class PytoyWindowVim(PytoyWindowProtocol):
                 vim.command(f'call win_execute({winid}, "normal! zv")')
             case _ as unreachable:
                 assert_never(unreachable)
+
+    @property
+    def character_range(self) -> CharacterRange:
+        selection = get_last_selection(self.winid)
+        if selection:
+            return selection
+        else:
+            return CharacterRange(self.cursor, self.cursor)
+
+    @property
+    def line_range(self) -> LineRange:
+        return self.character_range.as_line_range(cut_first_line=False, cut_last_line=False)
+
+    def _from_vim_coords(self, vim_line: int, vim_col: int) -> CursorPosition:
+        """Solves
+        1. 1-base -> 0-base
+        2. handling of bytes.
+        """
+        n_line = max(0, vim_line - 1)
+        line_content = self.buffer.lines[n_line]
+        line_bytes = line_content.encode('utf-8')
+        byte_offset = min(vim_col - 1, len(line_bytes))  # 0-based and to be safe.
+        res_col = len(line_bytes[:byte_offset].decode('utf-8', errors='ignore'))
+        return CursorPosition(n_line, res_col)
+
+
 
 
 class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
