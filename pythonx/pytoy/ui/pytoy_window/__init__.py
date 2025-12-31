@@ -7,7 +7,7 @@ from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowC
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 
-from pytoy.infra.core.models import CursorPosition
+from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
 from typing import Sequence, Literal
 
 
@@ -53,6 +53,14 @@ class PytoyWindow(PytoyWindowProtocol):
     def move_cursor(self, cursor: CursorPosition,
                     viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None:
         return self.impl.move_cursor(cursor, viewport_mode)
+    
+    @property
+    def character_range(self) -> CharacterRange:
+        return self.impl.character_range
+
+    @property
+    def line_range(self) -> LineRange:
+        return self.impl.line_range
 
     # Below functions are not defined in PytoyWindowProtocol.
 
