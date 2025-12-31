@@ -56,24 +56,27 @@ class Editor(BaseModel):
         return uri_to_views.get(self.uri, -1) == self.viewColumn
 
     @classmethod
-    def create(cls, uri: Uri, split_mode: Literal["vertical", "horizontal"] = "vertical") -> Self:
+    def create(cls, uri: Uri, split_mode: Literal["vertical", "horizontal"] = "vertical", cursor: tuple[int, int] | None = None) -> Self:
         jscode = """
         (async (args) => {
             const uri = vscode.Uri.parse(args.uriKey);
             const doc = await vscode.workspace.openTextDocument(uri);
+            let options = {
+                preview: false
+            };
+            if (args.cursor) {
+                const pos = new vscode.Position(args.cursor[0], args.cursor[1]);
+                options.selection = new vscode.Range(pos, pos);
+            }
 
             let editor;
             if (!args.splitMode.startsWith("v")){
                 await vscode.commands.executeCommand("workbench.action.splitEditorDown");
-                editor = await vscode.window.showTextDocument(doc, {
-                    preview: false
-                });
+                editor = await vscode.window.showTextDocument(doc, options);
             }
             else {
-                editor = await vscode.window.showTextDocument(doc, {
-                viewColumn: vscode.ViewColumn.Beside, // 今開いているエディタの横
-                preview: false,
-            });
+                options.viewColumn = vscode.ViewColumn.Beside;
+                editor = await vscode.window.showTextDocument(doc, options);
             }
 
             await new Promise(resolve => setTimeout(resolve, 0));
@@ -87,7 +90,7 @@ class Editor(BaseModel):
         })(args)
         """
         api = Api()
-        opts = {"args": {"uriKey": uri.to_key_str(), "splitMode": split_mode}}
+        opts = {"args": {"uriKey": uri.to_key_str(), "splitMode": split_mode, "cursor": cursor}}
         doc_dict, view_column = api.eval_with_return(jscode, opts)
         return cls.model_validate({"document":doc_dict, "viewColumn":view_column})
 

@@ -19,4 +19,4 @@ def q_prev():
 def QQ():
     from pytoy.ui.pytoy_quickfix import PytoyQuickFix
 
-    PytoyQuickFix().go()
+    PytoyQuickFix().jump()

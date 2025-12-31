@@ -34,7 +34,7 @@ class PyTestCommand:
 
         def make_qf_records(content: str) -> Sequence[QuickFixRecord]:
             rows = PytestDecipher(content).records
-            return [QuickFixRecord.from_dict(row) for row in rows]
+            return [QuickFixRecord.from_dict(row, cwd) for row in rows]
         
         command = command_type_to_func[command_type](path, line)
         
@@ -156,9 +156,9 @@ class CSpellCommand:
             checker = CSpellOneFileChecker(only_python_string=False)
         output = checker(path)
         regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+).*\((?P<text>(.+))\)"
-        maker = to_quickfix_creator(regex)
+        maker = to_quickfix_creator(regex, cwd=path.parent)
         records = maker(output)
-        handle_records(PytoyQuickFix(cwd=path.parent), records, win_id=None)
+        handle_records(PytoyQuickFix(), records)
 
 
 @CommandManager.register(name="RuffCheck")

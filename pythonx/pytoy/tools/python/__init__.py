@@ -80,6 +80,8 @@ class PythonExecutor():
             env: dict[str, str] | None = None,
             *,
             force_uv: bool | None = None):
+        if cwd is None:
+            cwd = get_current_directory()
         wrapper = EnvironmentManager().get_command_wrapper(force_uv=force_uv)
         wrapped_command  = wrapper(command)
         param = BufferJobCreationParam(command=wrapped_command,
@@ -87,7 +89,7 @@ class PythonExecutor():
                                        env=env,
                                        stdout=stdout,
                                        stderr=stderr,
-                                       on_closed=self.on_closed)
+                                       on_closed=lambda buffer_job: self.on_closed(buffer_job, cwd))
 
         if BufferJobManager.is_running(self.job_name):
             raise ValueError(f"`{self.job_name=}` is already running")
@@ -97,16 +99,16 @@ class PythonExecutor():
         BufferJobManager.create(self.job_name, param)
         
 
-    def on_closed(self, buffer_job: BufferJobProtocol) -> None:
+    def on_closed(self, buffer_job: BufferJobProtocol, cwd: Path | str) -> None:
         assert buffer_job.stderr is not None
         error_msg = buffer_job.stderr.content.strip()
 
-        qflist = self._make_qflist(error_msg)
-        handle_records(PytoyQuickFix(cwd=buffer_job.cwd), records=qflist, win_id=None, is_open=False)
+        qflist = self._make_qflist(error_msg, cwd)
+        handle_records(PytoyQuickFix(), records=qflist, is_open=False)
         if not error_msg:
             buffer_job.stderr.hide()
 
-    def _make_qflist(self, string: str) -> list[QuickFixRecord]:
+    def _make_qflist(self, string: str, cwd: Path) -> list[QuickFixRecord]:
         _pattern = re.compile(r'\s+File "(.+)", line (\d+)')
         result = list()
         lines = string.split("\n")
@@ -121,7 +123,7 @@ class PythonExecutor():
                 index += 1
                 text = lines[index].strip()
                 row["text"] = text
-                record = QuickFixRecord(filename=filename, lnum=int(lnum), text=text)
+                record = QuickFixRecord.from_dict(row, cwd)
                 result.append(record)
             index += 1
         result = list(reversed(result))

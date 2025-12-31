@@ -88,9 +88,10 @@ class PytoyBuffer(PytoyBufferProtocol):
 
 def make_buffer(stdout_name: str, mode: Literal["vertical", "horizontal"] = "vertical") -> PytoyBuffer:
     from pytoy.ui.pytoy_window import PytoyWindowProvider
+    from pytoy.ui.pytoy_window.models import WindowCreationParam
 
-    #stdout_window = PytoyWindowProvider().create_window(stdout_name, mode)
-    stdout_window = PytoyWindowProvider().open_window(stdout_name, "vertical")
+    param = WindowCreationParam.for_split("vertical", try_reuse=True, anchor=None)
+    stdout_window = PytoyWindowProvider().open_window(stdout_name, param)
     return stdout_window.buffer
 
 

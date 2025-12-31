@@ -21,6 +21,7 @@ class PytoyLLMCommand:
         else:
             target = content
         from pytoy_llm import completion
+        from pytoy_llm.models import InputMessage
 
 
         buffer = make_buffer("__pytoy__stdout", mode="vertical")
@@ -28,7 +29,9 @@ class PytoyLLMCommand:
         buffer.append(PREFIX)
 
         def task_func() -> str:
-            return str(completion(target, output_format="str"))
+            mes1 = InputMessage(role="system", content="Since this is called by vim and intended to be used by the substituted of the given message, please make it short like 4 lines. ")
+            mes2 = InputMessage(role="user", content=f"The following is the given query from the user: {target}")
+            return str(completion([mes1, mes2], output_format="str"))
 
         def on_finish(output: str) -> None:
             c_range = buffer.range_operator.find_first(PREFIX, reverse=True)
