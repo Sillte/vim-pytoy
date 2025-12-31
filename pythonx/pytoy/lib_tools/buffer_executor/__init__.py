@@ -78,7 +78,7 @@ class BufferExecutor:
         stderr = self.stderr or self.stdout
         
         if isinstance(quickfix_creator, str):
-            quickfix_creator  = to_quickfix_creator(quickfix_creator)
+            quickfix_creator  = to_quickfix_creator(quickfix_creator, cwd)
             
         def wrapped_on_closed(buffer_job: BufferJobProtocol) -> None:
             err_buffer = buffer_job.stderr or buffer_job.stdout 
@@ -89,7 +89,7 @@ class BufferExecutor:
             if quickfix_creator:
                 records = quickfix_creator(content)
                 handle_records(
-                    PytoyQuickFix(cwd=buffer_job.cwd), records=records, win_id=None, is_open=False
+                    PytoyQuickFix(), records=records, is_open=False
                 )
             if on_closed:
                 on_closed(buffer_job)

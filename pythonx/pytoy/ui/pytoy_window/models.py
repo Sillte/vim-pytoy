@@ -3,6 +3,7 @@ from enum import StrEnum
 from pathlib import Path 
 from typing import Literal, Self, TYPE_CHECKING, assert_never
 from dataclasses import dataclass
+from pytoy.infra.core.models import CursorPosition  
 
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol
@@ -55,6 +56,7 @@ class WindowCreationParam:
     target : Literal["in-place", "split"] = "split"
     anchor: PytoyWindowProtocol | None = None
     split_direction: Literal["vertical", "horizontal", None] = "vertical"
+    cursor: CursorPosition | None = None
 
     def __post_init__(self):
         if self.target == "split":
@@ -66,23 +68,29 @@ class WindowCreationParam:
     def for_split(cls,
                   split_direction: Literal["vertical", "horizontal"],
                   try_reuse: bool = False, 
-                  anchor: PytoyWindowProtocol | None = None) -> Self:
+                  anchor: PytoyWindowProtocol | None = None,
+                  cursor: CursorPosition | None = None) -> Self:
         return cls(try_reuse=try_reuse,
                    target="split",
                    split_direction=split_direction,
-                   anchor=anchor)
+                   anchor=anchor,
+                   cursor=cursor)
 
     @classmethod 
     def for_in_place(cls,
                      try_reuse: bool = False,
-                     anchor: PytoyWindowProtocol | None = None) -> Self:
+                     anchor: PytoyWindowProtocol | None = None,
+                     cursor: CursorPosition | None = None) -> Self:
         return cls(try_reuse=try_reuse,
                    target="in-place",
                    split_direction=None,
-                   anchor=anchor)
-        
+                   anchor=anchor,
+                   cursor=cursor)
+
     @classmethod
     def from_literal(cls, arg: Literal["vertical", "horizontal", "in-place"]) -> Self:
+        """Make shift generation when the simple creation is necessary.
+        """
         default_try_reuse = False
         match arg:
             case "vertical":

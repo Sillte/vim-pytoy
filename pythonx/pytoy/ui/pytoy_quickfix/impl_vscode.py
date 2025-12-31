@@ -1,155 +1,54 @@
 from pathlib import Path
 import vim
-import copy
 from typing import Sequence
 
-from pytoy.infra.timertask import TimerTask, TimerStopException
-from pytoy.infra.core.models import CursorPosition
-from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol
-from pytoy.ui.pytoy_quickfix.models import QuickFixRecord
-from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
-from pytoy.ui.vscode.editor import Editor
-from pytoy.ui import to_filepath
-from pytoy.lib_tools.utils import get_current_directory
-from pytoy.ui.vscode.utils import open_file
+from pytoy.infra.timertask import TimerTask
+from pytoy.ui.pytoy_quickfix.protocol import  PytoyQuickFixUIProtocol
+from pytoy.ui.pytoy_quickfix.models import QuickFixRecord, QuickFixState
+from pytoy.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam, BufferSource
 
 
-class PytoyQuickFixVSCode(PytoyQuickFixProtocol):
-    """
-    [NOTE]: VScode does not have concept of `locationlist`.
-    So, if `win_id` is given, they are treated as `quickfix` list.
-    """
+class PytoyQuickFixVSCodeUI(PytoyQuickFixUIProtocol):
 
-    def __init__(
-        self,
-        cwd: str | Path | None = None
-    ) -> None:
-        self.records = []
-        self.current_idx: int | None = None  # It starts from 1.
-        self.cwd = cwd
+    def __init__(self, ):
+        self._records = []
+        self._index = None
 
-    def _convert_filename(self, basepath: Path, record: QuickFixRecord):
-        filename = record.filename
-        if not filename:
-            filename = basepath
-        filename = to_filepath(filename)
-        if filename.is_absolute():
-            record.filename = filename.as_posix()
-        else:
-            record.filename = (basepath / filename).resolve().as_posix()
-        return record
+    def set_records(self, records:  Sequence[QuickFixRecord]) -> QuickFixState:
+        self._records = records
+        self._index = self._index if self._index else 0
+        return QuickFixState(index=self._index, size=len(self._records))
 
-    def setlist(self, records: Sequence[QuickFixRecord], win_id: int | None = None) -> None:
-        if win_id is None:
-            if self.cwd is None:
-                basepath = get_current_directory()
-            else:
-                basepath = Path(self.cwd) 
-        else:
-            basepath = Path(vim.eval(f"getcwd({win_id})"))
-
-        basepath = to_filepath(basepath)  # Just to be safe, maybe it is not necessary.
-
-        records = [self._convert_filename(basepath, record) for record in records]
-        self.records = records
-        if not records:
-            self.current_idx = None
-        else:
-            self.current_idx = 1
-
-    def getlist(self, win_id: int | None = None) -> Sequence[QuickFixRecord]:
-        return copy.deepcopy(self.records)
-
-    def close(self, win_id: int | None = None) -> None:
-        self.records = []
-        self.current_idx = None
-
-    def open(self, win_id: int | None = None) -> None:
+    def open(self) -> None:
+        # We have to consider how to display in vscode.
         pass
 
-    def go(self, idx: int | None = None, win_id: int | None = None) -> None:
-        if self.current_idx is None:
-            print("QuickFix is not SET.")
-            return
-        self._update_cursor(diff_idx=0, fixed_idx=idx)
+    def close(self) -> None:
+        # We have to consider how to display in vscode.
+        pass
 
-    def next(self, win_id: int | None = None) -> None:
-        if self.current_idx is None:
-            print("QuickFix is not SET.")
-            return
-        self._update_cursor(diff_idx=+1)
-
-    def prev(self, win_id: int | None = None) -> None:
-        if self.current_idx is None:
-            print("QuickFix is not SET.")
-            return
-        self._update_cursor(diff_idx=-1)
-
-    def _move_idx(
-        self, diff_idx: int = 0, *, fixed_idx: int | None = None
-    ) -> QuickFixRecord | None:
-        """
-        1. Move `idx` of Quicklist per `diff_idx`.
-        2. If fixed_idx is set, this number is set to
-        3. Return the `record` of the moved `idx`.
-        """
-        records = self.records
-        length = len(records)
-        if not length:
+    def jump(self, state: QuickFixState) -> QuickFixRecord | None:
+        if not self._records:
             return None
+        if state.index is None:
+            raise ValueError("State is invalid.")
+        record = self._records[state.index]
+        self._index = state.index
 
-        current_idx = self.current_idx
-        assert current_idx is not None
-
-        current_idx += diff_idx
-        if fixed_idx is not None:
-            current_idx = fixed_idx
-        if 1 < length:
-            current_idx = (current_idx - 1) % length + 1
-        else:
-            current_idx = 1
-
-        self.current_idx = current_idx
-
-        record = records[current_idx - 1]
+        path = Path(record.filename)
+        cursor = record.cursor
+        param = WindowCreationParam.for_in_place(try_reuse=True, anchor=None, cursor=cursor)
+        PytoyWindowProvider().open_window(BufferSource.from_path(path), param)
+        #TimerTask.execute_oneshot(lambda : window.move_cursor(cursor), interval=50)
         return record
 
-    def _update_cursor(self, diff_idx: int = 0, *, fixed_idx: int | None = None):
-        """For VSCODE, this is the unified interface for `next`, `prev` and `go`"""
-        record = self._move_idx(diff_idx=diff_idx, fixed_idx=fixed_idx)
-        if not record:
-            print("No record in QuickFix.")
-            return
-        path = Path(record.filename)
-        lnum, col = record.lnum, record.col
 
-        # As of 2025/10/21, this `_edit_file` is the workaround, but I hope this is addressed in the plugin.
-        # vim.command(f"Edit {path.as_posix()}")
-        #position = (lnum, col)
-        position = CursorPosition(lnum - 1, col - 1)
-        open_file(path, position=position)
+    @property
+    def records(self) -> Sequence[QuickFixRecord]:
+        # When the UI modification is implemented,
+        # this is the connection point.
+        return self._records
 
-        length = len(self.records)
-        idx = self.current_idx
-        text = record.text
-
-        def func():
-            editor = Editor.get_current()
-            uri = editor.uri
-            bufnames = BufferURISolver.get_uri_to_bufnames()
-            bufname = bufnames.get(uri)
-            cursor_pos = editor.cursor_position 
-            if bufname and path == to_filepath(bufname):
-                print(f"({idx}/{length}):{text}", flush=True)
-                vim.command(f"call cursor({lnum}, {col})")
-                if cursor_pos and cursor_pos == (lnum, col):
-                    raise TimerStopException
-            else:
-                pass
-        TimerTask.register(func, interval=20, repeat=10)
-
-    def _edit_file(self, path: Path):
-        """This path is not the uri of vscode, but"""
-        from pytoy.ui.vscode.utils import open_file
-
-        open_file(path)
+    @property
+    def state(self) -> QuickFixState | None:
+        return QuickFixState(self._index, len(self._records))

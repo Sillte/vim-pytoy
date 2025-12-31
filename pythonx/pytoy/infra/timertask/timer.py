@@ -48,7 +48,7 @@ class _TaskConfig:
     """Static configuration for a TimerTask, which does not change after registration."""
 
     on_finish: Callable[[NormalStopReason], None] | None = None
-    on_error: Callable[[tuple], None] | None = None
+    on_error: OnErrorCallback | None = None
     initial_repeat: int = -1
 
 

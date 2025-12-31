@@ -106,7 +106,9 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
 
         if param.try_reuse:
             if editor:= self._get_editor_by_bufname(source.name, type=source.type):
-                return PytoyWindowVSCode(editor)
+                window =  PytoyWindowVSCode(editor)
+                if param.cursor:
+                    window.move_cursor(param.cursor)
 
         current = self.get_current()
         editor = self._create_editor(source, param)
@@ -136,6 +138,9 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
 
         if param.target == "in-place":
             editor = anchor.editor.show(uri)
+            if param.cursor:
+                line, col = param.cursor.line, param.cursor.col
+                editor.set_cursor_position(line, col, TextEditorRevealType.InCenterIfOutsideViewport)
             return editor
         if param.target == "split":
             match param.split_direction:
@@ -147,7 +152,13 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
                     raise ValueError("None is invalid.")
                 case _:
                     assert_never(param.split_direction)
-            return Editor.create(uri, direction)
+
+            if param.cursor:
+                pos = param.cursor.line, param.cursor.col
+            else:
+                pos = None
+            return Editor.create(uri, direction, cursor=pos)
+
         raise RuntimeError("Implementation Error") 
 
 
