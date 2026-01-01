@@ -37,11 +37,11 @@ class PytoyWindowProtocol(Protocol):
         ...
 
     @property
-    def character_range(self) -> CharacterRange:
+    def selection(self) -> CharacterRange:
         ...
 
     @property
-    def line_range(self) -> LineRange:
+    def selected_line_range(self) -> LineRange:
         ...
 
 
