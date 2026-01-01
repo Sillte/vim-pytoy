@@ -93,9 +93,6 @@ class PytoyLLMCommand:
                 ThreadWorker.run(lambda : self._task_func(inputs), self.on_finish)
                 
             def _task_func(self, inputs: Sequence[InputMessage]) -> str:
-                import sys, os
-                sys.stdout = open(os.devnull, "w")
-                sys.stderr = open(os.devnull, "w")
                 return str(completion(list(inputs), output_format="str"))  # This is time consuming
 
             def on_finish(self, output: str) -> None:
