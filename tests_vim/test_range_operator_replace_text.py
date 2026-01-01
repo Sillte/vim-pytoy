@@ -22,7 +22,7 @@ def _get_buffer(text: str | None = None) -> PytoyBuffer:
         assert buffer.content == text , ("`entire-replace`", buffer.content, text, entire)
     return window.buffer
 
-def test_intersetion_case():
+def test_insertion_case():
     target_texts_normal = ["SingleLine", "Multi\nLine"]
     target_texts_edge = ["", "\n", "\n\n", "\nhello, \nworld\n"]
 
@@ -38,7 +38,7 @@ def test_intersetion_case():
         assert target_text == text, (target_text, text, cr)
     print("All pass for insertion case.")
 
-test_intersetion_case()
+test_insertion_case()
 
 
 def test_complete_replace_case():
