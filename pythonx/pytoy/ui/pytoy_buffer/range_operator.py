@@ -21,10 +21,10 @@ class RangeOperator(RangeOperatorProtocol):
     def get_text(self, character_range: CharacterRange) -> str:
         return self._impl.get_text(character_range)
 
-    def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> None:
+    def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> LineRange:
         return self._impl.replace_lines(line_range, lines)
 
-    def replace_text(self, character_range: CharacterRange, text: str) -> None:
+    def replace_text(self, character_range: CharacterRange, text: str) -> CharacterRange:
         return self._impl.replace_text(character_range, text)
 
     def find_first(
@@ -39,6 +39,10 @@ class RangeOperator(RangeOperatorProtocol):
     def find_all(self, text: str, target_range: CharacterRange | None = None) -> list[CharacterRange]:
         """return the all matched selections of `text`"""
         return self._impl.find_all(text, target_range)
+
+    @property
+    def entire_character_range(self) -> CharacterRange:
+        return self._impl.entire_character_range
 
 
 def make_range_operator(impl_buffer: PytoyBufferProtocol) -> RangeOperator:

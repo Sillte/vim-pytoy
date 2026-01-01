@@ -77,7 +77,7 @@ class PytoyBuffer(PytoyBufferProtocol):
         range_operator: RangeOperatorProtocol = make_range_operator(self.impl)
         return range_operator.get_text(character_range)
 
-    def replace_text(self, character_range: CharacterRange, text: str) -> None:
+    def replace_text(self, character_range: CharacterRange, text: str) -> CharacterRange:
         range_operator: RangeOperatorProtocol = make_range_operator(self.impl)
         return range_operator.replace_text(character_range, text)
 

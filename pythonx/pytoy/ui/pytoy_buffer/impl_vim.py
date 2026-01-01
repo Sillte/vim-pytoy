@@ -122,11 +122,11 @@ class RangeOperatorVim(RangeOperatorProtocol):
         handler = VimBufferRangeHandler(self.buffer.buffer)
         return handler.get_text(character_range)
 
-    def replace_text(self, character_range: CharacterRange, text: str) -> None:
+    def replace_text(self, character_range: CharacterRange, text: str) -> CharacterRange:
         handler = VimBufferRangeHandler(self.buffer.buffer)
         return handler.replace_text(character_range, text)
 
-    def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> None:
+    def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> LineRange:
         handler = VimBufferRangeHandler(self.buffer.buffer)
         return handler.replace_lines(line_range, lines)
 
@@ -149,4 +149,12 @@ class RangeOperatorVim(RangeOperatorProtocol):
         """return the all matched selections of `text`"""
         searcher = self._create_text_searcher(target_range=target_range)
         return searcher.find_all(text)
+
+    @property
+    def entire_character_range(self) -> CharacterRange:
+        start = CursorPosition(0, 0)
+        end_line = len(self.buffer.lines)
+        end_col = 0
+        end = CursorPosition(end_line, end_col)
+        return CharacterRange(start, end)
 
