@@ -234,8 +234,51 @@ class Document(BaseModel):
         args = {"args": {"uriKey": self.uri.to_key_str(), "preserveFocus": not with_focus}}
         api.eval_with_return(js_code, with_await=True, opts=args)
 
+    def get_range(
+        self,
+        start_line: int,
+        start_col: int,
+        end_line: int,
+        end_col: int,
+    ) -> str:
+        api = Api()
+        js_code = """
+        (async (args) => {
+            const uri = vscode.Uri.parse(args.uriKey);
+            const { sl, sc, el, ec } = args;
+
+            try {
+                const doc = await vscode.workspace.openTextDocument(uri);
+
+                const range = new vscode.Range(
+                    new vscode.Position(sl, sc),
+                    new vscode.Position(el, ec)
+                );
+
+                return doc.getText(range);
+            } catch (err) {
+                console.error("Failed to get range text:", err);
+                return "";
+            }
+        })(args)
+        """
+        result = api.eval_with_return(
+            js_code,
+            with_await=True,
+            opts={
+                "args": {
+                    "uriKey": self.uri.to_key_str(),
+                    "sl": start_line,
+                    "sc": start_col,
+                    "el": end_line,
+                    "ec": end_col,
+                }
+            },
+        )
+        return result
+
     def replace_range(self, text: str, start_line: int, start_col: int, end_line: int, end_col: int) -> bool:
-        """指定された範囲(0-based)をtextで置換する。Inclusive対応は呼び出し側で行う。"""
+        """指定された範囲(0-based)をtextで置換する。"""
         api = Api()
         js_code = """
         (async (args) => {
@@ -276,6 +319,39 @@ class Document(BaseModel):
             },
         )
         return result
+    def get_lines(self, start_line: int, end_line: int) -> list[str]:
+        api = Api()
+        js_code = """
+        (async (args) => {
+            const uri = vscode.Uri.parse(args.uriKey);
+            const { sl, el } = args;
+
+            try {
+                const doc = await vscode.workspace.openTextDocument(uri);
+                const lines = [];
+
+                const end = Math.min(el, doc.lineCount);
+                for (let i = sl; i < end; i++) {
+                    lines.push(doc.lineAt(i).text);
+                }
+                return lines;
+            } catch (err) {
+                console.error("Failed to get lines:", err);
+                return [];
+            }
+        })(args)
+        """
+        return api.eval_with_return(
+            js_code,
+            with_await=True,
+            opts={
+                "args": {
+                    "uriKey": self.uri.to_key_str(),
+                    "sl": start_line,
+                    "el": end_line,
+                }
+            },
+        )
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Document):

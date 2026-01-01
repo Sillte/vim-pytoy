@@ -8,6 +8,12 @@ from pytoy.infra.core.models import CharacterRange, LineRange
 from pytoy.ui.pytoy_buffer.vim_buffer_utils import VimBufferRangeHandler
 from typing import Sequence
 from pytoy.ui.pytoy_buffer.text_searchers import TextSearcher
+from pytoy.ui.vscode.utils import wait_until_true
+
+
+def _normalize_lf_code(text: str) -> str:
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
 
 
 class PytoyBufferVSCode(PytoyBufferProtocol):
@@ -61,16 +67,14 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     def append(self, content: str) -> None:
         if not content:
             return
-        content = self._normalize_lf_code(content)
+        content = _normalize_lf_code(content)
         content = "\n" + content  # correspondence to `vim`.
         self.document.append(content)
 
-    def _normalize_lf_code(self, text: str) -> str:
-        return text.replace("\r\n", "\n").replace("\r", "\n")
 
     @property
     def content(self) -> str:
-        return self._normalize_lf_code(self.document.content)
+        return _normalize_lf_code(self.document.content)
 
 
     @property
@@ -119,10 +123,29 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         return VimBufferRangeHandler(bufnr).get_text(character_range)
 
     def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> LineRange:
+        # NOTE: it is illegal to include `\n` in itemes of `lines`.
+        # But, currently, it is not checked.
+
+        #  TODO: Currently, this is used to 
         bufnr = BufferURISolver.get_bufnr(self._buffer.document.uri)
         if bufnr is None:
             raise ValueError(f"`{self.buffer.document}` is invalid buffer in neovim")
-        return VimBufferRangeHandler(bufnr).replace_lines(line_range, lines)
+        lr = VimBufferRangeHandler(bufnr).replace_lines(line_range, lines)
+
+        def _get_doc_lines(lr: LineRange):
+            return self.buffer.document.get_lines(lr.start, lr.end)
+        def _is_document_changed():
+            doc_lines = _get_doc_lines(lr)
+            return lines == doc_lines
+        flag = wait_until_true(_is_document_changed, timeout=0.5)
+        if not flag:
+            doc_lines = _get_doc_lines(lr)
+            print("Debug", "Document and Buffer is not equal", lr, flush=True)
+            print("text", lines, flush=True)
+            print("doc_lines", doc_lines, flush=True)
+
+
+        return lr
 
     def replace_text(self, character_range: CharacterRange, text: str) -> CharacterRange:
         # TODO: Documentを直接扱った方がよいことが判明したら、変える
@@ -137,8 +160,23 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
             raise ValueError(f"`{self.buffer.document}` is invalid buffer in neovim")
         cr = VimBufferRangeHandler(bufnr).replace_text(character_range, text)
         # [TODO]: For synchronaization between `Document` and `vim.buffer`.
-        import vim
-        vim.command("sleep 100m")
+
+        def _get_doc_text(cr: CharacterRange):
+            start, end = cr.start, cr.end
+            doc_text = self.buffer.document.get_range(start.line, start.col, end.line, end.col)
+            return  _normalize_lf_code(doc_text)
+
+        def _is_document_changed():
+            doc_text = _get_doc_text(cr)
+            return doc_text == text
+
+        flag = wait_until_true(_is_document_changed, timeout=1.0)
+        if not flag:
+            doc_text = _get_doc_text(cr)
+            print("Debug", "Document and Buffer is not equal", cr, flush=True)
+            print("text", text, flush=True)
+            print("doc_text", doc_text, flush=True)
+        
         return cr
 
     def _create_text_searcher(self, target_range: CharacterRange | None = None):

@@ -23,9 +23,9 @@ class VimBufferRangeHandler:
 
     def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> LineRange:
         line1, line2 = line_range.start, line_range.end
-        line2 = max(line2, len(self.buffer))
+        line2 = min(line2, len(self.buffer))
         self.buffer[line1:line2] = lines
-        return LineRange(line1, line2)
+        return LineRange(line1, line1 + len(lines))
 
 
     def get_text(self, character_range: CharacterRange) -> str:
@@ -34,114 +34,79 @@ class VimBufferRangeHandler:
         # Note that `start.line` and `end.line` is 0-based.
         # Note that `start.col` and `end.col` is 0-based.
         # Note that `end` of character_range is exclusive.
-        def _positive_end_col(vim_buffer: "vim.Buffer", character_range: CharacterRange):
-            start, end = character_range.start, character_range.end
-            lines = vim_buffer[start.line : end.line + 1]
+        def _resolve_cols(lines: list[str],
+                          firstline_start_col: int | None = None,
+                          lastline_end_col: int | None = None) -> None:
+            """start_col is inclusive, end_col is exclusive.
+            """
             if not lines:
-                return ""
-            elif len(lines) == 1:
-                return lines[0][start.col: end.col]
+                return
+            if len(lines) == 1:
+                lines[0] = lines[0][firstline_start_col: lastline_end_col]
             else:
-                lines[0] = lines[0][start.col :]
-                lines[-1] = lines[-1][: end.col]
-                return "\n".join(lines)
+                lines[0] = lines[0][firstline_start_col:]
+                lines[-1] = lines[-1][: lastline_end_col]
 
-        def _zero_end_col(vim_buffer: "vim.Buffer", character_range: CharacterRange):
-            start, end = character_range.start, character_range.end
-            assert end.col == 0
+        vim_buffer = self.buffer
+        start, end = character_range.start, character_range.end
+        if character_range.end.col == 0:
             lines = vim_buffer[start.line : end.line]  # `end` line is not included.
             if not lines:
                 return ""
-            lines[0] = lines[0][start.col :]
-            # NOTE: Vim buffer lines are newline-terminated
-            if end.line == len(vim_buffer):
-                return "\n".join(lines)
-            else:
-                return "\n".join(lines) + "\n"
-
-        vim_buffer = self.buffer
-        if character_range.end.col == 0:
-            return _zero_end_col(vim_buffer, character_range)
+            _resolve_cols(lines, firstline_start_col=start.col, lastline_end_col=None)
+            last_lf = "\n" if end.line < len(vim_buffer) else ""
+            return "\n".join(lines) + last_lf
         elif 0 < character_range.end.col:
-            return _positive_end_col(vim_buffer, character_range)
+            lines = vim_buffer[start.line : end.line + 1]
+            if not lines:
+                return ""
+            _resolve_cols(lines, firstline_start_col=start.col, lastline_end_col=end.col)
+            return "\n".join(lines)
         else:
             msg = "ImplementaionError of `VimBufferRangeSelector`"
             raise AssertionError(msg)
 
     def replace_text(self, character_range: CharacterRange, text: str) -> CharacterRange:
-        def _positive_end_col(
-            vim_buffer: "vim.Buffer", character_range: CharacterRange, text: str
+        def _calc_replaced_range(
+            start: CursorPosition,
+            inserted_lines: list[str],
         ) -> CharacterRange:
-            target_lines = text.split("\n")
-            n_target_lines = len(target_lines)
-            start, end = character_range.start, character_range.end
-            # Related lines.
-            lines = vim_buffer[start.line : end.line + 1]
-            n_lines = len(lines)
-
-            if n_target_lines == 1:
-                end_l = start.line
-                end_c = start.col + len(target_lines[-1])
-                cr = CharacterRange(start, CursorPosition(end_l, end_c))
-                if n_lines == 1:
-                    target_line = target_lines[0]
-                    new_line = lines[0][: start.col] + target_line + lines[0][end.col: ]
-                    vim_buffer[start.line : end.line + 1] = [new_line]
-                else:
-                    target_lines[0] = lines[0][: start.col] + target_lines[0] + lines[-1][end.col :]
-                    vim_buffer[start.line : end.line + 1] = target_lines
-                return cr
+            assert inserted_lines, "ImplementaionError."
+            end_l = start.line + len(inserted_lines) - 1
+            if len(inserted_lines) == 1:
+                end_c = start.col + len(inserted_lines[0])
             else:
-                end_l = start.line + n_target_lines - 1
-                end_c = len(target_lines[-1])
-                cr = CharacterRange(start, CursorPosition(end_l, end_c))
+                end_c = len(inserted_lines[-1])
+            return CharacterRange(start, CursorPosition(end_l, end_c))
 
-                target_lines[0] = lines[0][: start.col] + target_lines[0]
-                target_lines[-1] = target_lines[-1] + lines[-1][end.col :]
-                vim_buffer[start.line : end.line + 1] = target_lines
-                return cr
-
-
-        def _zero_end_col(
-            vim_buffer: "vim.Buffer", character_range: CharacterRange, text: str
-        ) -> CharacterRange:
-            start, end = character_range.start, character_range.end
-            assert end.col == 0
-            target_lines = text.split("\n") # It assueres that `target_lines` is not empty.
-            n_target_lines = len(target_lines)
-            assert target_lines
-            lines = vim_buffer[start.line : end.line]  # `end` line is not included.
-            n_lines = len(lines)
-            if len(target_lines) == 1:
-                end_l = start.line + n_target_lines - 1
-                end_c = start.col + len(target_lines[-1])
-                cr = CharacterRange(start, CursorPosition(end_l, end_c))
-
-                if n_lines == 0:
-                    assert start.col == 0 and end.col == 0, (start, end)
-                    vim_buffer[start.line : end.line] = target_lines
-                else:
-                    target_lines[0] = lines[0][:start.col] + target_lines[0]
-                    vim_buffer[start.line : end.line] = target_lines
-                return cr
+        def _resolve_surrounding(insert_lines: list[str], 
+                                 firstline_prefix: str | None = None,
+                                 lastline_suffix:  str | None = None) -> None:
+            assert insert_lines
+            firstline_prefix = firstline_prefix or ""
+            lastline_suffix = lastline_suffix or ""
+            if len(insert_lines) == 1:
+                insert_lines[0] = firstline_prefix + insert_lines[0] + lastline_suffix
             else:
-                end_l = start.line + n_target_lines - 1
-                end_c = len(target_lines[-1])
-                cr = CharacterRange(start, CursorPosition(end_l, end_c))
-                if n_lines == 0:
-                    assert start.col == 0 and end.col == 0
-                    vim_buffer[start.line : end.line] = target_lines
-                else:
-                    target_lines[0] = lines[0][:start.col] + target_lines[0]
-                    vim_buffer[start.line : end.line] = target_lines
-                return cr
-
+                insert_lines[0] = firstline_prefix + insert_lines[0]
+                insert_lines[-1] = insert_lines[-1] + lastline_suffix
 
         vim_buffer = self.buffer
+
+        start, end = character_range.start, character_range.end
+        target_lines = text.split("\n") # It assueres that `target_lines` is not empty.
+        assert target_lines
+        cr = _calc_replaced_range(start, target_lines)
         if character_range.end.col == 0:
-            return _zero_end_col(vim_buffer, character_range, text)
-        elif 0 < character_range.end.col:
-            return _positive_end_col(vim_buffer, character_range, text)
+            lines = vim_buffer[start.line : end.line]
+            firstline_prefix = lines[0][:start.col] if lines else None
+            lastline_suffix = None
+            _resolve_surrounding(target_lines, firstline_prefix, lastline_suffix)
+            vim_buffer[start.line : end.line] = target_lines
         else:
-            msg = "ImplementaionError of `VimBufferRangeSelector`"
-            raise AssertionError(msg)
+            lines = vim_buffer[start.line : end.line + 1]
+            firstline_prefix = lines[0][: start.col]
+            lastline_suffix = lines[-1][end.col: ]
+            _resolve_surrounding(target_lines, firstline_prefix, lastline_suffix)
+            vim_buffer[start.line : end.line + 1] = target_lines
+        return cr
