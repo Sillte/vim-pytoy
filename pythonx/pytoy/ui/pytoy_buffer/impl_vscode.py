@@ -61,15 +61,20 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     def append(self, content: str) -> None:
         if not content:
             return
+        content = self._normalize_lf_code(content)
         content = "\n" + content  # correspondence to `vim`.
         self.document.append(content)
 
+    def _normalize_lf_code(self, text: str) -> str:
+        return text.replace("\r\n", "\n").replace("\r", "\n")
+
     @property
     def content(self) -> str:
-        return self.document.content
-    
+        return self._normalize_lf_code(self.document.content)
+
+
     @property
-    def lines(self) -> list[str]:
+    def lines(self) -> list[str]: 
         # TODO: consider the more efficient implemntation.
         # For example, if you can get `bufnr`, 
         # it is possible to get the `vim.buffer[:] directly.
@@ -113,15 +118,14 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
             raise ValueError(f"`{self.buffer.document}` is invalid buffer in neovim")
         return VimBufferRangeHandler(bufnr).get_text(character_range)
 
-    def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> None:
+    def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> LineRange:
         bufnr = BufferURISolver.get_bufnr(self._buffer.document.uri)
         if bufnr is None:
             raise ValueError(f"`{self.buffer.document}` is invalid buffer in neovim")
         return VimBufferRangeHandler(bufnr).replace_lines(line_range, lines)
 
-    def replace_text(self, character_range: CharacterRange, text: str) -> None:
+    def replace_text(self, character_range: CharacterRange, text: str) -> CharacterRange:
         # TODO: Documentを直接扱った方がよいことが判明したら、変える
-        # その場合、この部分の引数も`Seleciton`に リファクタしたほうがいいね。
         #start, end = selection.start, selection.end
         #self.buffer.document.replace_range(text,
         #                                   start.line,
@@ -131,7 +135,11 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         bufnr = BufferURISolver.get_bufnr(self._buffer.document.uri)
         if bufnr is None:
             raise ValueError(f"`{self.buffer.document}` is invalid buffer in neovim")
-        return VimBufferRangeHandler(bufnr).replace_text(character_range, text)
+        cr = VimBufferRangeHandler(bufnr).replace_text(character_range, text)
+        # [TODO]: For synchronaization between `Document` and `vim.buffer`.
+        import vim
+        vim.command("sleep 100m")
+        return cr
 
     def _create_text_searcher(self, target_range: CharacterRange | None = None):
         return TextSearcher.create(self.buffer.lines, target_range)
@@ -150,3 +158,15 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         """return the all matched selections of `text`"""
         searcher = self._create_text_searcher(target_range=target_range)
         return searcher.find_all(text)
+
+
+    @property
+    def entire_character_range(self) -> CharacterRange:
+        start = CursorPosition(0, 0)
+        end_line = len(self.buffer.lines)
+        if self.buffer.lines:
+            end_col = len(self.buffer.lines[-1])
+        else:
+            end_col = 0
+        end = CursorPosition(end_line, end_col)
+        return CharacterRange(start, end)

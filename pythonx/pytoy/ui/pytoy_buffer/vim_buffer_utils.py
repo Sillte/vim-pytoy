@@ -21,9 +21,12 @@ class VimBufferRangeHandler:
         line1, line2 = line_range.start, line_range.end
         return self.buffer[line1:line2]
 
-    def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> None:
+    def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> LineRange:
         line1, line2 = line_range.start, line_range.end
+        line2 = max(line2, len(self.buffer))
         self.buffer[line1:line2] = lines
+        return LineRange(line1, line2)
+
 
     def get_text(self, character_range: CharacterRange) -> str:
         """`line` and `pos` are number acquried by `getpos`."""
@@ -51,7 +54,10 @@ class VimBufferRangeHandler:
                 return ""
             lines[0] = lines[0][start.col :]
             # NOTE: Vim buffer lines are newline-terminated
-            return "\n".join(lines) + "\n"
+            if end.line == len(vim_buffer):
+                return "\n".join(lines)
+            else:
+                return "\n".join(lines) + "\n"
 
         vim_buffer = self.buffer
         if character_range.end.col == 0:
@@ -62,31 +68,74 @@ class VimBufferRangeHandler:
             msg = "ImplementaionError of `VimBufferRangeSelector`"
             raise AssertionError(msg)
 
-    def replace_text(self, character_range: CharacterRange, text: str) -> None:
+    def replace_text(self, character_range: CharacterRange, text: str) -> CharacterRange:
         def _positive_end_col(
             vim_buffer: "vim.Buffer", character_range: CharacterRange, text: str
-        ) -> None:
+        ) -> CharacterRange:
             target_lines = text.split("\n")
+            n_target_lines = len(target_lines)
             start, end = character_range.start, character_range.end
             # Related lines.
             lines = vim_buffer[start.line : end.line + 1]
-            target_lines[0] = lines[0][: start.col] + target_lines[0]
-            target_lines[-1] = target_lines[-1] + lines[-1][end.col :]
-            vim_buffer[start.line : end.line + 1] = target_lines
+            n_lines = len(lines)
+
+            if n_target_lines == 1:
+                end_l = start.line
+                end_c = start.col + len(target_lines[-1])
+                cr = CharacterRange(start, CursorPosition(end_l, end_c))
+                if n_lines == 1:
+                    target_line = target_lines[0]
+                    new_line = lines[0][: start.col] + target_line + lines[0][end.col: ]
+                    vim_buffer[start.line : end.line + 1] = [new_line]
+                else:
+                    target_lines[0] = lines[0][: start.col] + target_lines[0] + lines[-1][end.col :]
+                    vim_buffer[start.line : end.line + 1] = target_lines
+                return cr
+            else:
+                end_l = start.line + n_target_lines - 1
+                end_c = len(target_lines[-1])
+                cr = CharacterRange(start, CursorPosition(end_l, end_c))
+
+                target_lines[0] = lines[0][: start.col] + target_lines[0]
+                target_lines[-1] = target_lines[-1] + lines[-1][end.col :]
+                vim_buffer[start.line : end.line + 1] = target_lines
+                return cr
+
 
         def _zero_end_col(
             vim_buffer: "vim.Buffer", character_range: CharacterRange, text: str
-        ) -> None:
+        ) -> CharacterRange:
             start, end = character_range.start, character_range.end
             assert end.col == 0
-            target_lines = text.split("\n")
+            target_lines = text.split("\n") # It assueres that `target_lines` is not empty.
+            n_target_lines = len(target_lines)
+            assert target_lines
             lines = vim_buffer[start.line : end.line]  # `end` line is not included.
-            if lines:
-                target_lines[0] = lines[0][: start.col] + target_lines[0]
-                vim_buffer[start.line : end.line] = target_lines
+            n_lines = len(lines)
+            if len(target_lines) == 1:
+                end_l = start.line + n_target_lines - 1
+                end_c = start.col + len(target_lines[-1])
+                cr = CharacterRange(start, CursorPosition(end_l, end_c))
+
+                if n_lines == 0:
+                    assert start.col == 0 and end.col == 0, (start, end)
+                    vim_buffer[start.line : end.line] = target_lines
+                else:
+                    target_lines[0] = lines[0][:start.col] + target_lines[0]
+                    vim_buffer[start.line : end.line] = target_lines
+                return cr
             else:
-                # e.g start.line == end.line, (3, 0), (3, 0)
-                vim_buffer[end.line: end.line] = target_lines
+                end_l = start.line + n_target_lines - 1
+                end_c = len(target_lines[-1])
+                cr = CharacterRange(start, CursorPosition(end_l, end_c))
+                if n_lines == 0:
+                    assert start.col == 0 and end.col == 0
+                    vim_buffer[start.line : end.line] = target_lines
+                else:
+                    target_lines[0] = lines[0][:start.col] + target_lines[0]
+                    vim_buffer[start.line : end.line] = target_lines
+                return cr
+
 
         vim_buffer = self.buffer
         if character_range.end.col == 0:
