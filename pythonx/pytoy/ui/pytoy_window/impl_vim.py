@@ -103,7 +103,7 @@ class PytoyWindowVim(PytoyWindowProtocol):
                 assert_never(unreachable)
 
     @property
-    def character_range(self) -> CharacterRange:
+    def selection(self) -> CharacterRange:
         selection = get_last_selection(self.winid)
         if selection:
             return selection
@@ -111,8 +111,8 @@ class PytoyWindowVim(PytoyWindowProtocol):
             return CharacterRange(self.cursor, self.cursor)
 
     @property
-    def line_range(self) -> LineRange:
-        return self.character_range.as_line_range(cut_first_line=False, cut_last_line=False)
+    def selected_line_range(self) -> LineRange:
+        return self.selection.as_line_range(cut_first_line=False, cut_last_line=False)
 
     def _from_vim_coords(self, vim_line: int, vim_col: int) -> CursorPosition:
         """Solves

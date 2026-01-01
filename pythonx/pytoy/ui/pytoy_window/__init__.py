@@ -55,12 +55,12 @@ class PytoyWindow(PytoyWindowProtocol):
         return self.impl.move_cursor(cursor, viewport_mode)
     
     @property
-    def character_range(self) -> CharacterRange:
-        return self.impl.character_range
+    def selection(self) -> CharacterRange:
+        return self.impl.selection
 
     @property
-    def line_range(self) -> LineRange:
-        return self.impl.line_range
+    def selected_line_range(self) -> LineRange:
+        return self.impl.selected_line_range
 
     # Below functions are not defined in PytoyWindowProtocol.
 
@@ -77,6 +77,14 @@ class PytoyWindow(PytoyWindowProtocol):
     def get_windows() -> list["PytoyWindow"]:
         impls = PytoyWindowProvider().get_windows()
         return [PytoyWindow(elem) for elem in impls]
+
+    @staticmethod
+    def open(source: str | Path | BufferSource,
+             param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place") -> "PytoyWindow":
+        """Open or create PytoyWindow.
+        """
+        impl = PytoyWindowProvider().open_window(source, param)
+        return PytoyWindow(impl)
 
 
 class PytoyWindowProvider(PytoyWindowProviderProtocol):

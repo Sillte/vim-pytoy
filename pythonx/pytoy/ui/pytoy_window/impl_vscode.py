@@ -84,7 +84,7 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         editor.set_cursor_position(line, col, reveal_type)
 
     @property
-    def character_range(self) -> CharacterRange:
+    def selection(self) -> CharacterRange:
         winid = self._to_winid()
         if not winid:
             return CharacterRange(self.cursor, self.cursor)
@@ -103,8 +103,8 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
 
 
     @property
-    def line_range(self) -> LineRange:
-        return self.character_range.as_line_range()
+    def selected_line_range(self) -> LineRange:
+        return self.selection.as_line_range()
 
 
 class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
