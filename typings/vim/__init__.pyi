@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Sequence
 
 def command(cmd: str) -> None: ...
 def eval(expr: str) -> Any: ...
@@ -6,6 +6,8 @@ def bindeval(expr: str) -> Any: ...
 
 # def vars() -> dict[str, Any]: ...
 vars: dict[str, Any]
+
+
 
 class Buffer:
     def __getitem__(self, name: Any) -> Any: ...
@@ -31,10 +33,14 @@ class Window:
     @cursor.setter
     def cursor(self, value: tuple[int, int]) -> None: ...
 
+class Tabpage: 
+    @property
+    def windows(self) -> Sequence[Window]: ...
+
 class Current:
     buffer: Buffer
     window: Window
-    tabpage: Any
+    tabpage: Tabpage
     line: str
 
 current: Current
@@ -42,3 +48,4 @@ current: Current
 options: Any
 buffers: list[Buffer]
 windows: list[Window]
+tabpages: list[Tabpage]

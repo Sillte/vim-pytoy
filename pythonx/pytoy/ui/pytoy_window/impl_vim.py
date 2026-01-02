@@ -83,12 +83,15 @@ class PytoyWindowVim(PytoyWindowProtocol):
 
     @property
     def cursor(self) -> CursorPosition:
-        line, col = self.window.cursor
-        return CursorPosition(line - 1, col)
+        vim_line, col = self.window.cursor
+        # NOTE: cursor is a little bit special (line: 1-based, cur: 0-based))
+        vim_col = col + 1 
+        return self._from_vim_coords(vim_line, vim_col)
 
     def move_cursor(self, cursor: CursorPosition,
                     viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None:
-        self.window.cursor = (cursor.line + 1, cursor.col)
+        vim_line, vim_col =  self._to_vim_coords(cursor)
+        self.window.cursor = (vim_line, vim_col)
         winid = self.winid
         match viewport_mode:
             case ViewportMoveMode.NONE:
@@ -114,6 +117,8 @@ class PytoyWindowVim(PytoyWindowProtocol):
     def selected_line_range(self) -> LineRange:
         return self.selection.as_line_range(cut_first_line=False, cut_last_line=False)
 
+    # VimCoords: (The coordination of VimScript: (line, col): 1-based.)
+
     def _from_vim_coords(self, vim_line: int, vim_col: int) -> CursorPosition:
         """Solves
         1. 1-base -> 0-base
@@ -126,6 +131,18 @@ class PytoyWindowVim(PytoyWindowProtocol):
         res_col = len(line_bytes[:byte_offset].decode('utf-8', errors='ignore'))
         return CursorPosition(n_line, res_col)
 
+    def _to_vim_coords(self, cursor: CursorPosition) -> tuple[int, int]:
+        """
+        1. 0-base -> 1-base.
+        2. handling of bytes.
+        """
+        lines = self.buffer.lines
+        max_line = len(lines)
+        if not max_line:
+            return (1, 1)
+        vim_line = min(max(0, cursor.line), max_line - 1) + 1
+        vim_col = len(lines[vim_line - 1][:cursor.col].encode('utf-8')) + 1
+        return (vim_line, vim_col)
 
 
 

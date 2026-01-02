@@ -47,6 +47,14 @@ class MockVimModule:
         
         def append(self, line: str):
             self._content.append(line)
+
+    class TabPage:
+        def __init__(self):
+            self._windows = []
+            
+        @property
+        def windows(self):
+            return self._windows
     
     class Current:
         """Mock vim.current"""
@@ -66,6 +74,7 @@ class MockVimModule:
         self.vars: Dict[str, Any] = {}
         self.windows: List[MockVimModule.Window] = []
         self.buffers: List[MockVimModule.Buffer] = []
+        self.tabpages: List[MockVimModule.TabPage] = []
         self.current = self.Current()
         self._eval_results: Dict[str, str] = {}
         self._commands: List[str] = []

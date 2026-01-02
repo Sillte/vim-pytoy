@@ -3,7 +3,7 @@ from enum import StrEnum
 from pathlib import Path 
 from typing import Literal, Self, TYPE_CHECKING, assert_never
 from dataclasses import dataclass
-from pytoy.infra.core.models import CursorPosition  
+from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
 
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol
@@ -16,7 +16,20 @@ class ViewportMoveMode(StrEnum):
     ENSURE_VISIBLE = "ensure_visibile"
     CENTER = "center"
     TOP = "top"
-    
+
+@dataclass(frozen=True)
+class ViewPort():
+    top_line: int  # The start number.  (0 starts.)
+    left_col: int # The left column number (0 starts.)
+    end_line: int  # The end line number, exclusive.  
+    right: int # The right column number (exclusive).
+    # If necessary, in the fugure.
+    ...
+    @property
+    def line_range(self) -> LineRange:
+        return LineRange(self.top_line, self.end_line)
+
+
 
 @dataclass
 class BufferSource:

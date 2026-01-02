@@ -21,12 +21,30 @@ class Editor(BaseModel):
         return Editor.model_validate(data)
 
     @staticmethod
-    def get_editors() -> Sequence["Editor"]:
+    def get_editors(only_visible: bool = True) -> Sequence["Editor"]:
         # As of 2025/11, there is no API to get non-visible editors in vscode.
         api = Api()
-        data_list = api.eval_with_return(
-            "vscode.window.visibleTextEditors", with_await=False
-        )
+
+        if only_visible:
+            # As of 2025/11, there is no API to get non-visible editors in vscode.
+            data_list = api.eval_with_return(
+                "vscode.window.visibleTextEditors", with_await=False
+            )
+        else:
+            # Get all open editors across all tab groups (visible and hidden)
+            data_list = api.eval_with_return(
+                """
+                vscode.window.tabGroups.all
+                    .flatMap(group => group.tabs)
+                    .filter(tab => tab.input && tab.input.uri)
+                    .map(tab => ({
+                        uri: tab.input.uri,
+                        document: tab.input,
+                        viewColumn: tab.group.viewColumn
+                    }))
+                """,
+                with_await=False
+            )
         return [Editor.model_validate(data) for data in data_list]
 
     @property

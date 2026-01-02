@@ -147,7 +147,7 @@ class TimerTaskManagerDebug:
 @CommandManager.register(name="PytoyExecute")
 def execute_pytoy(opts: OptsArgument):
     import vim
-    import pytoy 
+    import pytoy
     from pytoy.ui.utils import to_filepath
     from pathlib import Path
     name = " ".join([elem.strip() for elem in opts.fargs])

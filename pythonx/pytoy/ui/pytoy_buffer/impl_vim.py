@@ -2,8 +2,7 @@ from pytoy.infra.core.models import CursorPosition
 import vim
 from pathlib import Path
 from pytoy.infra.core.models import CharacterRange
-from typing import Sequence 
-
+from typing import Sequence, TYPE_CHECKING 
 
 VIM_ERROR = getattr(vim, "error", Exception)
 
@@ -11,6 +10,9 @@ from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorPro
 from pytoy.infra.core.models import CharacterRange, LineRange
 from pytoy.ui.pytoy_buffer.vim_buffer_utils import VimBufferRangeHandler
 from pytoy.ui.pytoy_buffer.text_searchers import TextSearcher
+
+if TYPE_CHECKING:
+    from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol
 
 
 class PytoyBufferVim(PytoyBufferProtocol):
@@ -97,6 +99,24 @@ class PytoyBufferVim(PytoyBufferProtocol):
     @property
     def range_operator(self) -> RangeOperatorProtocol:
         return RangeOperatorVim(self)
+
+    def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindowProtocol"]:
+        from pytoy.ui.pytoy_window.impl_vim import PytoyWindowVim
+
+        bufnr = self.buffer.number
+        if only_visible:
+            return [
+                PytoyWindowVim(window)
+                for window in vim.current.tabpage.windows
+                if window.buffer.number == bufnr
+            ]
+        else:
+            windows = []
+            for tabpage in vim.tabpages:
+                for window in tabpage.windows:
+                    if window.buffer.number == bufnr:
+                        windows.append(PytoyWindowVim(window))
+            return windows
 
 
 class RangeOperatorVim(RangeOperatorProtocol):

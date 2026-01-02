@@ -1,7 +1,10 @@
-from typing import Protocol, Sequence
+from typing import Protocol, Sequence, TYPE_CHECKING
 from pathlib import Path
 from pytoy.infra.core.models import CursorPosition
 from pytoy.infra.core.models import CharacterRange, LineRange
+
+if TYPE_CHECKING:
+    from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol
 
 
 class PytoyBufferProtocol(Protocol):
@@ -50,6 +53,15 @@ class PytoyBufferProtocol(Protocol):
     @property
     def range_operator(self) -> "RangeOperatorProtocol":
         ...
+
+    def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindowProtocol"]:
+        """Get windows displaying this buffer.
+        Args:
+            only_visible: If True, return only visible windows inside the same tab.
+                          If False, return all windows backeed recognizes.
+        """
+        ...
+
 
 
 class RangeOperatorProtocol(Protocol):
