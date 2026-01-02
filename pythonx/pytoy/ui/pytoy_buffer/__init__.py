@@ -8,10 +8,13 @@ This module is intended to provide the common interface for bufffer.
 """
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TYPE_CHECKING, Sequence
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol
 from pytoy.ui.pytoy_buffer.range_operator import make_range_operator  # noqa
 from pytoy.infra.core.models import CharacterRange, LineRange
+
+if TYPE_CHECKING:
+    from pytoy.ui.pytoy_window import PytoyWindow
 
 
 class PytoyBuffer(PytoyBufferProtocol):
@@ -84,6 +87,20 @@ class PytoyBuffer(PytoyBufferProtocol):
     @property
     def range_operator(self) -> RangeOperatorProtocol:
         return make_range_operator(self.impl)
+    
+    def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindow"]:
+        from pytoy.ui.pytoy_window import PytoyWindow
+        return [PytoyWindow(item) for item in self.impl.get_windows(only_visible=only_visible)]
+        
+    @property
+    def window(self) -> "PytoyWindow | None":
+        windows = self.get_windows()
+        if windows:
+            return windows[0]
+        windows  = self.get_windows(only_visible=False)
+        if windows:
+            return windows[0]
+        return None
 
 
 def make_buffer(stdout_name: str, mode: Literal["vertical", "horizontal"] = "vertical") -> PytoyBuffer:

@@ -17,6 +17,7 @@ class MockVim(MockVimModule):
         self.vars = {}
         self.windows = []
         self.buffers = []
+        self.tab_pages = []
         self._eval_results = {}
         self._commands = []
         self.current = self.Current()

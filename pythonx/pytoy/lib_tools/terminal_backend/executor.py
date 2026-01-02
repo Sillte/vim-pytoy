@@ -3,6 +3,7 @@ from typing import Mapping
 from pytoy.ui import PytoyBuffer
 from pytoy.ui.pytoy_buffer.queue_updater import QueueUpdater
 from pytoy.ui.pytoy_buffer import make_buffer
+from pytoy.ui.pytoy_window.models import ViewportMoveMode
 from pytoy.lib_tools.terminal_backend import TerminalBackend, TerminalBackendProvider
 from pytoy.lib_tools.terminal_backend.application import (
     AppClassManagerClass,
@@ -46,6 +47,14 @@ class TerminalExecutor:
         self._updater.register()
 
     def send(self, cmd: str):
+        window = self.buffer.window
+        if window and window.valid:
+            cr = self.buffer.range_operator.entire_character_range
+            cr.end.line
+            window.move_cursor(cr.end, ViewportMoveMode.TOP)
+        else:
+            print("Window of `TerminalExecutor` is not found.")
+
         self.backend.send(cmd)
 
     @property

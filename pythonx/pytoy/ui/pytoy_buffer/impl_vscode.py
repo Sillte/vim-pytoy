@@ -6,9 +6,12 @@ from pytoy.ui.vscode.document import Document
 from pytoy.ui.utils import to_filepath
 from pytoy.infra.core.models import CharacterRange, LineRange
 from pytoy.ui.pytoy_buffer.vim_buffer_utils import VimBufferRangeHandler
-from typing import Sequence
+from typing import Sequence, TYPE_CHECKING
 from pytoy.ui.pytoy_buffer.text_searchers import TextSearcher
 from pytoy.ui.vscode.utils import wait_until_true
+
+if TYPE_CHECKING:
+    from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol
 
 
 def _normalize_lf_code(text: str) -> str:
@@ -95,6 +98,13 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     @property
     def range_operator(self) -> RangeOperatorProtocol:
         return RangeOperatorVSCode(self)
+
+    def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindowProtocol"]:
+        from pytoy.ui.vscode.editor import Editor
+        from pytoy.ui.pytoy_window.impl_vscode import PytoyWindowVSCode
+        editors = [editor for editor in Editor.get_editors(only_visible=only_visible)
+                    if editor.uri == self.document.uri]
+        return [PytoyWindowVSCode(editor) for editor in editors]
 
 
 class RangeOperatorVSCode(RangeOperatorProtocol):
