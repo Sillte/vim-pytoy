@@ -33,7 +33,7 @@ class _DummyPipe:
 class _StdoutProxy:
     """Fallback for `print` is called while using the `stdout` / `stderr`
     in the other thread in neovim / vim. 
-    To address this nedd, we patch `sys.stdout` / `sys.stderr`. 
+    To address this need, we patch `sys.stdout` / `sys.stderr`. 
     """
     _timer_taskname: None | str  = None
     _stdout_queue: None | Queue = None
@@ -116,8 +116,9 @@ class _StdoutProxy:
             text += cls._fetch_text(cls._stdout_queue)
         # If empty, it should not be called. 
         # It breaks! 
-
+    
         cls._vim_message(text, level="ErrorMsg", with_echo=True)
+
 
         #if text:
         #    print(text, file=cls._original_stdout)
@@ -139,12 +140,12 @@ class _StdoutProxy:
             text += cls._fetch_text(cls._stderr_queue)
         # If empty, the below should not be called. It raises Exception!
         cls._vim_message(text, level=None, with_echo=True)
-            #print(text, file=cls._original_stderr)
-            # The below is not appropriate because other library may patch `sys.stdout`.
-            # print(text, sys.__stdout__) For the case where other library patch `sys.stdout`
-            # Especially, in vim case, `vim` seems to patch `sys.__original__stderr`.
-            # [ADD]: (2026/01/02): `print` does not seem to work in (VSCode+neovim) well, 
-            # # So, I introducedc `_vim\message`.  
+        #print(text, file=cls._original_stderr)
+        # The below is not appropriate because other library may patch `sys.stdout`.
+        # print(text, sys.__stdout__) For the case where other library patch `sys.stdout`
+        # Especially, in vim case, `vim` seems to patch `sys.__original__stderr`.
+        # [ADD]: (2026/01/02): `print` does not seem to work in (VSCode+neovim) well, 
+        # # So, I introducedc `_vim\message`.  
 
     @classmethod
     def _vim_message(cls, text: str, level: Literal["ErrorMsg"] | None = None, with_echo: bool = True) -> None:
@@ -155,13 +156,19 @@ class _StdoutProxy:
 
         for line in text.splitlines():
             safe = line.replace("'", "''")
-            vim.command(f"echom '{safe}'")
+            try:
+                vim.command(f"echom '{safe}'")
+            except Exception:
+                vim.command(f"echom 'UnknownLine'")
         if level:
             vim.command(f"echohl None")
 
         if with_echo:
-            safe = text.replace("'", "''")
-            vim.command(f"echo '{safe}'")
+            text = text.replace("'", "''")
+            try:
+                vim.command(f"echo '{text}'")
+            except Exception:
+                vim.command(f"echo 'UnknownLine'")
         else:
             vim.command(f"echo '[echom] is used. See `:messages`. '")
 
@@ -212,19 +219,23 @@ class ThreadWorker:
 
         def _check_status():
             if work_state.done:
-                # 終了していたらタイマーを止めてCallbackを呼ぶ
-                if work_state.error:
-                    if on_error:
-                        on_error(work_state.error)
+                try:
+                    if work_state.error:
+                        if on_error:
+                            on_error(work_state.error)
+                        else:
+                            err_type = type(work_state.error).__name__
+                            msg = f"{err_type}: {work_state.error}"
+                            vim.command(
+                                f"echohl ErrorMsg | echom '[ThreadWorker Error] {msg.replace(chr(39), chr(39) * 2)}' | echohl None"
+                            )
                     else:
-                        err_type = type(work_state.error).__name__
-                        msg = f"{err_type}: {work_state.error}"
-                        vim.command(
-                            f"echohl ErrorMsg | echom '[ThreadWorker Error] {msg.replace(chr(39), chr(39) * 2)}' | echohl None"
-                        )
-                else:
-                    if on_finish:
-                        on_finish(work_state.main_return)
+                        if on_finish:
+                            on_finish(work_state.main_return)
+                except Exception as e:
+                    raise TimerStopException() from e
+                # To prevent the infinite loop, if the problem occurs,
+                # Stop the timer and raise the exception.
                 raise TimerStopException()
 
         TimerTask.register(
@@ -232,3 +243,18 @@ class ThreadWorker:
             interval=polling_interval,
             name=f"TimerTaskThreadWorker_{thread.ident}",
         )
+
+    @classmethod
+    def add_message(cls, message: str) -> None:
+        """ This MUST be called in the main thread.
+        The message is added to `:messages`. 
+        The expected usecase is when you would like to store 
+        the information of exception `on_error`.   
+        However, if you use `print` or `echo`, 
+        it disturbs user-experience.   
+        So, only when you would like to store the excpetion details. 
+        You this function and notify the user to refer `:messages`.
+
+        """
+        message = message.replace("'", "''")
+        vim.command(f"echom '{message}'")

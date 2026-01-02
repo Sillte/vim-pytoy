@@ -3,8 +3,8 @@ from pytoy.command import CommandManager
 from pytoy.ui import make_buffer
 from pytoy.ui.pytoy_window import PytoyWindow, WindowCreationParam
 from pytoy.infra.command.models import OptsArgument
-from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_window import PytoyWindow, CharacterRange
+from pytoy.ui.notifications import EphemeralNotification
 
 from pytoy.infra.timertask import ThreadWorker
 from textwrap import dedent
@@ -12,7 +12,6 @@ from textwrap import dedent
 
 @CommandManager.register("PytoyLLM", range="")
 class PytoyLLMCommand:
-    
 
     def _open_config(self):
         from pytoy_llm import get_configuration_path
@@ -22,8 +21,6 @@ class PytoyLLMCommand:
 
 
     def __call__(self, opts: OptsArgument):
-        ...
-        print(opts.fargs)
         if opts.fargs and opts.fargs[0].strip() == "config":
             return self._open_config()
 
@@ -83,7 +80,7 @@ class PytoyLLMCommand:
             @property
             def id(self):
                 return self._id
-                
+
             @property
             def query_start(self) -> str: 
                 return f"[pytoy-llm][{self.id}]>$>"
@@ -91,7 +88,7 @@ class PytoyLLMCommand:
             @property
             def query_end(self) -> str: 
                 return f">$>[pytoy-llm][{self.id}]"
-            
+
             def construct_input(self, window: PytoyWindow, selection: CharacterRange) -> list[InputMessage]:
                 document = self.window.buffer.content
                 content = RewritePrompt(self.query_start, self.query_end, document).render()
@@ -118,17 +115,14 @@ class PytoyLLMCommand:
                     return 
                 cr = CharacterRange(start_range.start, end_range.end)
                 self.buffer.range_operator.replace_text(cr, output)
-                
+
             def on_error(self, exception: Exception) -> None:
-                print("PYTOY-LLM Exception")
-                print(exception)
+                ThreadWorker.add_message(str(exception))
+                EphemeralNotification().notify("LLM Error. See `:messages`.")
 
             def _gen_id(self) -> str:
                 import random
                 return str(random.randint(0, 10000))
-            
+
         action = OneAction(target_window)
         action.start()
-            
-
-
