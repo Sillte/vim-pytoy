@@ -10,12 +10,22 @@ from pytoy.infra.timertask import ThreadWorker
 from textwrap import dedent
 
 
-
-
 @CommandManager.register("PytoyLLM", range="")
 class PytoyLLMCommand:
+    
+
+    def _open_config(self):
+        from pytoy_llm import get_configuration_path
+        path = get_configuration_path()
+        param = WindowCreationParam.for_split("vertical", try_reuse=True)
+        PytoyWindow.open(path, param=param)
+
+
     def __call__(self, opts: OptsArgument):
         ...
+        print(opts.fargs)
+        if opts.fargs and opts.fargs[0].strip() == "config":
+            return self._open_config()
 
         current_window = PytoyWindow.get_current()
         current_buffer = current_window.buffer
@@ -23,6 +33,7 @@ class PytoyLLMCommand:
         from pytoy_llm import completion
         from pytoy_llm.models import InputMessage
         from pathlib import Path
+
         if Path(current_buffer.path).name != BUFFER_NAME:
             param = WindowCreationParam.for_split("vertical", try_reuse=True)
             target_window = PytoyWindow.open(BUFFER_NAME, param=param)
@@ -49,6 +60,10 @@ class PytoyLLMCommand:
                 - Keep the original intent and tone.
                 - You may rephrase, reorganize, or clarify the content.
                 - Prefer similar length to the original unless clarity or correctness requires otherwise.
+                - Select the appropriate language from the documents and query, either English or Japanese.
+                - Complete any incomplete sentences or bullet points.
+                - If the user provides hints like "???", "..." or placeholders, replace them with the most plausible information.
+                - If you need plceholders or ellipsis to balance correctness and conciseness, you "..." in bullet points.
 
                 Context:
                 The following is the entire document for reference:
@@ -90,7 +105,7 @@ class PytoyLLMCommand:
                 new_text = self.query_start + "\n" + text + "\n" + self.query_end
                 target_selection = operator.replace_text(self.selection, new_text)
                 inputs = self.construct_input(self.window, target_selection)
-                ThreadWorker.run(lambda : self._task_func(inputs), self.on_finish)
+                ThreadWorker.run(lambda : self._task_func(inputs), self.on_finish, self.on_error)
                 
             def _task_func(self, inputs: Sequence[InputMessage]) -> str:
                 return str(completion(list(inputs), output_format="str"))  # This is time consuming
@@ -103,6 +118,11 @@ class PytoyLLMCommand:
                     return 
                 cr = CharacterRange(start_range.start, end_range.end)
                 self.buffer.range_operator.replace_text(cr, output)
+                
+            def on_error(self, exception: Exception) -> None:
+                print("PYTOY-LLM Exception")
+                print(exception)
+
             def _gen_id(self) -> str:
                 import random
                 return str(random.randint(0, 10000))

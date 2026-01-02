@@ -4,7 +4,7 @@ from pytoy.infra.timertask.timer import TimerTask, TimerStopException
 
 import threading
 from queue import Queue, Empty, Full
-from typing import Callable, Any
+from typing import Callable, Any, Literal, assert_never
 
 from dataclasses import dataclass
 import sys, os
@@ -116,8 +116,11 @@ class _StdoutProxy:
             text += cls._fetch_text(cls._stdout_queue)
         # If empty, it should not be called. 
         # It breaks! 
-        if text:
-            print(text, file=cls._original_stdout)
+
+        cls._vim_message(text, level="ErrorMsg", with_echo=True)
+
+        #if text:
+        #    print(text, file=cls._original_stdout)
         # The below is not appropriate because other library may patch `sys.stdout`.
         # print(text, sys.__stdout__) For the case where other library patch `sys.stdout`
         # Especially, in vim case, `vim` seems to patch `sys.__original__stdout`.
@@ -135,17 +138,38 @@ class _StdoutProxy:
         if cls._stderr_queue:
             text += cls._fetch_text(cls._stderr_queue)
         # If empty, the below should not be called. It raises Exception!
-        if text:
-            print(text, file=cls._original_stderr)
-        # The below is not appropriate because other library may patch `sys.stdout`.
-        # print(text, sys.__stdout__) For the case where other library patch `sys.stdout`
-        # Especially, in vim case, `vim` seems to patch `sys.__original__stderr`.
+        cls._vim_message(text, level=None, with_echo=True)
+            #print(text, file=cls._original_stderr)
+            # The below is not appropriate because other library may patch `sys.stdout`.
+            # print(text, sys.__stdout__) For the case where other library patch `sys.stdout`
+            # Especially, in vim case, `vim` seems to patch `sys.__original__stderr`.
+            # [ADD]: (2026/01/02): `print` does not seem to work in (VSCode+neovim) well, 
+            # # So, I introducedc `_vim\message`.  
+
+    @classmethod
+    def _vim_message(cls, text: str, level: Literal["ErrorMsg"] | None = None, with_echo: bool = True) -> None:
+        if not text:
+            return
+        if level: 
+            vim.command(f"echohl {level}")
+
+        for line in text.splitlines():
+            safe = line.replace("'", "''")
+            vim.command(f"echom '{safe}'")
+        if level:
+            vim.command(f"echohl None")
+
+        if with_echo:
+            safe = text.replace("'", "''")
+            vim.command(f"echo '{safe}'")
+        else:
+            vim.command(f"echo '[echom] is used. See `:messages`. '")
+
 
     @classmethod
     def loop_function(cls): 
         cls._output_stdout()
         cls._output_stderr()
-
 
 
 @dataclass
@@ -193,7 +217,6 @@ class ThreadWorker:
                     if on_error:
                         on_error(work_state.error)
                     else:
-                        print(f"Error in thread: {work_state.error}")
                         err_type = type(work_state.error).__name__
                         msg = f"{err_type}: {work_state.error}"
                         vim.command(
