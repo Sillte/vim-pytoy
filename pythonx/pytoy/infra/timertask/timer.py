@@ -81,7 +81,7 @@ class TimerTask:
 
         if __name__ != "__main__":
             prefix = f"{__name__}."
-            import_prefix = f"from {__name__} import TimerTask, TimerStopException; "
+            import_prefix = f"from {__name__} import TimerTask, TimerStopException"
         else:
             prefix = ""
             import_prefix = " "
@@ -101,25 +101,29 @@ class TimerTask:
                     return
                 try:
                     func()
-                except {prefix}TimerStopException:
-                    if config.on_finish:
-                        config.on_finish('stopped')
+                except {prefix}TimerStopException as tse:
                     {prefix}TimerTask._schedule_deregister(name)
+                    cause = tse.__cause__
+                    if config.on_finish and (not cause):
+                        config.on_finish('stopped')
+                    elif config.on_error and cause:
+                        config.on_error(cause)
+                    elif cause:
+                        raise cause
                     return
                 except Exception as e:
+                    {prefix}TimerTask._schedule_deregister(name)
                     if config.on_error:
                         config.on_error(e)
-                    else:
-                        raise e
-                    {prefix}TimerTask._schedule_deregister(name)
-                    return
+                    raise e
+
                 repeat = status.repeat
                 if repeat > 0:
                     status.repeat = status.repeat - 1 
                     if status.repeat == 0:
+                        {prefix}TimerTask._schedule_deregister(name)
                         if config.on_finish:
                             config.on_finish("finished")
-                        {prefix}TimerTask._schedule_deregister(name)
                         return
             work()
             EOF
