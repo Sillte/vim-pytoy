@@ -1,11 +1,12 @@
 import vim
 from textwrap import dedent
 from typing import Callable
+import re
+
+_VIM_FUNC_NAME_RE = re.compile(r"[^0-9A-Za-z_]")
 
 type VimFunctionName = str
 
-
-_PYTOY_VIM_FUNCTION_MAPS: dict[VimFunctionName, Callable]  = dict()
 
 
 class PytoyVimFunctions:
@@ -21,7 +22,14 @@ class PytoyVimFunctions:
     * The wrapped python function signature must be `def func(*args).`
     """
 
-    FUNCTION_MAPS = _PYTOY_VIM_FUNCTION_MAPS
+    FUNCTION_MAPS : dict[VimFunctionName, Callable] = dict()
+    RETURN_VARIABLE_MAP: dict[VimFunctionName, str] = dict()
+
+    #Vim script / Vim function execution is single-threaded.
+    #Python callbacks are executed on Vim’s main event loop.
+    #However, Vim functions may be re-entrant.
+    #Therefore, global variables used for bridging must be uniquely named per call.
+
 
     @classmethod
     def to_vimfuncname(cls, func: Callable, *, prefix:str | None = None, name: str | None = None) -> str:
@@ -36,15 +44,16 @@ class PytoyVimFunctions:
         if prefix is None:
             prefix = "Pytoy_VIMFUNC"
 
-        # For `__name__`'s reference ` pytoy.func_utils` access must be passed.
         if name is None:
-            try:
-                name = func.__name__
-            except AttributeError:
-                name = func.__class__.__name__  # For callable of classes.
+            raw_name = getattr(func, "__name__", func.__class__.__name__)
+            if raw_name == "<lambda>":
+                raw_name = "lambda"
+        else:
+            raw_name = name
 
-        vim_funcname = f"{prefix}_{name}_{id(func)}"
-        return vim_funcname
+        safe_name = _VIM_FUNC_NAME_RE.sub("_", raw_name)
+
+        return f"{prefix}_{safe_name}_{id(func)}"
 
     @classmethod
     def register(cls, func, *, prefix: str | None =None, name: str | None = None) -> str:
@@ -58,11 +67,15 @@ class PytoyVimFunctions:
 
         """
         vim_funcname = cls.to_vimfuncname(func, prefix=prefix, name=name)
+        ret_var_name = f"{vim_funcname}_pytoy_return"
+        if vim_funcname in cls.FUNCTION_MAPS:
+            return vim_funcname
 
         procedures = dedent(f"""
         python3 << EOF
         args = vim.eval("a:000")
-        {__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}'](*args)
+        ret = {__name__}.PytoyVimFunctions.FUNCTION_MAPS['{vim_funcname}'](*args)
+        vim.vars['{ret_var_name}'] = ret
         EOF
         """).strip()
 
@@ -70,10 +83,13 @@ class PytoyVimFunctions:
             f"""
             function! {vim_funcname}(...)
             {procedures}
+            return g:{ret_var_name}
             endfunction
             """).strip()
         )
+
         cls.FUNCTION_MAPS[vim_funcname] = func
+        cls.RETURN_VARIABLE_MAP[vim_funcname] = ret_var_name
 
         return vim_funcname
 
@@ -89,3 +105,8 @@ class PytoyVimFunctions:
         if vim_funcname in cls.FUNCTION_MAPS:
             del cls.FUNCTION_MAPS[vim_funcname]
         vim.command(f"delfunction! {vim_funcname}")
+
+        if vim_funcname in cls.RETURN_VARIABLE_MAP:
+            ret_var = cls.RETURN_VARIABLE_MAP.pop(vim_funcname)
+            vim.command(f"execute 'unlet! g:{ret_var}'")
+
