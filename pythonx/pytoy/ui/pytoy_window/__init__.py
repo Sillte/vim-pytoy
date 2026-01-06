@@ -8,6 +8,7 @@ from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 
 from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
+from pytoy.infra.core.models import Event
 from typing import Sequence, Literal
 
 
@@ -61,6 +62,10 @@ class PytoyWindow(PytoyWindowProtocol):
     @property
     def selected_line_range(self) -> LineRange:
         return self.impl.selected_line_range
+    
+    @property
+    def on_closed(self) -> Event["PytoyWindowProtocol"]:
+        return self.impl.on_closed
 
     # Below functions are not defined in PytoyWindowProtocol.
 

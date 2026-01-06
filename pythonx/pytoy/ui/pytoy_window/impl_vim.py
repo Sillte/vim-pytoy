@@ -1,16 +1,86 @@
 from pathlib import Path
 import vim
-from typing import Sequence, assert_never, cast, Literal
-from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
+from typing import Sequence, assert_never, cast, Literal, Self
+from pytoy.infra.core.models import CursorPosition, CharacterRange, Event, EventEmitter, LineRange
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
 from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
-from pytoy.ui.pytoy_window.vim_window_utils import get_last_selection
+from pytoy.ui.pytoy_window.vim_window_utils import VimWinIDConverter, get_last_selection
+from pytoy.infra.events.winclosed import get_winclosed_event
+from weakref import WeakValueDictionary
 
 from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
+    PytoyWindowID
 )
+from dataclasses import dataclass 
+
+@dataclass
+class WindowEvents:
+    on_closed: Event[PytoyWindowID]
+    
+    @classmethod
+    def from_winid(cls, winid: PytoyWindowID) -> Self:
+        return cls(on_closed = get_winclosed_event(winid))
+
+
+class VimWindowKernel:
+    def __init__(self, winid: int):
+        self._winid = winid
+        # Value Object.
+        self._window_events = WindowEvents.from_winid(self._winid)
+        
+        # This is the event hook for deletion.
+        self._disposable = get_winclosed_event(winid).subscribe(lambda _: VimWindowKernelRegistry.dispose(winid))
+
+        
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, VimWindowKernel):
+            return False
+        return other.winid == self.winid
+
+
+    @property
+    def winid(self) -> int:
+        return self._winid
+    
+    @property
+    def window(self) -> "vim.Window | None":
+        return VimWinIDConverter.to_vim_window(self._winid)
+
+    @property
+    def buffer(self) -> "vim.Buffer | None":
+        if (vim_window:= self.window) is None:
+            raise RuntimeError("Already `Window` is deleted.")
+        return vim_window.buffer
+
+    @property
+    def valid(self) -> bool:
+        vim_window = self.window
+        if vim_window:
+            return bool(vim_window.valid)
+        return False 
+
+
+    @property
+    def on_closed(self) -> Event[PytoyWindowID]:
+        return self._window_events.on_closed
+
+
+class VimWindowKernelRegistry:
+    _kernels: WeakValueDictionary[int, VimWindowKernel] = WeakValueDictionary({})
+
+    @classmethod
+    def get(cls, winid: int) -> VimWindowKernel:
+        if winid not in cls._kernels:
+            state = VimWindowKernel(winid)
+            cls._kernels[winid] = state
+        return cls._kernels[winid]
+
+    @classmethod
+    def dispose(cls, winid: int):
+        cls._kernels.pop(winid, None)
 
 
 class PytoyWindowVim(PytoyWindowProtocol):
@@ -18,27 +88,42 @@ class PytoyWindowVim(PytoyWindowProtocol):
     Implementation of the PytoyWindowProtocol for the Vim editor.
     Provides methods to interact with the Vim UI for Pytoy.
     """
-
     # NOTE: In neovim, `vim.Window` does not exist.
-    def __init__(self, window: "vim.Window"):
-        self.window = window
-        self._winid = int(vim.eval(f"win_getid({window.number})"))
+    def __init__(self, winid: int, *, kernel_registry: type[VimWindowKernelRegistry] = VimWindowKernelRegistry):
+        self._kernel = kernel_registry.get(winid)
+        self._winid = self._kernel.winid
+
+        
+    @classmethod
+    def from_vim_window(cls, window: "vim.Window") -> Self:
+        return cls(VimWinIDConverter.from_vim_window(window))
 
     @property
     def winid(self) -> int:
-        return self._winid
+        return self._kernel.winid
 
     @property
     def buffer(self) -> PytoyBuffer:
-        impl = PytoyBufferVim(self.window.buffer)
+        # [TODO]: After refactoring of buffer ended.
+        if not (vim_buffer := self._kernel.buffer):
+            raise RuntimeError("Already `Window` is deleted.")
+        impl = PytoyBufferVim(vim_buffer)
         return PytoyBuffer(impl)
+    
+    @property
+    def window(self) -> "vim.Window | None":
+        return self._kernel.window
 
     @property
     def valid(self) -> bool:
-        return self.window.valid
+        return self._kernel.valid
+
 
     def is_left(self) -> bool:
         """Return whether this is the leftmost window."""
+        if not self.window:
+            return False
+
         winid = int(vim.eval(f"win_getid({self.window.number})"))
         info = vim.eval(f"getwininfo({winid})")
         if not info:
@@ -47,51 +132,53 @@ class PytoyWindowVim(PytoyWindowProtocol):
         return int(info.get("wincol", 2)) <= 1
 
     def close(self) -> bool:
-        if not self.window.valid:
+        vim_window = self.window
+        if not vim_window:
             return True
-        try:
-            if self.window == vim.current.window:
-                vim.command("close")
-            else:
-                vim.command(f"{self.window.number}wincmd c")
-        except Exception as e:
-            print(e)
-            return False
+        if not vim_window.valid:
+            return True
+        if vim_window == vim.current.window:
+            vim.command("close")
         else:
-            return True
+            vim.command(f"{vim_window.number}wincmd c")
+        return True
 
     def focus(self) -> bool:
-        if not self.window.valid:
+        vim_window = self.window
+        if (not vim_window) or (not vim_window.valid):
             return False
-        vim.current.window = self.window
+        vim.current.window = vim_window
         return True
+
+    @property
+    def on_closed(self) -> Event[PytoyWindowID]:
+        return self._kernel.on_closed
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PytoyWindowVim):
             return NotImplemented
-        return self.window == other.window
+        return self._kernel == other._kernel
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
-        windows = PytoyWindowProviderVim().get_windows()
-        if within_windows:
-            for window in windows:
-                if window != self:
-                    window.close()
-        if within_tabs:
-            self.focus()
-            vim.command("tabonly")
+        provider = PytoyWindowProviderVim()
+        provider.retain_unique_window(self, within_tabs=within_tabs, within_windows=within_windows)
 
     @property
     def cursor(self) -> CursorPosition:
-        vim_line, col = self.window.cursor
-        # NOTE: cursor is a little bit special (line: 1-based, cur: 0-based))
-        vim_col = col + 1 
+        if not (vim_window := self.window):
+            raise RuntimeError(f"Already Window is dead {self.winid}")
+        vim_line, col = vim_window.cursor
+        # NOTE: "vim.Window.cursor" is a little bit special (line: 1-based, cur: 0-based))
+        vim_col = col + 1
         return self._from_vim_coords(vim_line, vim_col)
 
     def move_cursor(self, cursor: CursorPosition,
                     viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None:
         vim_line, vim_col =  self._to_vim_coords(cursor)
-        self.window.cursor = (vim_line, vim_col)
+        if not (vim_window := self.window):
+            raise RuntimeError(f"Already Window is dead {self.winid}")
+        vim_window.cursor = (vim_line, vim_col)
+
         winid = self.winid
         match viewport_mode:
             case ViewportMoveMode.NONE:
@@ -148,14 +235,14 @@ class PytoyWindowVim(PytoyWindowProtocol):
 
 class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
     def get_current(self) -> PytoyWindowProtocol:
-        win = vim.current.window
-        return PytoyWindowVim(win)
+        vim_win = vim.current.window
+        return PytoyWindowVim(VimWinIDConverter.from_vim_window(vim_win))
 
     def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
         windows =  vim.current.tabpage.windows # For consistey with visibleEditors in VSCode.
         if only_normal_buffers:
-            return [PytoyWindowVim(elem) for elem in windows if PytoyBufferVim(elem.buffer).is_normal_type]
-        return [PytoyWindowVim(elem) for elem in windows]
+            return [PytoyWindowVim.from_vim_window(elem) for elem in windows if PytoyBufferVim(elem.buffer).is_normal_type]
+        return [PytoyWindowVim.from_vim_window(elem) for elem in windows]
 
     def open_window(self,
                     source: str | Path | BufferSource,
@@ -171,7 +258,7 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
         window = self._create_window(source, param)
         if stored_winid > 0:
             vim.command(f"call win_gotoid({stored_winid})")
-        return PytoyWindowVim(window)
+        return PytoyWindowVim.from_vim_window(window)
 
 
     def _create_window(self, source: BufferSource, param: WindowCreationParam) -> "vim.Window":
@@ -182,8 +269,11 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
             anchor = self.get_current()
         anchor = cast(PytoyWindowVim, anchor)
 
-
-        base_winid = int(vim.eval(f"win_getid({anchor.window.number})"))
+        if not (anchor_vim_window:= anchor.window):
+            print("Anchor Window is already dead.")
+            base_winid = 0
+        else:
+            base_winid = int(vim.eval(f"win_getid({anchor_vim_window.number})"))
 
         if base_winid > 0:
             vim.command(f"call win_gotoid({base_winid})")
@@ -228,5 +318,15 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
             if winnr <= 0:
                 continue
             if _is_equal(window.buffer, bufname):
-                return PytoyWindowVim(window)
+                return PytoyWindowVim.from_vim_window(window)
         return None
+
+    def retain_unique_window(self, target_window: PytoyWindowVim, within_tabs: bool = False, within_windows: bool = True) -> None:
+        windows = self.get_windows()
+        if within_windows:
+            for window in windows:
+                if window != target_window:
+                    window.close()
+        if within_tabs:
+            target_window.focus()
+            vim.command("tabonly")

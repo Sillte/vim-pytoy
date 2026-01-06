@@ -1,44 +1,30 @@
-from pytoy.infra.autocmd import VimAutocmd, AutocmdManager, get_autocmd_manager
-from pytoy.infra.events.models import EventSourceProtocol, Event, EventEmitter
+from pytoy.infra.autocmd.autocmd_manager import get_autocmd_manager, AutoCmdManager, VimAutocmd, EmitSpec, PayloadMapper
+from pytoy.infra.autocmd.vim_autocmd import EmitterPayload
 
-from typing import Callable
+from pytoy.infra.core.models import Event, EventEmitter
+from pytoy.infra.core.models import Event, Listener, Disposable
+
+from typing import Callable, Sequence, Any
 
 
-type WinClosedCallback = Callable[[int], None]
 
-# AutocmdManager manages Vim autocmds which are global to the Vim process.
-# Therefore, a single shared instance is used by default.
+_any_win_closed_group = "PytoyAnyWinClosedGroupAutocmd"
+_cached_win_closed_event: Event[int] | None = None
 
-class WinClosedEventSource(EventSourceProtocol):
-    def __init__(self, win_id: int, autocmd_manager: AutocmdManager | None = None) -> None:
-        self._emitter = EventEmitter[int]()
-        self._event = self._emitter.event
-        self._emitted = False
+def _get_any_win_closed_autocmd() -> VimAutocmd[int]:
+    manager = get_autocmd_manager()
+    emit_spec = EmitSpec(event="WinClosed")
+    payload_mapper = PayloadMapper(arguments=["afile"], transform=lambda args: int(args[0]))
+    return manager.register(_any_win_closed_group, emit_spec, payload_mapper)
 
-        self.winid = win_id
-        if autocmd_manager is None:
-            autocmd_manager = get_autocmd_manager()
-        
-        group = f"pytoy_event_winclosed_{self.winid}"
-        self.group = group
-        self.autocmd_manager = autocmd_manager
-        self.autocmd = autocmd_manager.create_or_get_autocmd(event="WinClosed", once=False, group=group)
-        self.autocmd.register(self._on_autocmd, ["afile"])
 
-    @property
-    def event(self) -> Event:
-        return self._event
+def _get_base_winclosed_event() -> Event[int]:
+    global _cached_win_closed_event
+    if _cached_win_closed_event is None:
+        autocmd = _get_any_win_closed_autocmd()
+        _cached_win_closed_event = autocmd.event
+    return _cached_win_closed_event
 
-    def _on_autocmd(self, afile: str):
-        winid = int(afile)
-        if winid != self.winid or self._emitted:
-            return 
-
-        self._emitter.fire(winid)
-        self._emitted = True
-        # This is called only once, so delete the autocmd. 
-        self.autocmd_manager.delete_autocmd(self.group)
-
-    @property
-    def emitted(self) -> bool:
-        return self._emitted
+def get_winclosed_event(winid: int) -> Event[int]:
+    base_event = _get_base_winclosed_event()
+    return base_event.filter(lambda _id: _id == winid).once()
