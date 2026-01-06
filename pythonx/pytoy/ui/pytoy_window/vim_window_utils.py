@@ -52,3 +52,26 @@ def get_last_selection(winid: int) -> CharacterRange | None:
             p2 = CursorPosition(e_pos[1], 0) # 0-based, and next line's start.
             return CharacterRange(p1, p2)
     return None
+
+
+class VimWinIDConverter:
+
+    @classmethod
+    def to_vim_window(cls, winid: int) -> "vim.Window | None":
+        tabwin = vim.eval(f"win_id2tabwin({winid})")
+        if isinstance(tabwin, str):
+            import ast
+            tabwin = ast.literal_eval(tabwin)
+        tabnr, winnr = map(int, tabwin)
+        if tabnr > 0 and winnr > 0:
+            try:
+                return vim.tabpages[tabnr - 1].windows[winnr - 1]
+            except IndexError:
+                return None
+        return None
+
+    @classmethod
+    def from_vim_window(cls, window: "vim.Window") -> int:
+        if hasattr(window, "handle"):
+            return int(window.handle)
+        return int(vim.eval(f"win_getid({window.number})"))

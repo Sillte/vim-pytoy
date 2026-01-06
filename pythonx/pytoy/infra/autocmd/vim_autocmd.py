@@ -1,10 +1,86 @@
 import vim
 from pytoy.infra.vim_function import PytoyVimFunctions, VimFunctionName
 from typing import Callable, Any, Literal, assert_never, Sequence
+from pytoy.infra.core.models import Event, Listener, Disposable, EventEmitter, Listener, Disposable
 
-AutocmdArgument = Literal["count", "event", "abuf", "afile"]
+ArgumentSpec = Literal["count", "event", "abuf", "afile"]
 
-class VimAutocmd:
+from dataclasses import dataclass, field
+
+
+type Group = str
+
+@dataclass(frozen=True)
+class EmitSpec:
+    event: str  # In reality, this is Vim Event.  
+    pattern: str = "*"
+    once: bool = False
+
+EmitterPayload = tuple[Any, ...]
+
+@dataclass(frozen=True)
+class PayloadMapper[T]:
+    arguments: Sequence[ArgumentSpec]
+    transform: Callable[[EmitterPayload], T]
+
+
+ArgumentSpecs = Sequence[ArgumentSpec]
+DispatcherFuncName = str
+
+
+@dataclass
+class VimAutocmd[T: Any]:
+    group: str  # Entity ID
+    event_spec: EmitSpec
+    payload_mapper: PayloadMapper[T]
+
+
+    def __post_init__(self) -> None:
+        self._emitter = EventEmitter[EmitterPayload]()
+
+    @property
+    def emitter(self) -> EventEmitter[EmitterPayload]:
+        return self._emitter
+
+    @property
+    def event(self) -> Event[T]:
+        return self._emitter.event.map(self.payload_mapper.transform) # noqa:  # notype
+
+    def _to_args_str(self) -> str: 
+        """Return the arguments inside of the parentheses.
+        e.g.: {FunctionName}({Return})
+        """
+        def _to_arg_str(argument: ArgumentSpec) -> str:
+            match argument:
+                case "count": return "v:count"
+                case "event": return "v:event"
+                case "abuf": return "expand('<abuf>')"
+                case "afile": return "expand('<afile>')"
+                case _:
+                    assert_never(argument)
+        arg_strs = [_to_arg_str(arg) for arg in self.payload_mapper.arguments]
+        return ",".join(arg_strs)
+    
+    def make_command(self, dispatcher_funcname: DispatcherFuncName) -> str:
+        """Return the commands of `augroup`. 
+        Note: `Dispatcher (Vim) Function`: The first argument is the group(Entity Id of Autocmd).
+        After that, it takes the arbitrary number of arguments. 
+        """
+        emitter_spec = self.event_spec
+        once_flag = "++once" if self.event_spec.once else ""
+        arg_list_str = self._to_args_str()
+
+        full_command = (
+            f"augroup {self.group} | "
+            "autocmd! | "
+            f"autocmd {emitter_spec.event} {emitter_spec.pattern} {once_flag} call {dispatcher_funcname}('{self.group}', {arg_list_str}) | "
+            "augroup END"
+        )
+        return full_command
+
+
+
+class VimAutocmdOld:
     # For fallback `group` name.
     count_index: int = 0
     
@@ -28,7 +104,7 @@ class VimAutocmd:
         self._vim_funcname: VimFunctionName | None = None
 
     def __eq__(self, other: object) -> bool:
-        if other and isinstance(other, VimAutocmd):
+        if other and isinstance(other, VimAutocmdOld):
             return (self.event == other.event and 
                     self.pattern == other.pattern and
                     self.group == other.group and 
@@ -43,7 +119,7 @@ class VimAutocmd:
     def funcname(self) -> VimFunctionName | None:
         return self._vim_funcname
 
-    def _verify_function(self, fn: Callable[[Any], None], arguments: Sequence[AutocmdArgument]) -> None:
+    def _verify_function(self, fn: Callable[[Any], None], arguments: Sequence[ArgumentSpec]) -> None:
         import inspect
 
         sig = inspect.signature(fn)
@@ -70,8 +146,8 @@ class VimAutocmd:
             )
 
  
-    def register(self, fn: Callable[[Any], None], arguments: Sequence[AutocmdArgument] | None = None) -> VimFunctionName:
-        def _to_arg_str(argument: AutocmdArgument) -> str:
+    def register(self, fn: Callable[[Any], None], arguments: Sequence[ArgumentSpec] | None = None) -> VimFunctionName:
+        def _to_arg_str(argument: ArgumentSpec) -> str:
             match argument:
                 case "count": return "v:count"
                 case "event": return "v:event"
@@ -84,13 +160,6 @@ class VimAutocmd:
             arguments = []
         assert arguments is not None
         self._verify_function(fn, arguments)
-        if self._vim_funcname:
-            if self._vim_funcname == PytoyVimFunctions.to_vimfuncname(fn):
-                print(f"Already the same function name is registered `{self.funcname=}`")
-                return self._vim_funcname
-            else:
-                raise ValueError("The register is invoked twice with different function.")
-
         self._vim_funcname = PytoyVimFunctions.register(fn)
 
         arg_strs = [_to_arg_str(arg) for arg in arguments]
@@ -113,9 +182,12 @@ class VimAutocmd:
         return self._vim_funcname
 
     def deregister(self):
-        vim.command(f"augroup {self.group} | autocmd! | augroup END")
-        if self._vim_funcname is not None:
-            PytoyVimFunctions.deregister(self._vim_funcname)
-            self._vim_funcname = None
+        from pytoy.infra.timertask import TimerTask
+        def _inner():
+            vim.command(f"augroup {self.group} | autocmd! | augroup END")
+            if self._vim_funcname is not None:
+                PytoyVimFunctions.deregister(self._vim_funcname)
+                self._vim_funcname = None
+        TimerTask.execute_oneshot(_inner, interval=0)
 
 

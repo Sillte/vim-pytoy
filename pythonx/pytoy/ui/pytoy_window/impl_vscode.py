@@ -5,16 +5,18 @@
 
 from pathlib import Path
 from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
+from pytoy.infra.core.models import Event
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.ui.vscode.editor.models import TextEditorRevealType
 from pytoy.ui.vscode.uri import Uri
 import vim  # (vscode-neovim extention)
-from typing import Sequence, Literal, assert_never, cast
+from typing import Sequence, Literal, assert_never, cast, Self
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_buffer.impl_vscode import PytoyBufferVSCode
 from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
+    PytoyWindowID,
 )
 from pytoy.ui.vscode.document import Api, Document
 from pytoy.ui.vscode.editor import Editor
@@ -22,11 +24,15 @@ from pytoy.ui.vscode.utils import wait_until_true
 from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
 
 from pytoy.ui.pytoy_window.vim_window_utils import get_last_selection
+from .impl_vim import VimWindowKernel, VimWindowKernelRegistry
 
 
 class PytoyWindowVSCode(PytoyWindowProtocol):
     def __init__(self, editor: Editor):
         self.editor = editor
+        winid = self._to_winid()
+        assert winid, "Window cannot be created"
+        self._state = VimWindowKernelRegistry.get(winid)
 
     @property
     def buffer(self) -> PytoyBuffer:
@@ -105,6 +111,10 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
     @property
     def selected_line_range(self) -> LineRange:
         return self.selection.as_line_range()
+
+    @property
+    def on_closed(self) -> Event[PytoyWindowID]:
+        return self._state.on_closed
 
 
 class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):

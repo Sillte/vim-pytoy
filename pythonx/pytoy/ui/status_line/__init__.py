@@ -30,12 +30,16 @@ def _get_impl() -> StatusLineManagerProtocol:
     ui_enum = get_ui_enum()
 
     if ui_enum == UIEnum.VIM or ui_enum == UIEnum.NVIM:
+        import vim
         from pytoy.ui.status_line.impl_vim import StatusLineManagerVim
-        return StatusLineManagerVim()
+        window = vim.current.window
+        return StatusLineManagerVim(window)
     elif ui_enum == UIEnum.VSCODE:
         # Currenty, rely on the mechanism of `neovim-vscode` extension.
+        import vim
         from pytoy.ui.status_line.impl_vim import StatusLineManagerVim
-        return StatusLineManagerVim()
+        window = vim.current.window
+        return StatusLineManagerVim(vim.current.window)
     else:
         raise ValueError(f"Unknown UI environment: {ui_enum}")
 

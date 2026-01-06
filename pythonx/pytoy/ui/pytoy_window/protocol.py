@@ -1,10 +1,13 @@
-from typing import Protocol, Sequence, Literal
+from __future__ import annotations
+from typing import Protocol, Sequence, Literal, Self, Any
 from pathlib import Path
 
 from pytoy.ui.pytoy_buffer import PytoyBuffer
-from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
+from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange, Event
 from pytoy.ui.pytoy_window.models import ViewportMoveMode
 from pytoy.ui.pytoy_window.models import BufferSource, WindowCreationParam
+
+PytoyWindowID = Any
 
 
 class PytoyWindowProtocol(Protocol):
@@ -42,6 +45,10 @@ class PytoyWindowProtocol(Protocol):
 
     @property
     def selected_line_range(self) -> LineRange:
+        ...
+
+    @property
+    def on_closed(self) -> Event[PytoyWindowID]:
         ...
 
 

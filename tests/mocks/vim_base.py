@@ -103,6 +103,8 @@ class MockVimModule:
             return 0
         if expr.startswith("win_getid("):
             return 1001
+        if expr.startswith("win_id2tabwin("):
+            return [1, 1]
         return self._eval_results.get(expr, "")
 
     def exec_lua(self, command: str) -> Any:

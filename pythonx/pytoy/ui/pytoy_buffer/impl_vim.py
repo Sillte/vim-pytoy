@@ -106,7 +106,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
         bufnr = self.buffer.number
         if only_visible:
             return [
-                PytoyWindowVim(window)
+                PytoyWindowVim.from_vim_window(window)
                 for window in vim.current.tabpage.windows
                 if window.buffer.number == bufnr
             ]
@@ -115,7 +115,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
             for tabpage in vim.tabpages:
                 for window in tabpage.windows:
                     if window.buffer.number == bufnr:
-                        windows.append(PytoyWindowVim(window))
+                        windows.append(PytoyWindowVim.from_vim_window(window))
             return windows
 
 
