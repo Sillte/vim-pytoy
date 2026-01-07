@@ -2,7 +2,6 @@
 # * Editor: Editor of VSCode.
 # * Editor of PytoyWindow: the buffers of windows is managed in neovim.
 
-
 from pathlib import Path
 from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
 from pytoy.infra.core.models import Event
@@ -24,15 +23,142 @@ from pytoy.ui.vscode.utils import wait_until_true
 from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
 
 from pytoy.ui.pytoy_window.vim_window_utils import get_last_selection
-from .impl_vim import VimWindowKernel, VimWindowKernelRegistry
+from dataclasses import dataclass
+from pytoy.infra.events.winclosed import get_winclosed_event
+from weakref import WeakValueDictionary
+from .vim_window_utils import VimWinIDConverter
+
+
+
+class WindowURISolver:
+    
+    @classmethod
+    def to_uri(cls, winid: int) -> Uri | None: 
+        bufnr = int(vim.eval(f"winbufnr({winid})"))
+        return BufferURISolver.get_bufnr_to_uris().get(bufnr)
+    
+    @classmethod
+    def from_uri(cls, uri: Uri) -> int | None: 
+        bufnr = BufferURISolver.get_bufnr(uri)
+        if not bufnr:
+            return None
+        ret =  int(vim.eval(f"bufwinid({bufnr})"))
+        if ret == -1:
+            return None
+        return ret
+
+@dataclass
+class WindowEvents:
+    on_closed: Event[PytoyWindowID]
+    
+    @classmethod
+    def from_winid(cls, winid: PytoyWindowID) -> Self:
+        return cls(on_closed = get_winclosed_event(winid))
+
+
+class VSCodeWindowKernel:
+    def __repr__(self):
+        return f"WindowKernel({self._winid=})"
+    def __init__(self, winid: int):
+        self._winid = winid
+        # URI: must be the unique over the lifetype of `vim.Window`.
+
+        uri = self.uri
+        if uri is None:
+            raise RuntimeError(f"Given `{winid=}` is invalid.")
+        self._snapped_uri: Uri | None = uri # This is for debug purpose.
+
+        # Value Object.
+        self._window_events = WindowEvents.from_winid(self._winid)
+        
+        # This is the event hook for deletion.
+        def _dispose(winid: int):
+            VSCodeWindowKernelRegistry.dispose(self._winid)
+        self._disposable = get_winclosed_event(winid).subscribe(_dispose)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, VSCodeWindowKernel):
+            return False
+        return other.winid == self.winid
+
+    @property
+    def winid(self) -> int:
+        return self._winid
+
+    @property
+    def uri(self) -> Uri | None:
+        return WindowURISolver.to_uri(self.winid)
+
+
+    @property
+    def editor(self) -> Editor | None:
+        """It returns one of `Editor` which can correspond to `self._winid`. 
+        """
+        editors = self.editors
+        if not editors:
+            return None
+        elif len(editors) == 1:
+            return editors[0]
+        else:
+            """NOTE:
+            Multiple editors may correspond to a single Vim window.
+            This implementation arbitrarily selects the first one.
+            """
+            return editors[0]
+
+    @property
+    def editors(self) -> list[Editor]:
+        uri = WindowURISolver.to_uri(self.winid)
+        return [editor for editor in Editor.get_editors() if editor.uri == uri]
+
+    @property
+    def valid(self) -> bool:
+        return bool(self.editor)
+
+    @property
+    def on_closed(self) -> Event[PytoyWindowID]:
+        return self._window_events.on_closed
+
+
+class VSCodeWindowKernelRegistry:
+    """In neovim-vscode extention, 
+    `Vim.Window` has the unique bufname, which correspond to `URI`. 
+    That is, the entity id of `VimCodeWindoeKernel` is (winid, URI).
+    """
+    _kernels: WeakValueDictionary[int, VSCodeWindowKernel] = WeakValueDictionary({})
+
+    @classmethod
+    def get(cls, winid: int) -> VSCodeWindowKernel:
+        if winid not in cls._kernels:
+            state = VSCodeWindowKernel(winid)
+            cls._kernels[winid] = state
+        return cls._kernels[winid]
+
+    @classmethod
+    def dispose(cls, winid: int):
+        cls._kernels.pop(winid, None)
+
 
 
 class PytoyWindowVSCode(PytoyWindowProtocol):
-    def __init__(self, editor: Editor):
-        self.editor = editor
-        winid = self._to_winid()
-        assert winid, "Window cannot be created"
-        self._state = VimWindowKernelRegistry.get(winid)
+    def __init__(self, winid: int):
+        self._kernel = VSCodeWindowKernelRegistry.get(winid)
+        
+    @property
+    def winid(self) -> PytoyWindowID:
+        return self._kernel.winid
+        
+    @property
+    def editor(self) -> Editor:
+        editor = self._kernel.editor
+        if editor is None:
+            raise ValueError(f"Editor does not exist, {self._kernel}")
+        return editor
+
+    @property
+    def kernel(self) -> VSCodeWindowKernel:
+        return self._kernel
+
 
     @property
     def buffer(self) -> PytoyBuffer:
@@ -41,7 +167,7 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
 
     @property
     def valid(self) -> bool:
-        return self.editor.valid
+        return self._kernel.valid
 
     def is_left(self) -> bool:
         return self.editor.viewColumn == 1
@@ -50,8 +176,10 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         return self.editor.close()
 
     def focus(self) -> bool:
-        self.editor.focus()
-        return True
+        if self.kernel.editor:
+           self.kernel.editor.focus()
+           return True
+        return False
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PytoyWindowVSCode):
@@ -91,10 +219,9 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
 
     @property
     def selection(self) -> CharacterRange:
-        winid = self._to_winid()
-        if not winid:
+        if not self.winid:
             return CharacterRange(self.cursor, self.cursor)
-        selection = get_last_selection(winid)
+        selection = get_last_selection(self.winid)
         if selection:
             return selection
         return CharacterRange(self.cursor, self.cursor)
@@ -114,19 +241,23 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
 
     @property
     def on_closed(self) -> Event[PytoyWindowID]:
-        return self._state.on_closed
+        return self._kernel.on_closed
 
 
 class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
     def get_current(self) -> PytoyWindowProtocol:
-        return PytoyWindowVSCode(Editor.get_current())
+        uri = Editor.get_current().uri
+        winid = WindowURISolver.from_uri(uri)
+        if winid is None:
+            raise RuntimeError(f"Current Window does not exist. {uri=}")
+        return PytoyWindowVSCode(winid)
 
     def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
-        editors = self._get_editors()
-        windows = [PytoyWindowVSCode(elem) for elem in editors]
+        winids = [VimWinIDConverter.from_vim_window(window) for window in vim.windows]
+        windows = [PytoyWindowVSCode(winid) for winid in winids]
         if only_normal_buffers: 
-            windows = [win for win in windows if win.buffer.is_normal_type]
-        return windows 
+            windows = [win for win in windows if win.kernel.editor and win.buffer.is_normal_type]
+        return windows
 
     def _get_editors(self):
         editors = Editor.get_editors()
@@ -139,17 +270,24 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         source = source if isinstance(source, BufferSource) else BufferSource.from_any(source)
         param = param if isinstance(param, WindowCreationParam) else WindowCreationParam.from_literal(param)
 
+        uri = self._to_uri(source.name, type=source.type)
         if param.try_reuse:
-            if editor:= self._get_editor_by_bufname(source.name, type=source.type):
-                window =  PytoyWindowVSCode(editor)
+            if (winid := WindowURISolver.from_uri(uri)):
+                window =  PytoyWindowVSCode(winid)
                 if param.cursor:
                     window.move_cursor(param.cursor)
+                return window
 
-        current = self.get_current()
+        current =  self.get_current()
+        current_editor = current.editor
         editor = self._create_editor(source, param)
-        flag = wait_until_true(lambda: BufferURISolver.get_bufnr(editor.uri) is not None, timeout=1.0)
-        current.focus()
-        return PytoyWindowVSCode(editor)
+        if not current.focus():
+            print(f"{current} cannot be focused.")
+        flag = wait_until_true(lambda: WindowURISolver.from_uri(editor.uri) is not None, timeout=1.0)
+        winid = WindowURISolver.from_uri(uri)
+        if not winid:
+            raise RuntimeError(f"Synchronization of `{uri=}` and `winid` failed. ", flag) 
+        return PytoyWindowVSCode(winid)
 
 
     def _create_editor(self,
@@ -161,15 +299,7 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         anchor = cast(PytoyWindowVSCode, anchor)
 
         anchor.focus()
-
-        # generation of uri
-        match source.type:
-            case "file":
-                uri = Uri.from_filepath(source.name)
-            case "nofile":
-                uri = Uri.from_untitled_name(source.name)
-            case _:
-                assert_never(source.type)
+        uri = self._to_uri(source.name, type=source.type)
 
         if param.target == "in-place":
             editor = anchor.editor.show(uri)
@@ -196,11 +326,7 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
 
         raise RuntimeError("Implementation Error") 
 
-
-    def _get_editor_by_bufname(
-        self, bufname: str, *, type: Literal["file", "nofile"] = "nofile", 
-    ) -> Editor | None:
-        editors = Editor.get_editors()
+    def _to_uri(self, bufname: str, *, type: Literal["file", "nofile"] = "nofile",) -> Uri:
         match type: 
             case "file":
                 query_uri = Uri.from_filepath(bufname)
@@ -208,9 +334,5 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
                 query_uri = Uri.from_untitled_name(bufname)
             case _:
                 assert_never(type)
-        for editor in editors:
-            if editor.document.uri == query_uri:
-                return editor
-        return None
-
+        return query_uri
 
