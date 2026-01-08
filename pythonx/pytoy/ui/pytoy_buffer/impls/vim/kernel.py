@@ -47,5 +47,5 @@ class VimBufferKernel(MortalEntityProtocol):
     @property
     def lines(self) -> list[str]:
         buffer = self.buffer
-        return buffer.lines[:] if buffer else []
+        return buffer[:] if buffer else []
 
