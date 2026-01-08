@@ -34,5 +34,9 @@ class BufferURISolver:
         return cls.get_uri_to_bufnr().get(uri)
 
     @classmethod
+    def get_bufname(cls, uri: Uri) -> str | None:
+        return cls.get_uri_to_bufnames().get(uri)
+
+    @classmethod
     def get_uri(cls, bufnr: int) -> Uri | None:
         return cls.get_bufnr_to_uris().get(bufnr)

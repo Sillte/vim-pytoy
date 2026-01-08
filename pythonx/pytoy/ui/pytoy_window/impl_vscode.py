@@ -24,10 +24,10 @@ from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowC
 
 from pytoy.ui.pytoy_window.vim_window_utils import get_last_selection
 from dataclasses import dataclass
-from pytoy.infra.events.winclosed import get_winclosed_event
+from pytoy.infra.events.window_events import ScopedWindowEventProvider
 from weakref import WeakValueDictionary
+from pytoy.infra.core.entity import EntityRegistry, MortalEntityProtocol, EntityRegistryProvider
 from .vim_window_utils import VimWinIDConverter
-
 
 
 class WindowURISolver:
@@ -53,10 +53,10 @@ class WindowEvents:
     
     @classmethod
     def from_winid(cls, winid: PytoyWindowID) -> Self:
-        return cls(on_closed = get_winclosed_event(winid))
+        return cls(on_closed = ScopedWindowEventProvider.get_winclosed_event(winid))
 
 
-class VSCodeWindowKernel:
+class VSCodeWindowKernel[MortalEntityProtocol]:
     def __repr__(self):
         return f"WindowKernel({self._winid=})"
     def __init__(self, winid: int):
@@ -71,10 +71,13 @@ class VSCodeWindowKernel:
         # Value Object.
         self._window_events = WindowEvents.from_winid(self._winid)
         
-        # This is the event hook for deletion.
-        def _dispose(winid: int):
-            VSCodeWindowKernelRegistry.dispose(self._winid)
-        self._disposable = get_winclosed_event(winid).subscribe(_dispose)
+    @property
+    def entity_id(self) -> int:
+        return self._winid
+    
+    @property
+    def on_end(self) -> Event[int]:
+        return self._window_events.on_closed
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, VSCodeWindowKernel):
@@ -120,29 +123,12 @@ class VSCodeWindowKernel:
         return self._window_events.on_closed
 
 
-class VSCodeWindowKernelRegistry:
-    """In neovim-vscode extention, 
-    `Vim.Window` has the unique bufname, which correspond to `URI`. 
-    That is, the entity id of `VimCodeWindoeKernel` is (winid, URI).
-    """
-    _kernels: WeakValueDictionary[int, VSCodeWindowKernel] = WeakValueDictionary({})
-
-    @classmethod
-    def get(cls, winid: int) -> VSCodeWindowKernel:
-        if winid not in cls._kernels:
-            state = VSCodeWindowKernel(winid)
-            cls._kernels[winid] = state
-        return cls._kernels[winid]
-
-    @classmethod
-    def dispose(cls, winid: int):
-        cls._kernels.pop(winid, None)
-
+kernel_registry: EntityRegistry = EntityRegistryProvider.get(VSCodeWindowKernel)
 
 
 class PytoyWindowVSCode(PytoyWindowProtocol):
-    def __init__(self, winid: int):
-        self._kernel = VSCodeWindowKernelRegistry.get(winid)
+    def __init__(self, winid: int, *, kernel_registyr: EntityRegistry = kernel_registry):
+        self._kernel = kernel_registry.get(winid)
         
     @property
     def winid(self) -> PytoyWindowID:
@@ -162,7 +148,7 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
 
     @property
     def buffer(self) -> PytoyBuffer:
-        impl = PytoyBufferVSCode(self.editor.document)
+        impl = PytoyBufferVSCode.from_document(self.editor.document)
         return PytoyBuffer(impl)
 
     @property
@@ -189,7 +175,7 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
         uris = self.editor.get_clean_target_uris_for_unique(within_tabs=within_tabs, within_windows=within_windows)
         documents = [Document(uri=uri) for uri in uris]
-        buffers = [PytoyBufferVSCode(doc) for doc in documents]
+        buffers = [PytoyBufferVSCode.from_document(doc) for doc in documents]
         for buffer in buffers:
             buffer.init_buffer(content="")
         self.editor.unique(within_tabs=within_tabs, within_windows=within_windows)
@@ -225,14 +211,6 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         if selection:
             return selection
         return CharacterRange(self.cursor, self.cursor)
-
-    
-    def _to_winid(self) -> int | None:
-        bufnr = BufferURISolver.get_bufnr(self.editor.uri)
-        if not bufnr:
-            return None
-        winid = vim.eval(f"win_findbuf({bufnr})[0]")
-        return winid
 
 
     @property
@@ -279,7 +257,7 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
                 return window
 
         current =  self.get_current()
-        current_editor = current.editor
+        #current_editor = current.editor
         editor = self._create_editor(source, param)
         if not current.focus():
             print(f"{current} cannot be focused.")

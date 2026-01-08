@@ -1,7 +1,10 @@
-from typing import Protocol, Sequence, TYPE_CHECKING
+from typing import Protocol, Sequence, TYPE_CHECKING, Hashable
 from pathlib import Path
 from pytoy.infra.core.models import CursorPosition
 from pytoy.infra.core.models import CharacterRange, LineRange
+from pytoy.infra.core.models.event import Event
+
+BufferID = Hashable
 
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol
@@ -61,7 +64,10 @@ class PytoyBufferProtocol(Protocol):
                           If False, return all windows backeed recognizes.
         """
         ...
-
+        
+    @property
+    def on_wiped(self) -> Event[BufferID]:
+        ...
 
 
 class RangeOperatorProtocol(Protocol):

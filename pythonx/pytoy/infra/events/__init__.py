@@ -1,1 +1,2 @@
-from pytoy.infra.core.models import Event, EventEmitter
+from pytoy.infra.core.models.event import EventEmitter
+from pytoy.infra.core.models.event import Event

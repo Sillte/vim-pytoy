@@ -1,6 +1,8 @@
-from pytoy.infra.core.models import Disposable, Event
+from pytoy.infra.core.models.event import Disposable
 from pytoy.infra.core.models import  Listener
 from typing import Callable
+
+from pytoy.infra.core.models.event import Event
 
 
 def once[T](event: Event[T]) -> Event[T]:

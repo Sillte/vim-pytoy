@@ -1,45 +1,110 @@
 from pathlib import Path
 from pytoy.infra.core.models import CursorPosition
-from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol
-from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
+from pytoy.infra.core.entity import MortalEntityProtocol, EntityRegistry, EntityRegistryProvider
+from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, Event, BufferID
+from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver, Uri
 from pytoy.ui.vscode.document import Document
 from pytoy.ui.utils import to_filepath
 from pytoy.infra.core.models import CharacterRange, LineRange
 from pytoy.ui.pytoy_buffer.vim_buffer_utils import VimBufferRangeHandler
-from typing import Sequence, TYPE_CHECKING
+from typing import Sequence, TYPE_CHECKING, Self
 from pytoy.ui.pytoy_buffer.text_searchers import TextSearcher
 from pytoy.ui.vscode.utils import wait_until_true
+from pytoy.infra.events.buffer_events import ScopedBufferEventProvider, Event
+
+from pytoy.ui.pytoy_buffer.impl_vim import VimBufferKernel
+import vim
 
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol
-
+    
 
 def _normalize_lf_code(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
+class VSCodeBufferKernel(MortalEntityProtocol):
+    def __init__(self, bufnr: int):
+        self._bufnr = bufnr
+        self._vim_kernel = VimBufferKernel(bufnr)
+        self._wipeout_event = ScopedBufferEventProvider.get_wipeout_event(bufnr)
+        self.on_wipeout = self.on_end
+
+    @property
+    def on_end(self) -> Event[int]:
+        return self._vim_kernel.on_end
+
+    @property
+    def bufnr(self) -> int:
+        return self._vim_kernel.bufnr
+
+    @property
+    def bufname(self) -> str | None:
+        return self._vim_kernel.bufname
+
+    @property
+    def buffer(self) -> "vim.Buffer | None":
+        return self._vim_kernel.buffer
+
+    @property
+    def uri(self) -> Uri | None:
+        buffer = self.buffer
+        if buffer:
+            return BufferURISolver.get_uri(self.bufnr)
+        return None
+
+kernel_registry: EntityRegistry = EntityRegistryProvider.get(VSCodeBufferKernel)
+
 
 class PytoyBufferVSCode(PytoyBufferProtocol):
-    def __init__(self, document: Document):
-        self.document = document
+    def __init__(self, bufnr: BufferID, *, kernel_registry: EntityRegistry=kernel_registry):
+        self._kernel: VSCodeBufferKernel = kernel_registry.get(bufnr)
+
+
+    def bufnr(self, ) -> BufferID:
+        return self._kernel.bufnr
+    
+    @property
+    def uri(self) -> Uri:
+        uri = self._kernel.uri
+        if uri is None:
+            raise RuntimeError(f"Correspoing URI is not existent, {self.bufnr=}")
+        return uri
+        
+    @property
+    def document(self) -> Document:
+        return Document(uri=self.uri)
+        
+    @classmethod
+    def from_document(cls, document: Document) -> Self:
+        uri = document.uri
+        bufnr = BufferURISolver.get_bufnr(uri)
+        if bufnr is None:
+            raise ValueError(f"Correspoinding buffer is not existent. `{bufnr=}`")
+        return cls(bufnr)
+
+    @property
+    def on_wiped(self) -> Event[BufferID]:
+        return self._kernel.on_end
 
     @classmethod
     def get_current(cls) -> PytoyBufferProtocol:
-        return PytoyBufferVSCode(Document.get_current())
+        return PytoyBufferVSCode.from_document(Document.get_current())
 
     @property
     def path(self) -> Path:
-        if self.document.uri.fsPath:
-            elem = self.document.uri.fsPath
+        uri = self.uri
+        if uri.fsPath:
+            elem = uri.fsPath
             elem = elem.replace("\\", "/")  # required to replace.
             return to_filepath(elem)
         else:
-            return to_filepath(self.document.uri.path)
+            return to_filepath(uri.path)
 
     @property
     def is_file(self) -> bool:
         """Return True if the buffer corresponds to a file on disk."""
-        return self.document.uri.scheme in {"file", "vscode-remote"}
+        return self.uri.scheme in {"file", "vscode-remote"}
 
     @property
     def is_normal_type(self) -> bool:
@@ -48,7 +113,7 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         Treat file-backed buffers and untitled editors as normal.
         """
         try:
-            scheme = self.document.uri.scheme
+            scheme = self.uri.scheme
             return scheme in {"file", "vscode-remote", "untitled"}
         except AttributeError:
             return False
@@ -102,9 +167,11 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindowProtocol"]:
         from pytoy.ui.vscode.editor import Editor
         from pytoy.ui.pytoy_window.impl_vscode import PytoyWindowVSCode
-        editors = [editor for editor in Editor.get_editors(only_visible=only_visible)
-                    if editor.uri == self.document.uri]
-        return [PytoyWindowVSCode(editor) for editor in editors]
+        #editors = [editor for editor in Editor.get_editors(only_visible=only_visible)
+        #            if editor.uri == self.document.uri]
+        res = vim.eval(f"win_findbuf({self.bufnr})")
+        winids = [int(wid) for wid in res] if res else []
+        return [PytoyWindowVSCode(winid) for winid in winids]
 
 
 class RangeOperatorVSCode(RangeOperatorProtocol):
