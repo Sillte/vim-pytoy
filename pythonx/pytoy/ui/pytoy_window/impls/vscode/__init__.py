@@ -85,7 +85,7 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
         uris = self.editor.get_clean_target_uris_for_unique(within_tabs=within_tabs, within_windows=within_windows)
         uri_to_bufnr = BufferURISolver.get_uri_to_bufnr()
-        bufnrs = set(uri_to_bufnr[uri] for uri in uris)
+        bufnrs = set(bufnr for uri in uris if (bufnr:=uri_to_bufnr.get(uri)))
         buffers = [PytoyBufferVSCode(bufnr) for bufnr in bufnrs]
         for buffer in buffers:
             buffer.init_buffer(content="")
