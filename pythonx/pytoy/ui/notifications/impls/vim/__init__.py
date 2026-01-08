@@ -45,5 +45,3 @@ class EphemeralNotificationVim(EphemeralNotificationProtocol):
         else:
             print(message)
             popup_create = None
-
-

@@ -23,13 +23,13 @@ class EphemeralNotification(EphemeralNotificationProtocol):
 def _get_implementation() -> EphemeralNotificationProtocol:
     ui_enum = get_ui_enum()
     if ui_enum == UIEnum.VIM:
-        from pytoy.ui.notifications.impl_vim import EphemeralNotificationVim
+        from pytoy.ui.notifications.impls.vim import EphemeralNotificationVim
         return EphemeralNotificationVim()
     elif ui_enum == UIEnum.NVIM:
-        from pytoy.ui.notifications.impl_nvim import EphemeralNotificationNVim
+        from pytoy.ui.notifications.impls.nvim import EphemeralNotificationNVim
         return EphemeralNotificationNVim()
     elif ui_enum == UIEnum.VSCODE:
-        from pytoy.ui.notifications.impl_vscode import EphemeralNotificationVSCode
+        from pytoy.ui.notifications.impls.vscode import EphemeralNotificationVSCode
         return EphemeralNotificationVSCode()
     else:
         raise RuntimeError("Implementation Error")
