@@ -47,12 +47,12 @@ class RangeOperatorVim(RangeOperatorProtocol):
 
     def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> LineRange:
         handler = VimBufferRangeHandler(self.vim_buffer)
-        return handler.replace_lines(line_range, lines)
+        return handler.replace_lines(line_range, self.vim_buffer[:])
 
 
     def _create_text_searcher(self, target_range: CharacterRange | None = None):
         # TODO: In order to enhance efficiency, please consider `partial` handling of `lines`.
-        return TextSearcher.create(self.vim_buffer.lines, target_range)
+        return TextSearcher.create(self.vim_buffer[:], target_range)
 
     def find_first(
         self,
