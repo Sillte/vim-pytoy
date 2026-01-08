@@ -4,6 +4,27 @@ from pathlib import Path
 from .vim_base import MockVimModule
 
 
+class BufferDict:
+    """Mock for vim.buffers that allows both list and dict-like access."""
+    def __init__(self):
+        self._buffers: Dict[int, MockVimModule.Buffer] = {}
+    
+    def __getitem__(self, key):
+        return self._buffers[key]
+    
+    def __setitem__(self, key, value):
+        self._buffers[key] = value
+    
+    def __contains__(self, key):
+        return key in self._buffers
+    
+    def append(self, buf):
+        self._buffers[buf.number] = buf
+    
+    def __iter__(self):
+        return iter(self._buffers.values())
+
+
 class MockVim(MockVimModule):
     """Enhanced mock implementation of vim module for testing."""
     
@@ -16,7 +37,7 @@ class MockVim(MockVimModule):
         self.options = {}
         self.vars = {}
         self.windows = []
-        self.buffers = []
+        self.buffers = BufferDict()  # Changed to BufferDict
         self.tab_pages = []
         self._eval_results = {}
         self._commands = []

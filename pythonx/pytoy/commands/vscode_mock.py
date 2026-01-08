@@ -13,7 +13,7 @@ def source(opts: OptsArgument):
 
 
 @CommandManager.register(name="MyWindow", range=True)
-def mywindow_func():
+def mywindow_func2():
     print("hgoegege")
     from pytoy.ui.pytoy_window import PytoyWindowProvider
 
@@ -51,7 +51,7 @@ def mywindow_func():
     # print(window.buffer.content)
     # window.focus()
 
-    from pytoy.ui.pytoy_window.impl_vscode import (
+    from pytoy.ui.pytoy_window.impls.vscode import (
         PytoyBufferVSCode,
     )
 
@@ -59,9 +59,9 @@ def mywindow_func():
 
     windows = PytoyWindowProvider().get_windows()
     for elem in windows:
-        print(elem.buffer._impl.document)
+        print(elem.buffer._impl.uri)  #type: ignore
     for elem in PytoyWindowProvider().get_windows():
-        print(elem.buffer._impl.document.uri.path)
+        print(elem.buffer._impl.uri.path) #type: ignore
 
     # windows[0].impl.editor.focus()
     # print(window.valid, window.impl.editor.document.uri)

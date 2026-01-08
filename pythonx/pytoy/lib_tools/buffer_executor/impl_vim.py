@@ -42,7 +42,7 @@ class VimBufferJob(BufferJobProtocol):
         cwd: Path | str | None = None,
         env: Mapping[str, str] | None = None,
     ):
-        from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
+        from pytoy.ui.pytoy_buffer.impls.vim import PytoyBufferVim
 
         options = dict()
         if self.stdout is not None:

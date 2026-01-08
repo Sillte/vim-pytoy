@@ -10,7 +10,6 @@ This module is intended to provide the common interface for bufffer.
 from pathlib import Path
 from typing import Literal, TYPE_CHECKING, Sequence
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, Event, BufferID
-from pytoy.ui.pytoy_buffer.range_operator import make_range_operator  # noqa
 from pytoy.infra.core.models import CharacterRange, LineRange
 
 if TYPE_CHECKING:
@@ -77,20 +76,17 @@ class PytoyBuffer(PytoyBufferProtocol):
         return self._impl.hide()
 
     def get_lines(self, line_range: LineRange) -> list[str]:
-        range_operator: RangeOperatorProtocol = make_range_operator(self.impl)
-        return range_operator.get_lines(line_range)
+        return self.range_operator.get_lines(line_range)
 
     def get_text(self, character_range: CharacterRange) -> str:
-        range_operator: RangeOperatorProtocol = make_range_operator(self.impl)
-        return range_operator.get_text(character_range)
+        return self.range_operator.get_text(character_range)
 
     def replace_text(self, character_range: CharacterRange, text: str) -> CharacterRange:
-        range_operator: RangeOperatorProtocol = make_range_operator(self.impl)
-        return range_operator.replace_text(character_range, text)
+        return self.range_operator.replace_text(character_range, text)
 
     @property
     def range_operator(self) -> RangeOperatorProtocol:
-        return make_range_operator(self.impl)
+        return self.impl.range_operator
     
     def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindow"]:
         from pytoy.ui.pytoy_window import PytoyWindow
@@ -140,10 +136,10 @@ def _get_current_impl() -> PytoyBufferProtocol:
 
     ui_enum = get_ui_enum()
     if ui_enum == UIEnum.VSCODE:
-        from pytoy.ui.pytoy_buffer.impl_vscode import PytoyBufferVSCode
+        from pytoy.ui.pytoy_buffer.impls.vscode import PytoyBufferVSCode
         current_impl = PytoyBufferVSCode.get_current()
     else:
-        from pytoy.ui.pytoy_buffer.impl_vim import PytoyBufferVim
+        from pytoy.ui.pytoy_buffer.impls.vim import PytoyBufferVim
 
         current_impl = PytoyBufferVim.get_current()
     return current_impl
