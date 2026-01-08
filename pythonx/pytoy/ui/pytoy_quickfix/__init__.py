@@ -63,11 +63,11 @@ def _get_orchestrator(name: str) -> PytoyQuickFixProtocol:
     ui_enum = get_ui_enum()
 
     def make_vscode():
-        from pytoy.ui.pytoy_quickfix.impl_vscode import PytoyQuickFixVSCodeUI
+        from pytoy.ui.pytoy_quickfix.impls.vscode import PytoyQuickFixVSCodeUI
         return PytoyQuickFixOrchestrator(PytoyQuickFixStateResolver(), PytoyQuickFixVSCodeUI())
 
     def make_vim():
-        from pytoy.ui.pytoy_quickfix.impl_vim import PytoyQuickFixVimUI
+        from pytoy.ui.pytoy_quickfix.impls.vim import PytoyQuickFixVimUI
         return PytoyQuickFixOrchestrator(PytoyQuickFixStateResolver(), PytoyQuickFixVimUI())
 
     creators = {UIEnum.VSCODE: make_vscode, UIEnum.VIM: make_vim, UIEnum.NVIM: make_vim}
