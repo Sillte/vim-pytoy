@@ -178,8 +178,8 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
     def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
         windows =  vim.current.tabpage.windows # For consistey with visibleEditors in VSCode.
         if only_normal_buffers:
-            return [PytoyWindowVim.from_vim_window(elem) for elem in windows if PytoyBufferVim(elem.buffer).is_normal_type]
-        return [PytoyWindowVim.from_vim_window(elem) for elem in windows]
+            return [PytoyWindowVim.from_vim_window(elem) for elem in windows if elem.buffer and PytoyBufferVim(elem.buffer.number).is_normal_type]
+        return [PytoyWindowVim.from_vim_window(elem) for elem in windows if elem.buffer]
 
     def open_window(self,
                     source: str | Path | BufferSource,
