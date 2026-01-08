@@ -1,23 +1,11 @@
+from pytoy.ui.pytoy_window.protocol import WindowEvents
 import vim
 from pytoy.infra.core.entity import MortalEntityProtocol
 from pytoy.infra.core.models.event import Event
-from pytoy.infra.events.window_events import ScopedWindowEventProvider
 from pytoy.ui.pytoy_window.protocol import PytoyWindowID
 
 
-from dataclasses import dataclass
-from typing import Self
-
 from pytoy.ui.pytoy_window.vim_window_utils import VimWinIDConverter
-
-
-@dataclass
-class WindowEvents:
-    on_closed: Event[PytoyWindowID]
-
-    @classmethod
-    def from_winid(cls, winid: PytoyWindowID) -> Self:
-        return cls(on_closed = ScopedWindowEventProvider.get_winclosed_event(winid))
 
 
 class VimWindowKernel(MortalEntityProtocol):

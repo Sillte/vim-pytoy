@@ -1,12 +1,15 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import Protocol, Sequence, Literal, Self, Any
 from pathlib import Path
 
 from pytoy.infra.core.models.event import Event
+from pytoy.infra.events.window_events import ScopedWindowEventProvider
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
 from pytoy.ui.pytoy_window.models import ViewportMoveMode
 from pytoy.ui.pytoy_window.models import BufferSource, WindowCreationParam
+from pytoy.ui.status_line.protocol import StatusLineManagerProtocol, StatusLineItem
 
 PytoyWindowID = Any
 
@@ -47,6 +50,10 @@ class PytoyWindowProtocol(Protocol):
     @property
     def selected_line_range(self) -> LineRange:
         ...
+        
+    @property
+    def status_line_manager(self) -> StatusLineManagerProtocol:
+        ...
 
     @property
     def on_closed(self) -> Event[PytoyWindowID]:
@@ -63,3 +70,14 @@ class PytoyWindowProviderProtocol(Protocol):
                     source: str | Path | BufferSource,
                     param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place") -> PytoyWindowProtocol:
         ...
+
+@dataclass
+class WindowEvents:
+    entity_id: PytoyWindowID
+    on_closed: Event[PytoyWindowID]
+
+    @classmethod
+    def from_winid(cls, winid: PytoyWindowID) -> Self:
+        return cls(entity_id = winid,
+            on_closed = ScopedWindowEventProvider.get_winclosed_event(winid)
+            )

@@ -15,8 +15,12 @@ from weakref import WeakValueDictionary
 from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
-    PytoyWindowID
+    PytoyWindowID,
+    StatusLineManagerProtocol,
+    WindowEvents
 )
+from pytoy.ui.status_line import StatusLineManager
+
 
 kernel_registry: EntityRegistry = EntityRegistryProvider.get(VimWindowKernel)
 
@@ -89,6 +93,14 @@ class PytoyWindowVim(PytoyWindowProtocol):
 
     @property
     def on_closed(self) -> Event[PytoyWindowID]:
+        return self._kernel.on_closed
+
+    @property
+    def status_line_manager(self) ->  StatusLineManagerProtocol:
+        return StatusLineManager(self.events)
+
+    @property
+    def events(self) -> WindowEvents:
         return self._kernel.on_closed
 
     def __eq__(self, other: object) -> bool:

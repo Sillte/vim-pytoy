@@ -7,16 +7,21 @@ from pytoy.ui.status_line.impl_vim.node_converters import VimExprNodeConverter
 from pytoy.ui.status_line.impl_vim.node_converters import VimTextNodeConverter
 from pytoy.ui.status_line.models import StatusLineItem, UnknownStatusLineItem, TextStatusLineItem, FunctionStatusLineItem
 from pytoy.ui.status_line.protocol import StatusLineManagerProtocol
+from pytoy.ui.pytoy_window.protocol import WindowEvents 
+from pytoy.ui.pytoy_window.impls.vim import VimWinIDConverter 
 from typing import Mapping, Sequence, cast
 import vim
 
 
 class StatusLineManagerVim(StatusLineManagerProtocol):
 
-    def __init__(self, vim_window: "vim.Window") -> None:
+    def __init__(self, win_events: WindowEvents) -> None:
         # NOTE: UnknownNodeConverter is a fallback, hence the order is important.
-        self.vim_window = vim_window 
-        self.expr_registry = VimExprRegistry(self.vim_window)
+        vim_window = VimWinIDConverter.to_vim_window(win_events.entity_id)
+        if vim_window is None:
+            raise RuntimeError(f"Factory of StatusLineManager is starnage: {win_events.entity_id=}")
+        self.vim_window = vim_window
+        self.expr_registry = VimExprRegistry(win_events.entity_id)
         self.reverters: Mapping[type[StatusLineItem], VimStatusNodeConverter] = {FunctionStatusLineItem:VimExprNodeConverter(self.expr_registry.view),
                                                                                  TextStatusLineItem: VimTextNodeConverter(),
                                                                                  UnknownStatusLineItem: UnknownNodeConverter() }
@@ -137,7 +142,10 @@ def test_func():
     item = FunctionStatusLineItem(value = lambda : "AHA")
 #item = TextStatusLineItem(value="TEXTTEXT", side="right")
     import vim
-    manager = StatusLineManagerVim(vim.current.window)
+    winid = VimWinIDConverter.from_vim_window(vim.current.window)
+    events = WindowEvents.from_winid(winid)
+
+    manager = StatusLineManagerVim(events)
     nodes = manager.current_nodes
     assert nodes == manager.current_nodes
     manager.register(item)
