@@ -40,9 +40,9 @@ class VimExprRegistry:
     If without operations given by others, this class handles the lifetime of
     Vim functions.
     """
-    def __init__(self, vim_window: "vim.Window") -> None:  #noqa
+    def __init__(self, winid: int) -> None:  #noqa
         import vim
-        self._winid = vim.eval(f"win_getid({vim_window.number})")
+        self._winid = winid
         # NOTE: `prefix` is crucial for assuring the uniqueness among different windows. 
         self.prefix = f"W{self._winid}_PytoyFunction"
         self._expr_to_item: dict[str, StatusLineItemFunction] = {}

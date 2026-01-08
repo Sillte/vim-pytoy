@@ -18,6 +18,8 @@ from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
     PytoyWindowID,
+    StatusLineManagerProtocol,
+    WindowEvents
 )
 from pytoy.ui.vscode.document import Api, Document
 from pytoy.ui.vscode.editor import Editor
@@ -25,7 +27,7 @@ from pytoy.ui.vscode.utils import wait_until_true
 from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
 
 from pytoy.ui.pytoy_window.vim_window_utils import get_last_selection
-from pytoy.infra.core.entity import EntityRegistry, MortalEntityProtocol, EntityRegistryProvider
+from pytoy.infra.core.entity import EntityRegistry,  EntityRegistryProvider
 from ...vim_window_utils import VimWinIDConverter
 
 
@@ -127,6 +129,17 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
     @property
     def selected_line_range(self) -> LineRange:
         return self.selection.as_line_range()
+    
+
+    @property
+    def status_line_manager(self) ->  StatusLineManagerProtocol:
+        from pytoy.ui.status_line import StatusLineManager
+        return StatusLineManager(self.events)
+
+    @property
+    def events(self) -> WindowEvents:
+        return self._kernel.on_closed
+
 
     @property
     def on_closed(self) -> Event[PytoyWindowID]:

@@ -1,6 +1,6 @@
 from pytoy.infra.core.models import Event
 from pytoy.infra.events.window_events import ScopedWindowEventProvider
-from pytoy.ui.pytoy_window.protocol import PytoyWindowID
+from pytoy.ui.pytoy_window.protocol import PytoyWindowID, WindowEvents
 from dataclasses import dataclass
 from typing import Self
 from pytoy.ui.vscode.editor import Editor
@@ -27,15 +27,6 @@ class WindowURISolver:
         if ret == -1:
             return None
         return ret
-
-
-@dataclass
-class WindowEvents:
-    on_closed: Event[PytoyWindowID]
-
-    @classmethod
-    def from_winid(cls, winid: PytoyWindowID) -> Self:
-        return cls(on_closed = ScopedWindowEventProvider.get_winclosed_event(winid))
 
 
 class VSCodeWindowKernel[MortalEntityProtocol]:
