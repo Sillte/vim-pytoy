@@ -6,18 +6,75 @@ from typing import Sequence, TYPE_CHECKING
 
 VIM_ERROR = getattr(vim, "error", Exception)
 
-from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol
+from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, BufferID
 from pytoy.infra.core.models import CharacterRange, LineRange
+from pytoy.infra.core.entity import MortalEntityProtocol, EntityRegistry, EntityRegistryProvider
+from pytoy.infra.events.buffer_events import ScopedBufferEventProvider, Event
 from pytoy.ui.pytoy_buffer.vim_buffer_utils import VimBufferRangeHandler
 from pytoy.ui.pytoy_buffer.text_searchers import TextSearcher
+from weakref import WeakValueDictionary
+from pytoy.infra.core.models.event import Event
 
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol
 
+class VimBufferKernel(MortalEntityProtocol):
+    def __init__(self, bufnr: int):
+        self._bufnr = bufnr
+        self._wipeout_event = ScopedBufferEventProvider.get_wipeout_event(bufnr)
+        self.on_wipeout = self.on_end
+        
+    @property
+    def entity_id(self) -> int:
+        return self._bufnr
+
+    @property
+    def on_end(self) -> Event[int]:
+        return self._wipeout_event
+
+    @property
+    def bufnr(self) -> int:
+        return self._bufnr
+
+    @property
+    def bufname(self) -> str | None:
+        buffer = self.buffer
+        return buffer.name if buffer else None
+
+
+    @property
+    def buffer(self) -> "vim.Buffer | None":
+        try:
+            buf = vim.buffers[self._bufnr]
+            return buf if buf.valid else None
+        except Exception:
+            return None
+
+kernel_registry: EntityRegistry = EntityRegistryProvider.get(VimBufferKernel)
+
 
 class PytoyBufferVim(PytoyBufferProtocol):
-    def __init__(self, buffer: "vim.Buffer"):
-        self.buffer = buffer
+    def __init__(self, bufnr: int, *, kernel_registry: EntityRegistry[BufferID, VimBufferKernel] = kernel_registry) -> None:
+        self._kernel = kernel_registry.get(bufnr)
+        
+    @property
+    def kernel(self) -> VimBufferKernel:
+        return self._kernel
+        
+    @property
+    def bufnr(self) -> int:
+        return self.kernel.bufnr
+
+    @property
+    def buffer(self) -> "vim.Buffer":
+        if not self.kernel.buffer:
+            raise ValueError("Invalid Buffer")
+        return self.kernel.buffer
+
+        
+    @classmethod
+    def from_buffer(cls, buffer: "vim.Buffer"):
+        return cls(buffer.number)
 
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
@@ -26,7 +83,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
 
     @classmethod
     def get_current(cls) -> PytoyBufferProtocol:
-        return PytoyBufferVim(vim.current.buffer)
+        return PytoyBufferVim.from_buffer(vim.current.buffer)
 
     @property
     def path(self) -> Path:
@@ -54,7 +111,10 @@ class PytoyBufferVim(PytoyBufferProtocol):
 
     @property
     def valid(self) -> bool:
-        return self.buffer.valid
+        if self.kernel.buffer:
+            return True
+        else:
+            return False
 
     def append(self, content: str) -> None:
         if not content:
@@ -118,6 +178,9 @@ class PytoyBufferVim(PytoyBufferProtocol):
                         windows.append(PytoyWindowVim.from_vim_window(window))
             return windows
 
+    @property
+    def on_wiped(self) -> Event[BufferID]:
+        return self.kernel.on_end
 
 class RangeOperatorVim(RangeOperatorProtocol):
     def __init__(self, buffer: PytoyBufferVim):
@@ -177,4 +240,3 @@ class RangeOperatorVim(RangeOperatorProtocol):
         end_col = 0
         end = CursorPosition(end_line, end_col)
         return CharacterRange(start, end)
-

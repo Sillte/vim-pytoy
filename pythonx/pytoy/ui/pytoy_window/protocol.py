@@ -2,8 +2,9 @@ from __future__ import annotations
 from typing import Protocol, Sequence, Literal, Self, Any
 from pathlib import Path
 
+from pytoy.infra.core.models.event import Event
 from pytoy.ui.pytoy_buffer import PytoyBuffer
-from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange, Event
+from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
 from pytoy.ui.pytoy_window.models import ViewportMoveMode
 from pytoy.ui.pytoy_window.models import BufferSource, WindowCreationParam
 
