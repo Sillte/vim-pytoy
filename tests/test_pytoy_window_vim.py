@@ -7,7 +7,7 @@ from typing import Generator
 from .mocks.vim import MockVim
 
 # Import implementations
-from pytoy.ui.pytoy_window.impl_vim import PytoyWindowVim,  PytoyBufferVim
+from pytoy.ui.pytoy_window.impls.vim import PytoyWindowVim,  PytoyBufferVim
 
 class MockKernelRegistry:
     kernels = {}
@@ -20,7 +20,7 @@ class MockKernelRegistry:
 
     @classmethod
     def dispose(cls, winid: int):
-        cls._kernels.pop(winid, None)
+        cls.kernels.pop(winid, None)
 
 class MockKernel:
     def __init__(self, winid):
@@ -32,17 +32,18 @@ class MockKernel:
 class MockWindow:
     cursor = (1, 0)
     valid = True
+    winid = 1
 
 class MockBuffer:
     lines = ["Hello world"]
+    number = 1
 
 
 def test_window_creation(vim_env: MockVim):
     """Test window creation and basic properties"""
     buf = vim_env.create_buffer(1, "test.txt")
     win = vim_env.create_window(1, buf)
-    pytoy_win = PytoyWindowVim(win, kernel_registry=MockKernelRegistry)
-    
+    pytoy_win = PytoyWindowVim(win.number, kernel_registry=MockKernelRegistry)
     assert isinstance(pytoy_win.buffer.impl, PytoyBufferVim)
 
 

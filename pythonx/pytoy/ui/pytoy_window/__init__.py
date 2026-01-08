@@ -8,7 +8,7 @@ from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 
 from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
-from pytoy.infra.core.models import Event
+from pytoy.infra.core.models.event import Event
 from typing import Sequence, Literal
 
 
@@ -97,11 +97,11 @@ class PytoyWindowProvider(PytoyWindowProviderProtocol):
         if impl is None:
             ui_enum = get_ui_enum()
             if ui_enum == UIEnum.VSCODE:
-                from pytoy.ui.pytoy_window.impl_vscode import PytoyWindowProviderVSCode
+                from pytoy.ui.pytoy_window.impls.vscode import PytoyWindowProviderVSCode
 
                 impl = PytoyWindowProviderVSCode()
             else:
-                from pytoy.ui.pytoy_window.impl_vim import PytoyWindowProviderVim
+                from pytoy.ui.pytoy_window.impls.vim import PytoyWindowProviderVim
 
                 impl = PytoyWindowProviderVim()
         self._impl = impl

@@ -71,9 +71,6 @@ class PytoyBufferProtocol(Protocol):
 
 
 class RangeOperatorProtocol(Protocol):
-    @property
-    def buffer(self) -> PytoyBufferProtocol: ...
-
     def get_lines(self, line_range: LineRange) -> list[str]: ...
 
     def get_text(self, character_range: CharacterRange) -> str: ...

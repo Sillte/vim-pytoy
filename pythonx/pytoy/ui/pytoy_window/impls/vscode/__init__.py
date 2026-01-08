@@ -5,13 +5,15 @@
 from pathlib import Path
 from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
 from pytoy.infra.core.models import Event
+from pytoy.ui.pytoy_window.impls.vscode.kernel import WindowURISolver
+from pytoy.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.ui.vscode.editor.models import TextEditorRevealType
 from pytoy.ui.vscode.uri import Uri
 import vim  # (vscode-neovim extention)
-from typing import Sequence, Literal, assert_never, cast, Self
+from typing import Sequence, Literal, assert_never, cast
 from pytoy.ui.pytoy_buffer import PytoyBuffer
-from pytoy.ui.pytoy_buffer.impl_vscode import PytoyBufferVSCode
+from pytoy.ui.pytoy_buffer.impls.vscode import PytoyBufferVSCode
 from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
@@ -23,111 +25,15 @@ from pytoy.ui.vscode.utils import wait_until_true
 from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
 
 from pytoy.ui.pytoy_window.vim_window_utils import get_last_selection
-from dataclasses import dataclass
-from pytoy.infra.events.window_events import ScopedWindowEventProvider
-from weakref import WeakValueDictionary
 from pytoy.infra.core.entity import EntityRegistry, MortalEntityProtocol, EntityRegistryProvider
-from .vim_window_utils import VimWinIDConverter
-
-
-class WindowURISolver:
-    
-    @classmethod
-    def to_uri(cls, winid: int) -> Uri | None: 
-        bufnr = int(vim.eval(f"winbufnr({winid})"))
-        return BufferURISolver.get_bufnr_to_uris().get(bufnr)
-    
-    @classmethod
-    def from_uri(cls, uri: Uri) -> int | None: 
-        bufnr = BufferURISolver.get_bufnr(uri)
-        if not bufnr:
-            return None
-        ret =  int(vim.eval(f"bufwinid({bufnr})"))
-        if ret == -1:
-            return None
-        return ret
-
-@dataclass
-class WindowEvents:
-    on_closed: Event[PytoyWindowID]
-    
-    @classmethod
-    def from_winid(cls, winid: PytoyWindowID) -> Self:
-        return cls(on_closed = ScopedWindowEventProvider.get_winclosed_event(winid))
-
-
-class VSCodeWindowKernel[MortalEntityProtocol]:
-    def __repr__(self):
-        return f"WindowKernel({self._winid=})"
-    def __init__(self, winid: int):
-        self._winid = winid
-        # URI: must be the unique over the lifetype of `vim.Window`.
-
-        uri = self.uri
-        if uri is None:
-            raise RuntimeError(f"Given `{winid=}` is invalid.")
-        self._snapped_uri: Uri | None = uri # This is for debug purpose.
-
-        # Value Object.
-        self._window_events = WindowEvents.from_winid(self._winid)
-        
-    @property
-    def entity_id(self) -> int:
-        return self._winid
-    
-    @property
-    def on_end(self) -> Event[int]:
-        return self._window_events.on_closed
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, VSCodeWindowKernel):
-            return False
-        return other.winid == self.winid
-
-    @property
-    def winid(self) -> int:
-        return self._winid
-
-    @property
-    def uri(self) -> Uri | None:
-        return WindowURISolver.to_uri(self.winid)
-
-
-    @property
-    def editor(self) -> Editor | None:
-        """It returns one of `Editor` which can correspond to `self._winid`. 
-        """
-        editors = self.editors
-        if not editors:
-            return None
-        elif len(editors) == 1:
-            return editors[0]
-        else:
-            """NOTE:
-            Multiple editors may correspond to a single Vim window.
-            This implementation arbitrarily selects the first one.
-            """
-            return editors[0]
-
-    @property
-    def editors(self) -> list[Editor]:
-        uri = WindowURISolver.to_uri(self.winid)
-        return [editor for editor in Editor.get_editors() if editor.uri == uri]
-
-    @property
-    def valid(self) -> bool:
-        return bool(self.editor)
-
-    @property
-    def on_closed(self) -> Event[PytoyWindowID]:
-        return self._window_events.on_closed
+from ...vim_window_utils import VimWinIDConverter
 
 
 kernel_registry: EntityRegistry = EntityRegistryProvider.get(VSCodeWindowKernel)
 
 
 class PytoyWindowVSCode(PytoyWindowProtocol):
-    def __init__(self, winid: int, *, kernel_registyr: EntityRegistry = kernel_registry):
+    def __init__(self, winid: int, *, kernel_registry: EntityRegistry = kernel_registry):
         self._kernel = kernel_registry.get(winid)
         
     @property
@@ -144,6 +50,10 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
     @property
     def kernel(self) -> VSCodeWindowKernel:
         return self._kernel
+
+    @property
+    def uri(self) -> Uri:
+        return self._kernel.uri
 
 
     @property
@@ -174,8 +84,9 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
         uris = self.editor.get_clean_target_uris_for_unique(within_tabs=within_tabs, within_windows=within_windows)
-        documents = [Document(uri=uri) for uri in uris]
-        buffers = [PytoyBufferVSCode.from_document(doc) for doc in documents]
+        uri_to_bufnr = BufferURISolver.get_uri_to_bufnr()
+        bufnrs = set(uri_to_bufnr[uri] for uri in uris)
+        buffers = [PytoyBufferVSCode(bufnr) for bufnr in bufnrs]
         for buffer in buffers:
             buffer.init_buffer(content="")
         self.editor.unique(within_tabs=within_tabs, within_windows=within_windows)

@@ -11,9 +11,6 @@ class RangeOperator(RangeOperatorProtocol):
     def __init__(self, impl: RangeOperatorProtocol):
         self._impl = impl
 
-    @property
-    def buffer(self) -> PytoyBufferProtocol:
-        return self._impl.buffer
 
     def get_lines(self, line_range: LineRange) -> list[str]:
         return self._impl.get_lines(line_range)
@@ -44,20 +41,3 @@ class RangeOperator(RangeOperatorProtocol):
     def entire_character_range(self) -> CharacterRange:
         return self._impl.entire_character_range
 
-
-def make_range_operator(impl_buffer: PytoyBufferProtocol) -> RangeOperator:
-    if get_ui_enum() == UIEnum.VSCODE:
-        from pytoy.ui.pytoy_buffer.impl_vscode import (
-            RangeOperatorVSCode,
-            PytoyBufferVSCode,
-        )
-
-        assert isinstance(impl_buffer, PytoyBufferVSCode)
-        impl = RangeOperatorVSCode(impl_buffer)
-        return RangeOperator(impl)
-    else:
-        from pytoy.ui.pytoy_buffer.impl_vim import RangeOperatorVim, PytoyBufferVim
-
-        assert isinstance(impl_buffer, PytoyBufferVim)
-        impl = RangeOperatorVim(impl_buffer)
-        return RangeOperator(impl)
