@@ -1,8 +1,8 @@
+from __future__ import annotations
 from pytoy.infra.core.models import Event
-from pytoy.infra.events.window_events import ScopedWindowEventProvider
 from pytoy.ui.pytoy_window.protocol import PytoyWindowID, WindowEvents
 from dataclasses import dataclass
-from typing import Self
+from typing import Self, TYPE_CHECKING
 from pytoy.ui.vscode.editor import Editor
 import vim
 
@@ -29,11 +29,22 @@ class WindowURISolver:
         return ret
 
 
+if TYPE_CHECKING: 
+    from pytoy.contexts.vscode import GlobalVSCodeContext
+
 class VSCodeWindowKernel[MortalEntityProtocol]:
     def __repr__(self):
         return f"WindowKernel({self._winid=})"
-    def __init__(self, winid: int):
+    
+    def __init__(self, winid: int, *, ctx: GlobalVSCodeContext | None = None):
+        from pytoy.contexts.vscode import GlobalVSCodeContext
+        if ctx is None:
+            ctx = GlobalVSCodeContext.get()
+
         self._winid = winid
+        # Value Object.
+        self._window_events = WindowEvents.from_winid(self._winid, ctx=ctx.vim_context)
+
         # URI: must be the unique over the lifetype of `vim.Window`.
 
         uri = self.uri
@@ -41,8 +52,7 @@ class VSCodeWindowKernel[MortalEntityProtocol]:
             raise RuntimeError(f"Given `{winid=}` is invalid.")
         self._snapped_uri: Uri | None = uri # This is for debug purpose.
 
-        # Value Object.
-        self._window_events = WindowEvents.from_winid(self._winid)
+
 
     @property
     def entity_id(self) -> int:
@@ -94,3 +104,7 @@ class VSCodeWindowKernel[MortalEntityProtocol]:
     @property
     def on_closed(self) -> Event[PytoyWindowID]:
         return self._window_events.on_closed
+
+    @property
+    def events(self) -> WindowEvents:
+        return self._window_events

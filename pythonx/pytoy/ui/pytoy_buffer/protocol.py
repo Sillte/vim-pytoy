@@ -1,16 +1,29 @@
+from __future__ import annotations
 from typing import Protocol, Sequence, TYPE_CHECKING, Hashable
+from dataclasses import dataclass
 from pathlib import Path
 from pytoy.infra.core.models import CursorPosition
 from pytoy.infra.core.models import CharacterRange, LineRange
 from pytoy.infra.core.models.event import Event
 
-BufferID = Hashable
-
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol
 
 
+
+BufferID = Hashable
+
+@dataclass
+class BufferEvents:
+    on_wiped: Event[BufferID]
+
+
 class PytoyBufferProtocol(Protocol):
+
+    @property
+    def buffer_id(self) -> BufferID:
+        ...
+
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
 
@@ -67,6 +80,12 @@ class PytoyBufferProtocol(Protocol):
         
     @property
     def on_wiped(self) -> Event[BufferID]:
+        """The event of deletion is special. 
+        """
+        ...
+        
+    @property
+    def events(self) -> BufferEvents:
         ...
 
 

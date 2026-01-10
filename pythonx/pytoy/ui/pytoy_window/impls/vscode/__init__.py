@@ -1,3 +1,4 @@
+from __future__ import annotations
 # **Specification**
 # * Editor: Editor of VSCode.
 # * Editor of PytoyWindow: the buffers of windows is managed in neovim.
@@ -11,7 +12,7 @@ from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.ui.vscode.editor.models import TextEditorRevealType
 from pytoy.ui.vscode.uri import Uri
 import vim  # (vscode-neovim extention)
-from typing import Sequence, Literal, assert_never, cast
+from typing import Sequence, Literal, assert_never, cast, TYPE_CHECKING
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_buffer.impls.vscode import PytoyBufferVSCode
 from pytoy.ui.pytoy_window.protocol import (
@@ -27,15 +28,19 @@ from pytoy.ui.vscode.utils import wait_until_true
 from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
 
 from pytoy.ui.pytoy_window.vim_window_utils import get_last_selection
-from pytoy.infra.core.entity import EntityRegistry,  EntityRegistryProvider
 from ...vim_window_utils import VimWinIDConverter
 
 
-kernel_registry: EntityRegistry = EntityRegistryProvider.get(VSCodeWindowKernel)
+if TYPE_CHECKING: 
+    from pytoy.contexts.vscode import GlobalVSCodeContext
 
 
 class PytoyWindowVSCode(PytoyWindowProtocol):
-    def __init__(self, winid: int, *, kernel_registry: EntityRegistry = kernel_registry):
+    def __init__(self, winid: int,  *, ctx: GlobalVSCodeContext | None = None):
+        from pytoy.contexts.vscode import GlobalVSCodeContext
+        if ctx is None:
+            ctx = GlobalVSCodeContext.get()
+        kernel_registry = ctx.window_kernel_registry
         self._kernel = kernel_registry.get(winid)
         
     @property
@@ -55,7 +60,10 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
 
     @property
     def uri(self) -> Uri:
-        return self._kernel.uri
+        uri = self._kernel.uri
+        if uri is None:
+            raise ValueError(f"Uri does not exist, {self._kernel}")
+        return uri
 
 
     @property
@@ -138,7 +146,7 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
 
     @property
     def events(self) -> WindowEvents:
-        return self._kernel.on_closed
+        return self._kernel.events
 
 
     @property

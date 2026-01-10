@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pytoy.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.ui.pytoy_buffer.impls.vim.range_operator import RangeOperatorVim
 import vim
@@ -6,24 +7,32 @@ from typing import Sequence, TYPE_CHECKING
 
 VIM_ERROR = getattr(vim, "error", Exception)
 
-from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, BufferID
-from pytoy.infra.core.entity import EntityRegistry, EntityRegistryProvider
+from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, BufferID, BufferEvents
+from pytoy.infra.core.entity import EntityRegistry
 from pytoy.infra.events.buffer_events import Event
 
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol
+    from pytoy.contexts.vim import GlobalVimContext
 
 
-kernel_registry: EntityRegistry = EntityRegistryProvider.get(VimBufferKernel)
 
 class PytoyBufferVim(PytoyBufferProtocol):
-    def __init__(self, bufnr: int, *, kernel_registry: EntityRegistry[BufferID, VimBufferKernel] = kernel_registry) -> None:
+    def __init__(self, bufnr: int, *,  ctx: GlobalVimContext | None = None) -> None:
+        if ctx is None:
+            from pytoy.contexts.vim import GlobalVimContext  # ✅ 実装時のみインポート
+            ctx = GlobalVimContext.get()
+        kernel_registry: EntityRegistry[int, VimBufferKernel] = ctx.buffer_kernel_registry
         self._kernel = kernel_registry.get(bufnr)
         
     @property
     def kernel(self) -> VimBufferKernel:
         return self._kernel
-        
+    
+    @property
+    def buffer_id(self) -> BufferID:
+        return self._kernel.bufnr
+
     @property
     def bufnr(self) -> int:
         return self.kernel.bufnr
@@ -143,4 +152,8 @@ class PytoyBufferVim(PytoyBufferProtocol):
     @property
     def on_wiped(self) -> Event[BufferID]:
         return self.kernel.on_end
+
+    @property
+    def events(self) -> BufferEvents:
+        return BufferEvents(on_wiped=self.kernel.on_end)
 

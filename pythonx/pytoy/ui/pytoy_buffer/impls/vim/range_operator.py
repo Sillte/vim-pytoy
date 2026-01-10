@@ -72,7 +72,7 @@ class RangeOperatorVim(RangeOperatorProtocol):
     @property
     def entire_character_range(self) -> CharacterRange:
         start = CursorPosition(0, 0)
-        end_line = len(self.vim_buffer.lines)
+        end_line = len(self.vim_buffer)
         end_col = 0
         end = CursorPosition(end_line, end_col)
         return CharacterRange(start, end)

@@ -51,3 +51,7 @@ options: Any
 buffers: list[Buffer]
 windows: list[Window]
 tabpages: list[Tabpage]
+call: Any
+api: Any
+fn: Any
+

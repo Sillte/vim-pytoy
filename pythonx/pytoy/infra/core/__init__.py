@@ -1,1 +1,1 @@
-from pytoy.infra.core.entity import MortalEntityProtocol, EntityRegistry, EntityRegistryProvider
+from pytoy.infra.core.entity import MortalEntityProtocol, EntityRegistry
