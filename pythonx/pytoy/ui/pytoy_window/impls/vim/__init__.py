@@ -1,16 +1,14 @@
+from __future__ import annotations
 from pathlib import Path
-from pytoy.infra.core.entity import EntityRegistry
 from pytoy.infra.core.models.event import Event
 from pytoy.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
 import vim
-from typing import Sequence, assert_never, cast, Literal, Self
+from typing import Sequence, assert_never, cast, Literal, Self, TYPE_CHECKING
 from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_buffer.impls.vim import PytoyBufferVim
 from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
 from pytoy.ui.pytoy_window.vim_window_utils import VimWinIDConverter, get_last_selection
-from pytoy.infra.core.entity import EntityRegistryProvider
-from weakref import WeakValueDictionary
 
 from pytoy.ui.pytoy_window.protocol import (
     PytoyWindowProtocol,
@@ -21,8 +19,9 @@ from pytoy.ui.pytoy_window.protocol import (
 )
 from pytoy.ui.status_line import StatusLineManager
 
+if TYPE_CHECKING: 
+    from pytoy.contexts.vim import GlobalVimContext
 
-kernel_registry: EntityRegistry = EntityRegistryProvider.get(VimWindowKernel)
 
 class PytoyWindowVim(PytoyWindowProtocol):
     """
@@ -30,8 +29,11 @@ class PytoyWindowVim(PytoyWindowProtocol):
     Provides methods to interact with the Vim UI for Pytoy.
     """
     # NOTE: In neovim, `vim.Window` does not exist.
-    def __init__(self, winid: int, *, kernel_registry: EntityRegistry = kernel_registry):
-        self._kernel = cast(VimWindowKernel, kernel_registry.get(winid))
+    def __init__(self, winid: int, *, ctx: GlobalVimContext | None = None):
+        from pytoy.contexts.vim import GlobalVimContext
+        if ctx is None:
+            ctx = GlobalVimContext.get()
+        self._kernel = ctx.window_kernel_registry.get(winid)
         self._winid = self._kernel.winid
 
         
@@ -101,7 +103,7 @@ class PytoyWindowVim(PytoyWindowProtocol):
 
     @property
     def events(self) -> WindowEvents:
-        return self._kernel.on_closed
+        return self._kernel.events
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PytoyWindowVim):

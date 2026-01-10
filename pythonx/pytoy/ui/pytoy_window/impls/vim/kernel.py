@@ -1,15 +1,24 @@
+from __future__ import annotations
 from pytoy.ui.pytoy_window.protocol import WindowEvents
 import vim
 from pytoy.infra.core.entity import MortalEntityProtocol
 from pytoy.infra.core.models.event import Event
 from pytoy.ui.pytoy_window.protocol import PytoyWindowID
 
+from typing import Sequence, assert_never, cast, Literal, Self, TYPE_CHECKING
+
 
 from pytoy.ui.pytoy_window.vim_window_utils import VimWinIDConverter
 
+if TYPE_CHECKING: 
+    from pytoy.contexts.vim import GlobalVimContext
+
 
 class VimWindowKernel(MortalEntityProtocol):
-    def __init__(self, winid: int):
+    def __init__(self, winid: int, *, ctx: GlobalVimContext | None = None):
+        from pytoy.contexts.vim import GlobalVimContext
+        if ctx is None:
+            ctx = GlobalVimContext.get()
         self._winid = winid
         # Value Object.
         self._window_events = WindowEvents.from_winid(self._winid)
@@ -53,3 +62,7 @@ class VimWindowKernel(MortalEntityProtocol):
     @property
     def on_closed(self) -> Event[PytoyWindowID]:
         return self._window_events.on_closed
+
+    @property
+    def events(self) -> WindowEvents:
+        return self._window_events

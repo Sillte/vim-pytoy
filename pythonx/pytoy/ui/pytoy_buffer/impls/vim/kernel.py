@@ -1,14 +1,25 @@
+from __future__ import annotations
+
 import vim
+from typing import TYPE_CHECKING
 
 from pytoy.infra.core.entity import MortalEntityProtocol
 from pytoy.infra.core.models.event import Event
 from pytoy.infra.events.buffer_events import ScopedBufferEventProvider
 
+if TYPE_CHECKING:
+    from pytoy.contexts.vim import GlobalVimContext
+
 
 class VimBufferKernel(MortalEntityProtocol):
-    def __init__(self, bufnr: int):
+    def __init__(self, bufnr: int, *, ctx: GlobalVimContext | None = None) -> None:
         self._bufnr = bufnr
-        self._wipeout_event = ScopedBufferEventProvider.get_wipeout_event(bufnr)
+        
+        if ctx is None:
+            from pytoy.contexts.vim import GlobalVimContext
+            ctx = GlobalVimContext.get()
+        scoped_buffer_event_provider = ScopedBufferEventProvider.from_ctx(ctx)
+        self._wipeout_event = scoped_buffer_event_provider.get_wipeout_event(bufnr)
         self.on_wipeout = self.on_end
 
     @property

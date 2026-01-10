@@ -9,7 +9,7 @@ This module is intended to provide the common interface for bufffer.
 
 from pathlib import Path
 from typing import Literal, TYPE_CHECKING, Sequence
-from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, Event, BufferID
+from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, Event, BufferID, BufferEvents
 from pytoy.infra.core.models import CharacterRange, LineRange
 
 if TYPE_CHECKING:
@@ -21,8 +21,16 @@ class PytoyBuffer(PytoyBufferProtocol):
         self._impl = impl
 
     @property
+    def buffer_id(self) -> BufferID:
+        return self._impl.buffer_id
+
+    @property
     def on_wiped(self) -> Event[BufferID]:
         return self._impl.on_wiped
+
+    @property
+    def events(self) -> BufferEvents:
+        return self._impl.events
 
     @classmethod
     def get_current(cls):

@@ -1,9 +1,10 @@
+from __future__ import annotations
 from pathlib import Path
-from pytoy.infra.core.entity import EntityRegistry, EntityRegistryProvider
+from pytoy.infra.core.entity import EntityRegistry
 from pytoy.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel
 from pytoy.ui.pytoy_buffer.impls.vscode.kernel import normalize_lf_code
 from pytoy.ui.pytoy_buffer.impls.vscode.range_operator import RangeOperatorVSCode
-from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, Event, BufferID
+from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, Event, BufferID, BufferEvents
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver, Uri
 from pytoy.ui.vscode.document import Document
 from pytoy.ui.utils import to_filepath
@@ -13,19 +14,27 @@ import vim
 
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol
+    from pytoy.contexts.vscode import GlobalVSCodeContext
     
 
-kernel_registry: EntityRegistry = EntityRegistryProvider.get(VSCodeBufferKernel)
-
-
 class PytoyBufferVSCode(PytoyBufferProtocol):
-    def __init__(self, bufnr: BufferID, *, kernel_registry: EntityRegistry=kernel_registry):
+    def __init__(self, bufnr: BufferID, *, ctx: GlobalVSCodeContext | None =None):
+
+        if ctx is None:
+            from pytoy.contexts.vscode import GlobalVSCodeContext  # ✅ 実装時のみインポート
+            ctx = GlobalVSCodeContext.get()
+        kernel_registry: EntityRegistry = ctx.buffer_kernel_registry
         self._kernel: VSCodeBufferKernel = kernel_registry.get(bufnr)
+
+    @property
+    def buffer_id(self) -> BufferID:
+        return self._kernel.bufnr
 
     @property
     def kernel(self) -> VSCodeBufferKernel:
         return self._kernel
 
+    @property
     def bufnr(self, ) -> BufferID:
         return self._kernel.bufnr
     
@@ -51,6 +60,10 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     @property
     def on_wiped(self) -> Event[BufferID]:
         return self._kernel.on_end
+
+    @property
+    def events(self) -> BufferEvents:
+        return BufferEvents(on_wiped=self.kernel.on_end)
 
     @classmethod
     def get_current(cls) -> PytoyBufferProtocol:
@@ -130,11 +143,9 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         return RangeOperatorVSCode(self.kernel)
 
     def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindowProtocol"]:
-        from pytoy.ui.pytoy_window.impl_vscode import PytoyWindowVSCode
+        from pytoy.ui.pytoy_window.impls.vscode import PytoyWindowVSCode
         #editors = [editor for editor in Editor.get_editors(only_visible=only_visible)
         #            if editor.uri == self.document.uri]
         res = vim.eval(f"win_findbuf({self.bufnr})")
         winids = [int(wid) for wid in res] if res else []
         return [PytoyWindowVSCode(winid) for winid in winids]
-
-

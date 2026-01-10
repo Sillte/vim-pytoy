@@ -23,12 +23,16 @@ class GlobalVimContext:
     @cached_property
     def buffer_kernel_registry(self) -> EntityRegistry[int, VimBufferKernel]:
         from pytoy.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
-        return EntityRegistry(VimBufferKernel)
+        def factory(bufnr: int) -> VimBufferKernel:
+            return VimBufferKernel(bufnr, ctx=self)
+        return EntityRegistry(VimBufferKernel, factory=factory)
 
     @cached_property
     def window_kernel_registry(self) -> EntityRegistry[int, VimWindowKernel]:
         from pytoy.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
-        return EntityRegistry(VimWindowKernel)
+        def factory(winid: int) -> VimWindowKernel:
+            return VimWindowKernel(winid, ctx=self)
+        return EntityRegistry(VimWindowKernel, factory=factory)
 
     @cached_property
     def autocmd_manager(self) -> AutoCmdManager:

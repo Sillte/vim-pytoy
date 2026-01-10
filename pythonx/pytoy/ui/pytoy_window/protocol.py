@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Protocol, Sequence, Literal, Self, Any
+from typing import Protocol, Sequence, Literal, Self, Any, TYPE_CHECKING
 from pathlib import Path
 
 from pytoy.infra.core.models.event import Event
@@ -10,6 +10,9 @@ from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
 from pytoy.ui.pytoy_window.models import ViewportMoveMode
 from pytoy.ui.pytoy_window.models import BufferSource, WindowCreationParam
 from pytoy.ui.status_line.protocol import StatusLineManagerProtocol, StatusLineItem
+
+if TYPE_CHECKING: 
+    from pytoy.contexts.vim import GlobalVimContext
 
 PytoyWindowID = Any
 
@@ -77,7 +80,11 @@ class WindowEvents:
     on_closed: Event[PytoyWindowID]
 
     @classmethod
-    def from_winid(cls, winid: PytoyWindowID) -> Self:
+    def from_winid(cls, winid: PytoyWindowID, *, ctx: GlobalVimContext | None = None) -> Self:
+        from pytoy.contexts.vim import GlobalVimContext
+        if ctx is None:
+            ctx = GlobalVimContext.get()
+        provider = ScopedWindowEventProvider.from_ctx(ctx=ctx)
         return cls(entity_id = winid,
-            on_closed = ScopedWindowEventProvider.get_winclosed_event(winid)
+            on_closed = provider.get_winclosed_event(winid)
             )
