@@ -1,8 +1,8 @@
 
 
-from typing import Any, Callable
+from typing import Any, Callable, Any
 
-type Listener[T] = Callable[[T], None]
+type Listener[T] = Callable[[T], Any]
 type Dispose = Callable[[], None]
 
 
@@ -60,7 +60,11 @@ class EventEmitter[T]:
         self._listeners.append(listener)
 
         def dispose():
-            self._listeners.remove(listener)
+            # For idempotency, 
+            try:
+                self._listeners.remove(listener)
+            except (ValueError, RuntimeError):
+                pass
 
         return Disposable(dispose)
 
