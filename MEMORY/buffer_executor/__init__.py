@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Optional, Callable, Any, Mapping, Sequence, Annotated
-from pytoy.ui import PytoyQuickFix, handle_records, QuickFixRecord
+from pytoy.ui import PytoyQuickfix, handle_records, QuickfixRecord
 
 from pytoy.ui import PytoyBuffer
 
@@ -21,9 +21,9 @@ from pytoy.lib_tools.buffer_executor.buffer_job_manager import BufferJobCreation
 
 from pytoy.ui.pytoy_buffer import make_buffer, make_duo_buffers
 
-from pytoy.ui.pytoy_quickfix import to_quickfix_creator, QuickFixCreator
+from pytoy.ui.pytoy_quickfix import to_quickfix_creator, QuickfixCreator, QuickfixRecordRegex
 
-from pytoy.lib_tools.environment_manager import EnvironmentManager
+from pytoy.lib_tools.environment_manager import OldEnvironmentManager
 
 
 class BufferExecutor:
@@ -63,13 +63,13 @@ class BufferExecutor:
         return self._stderr
     
     def run(self, command: str,
-                  quickfix_creator: QuickFixCreator | None = None,  
+                  quickfix_creator: QuickfixCreator | QuickfixRecordRegex |  None = None,  
                   cwd: str | Path | None = None,
                   command_wrapper: CommandWrapper | None = None,
                    *, env: Mapping[str, str] | None = None, 
                    on_closed: OnClosedCallable | None = None) -> None: 
         if command_wrapper is None:
-            command_wrapper = EnvironmentManager().get_command_wrapper()
+            command_wrapper = OldEnvironmentManager().get_command_wrapper()
         if cwd is None:
             cwd = get_current_directory()
 
@@ -89,7 +89,7 @@ class BufferExecutor:
             if quickfix_creator:
                 records = quickfix_creator(content)
                 handle_records(
-                    PytoyQuickFix(), records=records, is_open=False
+                    PytoyQuickfix(), records=records, is_open=False
                 )
             if on_closed:
                 on_closed(buffer_job)

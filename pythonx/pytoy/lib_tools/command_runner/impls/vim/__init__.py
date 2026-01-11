@@ -1,7 +1,7 @@
 from __future__ import annotations 
 import vim
-from pytoy.lib_tools.buffer_runner.models import OutputJobRequest, SpawnOption, JobID, JobEvents, Snapshot, OutputJobProtocol
-from pytoy.lib_tools.buffer_runner.impls.core import OutputJobCore
+from pytoy.lib_tools.command_runner.models import OutputJobRequest, SpawnOption, JobID, JobEvents, Snapshot, OutputJobProtocol
+from pytoy.lib_tools.command_runner.impls.core import OutputJobCore
 from pytoy.lib_tools.process_utils import  find_children_pids
 from pytoy.infra.vim_function import VimFunctionName, PytoyVimFunctions
 from pytoy.infra.timertask import TimerTask
@@ -24,7 +24,7 @@ class OutputJobVim(OutputJobProtocol):
     def _start(self, job_request: OutputJobRequest, spawn_option: SpawnOption):
         on_out = PytoyVimFunctions.register(lambda _, line: self._core.emit_stdout(line), prefix="OutputJobOut")
         on_err = PytoyVimFunctions.register(lambda _, line: self._core.emit_stderr(line), prefix="OutputJobErr")
-        on_exit = PytoyVimFunctions.register(lambda _j, _s: self._core.emit_exit(self), prefix="OutputJobExit")
+        on_exit = PytoyVimFunctions.register(lambda _j, status: self._core.emit_exit(self, status), prefix="OutputJobExit")
         vim_funcs = [on_out, on_err, on_exit]
 
         def _cleanup():
@@ -36,11 +36,7 @@ class OutputJobVim(OutputJobProtocol):
         self._disposables = []
         self._disposables.append(self.events.on_job_exit.subscribe(lambda _ : TimerTask.execute_oneshot(_cleanup, interval=0)))
         
-        command_wrapper = job_request.command_wrapper
-        if command_wrapper:
-            command_literal = command_wrapper(job_request.command)
-        else:
-            command_literal = job_request.command
+        command_list = self._core.normalize_command(job_request.command)
 
         output_requests = set(job_request.outputs)
 
@@ -67,12 +63,12 @@ class OutputJobVim(OutputJobProtocol):
         import json
         self._jobid = f"{self._name}_{id(self)}"
 
-        vim.command(f"let g:{self._jobid} = job_start({json.dumps(command_literal)}, {json.dumps(option)})")
+        vim.command(f"let g:{self._jobid} = job_start({json.dumps(command_list)}, {json.dumps(option)})")
         self._disposables.append(self.events.on_job_exit.subscribe(lambda _: vim.command(f"silent! unlet g:{self._jobid}")))
 
         debug_status = vim.eval(f"job_status(g:{self._jobid})")
         if debug_status == "fail":
-            raise ValueError(f"Failed to execute the command, `{command_literal=}`, {option=}", )
+            raise ValueError(f"Failed to execute the command, `{command_list=}`, {option=}", )
 
     
     @property

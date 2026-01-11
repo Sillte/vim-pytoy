@@ -36,9 +36,9 @@ def fallback_argument(fargs: Sequence[str], target: str) -> F_ARGS:
 
 
 def workspace_func() -> str | None:
-    from pytoy.lib_tools.environment_manager import EnvironmentManager
+    from pytoy.lib_tools.environment_manager import OldEnvironmentManager
     # Currently, `python` environment is assumed, but it may be extended.
-    venv_folder = EnvironmentManager().get_uv_venv()
+    venv_folder = OldEnvironmentManager().get_uv_venv()
     if not venv_folder:
         print("Cannot obtain `workspace`.")
         return None

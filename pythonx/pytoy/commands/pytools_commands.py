@@ -7,7 +7,7 @@ from pytoy.ui import make_buffer
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.ui.pytoy_window import PytoyWindow
 from pytoy.ui.utils import to_filepath
-from pytoy.ui.pytoy_quickfix import QuickFixRecord
+from pytoy.ui.pytoy_quickfix import QuickfixRecord
 
 
 @CommandManager.register(name="Pytest")
@@ -16,14 +16,17 @@ class PyTestCommand:
 
     def __call__(self, command_type: str = "func"):
         import vim
-        from pytoy.lib_tools import BufferExecutor
+        from pytoy.lib_tools.command_executor import QuickfixCommandExecutor
+        from pytoy.lib_tools.command_executor import QuickfixCommandRequest
+        from pytoy.lib_tools.command_executor import ExecutionRequest
+        from pytoy.lib_tools.command_executor import BufferRequest
+        from pytoy.tools.pytest.utils import to_func_command, PytestDecipher
         from pytoy import TERM_STDOUT
 
         path = to_filepath(vim.current.buffer.name)
         cwd = path.parent
         line = int(vim.eval("line('.')"))
 
-        from pytoy.tools.pytest.utils import to_func_command, PytestDecipher
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
 
         command_type_to_func = {}
@@ -32,15 +35,17 @@ class PyTestCommand:
         command_type_to_func["file"] = lambda path, line: f'pytest "{path}" {suffix}'
         command_type_to_func["all"] = lambda path, line: f"pytest {suffix}"
 
-        def make_qf_records(content: str) -> Sequence[QuickFixRecord]:
+        def make_qf_records(content: str) -> Sequence[QuickfixRecord]:
             rows = PytestDecipher(content).records
-            return [QuickFixRecord.from_dict(row, cwd) for row in rows]
-        
+            return [QuickfixRecord.from_dict(row, cwd) for row in rows]
+
         command = command_type_to_func[command_type](path, line)
-        
-        executor = BufferExecutor("PytestCommand", stdout=pytoy_buffer)
-        executor.run(command, make_qf_records, cwd=cwd)
-        
+
+        executor = QuickfixCommandExecutor(BufferRequest(stdout=pytoy_buffer))
+        execution = ExecutionRequest(command=command, cwd=cwd)
+        request = QuickfixCommandRequest(execution=execution, creator=make_qf_records)
+        executor.execute(request)
+
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         candidates = ["func", "file", "all"]
         valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
@@ -52,27 +57,27 @@ class PyTestCommand:
 @CommandManager.register(name="Mypy")
 class MypyCommand:
     def __call__(self, opts: dict):
-        from pytoy.lib_tools import BufferExecutor
+        from pytoy.lib_tools.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
+        from pytoy.lib_tools.command_executor import BufferRequest
         from pytoy import TERM_STDOUT
-        from pytoy.lib_tools.environment_manager import EnvironmentManager
         from pytoy.commands.utils import override, workspace_func, fallback_argument
         import vim
 
+        current_path = to_filepath(vim.current.buffer.name)
 
-        current_path = str(to_filepath(vim.current.buffer.name))
-        
         fargs = opts["fargs"]
         fargs = override(fargs, {"workspace": workspace_func})
-        fargs = fallback_argument(fargs, current_path)
+        fargs = fallback_argument(fargs, str(current_path))
 
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
         arg = " ".join(map(str, fargs))
         command = f'mypy --show-traceback --show-column-numbers "{arg}"'
-        executor = BufferExecutor("MypyExecutor", pytoy_buffer)
+        executor = QuickfixCommandExecutor(buffer_request=BufferRequest(stdout=pytoy_buffer))
+        execution = ExecutionRequest(command=command, cwd=current_path.parent)
 
         quickfix_regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<_type>(.+)):(?P<text>(.+))"
-        executor.run(command, quickfix_regex)
-
+        request = QuickfixCommandRequest(execution=execution, creator=quickfix_regex)
+        executor.execute(request)
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         candidates = ["workspace"]
@@ -137,16 +142,14 @@ class GotoDefinitionCommand:
             raise ValueError("Cannot use `jedi_vim.goto`")
 
 
-
 @CommandManager.register(name="CSpell")
 class CSpellCommand:
     def __call__(self):
-
         from pathlib import Path
         from pytoy import TERM_STDOUT
         from pytoy.tools.cspell import CSpellOneFileChecker
         from pytoy.ui import to_filepath
-        from pytoy.ui.pytoy_quickfix import PytoyQuickFix, handle_records, to_quickfix_creator
+        from pytoy.ui.pytoy_quickfix import PytoyQuickfix, handle_records, to_quickfix_creator
 
         path = to_filepath(vim.current.buffer.name)
 
@@ -158,32 +161,58 @@ class CSpellCommand:
         regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+).*\((?P<text>(.+))\)"
         maker = to_quickfix_creator(regex, cwd=path.parent)
         records = maker(output)
-        handle_records(PytoyQuickFix(), records)
+        handle_records(PytoyQuickfix(), records)
 
 
 @CommandManager.register(name="RuffCheck")
 class RuffChecker:
     def __call__(self, opts: dict):
         from pytoy import TERM_STDOUT
-        from pytoy.lib_tools.buffer_executor import BufferExecutor
-        from pytoy.lib_tools.environment_manager import EnvironmentManager
         from pytoy.commands.utils import override, workspace_func, fallback_argument
+        from pytoy.contexts.core import GlobalCoreContext
 
+        from pytoy.lib_tools.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
+        from pytoy.lib_tools.command_executor import BufferRequest
+        import vim
+
+        current_path = to_filepath(vim.current.buffer.name)
+        cwd = current_path.parent
+        env_manager = GlobalCoreContext.get().environment_manager
+        execution_env = env_manager.solve_preference(cwd, preference=None)
         pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
-        executor = BufferExecutor("RuffChecer", pytoy_buffer)
 
-        current_path = str(to_filepath(vim.current.buffer.name))
+        def _format() -> None:
+            import subprocess
+
+            command = f"ruff format {fargs[0]}"
+            command = execution_env.command_wrapper(command)
+
+            result = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                cwd=cwd,
+                text=True,
+            )
+            pytoy_buffer.init_buffer(result.stdout)
 
         fargs = opts["fargs"]
         fargs = override(fargs, {"workspace": workspace_func})
-        fargs = fallback_argument(fargs, current_path)
-        def _format() -> None:
-            executor.sync_run(f"ruff format {fargs[0]}")
+        fargs = fallback_argument(fargs, str(current_path))
         fargs = override(fargs, {"--format": _format})
 
+        buffer_request = BufferRequest(stdout=pytoy_buffer)
+        pytoy_buffer.init_buffer()
+        executor = QuickfixCommandExecutor(buffer_request)
+
         command = f"ruff check {' '.join(map(str, fargs))} --output-format=concise"
-        regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<text>(.+))"
-        executor.run(command, quickfix_creator=regex)
+        execution = ExecutionRequest(
+            command=command, cwd=current_path.parent, command_wrapper=execution_env.command_wrapper
+        )
+        qf_creator = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<text>(.+))"
+
+        request = QuickfixCommandRequest(execution=execution, creator=qf_creator)
+        executor.execute(request, init_buffer=False)
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         candidates = ["workspace", "--fix", "--format", "--unsafe-fixes"]
@@ -191,3 +220,7 @@ class RuffChecker:
         if valid_candidates:
             return valid_candidates
         return candidates
+
+
+if __name__ == "__main__":
+    pass

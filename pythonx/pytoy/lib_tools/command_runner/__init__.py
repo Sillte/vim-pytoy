@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Mapping, Any, TYPE_CHECKING
 
-from pytoy.lib_tools.buffer_runner.models import OutputJobProtocol, OutputJobRequest, SpawnOption, JobEvents
+from pytoy.lib_tools.command_runner.models import OutputJobProtocol, OutputJobRequest, SpawnOption, JobEvents, JobID
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.ui import PytoyBuffer
 from pytoy.ui.pytoy_buffer import make_buffer, make_duo_buffers
@@ -28,23 +28,29 @@ def _solve_buffers(stdout: PytoyBuffer | str, stderr: PytoyBuffer| str | None):
 def make_output_job(job_request: OutputJobRequest, spawn_option: SpawnOption) -> OutputJobProtocol:
     ui_enum = get_ui_enum()
     if ui_enum == UIEnum.VIM:
-        from pytoy.lib_tools.buffer_runner.impls.vim import OutputJobVim
+        from pytoy.lib_tools.command_runner.impls.vim import OutputJobVim
         return OutputJobVim(job_request, spawn_option)
     elif ui_enum in {UIEnum.NVIM, UIEnum.VSCODE}:
-        from pytoy.lib_tools.buffer_runner.impls.nvim import OutputJobNvim
+        from pytoy.lib_tools.command_runner.impls.nvim import OutputJobNvim
         return OutputJobNvim(job_request, spawn_option)
     else:
         raise RuntimeError(f"Unsupported UI: {ui_enum}")
         
 
-class BufferRunner:
+class CommandRunner:
+    @classmethod
+    def solve_buffers(cls, stdout: PytoyBuffer | str, 
+                           stderr: PytoyBuffer| str | None = None) -> tuple[PytoyBuffer, PytoyBuffer | None]:
+        return _solve_buffers(stdout, stderr)
+
+
     def __init__(self, stdout: PytoyBuffer | str,
                        stderr: PytoyBuffer| str | None = None,
                          *,
                        init_buffer: bool = True,
                        output_job_factory: Callable[..., OutputJobProtocol] = make_output_job, 
                        ctx:  GlobalPytoyContext | None = None ) -> None:
-        stdout, stderr =  _solve_buffers(stdout, stderr)
+        stdout, stderr =  self.solve_buffers(stdout, stderr)
         if init_buffer:
             stdout.init_buffer()
             if stderr:
@@ -53,6 +59,15 @@ class BufferRunner:
         self._stderr = stderr
         self._output_job_factory = output_job_factory
         self._output_job: OutputJobProtocol | None  = None
+        
+    @property
+    def stdout(self) -> PytoyBuffer:
+        return self._stdout
+
+    @property
+    def stderr(self) -> PytoyBuffer | None:
+        return self._stdout
+
         
     def _wire_events(self, request: OutputJobRequest, job_events: JobEvents):
         disposables = []
@@ -72,12 +87,26 @@ class BufferRunner:
         if request.on_exit:
             disposables.append(job_events.on_job_exit.subscribe(request.on_exit))
         return disposables
+    
+    @property
+    def events(self) -> JobEvents:
+        if not self._output_job:
+            msg = "Until `run` is invoked, `events` cannot be accessed. "
+            raise RuntimeError(msg)
+        return self._output_job.events
+
+    @property
+    def job_id(self) -> JobID:
+        if not self._output_job:
+            msg = "Until `run` is invoked, `job_id` cannot be accessed. "
+            raise RuntimeError(msg)
+        return self._output_job.job_id
 
     def run(
         self,
         request: OutputJobRequest,
         spawn_option: SpawnOption | None = None,
-    ) -> None:
+    ) -> JobID:
         if self._output_job:
             raise RuntimeError("Runner already running.")
 
@@ -85,6 +114,7 @@ class BufferRunner:
         self._output_job = self._output_job_factory(request, spawn_option)
         self._job_disposables = []
         self._job_disposables += self._wire_events(request, self._output_job.events)
+        return self._output_job.job_id
     
     def _dispose_job(self, ):  
         """Dispose the disposable related to `output_job`. 
@@ -141,7 +171,7 @@ if __name__ == "__main__":
     on_exit=lambda job: print(f"\n[Finalized] Job ID: {job.job_id} finished.")
 )
     # 実行
-    runner = BufferRunner( "TEST_BUFFER")
+    runner = CommandRunner( "TEST_BUFFER")
     runner.run(request)
 
     import time  

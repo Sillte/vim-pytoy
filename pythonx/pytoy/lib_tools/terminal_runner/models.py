@@ -32,38 +32,40 @@ class WaitOperation:
 
 type InputOperation = WaitOperation | str
 
+type TerminalName = str
+type CommandStr = str
+type Pid = int
+type ChildrenPids = list[int]
+type InputStr = str
 
 class TerminalDriverProtocol(Protocol):
     @property
-    def name(self) -> str:
-        ...
-
+    def name(self) -> str: ...
     @property
-    def command(self) -> str:
-        """The name of command"""
-        ...
+    def command(self) -> str: ...
+    @property
+    def eol(self) -> str | None: ...
 
-    def is_busy(self, children_pids: list[int], snapshot: Snapshot) -> bool | None:
-        """Return whether the `terminal` is busy or not.
-        Note that sometimes, the estimation is not perfect. (very difficult to realize perfection).
-        If the return is True, it is 100% sure that the process is busy,
-        If the return is False, it cannot guarantee that the process is NOT working.
-        (When we have to rely on the lastline, mis-detection cannot be avoided.)
-        """
-        ...
+    def is_busy(self, children_pids: ChildrenPids, snapshot: Snapshot, /) -> bool | None: ...
+    def make_operations(self, input_str: str, /) -> Sequence[InputOperation]: ...
+    def interrupt(self, pid: int, children_pids: ChildrenPids, /) -> None | InputOperation: ...
 
-    def make_lines(self, input_str: str) -> Sequence[InputOperation]:
-        """Make the lines which is sent into `pty`.
-
-        * If `\r` / `\n` is added at the end of elements, they are sent as is.
-        * Otherwise, the LF is appended at the end of elements.
-        """
-        ...
-
-    def interrupt(self, pid: int, children_pids: list[int]) -> None:
-        """Interrupt the process. if possible."""
-        ...
         
+@dataclass(frozen=True)
+class TerminalDriver:
+    name: CommandStr
+    command: str
+    make_operations: Callable[[str], Sequence[InputOperation]] 
+    eol: str | None  = None
+    
+    def is_busy(self, children_pids: list[int], snapshot: Snapshot) -> bool | None:
+        return 
+
+    def interrupt(self, pid: int, children_pids: list[int]) -> None | InputOperation:
+        return 
+    
+
+
 
 @dataclass
 class ConsoleConfiguration:
@@ -76,6 +78,7 @@ class TerminalJobRequest:
     driver: TerminalDriverProtocol
     name: str = "default"
     on_exit: Callable[[Any], None] | None = None
+    # Note: ConsoleConfiguration is no applicable in nvim.
     console: ConsoleConfiguration = field(default_factory=lambda :ConsoleConfiguration())
 
 @dataclass(frozen=True)
@@ -108,7 +111,7 @@ class TerminalJobProtocol(Protocol):
     def alive(self) -> bool:
         ...
 
-    def send(self, input: str) -> None:
+    def send(self, input: str, /) -> None:
         ...
 
     def interrupt(self) -> None:
@@ -135,3 +138,5 @@ class TerminalJobProtocol(Protocol):
     @property
     def events(self) -> JobEvents:
         ...
+
+

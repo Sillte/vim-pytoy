@@ -8,28 +8,27 @@ from pathlib import  Path
 from typing import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
-from pytoy.lib_tools.buffer_executor import BufferJobManager, BufferJobCreationParam, BufferJobProtocol
+from pytoy.contexts.pytoy import GlobalPytoyContext
+from pytoy.lib_tools.command_executor import CommandExecutor, BufferRequest, ExecutionRequest, ExecutionHooks, ExecutionResult
+from pytoy.lib_tools.command_executor import CommandExecutionManager 
 
 # `set_default_execution_mode` is carried out only in `__init__.py`
-from pytoy.lib_tools.environment_manager import EnvironmentManager
+from pytoy.lib_tools.environment_manager import OldEnvironmentManager
 from pytoy.lib_tools.utils import get_current_directory
 
 
-from pytoy.ui import PytoyBuffer, PytoyQuickFix, handle_records, QuickFixRecord
+from pytoy.ui import PytoyBuffer, PytoyQuickfix, handle_records, QuickfixRecord
 
-@dataclass
-class PrevRunningState:
-    cwd: Path  | str |  None = None
-    path: Path | str | None = None
-    env: Mapping[str, str] | None = None
-    force_uv: bool | None = None
 
-_PREV_STATE = PrevRunningState()
 
 class PythonExecutor():
-    job_name = "PythonExecutor"
-    def __init__(self) -> None:
-        pass
+    command_kind = "PythonExecutor"
+    
+    def __init__(self, *, execution_manager:  CommandExecutionManager | None = None):
+        if not execution_manager:
+            execution_manager = GlobalPytoyContext.get().command_execution_manager
+        self.execution_manager = execution_manager
+
 
     def runfile(
         self,
@@ -44,71 +43,52 @@ class PythonExecutor():
 
         if cwd is None:
             cwd = get_current_directory()
-        command = f'python -u -X utf8 "{path}"'
-        
-        _PREV_STATE.cwd = cwd
-        _PREV_STATE.path = path
-        _PREV_STATE.env = env
-        _PREV_STATE.force_uv = force_uv
-        self._run(command, stdout, stderr, cwd=cwd, env=env, force_uv=force_uv) 
+        else:
+            cwd = Path(cwd)
+        #command = f'python -u -X utf8 "{path}"'
+        command = ["python", "-u", "-X", "urf8", str(path)]
+
+        buffer_request = BufferRequest(stdout=stdout, stderr=stderr)
+        executor = CommandExecutor(buffer_request)
+        execution_req = ExecutionRequest(command, cwd=cwd, env=env, command_wrapper="uv" if force_uv else "auto")
+        hooks = ExecutionHooks(on_finish=lambda res: self.on_closed(res, stderr=stderr, cwd=cwd))
+        executor.execute(execution_req, hooks=hooks, kind=self.command_kind)
+
 
     def rerun(self, stdout, stderr, force_uv=None):
         """Execute the previous `path`."""
-        if _PREV_STATE.path is None:
-            raise RuntimeError("Previous file is not existent.")
+        last_context = self.execution_manager.get_last_context_by_kind(self.command_kind)
+        if not last_context: 
+            raise RuntimeError("Previous executions are not existent.")
+        
+        execution_req = last_context.execution_request
+        cwd = execution_req.cwd
+        if cwd is None:
+            raise RuntimeError("Violation of `last_context`, `cwd` is None.")
+        buffer_request = BufferRequest(stdout=stdout, stderr=stderr)
+        executor = CommandExecutor(buffer_request)
 
-        cwd = _PREV_STATE.cwd
-        path = _PREV_STATE.path
-        env = _PREV_STATE.env
-        force_uv = _PREV_STATE.force_uv
-
-        return self.runfile(path, stdout, stderr, cwd=cwd, force_uv=force_uv, env=env)
+        hooks = ExecutionHooks(on_finish=lambda res: self.on_closed(res, stderr=stderr, cwd=Path(cwd)))
+        executor.execute(execution_req, hooks=hooks)
+        
 
     def stop(self):
-        BufferJobManager.stop(self.job_name)
+        for execution in self.execution_manager.get_running(kind=self.command_kind):
+            execution.runner.terminate()
         
     @property 
     def is_running(self) -> bool:
-        return BufferJobManager.is_running(self.job_name)
+        return bool(self.execution_manager.get_running(kind=self.command_kind))
         
-
-    def _run(self,
-            command: str,
-            stdout: PytoyBuffer,
-            stderr: PytoyBuffer,
-            cwd: str | Path | None = None,
-            env: dict[str, str] | None = None,
-            *,
-            force_uv: bool | None = None):
-        if cwd is None:
-            cwd = get_current_directory()
-        wrapper = EnvironmentManager().get_command_wrapper(force_uv=force_uv)
-        wrapped_command  = wrapper(command)
-        param = BufferJobCreationParam(command=wrapped_command,
-                                       cwd=cwd,
-                                       env=env,
-                                       stdout=stdout,
-                                       stderr=stderr,
-                                       on_closed=lambda buffer_job: self.on_closed(buffer_job, cwd))
-
-        if BufferJobManager.is_running(self.job_name):
-            raise ValueError(f"`{self.job_name=}` is already running")
-
-        stdout.init_buffer(wrapped_command)
-        stderr.init_buffer()
-        BufferJobManager.create(self.job_name, param)
         
-
-    def on_closed(self, buffer_job: BufferJobProtocol, cwd: Path | str) -> None:
-        assert buffer_job.stderr is not None
-        error_msg = buffer_job.stderr.content.strip()
-
+    def on_closed(self, result: ExecutionResult, stderr: PytoyBuffer, cwd: Path) -> None: 
+        error_msg = result.snapshot.stderr
         qflist = self._make_qflist(error_msg, cwd)
-        handle_records(PytoyQuickFix(), records=qflist, is_open=False)
+        handle_records(PytoyQuickfix(), records=qflist, is_open=False)
         if not error_msg:
-            buffer_job.stderr.hide()
+            stderr.hide()
 
-    def _make_qflist(self, string: str, cwd: Path) -> list[QuickFixRecord]:
+    def _make_qflist(self, string: str, cwd: Path) -> list[QuickfixRecord]:
         _pattern = re.compile(r'\s+File "(.+)", line (\d+)')
         result = list()
         lines = string.split("\n")
@@ -123,7 +103,7 @@ class PythonExecutor():
                 index += 1
                 text = lines[index].strip()
                 row["text"] = text
-                record = QuickFixRecord.from_dict(row, cwd)
+                record = QuickfixRecord.from_dict(row, cwd)
                 result.append(record)
             index += 1
         result = list(reversed(result))

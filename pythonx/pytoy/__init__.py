@@ -1,7 +1,5 @@
 import vim
 
-from pytoy.lib_tools.environment_manager import EnvironmentManager
-from pytoy.ui import lightline_utils
 from pytoy.ui import to_filepath
 
 from pytoy.tools.python import PythonExecutor
@@ -23,7 +21,7 @@ def run(path=None):
     if executor.is_running:
         raise RuntimeError("Currently, `PythonExecutor` is running.")
 
-    from pytoy.ui import make_duo_buffers, PytoyBuffer
+    from pytoy.ui import make_duo_buffers
 
     stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
 
@@ -42,8 +40,9 @@ def rerun():
 
 
 def stop():
-    from pytoy.lib_tools.buffer_executor.buffer_job_manager import BufferJobManager
-    BufferJobManager.stop_all()
+    from pytoy.contexts.pytoy import GlobalPytoyContext
+    for item in GlobalPytoyContext.get().command_execution_manager.get_running():
+        item.runner.terminate()
 
 
 def is_running() -> int:
@@ -65,8 +64,9 @@ def reset():
 def term():
     """Open the terminal window
     with virtual environment.
+
     """
-    from pytoy.lib_tools.environment_manager import EnvironmentManager, term_start
+    from pytoy.lib_tools.environment_manager import term_start
     term_start()
 
 

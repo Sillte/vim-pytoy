@@ -4,13 +4,13 @@ from pathlib import Path
 from pytoy.infra.core.models import CursorPosition
 
 @dataclass
-class QuickFixRecord:
-    """Record of QuickFix.
+class QuickfixRecord:
+    """Record of Quickfix.
     """
     # Required parameters
     filename: str  # This must be the absolute path
-    lnum: int  # 1-based, from the defintion of `QuickFix in Vim`.
-    col: int = 1 # 1-based, from the defintion of `QuickFix in Vim`.
+    lnum: int  # 1-based, from the defintion of `Quickfix in Vim`.
+    col: int = 1 # 1-based, from the defintion of `Quickfix in Vim`.
     text: str = ""
 
     valid: bool = True
@@ -85,7 +85,7 @@ class QuickFixRecord:
         return CursorPosition(self.lnum - 1, self.col - 1)
 
 @dataclass
-class QuickFixState:
+class QuickfixState:
     """Represents the selection state of quickfix.
     """
     index: int | None # 0-based. if `size` == 0, then index is None
@@ -93,7 +93,7 @@ class QuickFixState:
 
     def __post_init__(self):
         if self.size < 0:
-            raise ValueError("QuickFixState: size must not be negative. ")
+            raise ValueError("QuickfixState: size must not be negative. ")
         if self.size == 0:
             self.index = None
         if 0 < self.size:

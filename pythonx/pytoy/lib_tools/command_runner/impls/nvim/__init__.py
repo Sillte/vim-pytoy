@@ -1,7 +1,7 @@
 from __future__ import annotations 
 import vim
-from pytoy.lib_tools.buffer_runner.models import OutputJobRequest, SpawnOption, JobID, JobEvents, Snapshot, OutputJobProtocol
-from pytoy.lib_tools.buffer_runner.impls.core import OutputJobCore
+from pytoy.lib_tools.command_runner.models import OutputJobRequest, SpawnOption, JobID, JobEvents, Snapshot, OutputJobProtocol
+from pytoy.lib_tools.command_runner.impls.core import OutputJobCore
 from pytoy.lib_tools.process_utils import  find_children_pids
 from pytoy.infra.core.models.event import Event, EventEmitter
 from pytoy.infra.vim_function import PytoyVimFunctions
@@ -38,7 +38,7 @@ class OutputJobNvim(OutputJobProtocol):
             elif event == 'exit':
                 # 第2引数の data に終了コード（int）が入る
                 exit_code = data if isinstance(data, int) else 0
-                self._core.emit_exit(self) # 後でここに exit_code を渡せるように拡張
+                self._core.emit_exit(self, exit_code) 
 
         # イベントハンドラの登録
         on_event_vimfunc = PytoyVimFunctions.register(_on_event, prefix="OutputJobNvim")
@@ -64,7 +64,7 @@ class OutputJobNvim(OutputJobProtocol):
             option["env"] = spawn_option.env
 
         # コマンドの準備
-        cmd = job_request.command_wrapper(job_request.command) if job_request.command_wrapper else job_request.command
+        cmd = self._core.normalize_command(job_request.command)
 
         # 実行
         try:

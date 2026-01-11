@@ -21,6 +21,7 @@ from pytoy.infra.vim_function import PytoyVimFunctions
 from pytoy.infra.events import EventEmitter
 from pytoy.lib_tools.process_utils import find_children_pids
 
+
 class TerminalJobCore:
     """
     ターミナルジョブの核となる共通ロジックと状態を管理。
@@ -38,7 +39,7 @@ class TerminalJobCore:
             on_job_exit=self.exit_emitter.event
         )
         self._cwd = Path(self.spawn_option.cwd or Path.cwd())
-
+        
     @property
     def cwd(self) -> Path:
         return self._cwd
@@ -49,3 +50,8 @@ class TerminalJobCore:
     def dispose(self):
         self.update_emitter.dispose()
         self.exit_emitter.dispose()
+        
+    @staticmethod
+    def get_default_eol() -> str:
+        import os 
+        return  "\r\n" if os.name == "nt" else "\n"
