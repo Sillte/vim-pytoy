@@ -72,24 +72,28 @@ class TerminalJobVim(TerminalJobProtocol):
         self._core.exit_emitter.fire(exit_status)
         self.dispose()
 
-    def send(self, input: str) -> None:
-        if not self.alive:
-            return
-
-        operations: Sequence[InputOperation] = self._driver.make_lines(input)
-        
+    def _send_operations(self, operations: Sequence[InputOperation]) -> None:
         for op in operations:
             if isinstance(op, str):
                 # Apply line ending rule from protocol
-                suffix = "" if (op.endswith("\r") or op.endswith("\n")) else "\r"
+                eol = self._driver.eol 
+                suffix = eol if eol else TerminalJobCore.get_default_eol()
                 input_json = json.dumps(op + suffix)
                 vim.command(f"call term_sendkeys({self._bufnr}, {input_json})")
             elif isinstance(op, WaitOperation):
                 time.sleep(op.time)
 
+    def send(self, input: str) -> None:
+        if not self.alive:
+            return
+        operations: Sequence[InputOperation] = self._driver.make_operations(input)
+        self._send_operations(operations)
+        
     def interrupt(self) -> None:
         if self.alive:
-            self._driver.interrupt(self.pid, self.children_pids)
+            ret = self._driver.interrupt(self.pid, self.children_pids)
+            if ret:
+                self._send_operations([ret])
 
     def terminate(self) -> None:
         if self.alive:

@@ -3,21 +3,21 @@ import vim
 from typing import Sequence
 
 from pytoy.infra.timertask import TimerTask
-from pytoy.ui.pytoy_quickfix.protocol import  PytoyQuickFixUIProtocol
-from pytoy.ui.pytoy_quickfix.models import QuickFixRecord, QuickFixState
+from pytoy.ui.pytoy_quickfix.protocol import  PytoyQuickfixUIProtocol
+from pytoy.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
 from pytoy.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam, BufferSource
 
 
-class PytoyQuickFixVSCodeUI(PytoyQuickFixUIProtocol):
+class PytoyQuickfixVSCodeUI(PytoyQuickfixUIProtocol):
 
     def __init__(self, ):
         self._records = []
         self._index = None
 
-    def set_records(self, records:  Sequence[QuickFixRecord]) -> QuickFixState:
+    def set_records(self, records:  Sequence[QuickfixRecord]) -> QuickfixState:
         self._records = records
         self._index = self._index if self._index else 0
-        return QuickFixState(index=self._index, size=len(self._records))
+        return QuickfixState(index=self._index, size=len(self._records))
 
     def open(self) -> None:
         # We have to consider how to display in vscode.
@@ -27,7 +27,7 @@ class PytoyQuickFixVSCodeUI(PytoyQuickFixUIProtocol):
         # We have to consider how to display in vscode.
         pass
 
-    def jump(self, state: QuickFixState) -> QuickFixRecord | None:
+    def jump(self, state: QuickfixState) -> QuickfixRecord | None:
         if not self._records:
             return None
         if state.index is None:
@@ -44,11 +44,11 @@ class PytoyQuickFixVSCodeUI(PytoyQuickFixUIProtocol):
 
 
     @property
-    def records(self) -> Sequence[QuickFixRecord]:
+    def records(self) -> Sequence[QuickfixRecord]:
         # When the UI modification is implemented,
         # this is the connection point.
         return self._records
 
     @property
-    def state(self) -> QuickFixState | None:
-        return QuickFixState(self._index, len(self._records))
+    def state(self) -> QuickfixState | None:
+        return QuickfixState(self._index, len(self._records))

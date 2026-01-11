@@ -3,15 +3,15 @@ from pathlib import Path
 from typing import Sequence, Mapping, Any
 
 import json
-from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixProtocol, PytoyQuickFixUIProtocol
-from pytoy.ui.pytoy_quickfix.models import QuickFixRecord, QuickFixState
+from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickfixProtocol, PytoyQuickfixUIProtocol
+from pytoy.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
 
 from shlex import quote
 
 
-class PytoyQuickFixVimUI(PytoyQuickFixUIProtocol):
+class PytoyQuickfixVimUI(PytoyQuickfixUIProtocol):
 
-    def set_records(self, records:  Sequence[QuickFixRecord]) -> QuickFixState:
+    def set_records(self, records:  Sequence[QuickfixRecord]) -> QuickfixState:
         self._records = records
         rows = [record.to_dict() for record in records]
         safe_literal = vim.eval(f"string({json.dumps(rows)})")
@@ -25,7 +25,7 @@ class PytoyQuickFixVimUI(PytoyQuickFixUIProtocol):
         vim.command("cclose")
         vim.command("call setqflist([])")
 
-    def jump(self, state: QuickFixState) -> QuickFixRecord | None:
+    def jump(self, state: QuickfixState) -> QuickfixRecord | None:
         index = state.index
         if index is None:
             raise ValueError("State is illegal.")
@@ -42,28 +42,28 @@ class PytoyQuickFixVimUI(PytoyQuickFixUIProtocol):
         record_dict = res["items"][0]
         record = self._from_dict_to_record(record_dict)
         if not record.valid:
-            print("Invaid record in QuickFix")
+            print("Invaid record in Quickfix")
             return record
         # 3. 実際にジャンプ（cc）を実行
         vim.command("cc")
         return record
 
     @property
-    def records(self) -> Sequence[QuickFixRecord]:
+    def records(self) -> Sequence[QuickfixRecord]:
         dict_list = vim.eval("call getqflist()")
         return [self._from_dict_to_record(elem) for elem in dict_list]
 
     @property
-    def state(self) -> QuickFixState:
+    def state(self) -> QuickfixState:
         qf_info = vim.eval("getqflist({'idx': 0, 'size': 0})")
         size = int(qf_info["size"])
         v_idx = int(qf_info["idx"]) # 1-based
         # v_idx が 0 の場合はリストが空
         p_idx = (v_idx - 1) if v_idx > 0 else None
-        return QuickFixState(index=p_idx, size=size)
+        return QuickfixState(index=p_idx, size=size)
 
 
-    def _from_dict_to_record(self, data: dict[str, Any]) -> QuickFixRecord:
+    def _from_dict_to_record(self, data: dict[str, Any]) -> QuickfixRecord:
         bufnr = data.get("bufnr", 0)
         filename = vim.eval(f"fnamemodify(bufname({bufnr}), ':p')")
         data["filename"] = filename
@@ -71,10 +71,10 @@ class PytoyQuickFixVimUI(PytoyQuickFixUIProtocol):
             data["valid"] = False
         # Estimated `cwd`, if `filename` is absolute, it is not necessary. 
         cwd = Path(vim.eval("getcwd()"))
-        return QuickFixRecord.from_dict(data, cwd)
+        return QuickfixRecord.from_dict(data, cwd)
 
 
-class PytoyLocationListVimUI(PytoyQuickFixUIProtocol):
+class PytoyLocationListVimUI(PytoyQuickfixUIProtocol):
     def __init__(self, win_id: int):
         self._win_id = win_id
 
@@ -82,7 +82,7 @@ class PytoyLocationListVimUI(PytoyQuickFixUIProtocol):
     def win_id(self) -> int:
         return self._win_id
 
-    def set_records(self, records: Sequence[QuickFixRecord]) -> QuickFixState:
+    def set_records(self, records: Sequence[QuickfixRecord]) -> QuickfixState:
         """Set records to the location list and open the window."""
         rows = [record.to_dict() for record in records]
         safe_literal = vim.eval(f"string({json.dumps(rows)})")
@@ -116,7 +116,7 @@ class PytoyLocationListVimUI(PytoyQuickFixUIProtocol):
         else:
             vim.command("lclose")
 
-    def jump(self, state: QuickFixState) -> QuickFixRecord:
+    def jump(self, state: QuickfixState) -> QuickfixRecord:
         """Jump to the specific index in the location list."""
         if state.index is None:
             raise ValueError("Index of state is None.")
@@ -142,13 +142,13 @@ class PytoyLocationListVimUI(PytoyQuickFixUIProtocol):
         return record
 
     @property
-    def records(self) -> Sequence[QuickFixRecord]:
+    def records(self) -> Sequence[QuickfixRecord]:
         """Fetch current records from the location list."""
         dict_list = vim.eval(f"getloclist({self.win_id})")
         return [self._from_dict_to_record(elem) for elem in dict_list]
 
     @property
-    def state(self) -> QuickFixState:
+    def state(self) -> QuickfixState:
         """Fetch current state (index/size) from the location list."""
         # Note the second argument { 'idx': 0, 'size': 0 } to get specific info
         info = vim.eval(f"getloclist({self.win_id}, {{'idx': 0, 'size': 0}})")
@@ -156,9 +156,9 @@ class PytoyLocationListVimUI(PytoyQuickFixUIProtocol):
         v_idx = int(info["idx"]) # 1-based
         
         p_idx = (v_idx - 1) if v_idx > 0 else None
-        return QuickFixState(index=p_idx, size=size)
+        return QuickfixState(index=p_idx, size=size)
 
-    def _from_dict_to_record(self, data: dict[str, Any]) -> QuickFixRecord:
+    def _from_dict_to_record(self, data: dict[str, Any]) -> QuickfixRecord:
         bufnr = data.get("bufnr", 0)
         filename = vim.eval(f"fnamemodify(bufname({bufnr}), ':p')")
         data["filename"] = filename
@@ -166,4 +166,4 @@ class PytoyLocationListVimUI(PytoyQuickFixUIProtocol):
             data["valid"] = False
         # Estimated `cwd`, if `filename` is absolute, it is not necessary. 
         cwd = Path(vim.eval(f"getcwd({self.win_id})"))
-        return QuickFixRecord.from_dict(data, cwd)
+        return QuickfixRecord.from_dict(data, cwd)

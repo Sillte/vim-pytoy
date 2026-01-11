@@ -3,20 +3,20 @@ from pytoy.command import CommandManager
 
 @CommandManager.register(name="Qnext")
 def q_next():
-    from pytoy.ui.pytoy_quickfix import PytoyQuickFix
+    from pytoy.ui.pytoy_quickfix import PytoyQuickfix
 
-    PytoyQuickFix().next()
+    PytoyQuickfix().next()
 
 
 @CommandManager.register(name="Qprev")
 def q_prev():
-    from pytoy.ui.pytoy_quickfix import PytoyQuickFix
+    from pytoy.ui.pytoy_quickfix import PytoyQuickfix
 
-    PytoyQuickFix().prev()
+    PytoyQuickfix().prev()
 
 
 @CommandManager.register(name="QQ")
 def QQ():
-    from pytoy.ui.pytoy_quickfix import PytoyQuickFix
+    from pytoy.ui.pytoy_quickfix import PytoyQuickfix
 
-    PytoyQuickFix().jump()
+    PytoyQuickfix().jump()

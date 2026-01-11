@@ -1,13 +1,13 @@
-from pytoy.ui.pytoy_quickfix.models import QuickFixRecord, QuickFixState
-from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickFixStateResolverProtocol
+from pytoy.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
+from pytoy.ui.pytoy_quickfix.protocol import PytoyQuickfixStateResolverProtocol
 from typing import Sequence
 
-class PytoyQuickFixStateResolver(PytoyQuickFixStateResolverProtocol):
+class PytoyQuickfixStateResolver(PytoyQuickfixStateResolverProtocol):
     def resolve_record(
         self, 
-        records: Sequence[QuickFixRecord],
-        state: QuickFixState
-    ) -> QuickFixRecord | None:
+        records: Sequence[QuickfixRecord],
+        state: QuickfixState
+    ) -> QuickfixRecord | None:
         """Resolve a record from the state index."""
         if state.index is None:
             return None
@@ -15,14 +15,14 @@ class PytoyQuickFixStateResolver(PytoyQuickFixStateResolverProtocol):
             raise ValueError("Inconsistency of `size` occurs.")
         return records[state.index]
 
-    def shift_index(self, state: QuickFixState, diff_index: int) -> QuickFixState:
+    def shift_index(self, state: QuickfixState, diff_index: int) -> QuickfixState:
         """Calculate the new state by shifting the index with wrap-around."""
         if state.index is None:
             return state
-        return QuickFixState(index=state.index + diff_index, size=state.size)
+        return QuickfixState(index=state.index + diff_index, size=state.size)
 
-    def fix_index(self, state: QuickFixState, index: int) -> QuickFixState:
+    def fix_index(self, state: QuickfixState, index: int) -> QuickfixState:
         """Return the state where `index` if fixed."""
         if state.size == 0:
             return state
-        return QuickFixState(index=index, size=state.size)
+        return QuickfixState(index=index, size=state.size)

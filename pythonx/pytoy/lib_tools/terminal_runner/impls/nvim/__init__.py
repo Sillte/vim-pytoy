@@ -19,6 +19,7 @@ from pytoy.lib_tools.terminal_runner.models import (
     JobEvents,
     JobID
 )
+from pytoy.lib_tools.terminal_runner.impls.core import TerminalJobCore
 from pytoy.infra.core.models import CursorPosition
 from pytoy.infra.vim_function import PytoyVimFunctions
 from pytoy.infra.events import EventEmitter
@@ -29,14 +30,16 @@ class InputSolverTask:
     def __init__(self, job_id: int, driver: TerminalDriverProtocol):
         self.job_id = job_id
         self.driver = driver
+        self.enter_eol = self.driver.eol or TerminalJobCore.get_default_eol()
         self.queue: Queue[InputOperation | None] = Queue()
         self.alive = True
-        self.eof = "\r"
 
-    def send(self, input_str: str) -> None:
-        ops = self.driver.make_lines(input_str)
+    def send(self, input: InputOperation) -> None:
+        if isinstance(input, str):
+            ops = self.driver.make_operations(input)
+        else:
+            ops = [input]
         for op in ops:
-            print("op", op)
             self.queue.put(op)
 
     def loop(self) -> None:
@@ -54,19 +57,18 @@ class InputSolverTask:
                 if isinstance(op, str):
                     # Protocol: Append the appropriate `CR`.  
                     #suffix = "" if (op.endswith("\r") or op.endswith("\n")) else "\n"
-                    #clean_op = op.rstrip("\r\n")
-                    payload = op + self.eof
-                    #payload = op + suffix
+                    clean_op = op.rstrip("\r\n")
+                    payload = clean_op + self.enter_eol
                     # Safety: Use threadsafe_call for Neovim API from background thread
                     vim.session.threadsafe_call(
-                        lambda: vim.call('chansend', self.job_id, op + " ")
+                        lambda: vim.call('chansend', self.job_id, payload)
                     )
-                    import time
-                    time.sleep(0.1)
+                    #import time
+                    #time.sleep(0.1)
 
-                    vim.session.threadsafe_call(
-                        lambda: vim.call('chansend', self.job_id, self.eof)
-                    )
+                    #vim.session.threadsafe_call(
+                    #    lambda: vim.call('chansend', self.job_id, self.eof)
+                    #)
                 elif isinstance(op, WaitOperation):
                     time.sleep(op.time)
             except Exception:
@@ -82,19 +84,14 @@ class TerminalJobNvim(TerminalJobProtocol):
         self._driver = request.driver
         self._job_id: int | None = None
 
-        # VT100 Emulation via pyte
         cols = self._request.console.cols or 80
-        rows = self._request.console.lines or 24
+        rows = self._request.console.lines or 96
         self._screen = Screen(cols, rows)
         self._stream = Stream(self._screen)
 
         # Emitters
-        self._update_emitter = EventEmitter[int]()
-        self._exit_emitter = EventEmitter[Any]()
-        self._events = JobEvents(
-            on_update=self._update_emitter.event,
-            on_job_exit=self._exit_emitter.event
-        )
+
+        self._core = TerminalJobCore(self._request, self._spawn_option)   
 
         self._start()
 
@@ -130,13 +127,9 @@ class TerminalJobNvim(TerminalJobProtocol):
         self._input_thread.start()
 
     def _on_vim_output(self, job_id: int, data: list[str], event: str) -> None:
-        # Neovim provides data as a list of lines. Join them with CRLF for the emulator.
+        # Neovim provides data as a list of lines. Join them with LF for the emulator.
         # Pyte accepts only the stream. 
-
-        # NeovimのdataリストをPTYの改行コードで結合
-        #chunk = "\r\n".join(data)
-        #self._stream.feed(chunk)
-        print("data", data)
+        #print("data", data)
         n_lines = len(data)
         for i, line in enumerate(data):
             if i + 1 == n_lines:
@@ -144,20 +137,22 @@ class TerminalJobNvim(TerminalJobProtocol):
                     self._stream.feed(line)
             else:
                 self._stream.feed(line + "\n")
-        self._update_emitter.fire(job_id)
+        self._core.update_emitter.fire(job_id)
 
     def _on_vim_exit(self, job_id: int, exit_code: int, event: str) -> None:
-        self._exit_emitter.fire(exit_code)
+        self._core.exit_emitter.fire(exit_code)
         self.dispose()
+
 
     def send(self, input: str) -> None:
         if self.alive:
-            print("input", input)
             self._input_task.send(input)
 
     def interrupt(self) -> None:
         if self.alive:
-            self._driver.interrupt(self.pid, self.children_pids)
+            operation = self._driver.interrupt(self.pid, self.children_pids)
+            if operation: 
+                self._input_task.send(operation)
 
     def terminate(self) -> None:
         if self._job_id is not None:
@@ -172,8 +167,7 @@ class TerminalJobNvim(TerminalJobProtocol):
         
         PytoyVimFunctions.deregister(self._on_out_name)
         PytoyVimFunctions.deregister(self._on_exit_name)
-        self._update_emitter.dispose()
-        self._exit_emitter.dispose()
+        self._core.dispose()
 
     @property
     def snapshot(self) -> Snapshot:
@@ -226,4 +220,4 @@ class TerminalJobNvim(TerminalJobProtocol):
 
     @property
     def events(self) -> JobEvents:
-        return self._events
+        return self._core.events

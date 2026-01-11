@@ -4,15 +4,126 @@ from pytoy.lib_tools.process_utils import force_kill
 
 from typing import Sequence
 
+def _shell_make_operations(input_str: str) -> Sequence[str]:
+    """Considering the `continuation` chars, making the 
+    `commands` of shell.  
+    """
+    raw_lines = [line.rstrip("\r") for line in input_str.split("\n")]
+    joined_lines: list[str] = []
+    buffer = ""
+    continuation_chars = {"\\", "^", "`"}
+    for line in raw_lines:
+        stripped = line.rstrip()
+        if stripped and stripped[-1] in continuation_chars:
+            # 継続文字を削除して空白を追加
+            buffer += stripped[:-1] + " "
+        else:
+            buffer += stripped
+            joined_lines.append(buffer)
+            buffer = ""
+    if buffer:
+        joined_lines.append(buffer)
+    return joined_lines
+
+class CmdExeDriver:
+    def __init__(self, name: str) -> None:
+        self._command = "cmd.exe"
+        self._name = name
+    @property
+    def name(self) -> str:
+        return self._name
+        
+    @property
+    def command(self):
+        return self._command
+    
+    @property
+    def eol(self) -> str:
+        # [NOTE]: This is hack. howeveve, 
+        # `empty` space may be necessary to 
+        # supprsess the peculiar `cmd.exe` behavior.
+        return " \r"
+
+    def is_busy(self, children_pids: list[int], snapshot: Snapshot) -> bool:
+        return bool(children_pids)
+
+    def make_operations(self, input_str: str, /) -> Sequence[InputOperation]:
+        """Modify the command before sending to `terminal`"""
+        return _shell_make_operations(input_str)
+
+    def interrupt(self, pid: int, children_pids: list[int]):
+        _ = pid
+        for child in children_pids:
+            force_kill(child)
+
+
+
+class BashDriver:
+    def __init__(self, name: str) -> None:
+        self._command = "bash"
+        self._name = name
+        
+    @property
+    def command(self):
+        return self._command
+    
+    @property
+    def eol(self) -> str:
+        return "\n"
+
+    def is_busy(self, children_pids: list[int], snapshot: Snapshot) -> bool:
+        return bool(children_pids)
+
+    def make_operations(self, input_str: str, /) -> Sequence[InputOperation]:
+        """Modify the command before sending to `terminal`"""
+        return _shell_make_operations(input_str)
+
+    def interrupt(self, pid: int, children_pids: list[int]):
+        _ = pid
+        for child in children_pids:
+            force_kill(child)
 
 class ShellDriver(TerminalDriverProtocol):
     WIN_DEFAULT_SHELL_COMMAND = "cmd.exe"
     LINUX_DEFAULT_SHELL_COMMAND = "bash"
 
-    def __init__(self, command: str | None = None, name: str = "shell"):
-        self._command = command or self.WIN_DEFAULT_SHELL_COMMAND
-        self._name = name
+    def __init__(self, name: str = "shell"):
+        import os 
+        self._impl = CmdExeDriver(name) if os.name == "nt" else BashDriver(name)
 
+    @property
+    def name(self) -> str:
+        return self._impl.name
+
+    @property
+    def command(self) -> str:
+        return self._impl.command
+
+    @property
+    def eol(self) -> str | None:
+        return self._impl.eol
+
+    def is_busy(self, children_pids: list[int], snapshot: Snapshot) -> bool:
+        return self._impl.is_busy(children_pids, snapshot)
+
+    def make_operations(self, input_str: str, /) -> Sequence[InputOperation]:
+        return self._impl.make_operations(input_str)
+
+    def interrupt(self, pid: int, children_pids: list[int]):
+        _ = children_pids
+        """Interrupt the process.
+        """
+        return self._impl.interrupt(pid, children_pids)
+
+
+class IPythonDriver(TerminalDriverProtocol):
+    def __init__(self, command: str = "ipython", name: str = "ipython"):
+        self._command = command
+        self._name = name
+        import re
+        self._in_pattern = re.compile(r"In \[(\d+)\]:")
+        self._is_prepared = False
+        
     @property
     def name(self) -> str:
         return self._name
@@ -21,50 +132,9 @@ class ShellDriver(TerminalDriverProtocol):
     def command(self) -> str:
         return self._command
 
-    def is_busy(self, children_pids: list[int], snapshot: Snapshot) -> bool:
-        return bool(children_pids)
-
-    def make_lines(self, input_str: str) -> Sequence[InputOperation]:
-        """Modify the command before sending to `terminal`"""
-        raw_lines = [line.rstrip("\r") for line in input_str.split("\n")]
-        joined_lines: list[str] = []
-        buffer = ""
-        continuation_chars = {"\\", "^", "`"}
-        for line in raw_lines:
-            stripped = line.rstrip()
-            if stripped and stripped[-1] in continuation_chars:
-                # 継続文字を削除して空白を追加
-                buffer += stripped[:-1] + " "
-            else:
-                buffer += stripped
-                joined_lines.append(buffer)
-                buffer = ""
-
-        if buffer:
-            joined_lines.append(buffer)
-        print("jjosin_lines", joined_lines)
-
-        return joined_lines
-
-    def interrupt(self, pid: int, children_pids: list[int]):
-        _ = children_pids
-        """Interrupt the process.
-        """
-        _ = pid
-        for child in children_pids:
-            force_kill(child)
-
-
-class IPythonDriver(TerminalDriverProtocol):
-    def __init__(self, command: str = "ipython", name: str = "ipython"):
-        self._command = command
-        import re
-        self._in_pattern = re.compile(r"In \[(\d+)\]:")
-        self._is_prepared = False
-
     @property
-    def command(self) -> str:
-        return self._command
+    def eol(self) -> str | None:
+        return None
 
     def is_busy(self, children_pids: list[int], snapshot: Snapshot) -> bool:
         # 最終行付近にプロンプト In [x]: がなければ busy とみなす
@@ -77,7 +147,7 @@ class IPythonDriver(TerminalDriverProtocol):
             self._is_prepared = True
         return not is_ready
 
-    def make_lines(self, input_str: str) -> Sequence[InputOperation]:
+    def make_operations(self, input_str: str) -> Sequence[InputOperation]:
         result: list[InputOperation] = []
 
         # 1. cpaste モード開始
@@ -100,3 +170,4 @@ class IPythonDriver(TerminalDriverProtocol):
         # CTRL + Cを後で実装する。これにはちょっと工夫が必要
         raise RuntimeError("Not yet implemented.")
         ...
+        

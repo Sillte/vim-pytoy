@@ -142,9 +142,13 @@ if __name__ == "__main__":
     # Simple Tests.
     from pytoy.ui.pytoy_window.facade import PytoyWindowProvider
     from pytoy.lib_tools.terminal_runner.drivers import ShellDriver
+    from pytoy.lib_tools.terminal_runner.drivers import IPythonDriver
     from pytoy.infra.timertask import TimerTask
-    driver = ShellDriver("cmd.exe")
+    #driver = ShellDriver("cmd.exe")
+
+    driver = IPythonDriver()
     window = PytoyWindowProvider().open_window("MOCK", "vertical")
+
     
     request = TerminalJobRequest(driver=driver, on_exit=lambda _: print("END"))
     runner = TerminalJobRunner(window.buffer)
