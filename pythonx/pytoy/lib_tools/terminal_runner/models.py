@@ -30,7 +30,45 @@ class Snapshot:
 class WaitOperation:
     time: float = 0.5 
 
-type InputOperation = WaitOperation | str
+@dataclass
+class WaitUntilOperation:
+    """
+    Note: `wait_until` function may be invokded from non-main threads.
+    So, it is better to avoid accessing UI inside `predicate`
+    """
+    predicate :Callable[[Snapshot], bool] 
+    timeout: float = 3.0
+    n_trials = 5
+
+    def wait_until(
+        self, snapshot_getter: Callable[[], Snapshot], 
+    ) -> bool:
+        """Return True if the condition is fulfilled.
+        """
+        import vim
+        interval = float(self.timeout) / self.n_trials
+        for _ in range(self.n_trials):
+            if self.predicate(snapshot_getter()):
+                return True
+            vim.command(f'sleep {round(interval * 1000)}m')
+        return False
+
+class LineStr(str):
+    ...
+
+class RawStr(str):
+    ...
+
+# NOTE:  `str` is regarded as `RawStr`.
+type InputOperation = WaitUntilOperation | WaitOperation | WaitUntilOperation | RawStr | LineStr | str 
+
+
+@dataclass
+class InterruptionCode:
+    preference:  Literal["sigint", "kill_tree"] = "sigint"
+
+
+
 
 type TerminalName = str
 type CommandStr = str
@@ -48,7 +86,7 @@ class TerminalDriverProtocol(Protocol):
 
     def is_busy(self, children_pids: ChildrenPids, snapshot: Snapshot, /) -> bool | None: ...
     def make_operations(self, input_str: str, /) -> Sequence[InputOperation]: ...
-    def interrupt(self, pid: int, children_pids: ChildrenPids, /) -> None | InputOperation: ...
+    def interrupt(self, pid: int, children_pids: ChildrenPids, /) -> None | InterruptionCode : ...
 
         
 @dataclass(frozen=True)
@@ -58,14 +96,14 @@ class TerminalDriver:
     make_operations: Callable[[str], Sequence[InputOperation]] 
     eol: str | None  = None
     impl_is_busy: None | Callable[[list[int], Snapshot], bool | None] = None
-    impl_interrupt: None | Callable[[int, list[int]], None | InputOperation] = None
+    impl_interrupt: None | Callable[[int, list[int]], None | InterruptionCode] = None
     
     def is_busy(self, children_pids: list[int], snapshot: Snapshot) -> bool | None:
         if self.impl_is_busy:
             return self.impl_is_busy(children_pids, snapshot)
         return 
 
-    def interrupt(self, pid: int, children_pids: list[int]) -> None | InputOperation:
+    def interrupt(self, pid: int, children_pids: list[int]) -> None | InterruptionCode : 
         if self.impl_interrupt:
             return self.impl_interrupt(pid, children_pids)
         return 

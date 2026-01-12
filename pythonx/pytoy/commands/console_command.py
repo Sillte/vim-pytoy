@@ -66,10 +66,10 @@ class TerminalController:
             else:
                 print("Target Executor is not existent.")
         elif sub_command == "terminate":
-            execution = self._get_execution(app_name)
-            if execution:
+            executions = self._execuiton_manager.get_running()
+            for execution in executions:
                 execution.runner.terminate()
-            else:
+            if not executions:
                 print("Target Executor is not existent.")
         else:
             assert opts.line1 is not None and opts.line2 is not None

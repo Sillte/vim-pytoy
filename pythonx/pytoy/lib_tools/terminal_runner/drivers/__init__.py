@@ -1,4 +1,6 @@
-from pytoy.lib_tools.terminal_runner.models import TerminalDriverProtocol, Snapshot, InputOperation, WaitOperation
+from pytoy.lib_tools.terminal_runner.models import TerminalDriverProtocol, Snapshot, InputOperation, WaitOperation, WaitUntilOperation
+from pytoy.lib_tools.terminal_runner.models import LineStr, RawStr, InterruptionCode
+
 from pytoy.lib_tools.process_utils import force_kill
 from pytoy.contexts.pytoy import GlobalPytoyContext
 
@@ -71,7 +73,7 @@ class CmdExeDriver:
     
     @property
     def eol(self) -> str:
-        # [NOTE]: This is hack. 
+        # [NOTE]: This is hack. Note that the space is appended.
         # `empty` space may be necessary to 
         # supprsess the peculiar `cmd.exe` behavior.
         return " \r"
@@ -84,14 +86,13 @@ class CmdExeDriver:
         return _shell_make_operations(input_str)
 
     def interrupt(self, pid: int, children_pids: list[int]):
-        _ = pid
-        for child in children_pids:
-            force_kill(child)
+        return InterruptionCode(preference="kill_tree")
+
 
 
 @driver_manager.register("bash")
 class BashDriver:
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str = "bash") -> None:
         self._command = "bash"
         self._name = name
 
@@ -115,9 +116,8 @@ class BashDriver:
         return _shell_make_operations(input_str)
 
     def interrupt(self, pid: int, children_pids: list[int]):
-        _ = pid
-        for child in children_pids:
-            force_kill(child)
+        return InterruptionCode(preference="kill_tree")
+
 
 @driver_manager.register(DEFAULT_SHELL_DRIVER_NAME)
 class ShellDriver(TerminalDriverProtocol):
@@ -160,7 +160,8 @@ class IPythonDriver(TerminalDriverProtocol):
         self._name = name
         import re
         self._in_pattern = re.compile(r"In \[(\d+)\]:")
-        self._is_prepared = False
+
+        self._is_first = True
         
     @property
     def name(self) -> str:
@@ -181,31 +182,35 @@ class IPythonDriver(TerminalDriverProtocol):
             return True
         last_line = lines[-1]
         is_ready = bool(self._in_pattern.match(last_line))
-        if is_ready:
-            self._is_prepared = True
         return not is_ready
 
     def make_operations(self, input_str: str) -> Sequence[InputOperation]:
         result: list[InputOperation] = []
+        def _is_prepared(snapshot: Snapshot) -> bool:
+            content = snapshot.content 
+            lines = [line.strip("\r ") for line in content.split("\n") if line]
+            lines = [line for line in lines if line]
+            if not lines:
+                return False
+            last_line = lines[-1]
+            return bool(self._in_pattern.match(last_line))
 
-        # 1. cpaste モード開始
-        result.append("%cpaste -q")
-        result.append(WaitOperation(0.2))
+        if self._is_first:
+            # [Weak guess]: It seems a little bit wait is required after the dislay.
+            result += [WaitUntilOperation(_is_prepared, timeout=2.0), WaitOperation(0.5)]
+            self._is_first = False
 
-        # 2. コード本体 (内部の改行を PTY 向けに \r に)
-        body = input_str.replace("\r\n", "\n").replace("\n", "\r")
-        result.append(body)
-        result.append(WaitOperation(0.1))
+        # Empty CRLF is uncecessary....
+        body = input_str.replace("\r\n", "\n").replace("\n", "\r").strip("\r")
 
-        # 3. 終了合図
-        result.append("--")
-        result.append(WaitOperation(0.1))
-
+        result += [
+            RawStr("%cpaste -q\n"), #LineStr("%cpaste -q") # This is not good, since `\r` seems to be recognized as the other meaning. 
+            WaitOperation(0.5),
+            RawStr(body),
+            WaitOperation(0.5),
+            RawStr("\r--\r"),
+        ]
         return result
 
-    def interrupt(self, pid: int, children_pids: list[int]):
-        # ここは OS や環境に応じた Ctrl-C 送信が必要
-        # CTRL + Cを後で実装する。これにはちょっと工夫が必要
-        raise RuntimeError("Not yet implemented.")
-        ...
-        
+    def interrupt(self, pid: int, children_pids: list[int]) -> InterruptionCode | None:
+        return InterruptionCode(preference="sigint")

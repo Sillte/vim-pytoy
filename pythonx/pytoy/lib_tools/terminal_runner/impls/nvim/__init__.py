@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from queue import Queue, Empty
 from threading import Thread
-from typing import Any, Sequence
+from typing import Any, Sequence, Callable
 
 from pyte import Screen, Stream
 from pytoy.lib_tools.terminal_runner.models import (
@@ -15,6 +15,8 @@ from pytoy.lib_tools.terminal_runner.models import (
     ConsoleSnapshot,
     Snapshot,
     WaitOperation,
+    RawStr, 
+    LineStr, 
     InputOperation,
     JobEvents,
     JobID
@@ -24,21 +26,23 @@ from pytoy.infra.core.models import CursorPosition
 from pytoy.infra.vim_function import PytoyVimFunctions
 from pytoy.infra.events import EventEmitter
 from pytoy.lib_tools.process_utils import find_children_pids
+from pytoy.lib_tools.terminal_runner.impls.utils import send_ctrl_c
 
 
-class InputSolverTask:
-    def __init__(self, job_id: int, driver: TerminalDriverProtocol):
+class _InputSolverTask:
+    def __init__(self, job_id: int, driver: TerminalDriverProtocol, snapshot_getter: Callable):
         self.job_id = job_id
         self.driver = driver
+        self.snapshot_getter = snapshot_getter
         self.enter_eol = self.driver.eol or TerminalJobCore.get_default_eol()
         self.queue: Queue[InputOperation | None] = Queue()
         self.alive = True
 
-    def send(self, input: InputOperation) -> None:
-        if isinstance(input, str):
-            ops = self.driver.make_operations(input)
-        else:
-            ops = [input]
+    def send(self, input: str) -> None:
+        ops = self.driver.make_operations(input)
+        self._send_operations(ops)
+
+    def _send_operations(self, ops: Sequence[InputOperation]):
         for op in ops:
             self.queue.put(op)
 
@@ -54,23 +58,11 @@ class InputSolverTask:
                 break
 
             try:
-                if isinstance(op, str):
-                    # Protocol: Append the appropriate `CR`.  
-                    #suffix = "" if (op.endswith("\r") or op.endswith("\n")) else "\n"
-                    clean_op = op.rstrip("\r\n")
-                    payload = clean_op + self.enter_eol
-                    # Safety: Use threadsafe_call for Neovim API from background thread
+                payload = TerminalJobCore.deal_operation(op, self.enter_eol, self.snapshot_getter)
+                if payload is not None:
                     vim.session.threadsafe_call(
-                        lambda: vim.call('chansend', self.job_id, payload)
+                        lambda: vim.call('chansend', self.job_id, str(payload))
                     )
-                    #import time
-                    #time.sleep(0.1)
-
-                    #vim.session.threadsafe_call(
-                    #    lambda: vim.call('chansend', self.job_id, self.eof)
-                    #)
-                elif isinstance(op, WaitOperation):
-                    time.sleep(op.time)
             except Exception:
                 pass
             finally:
@@ -122,7 +114,8 @@ class TerminalJobNvim(TerminalJobProtocol):
             raise RuntimeError(f"Neovim jobstart failed: {self._job_id}")
 
         # 4. Input Thread
-        self._input_task = InputSolverTask(self._job_id, self._driver)
+        snapshot_getter = lambda _: self.snapshot
+        self._input_task = _InputSolverTask(self._job_id, self._driver, snapshot_getter)
         self._input_thread = Thread(target=self._input_task.loop, daemon=True)
         self._input_thread.start()
 
@@ -149,10 +142,20 @@ class TerminalJobNvim(TerminalJobProtocol):
             self._input_task.send(input)
 
     def interrupt(self) -> None:
-        if self.alive:
-            operation = self._driver.interrupt(self.pid, self.children_pids)
-            if operation: 
-                self._input_task.send(operation)
+        if not self.alive:
+            return 
+        i_code = self._driver.interrupt(self.pid, self.children_pids)
+        if not i_code:
+            return 
+        match i_code.preference:
+            case  "sigint":
+                send_ctrl_c(self.pid)
+                # [TODO]: If we use the terminal, is it all right? 
+                #vim.session.threadsafe_call(
+                #    lambda: vim.call('chansend', self.job_id, str("\x03"))
+                #)
+            case  "kill_tree":
+                TerminalJobCore.kill_processes(self.children_pids)
 
     def terminate(self) -> None:
         if self._job_id is not None:
