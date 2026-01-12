@@ -47,7 +47,7 @@ class PythonExecutor():
 
         buffer_request = BufferRequest(stdout=stdout, stderr=stderr)
         executor = CommandExecutor(buffer_request)
-        execution_req = ExecutionRequest(command, cwd=cwd, env=env, command_wrapper="uv" if force_uv else "auto")
+        execution_req = ExecutionRequest(command, cwd=cwd, command_wrapper="uv" if force_uv else "auto")
         hooks = ExecutionHooks(on_finish=lambda res: self.on_closed(res, stderr=stderr, cwd=cwd))
         executor.execute(execution_req, hooks=hooks, kind=self.command_kind)
 
