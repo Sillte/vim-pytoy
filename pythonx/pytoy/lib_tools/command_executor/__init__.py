@@ -72,24 +72,6 @@ class ExecutionHooks:
         return ExecutionHooks(**merged_kwargs)
 
 
-
-@dataclass(frozen=True)
-class BufferContext:
-    stdout: str
-    stderr: str | None = None
-    
-    @classmethod
-    def from_buffer_request(cls, buffer_request: BufferRequest) -> Self:
-        def _to_name(buffer: PytoyBuffer | str) -> str:
-            if isinstance(buffer, PytoyBuffer):
-                #[TODO]: This is crucial...May be this should be revised. 
-                return Path(buffer.path).name
-            return buffer
-        stdout = _to_name(buffer_request.stdout)
-        stderr = _to_name(buffer_request.stderr) if buffer_request.stderr else None
-        return cls(stdout=stdout, stderr=stderr)
-
-
 @dataclass(frozen=True)
 class ExecutionContext:
     """ This should be used for repeating the same `Command`again.
@@ -115,6 +97,9 @@ class CommandExecution:
 class ExecutionPolicy:
     kind: ExecutionKind | None = None
     allow_parallel: bool = False
+    
+
+
 
 class CommandExecutionManager:
     def __init__(self):
@@ -212,6 +197,7 @@ class CommandExecutor:
                                         on_exit=lambda result: _on_exit(result, hooks=hooks))
         spawn_option = SpawnOption(cwd=cwd, env=env)
 
+
         runner.run(job_request, spawn_option)
         
         
@@ -233,6 +219,10 @@ class CommandExecutor:
         execution_env =  self._environment_manager.solve_preference(cwd, preference=command_wrapper)
         command_wrapper = execution_env.command_wrapper
         return command_wrapper(command)
+    
+    def can_execute(self, _: ExecutionRequest, kind: ExecutionKind | None = None) -> bool:
+        policy = ExecutionPolicy(kind=kind)
+        return self._execution_manager.can_execute(policy)
 
 
 from pytoy.lib_tools.command_executor.quickfix_executor import QuickfixCommandExecutor, QuickfixCommandRequest  # NOQA 

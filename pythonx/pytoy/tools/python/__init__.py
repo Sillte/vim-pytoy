@@ -13,7 +13,6 @@ from pytoy.lib_tools.command_executor import CommandExecutor, BufferRequest, Exe
 from pytoy.lib_tools.command_executor import CommandExecutionManager 
 
 # `set_default_execution_mode` is carried out only in `__init__.py`
-from pytoy.lib_tools.environment_manager import OldEnvironmentManager
 from pytoy.lib_tools.utils import get_current_directory
 
 
@@ -36,17 +35,15 @@ class PythonExecutor():
         stdout: PytoyBuffer,
         stderr: PytoyBuffer,
         *,
-        cwd=None,
-        env=None,
-        force_uv=None,
+        cwd: Path | None=None,
+        force_uv: bool = False,
     ):
 
         if cwd is None:
             cwd = get_current_directory()
         else:
             cwd = Path(cwd)
-        #command = f'python -u -X utf8 "{path}"'
-        command = ["python", "-u", "-X", "urf8", str(path)]
+        command = ["python", "-u", "-X", "utf8", str(path)]
 
         buffer_request = BufferRequest(stdout=stdout, stderr=stderr)
         executor = CommandExecutor(buffer_request)

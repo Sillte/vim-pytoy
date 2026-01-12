@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Callable, Mapping, Any, TYPE_CHECKING
 
 #from pytoy.lib_tools.buffer_runner.models import OutputJobProtocol, OutputJobRequest, SpawnOption, JobEvents
-from pytoy.lib_tools.terminal_runner.models import TerminalJobProtocol, TerminalJobRequest, SpawnOption, JobEvents, Snapshot
+from pytoy.lib_tools.terminal_runner.models import TerminalJobProtocol, TerminalJobRequest, SpawnOption, JobEvents, Snapshot, JobID
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.ui import PytoyBuffer
 from pytoy.ui.pytoy_buffer import make_buffer, make_duo_buffers
@@ -30,6 +30,11 @@ def make_terminal_job(job_request: TerminalJobRequest, spawn_option: SpawnOption
     
 
 class TerminalJobRunner:
+    
+    @classmethod
+    def solve_buffer(cls, buffer: PytoyBuffer | str) -> PytoyBuffer:
+        return _solve_buffer(buffer)
+
     def __init__(self, 
                  buffer: PytoyBuffer | str,
                  *,
@@ -50,6 +55,12 @@ class TerminalJobRunner:
     @property
     def buffer(self) -> PytoyBuffer:
         return self._buffer
+    
+    @property
+    def job_id(self) -> JobID:
+        if self._terminal_job:
+            return self._terminal_job.job_id
+        raise RuntimeError("TerminalJob is not created yet.")
 
     def _wire_events(self, request: TerminalJobRequest, job_events: JobEvents):
         disposables = []
@@ -101,7 +112,6 @@ class TerminalJobRunner:
         if not self._terminal_job:
             return 
         snapshot = self._terminal_job.snapshot
-        print("scontent", snapshot.content)
         cr = self.buffer.range_operator.entire_character_range
         self.buffer.replace_text(cr, snapshot.content)
         if (window := self.buffer.window):
@@ -132,6 +142,11 @@ class TerminalJobRunner:
         if self._terminal_job:
             return self._terminal_job.snapshot
         return None
+    @property
+    def events(self) -> JobEvents:
+        if not self._terminal_job:
+            raise ValueError("Terminal Job is not created.")
+        return self._terminal_job.events
 
     def terminate(self) -> None:
         if not self._terminal_job:

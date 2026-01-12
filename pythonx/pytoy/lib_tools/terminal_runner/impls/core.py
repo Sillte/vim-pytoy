@@ -34,7 +34,7 @@ class TerminalJobCore:
         self.exit_emitter = EventEmitter[Any]()
         
         # 外部に公開するイベントインターフェース
-        self.events = JobEvents(
+        self._events = JobEvents(
             on_update=self.update_emitter.event,
             on_job_exit=self.exit_emitter.event
         )
@@ -55,3 +55,7 @@ class TerminalJobCore:
     def get_default_eol() -> str:
         import os 
         return  "\r\n" if os.name == "nt" else "\n"
+    
+    @property
+    def events(self) -> JobEvents:
+        return self._events

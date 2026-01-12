@@ -10,6 +10,6 @@ from pytoy.commands.experiment_commands import *
 from pytoy.commands.vscode_commands import *
 from pytoy.commands.vscode_mock import *
 
-from pytoy.commands.console_command import TerminalContoller  # NOQA
+from pytoy.commands.console_command import TerminalController  # NOQA
 from pytoy.commands.unique_command import UniqueCommand  # NOQA
 from pytoy.commands.llm_commands import PytoyLLMCommand  # NOQA

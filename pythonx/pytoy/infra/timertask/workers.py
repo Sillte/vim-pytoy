@@ -105,7 +105,7 @@ class _StdoutProxy:
     @classmethod
     def _output_stdout(cls):
         text = ""
-        # [NOTE]: I woud like to use `Exception`.
+        # [NOTE]: I would like to use `Exception`.
         # If we use Exectpion it is almost impossible to check from neovim.
         # So message is used.
         if cls._stdout_queue is None:
@@ -123,14 +123,16 @@ class _StdoutProxy:
         #if text:
         #    print(text, file=cls._original_stdout)
         # The below is not appropriate because other library may patch `sys.stdout`.
-        # print(text, sys.__stdout__) For the case where other library patch `sys.stdout`
-        # Especially, in vim case, `vim` seems to patch `sys.__original__stdout`.
+        # print(text, file=sys.__stdout__),
+        # for the case where other library patch `sys.stdout`
+        # Unfortunately, this way of thinking does not solve the problem, 
+        # so `_vim_message` is introduced. 
 
     @classmethod
     def _output_stderr(cls):
         text = ""
         # [NOTE]: I woud like to use `Exception`.
-        # If we use Exectpion it is almost impossible to check from neovim.
+        # However, if we use Exectpion it is almost impossible to check from neovim.
         # So message is used.
         if cls._stderr_queue is None:
             text += "Crucial implementaiont Error in StdoutProxy. (StderrQueue)\n"
@@ -145,7 +147,7 @@ class _StdoutProxy:
         # print(text, sys.__stdout__) For the case where other library patch `sys.stdout`
         # Especially, in vim case, `vim` seems to patch `sys.__original__stderr`.
         # [ADD]: (2026/01/02): `print` does not seem to work in (VSCode+neovim) well, 
-        # # So, I introducedc `_vim\message`.  
+        # # So, I introduced `_vim_message`.  
 
     @classmethod
     def _vim_message(cls, text: str, level: Literal["ErrorMsg"] | None = None, with_echo: bool = True) -> None:
@@ -189,7 +191,7 @@ class _WorkState:
 class ThreadWorker:
     """Execute a heady load task in the other thread.
     Note that callback functions are executed in the context of main thread,
-    but the main_functinon is executed in non-main thread.
+    but the main_function is executed in non-main thread.
     Hence, you have to perform the necessary ui-modification in callback class.
     
     """
@@ -252,8 +254,8 @@ class ThreadWorker:
         the information of exception `on_error`.   
         However, if you use `print` or `echo`, 
         it disturbs user-experience.   
-        So, only when you would like to store the excpetion details. 
-        You this function and notify the user to refer `:messages`.
+        So, only when you would like to store the excpetion details, 
+        you call this function and notify the user to refer `:messages`.
 
         """
         message = message.replace("'", "''")
