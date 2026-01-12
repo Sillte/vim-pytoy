@@ -164,10 +164,13 @@ class TerminalJobNvim(TerminalJobProtocol):
         # Cleanup input thread
         self._input_task.alive = False
         self._input_task.queue.put(None) 
-        
-        PytoyVimFunctions.deregister(self._on_out_name)
-        PytoyVimFunctions.deregister(self._on_exit_name)
         self._core.dispose()
+
+        from pytoy.infra.timertask import TimerTask
+        def _inner():
+            PytoyVimFunctions.deregister(self._on_out_name)
+            PytoyVimFunctions.deregister(self._on_exit_name)
+        TimerTask.execute_oneshot(_inner, interval=0)
 
     @property
     def snapshot(self) -> Snapshot:

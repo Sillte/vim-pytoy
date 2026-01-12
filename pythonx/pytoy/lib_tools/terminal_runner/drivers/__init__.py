@@ -1,8 +1,36 @@
 from pytoy.lib_tools.terminal_runner.models import TerminalDriverProtocol, Snapshot, InputOperation, WaitOperation
 from pytoy.lib_tools.process_utils import force_kill
+from pytoy.contexts.pytoy import GlobalPytoyContext
 
 
 from typing import Sequence
+
+DEFAULT_SHELL_DRIVER_NAME = "shell"
+
+class TerminalDriverManager:
+    def __init__(self):
+        self._drivers: dict[str, type[TerminalDriverProtocol]] = {}
+
+    def register(self, driver_name: str):
+        def _wrap(driver_class: type[TerminalDriverProtocol]):
+            self._drivers[driver_name] = driver_class
+            return driver_class
+        return _wrap
+    
+    def _is_registered(self, driver_name: str) -> bool:
+        return driver_name in self._drivers
+    
+    @property
+    def driver_names(self) -> list[str]:
+        return list(self._drivers.keys())
+
+    def create(self, driver_name: str, **kwargs) -> TerminalDriverProtocol:
+        cls = self._drivers.get(driver_name)
+        if not cls:
+            raise ValueError(f"Driver {driver_name} not found")
+        return cls(**kwargs)
+
+
 
 def _shell_make_operations(input_str: str) -> Sequence[str]:
     """Considering the `continuation` chars, making the 
@@ -25,10 +53,14 @@ def _shell_make_operations(input_str: str) -> Sequence[str]:
         joined_lines.append(buffer)
     return joined_lines
 
+driver_manager = GlobalPytoyContext().get().terminal_driver_manager
+
+@driver_manager.register("windows_cmd")
 class CmdExeDriver:
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str = "cmd") -> None:
         self._command = "cmd.exe"
         self._name = name
+
     @property
     def name(self) -> str:
         return self._name
@@ -39,7 +71,7 @@ class CmdExeDriver:
     
     @property
     def eol(self) -> str:
-        # [NOTE]: This is hack. howeveve, 
+        # [NOTE]: This is hack. 
         # `empty` space may be necessary to 
         # supprsess the peculiar `cmd.exe` behavior.
         return " \r"
@@ -57,11 +89,15 @@ class CmdExeDriver:
             force_kill(child)
 
 
-
+@driver_manager.register("bash")
 class BashDriver:
     def __init__(self, name: str) -> None:
         self._command = "bash"
         self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
         
     @property
     def command(self):
@@ -83,6 +119,7 @@ class BashDriver:
         for child in children_pids:
             force_kill(child)
 
+@driver_manager.register(DEFAULT_SHELL_DRIVER_NAME)
 class ShellDriver(TerminalDriverProtocol):
     WIN_DEFAULT_SHELL_COMMAND = "cmd.exe"
     LINUX_DEFAULT_SHELL_COMMAND = "bash"
@@ -103,7 +140,7 @@ class ShellDriver(TerminalDriverProtocol):
     def eol(self) -> str | None:
         return self._impl.eol
 
-    def is_busy(self, children_pids: list[int], snapshot: Snapshot) -> bool:
+    def is_busy(self, children_pids: list[int], snapshot: Snapshot) -> bool | None:
         return self._impl.is_busy(children_pids, snapshot)
 
     def make_operations(self, input_str: str, /) -> Sequence[InputOperation]:
@@ -116,6 +153,7 @@ class ShellDriver(TerminalDriverProtocol):
         return self._impl.interrupt(pid, children_pids)
 
 
+@driver_manager.register("ipython")
 class IPythonDriver(TerminalDriverProtocol):
     def __init__(self, command: str = "ipython", name: str = "ipython"):
         self._command = command

@@ -107,11 +107,16 @@ class TerminalJobVim(TerminalJobProtocol):
             if vim.eval(f"bufexists({self._bufnr})") == "1":
                 vim.command(f"bdelete! {self._bufnr}")
             self._bufnr = -1
-        
-        PytoyVimFunctions.deregister(self._on_exit_name)
-        PytoyVimFunctions.deregister(self._on_out_name)
+
         self._core.update_emitter.dispose()
         self._core.exit_emitter.dispose()
+            
+        # Asyncronous hack is important, since this must be called after `Job` `on_exit` is called.
+        from pytoy.infra.timertask import TimerTask 
+        def _inner():
+            PytoyVimFunctions.deregister(self._on_exit_name)
+            PytoyVimFunctions.deregister(self._on_out_name)
+        TimerTask.execute_oneshot(_inner, interval=0)
 
     @property
     def snapshot(self) -> Snapshot:

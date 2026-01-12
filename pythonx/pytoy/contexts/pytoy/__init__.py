@@ -11,6 +11,8 @@ from pytoy.contexts.core import GlobalCoreContext
 if TYPE_CHECKING:
     ...
     from pytoy.lib_tools.command_executor import CommandExecutionManager 
+    from pytoy.lib_tools.terminal_executor import TerminalExecutionManager 
+    from pytoy.lib_tools.terminal_runner.drivers import TerminalDriverManager 
     #from pytoy.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
     #from pytoy.infra.autocmd.autocmd_manager import AutoCmdManager 
 
@@ -28,6 +30,16 @@ class GlobalPytoyContext:
     def command_execution_manager(self) -> CommandExecutionManager:
         from pytoy.lib_tools.command_executor import CommandExecutionManager 
         return CommandExecutionManager()
+
+    @cached_property
+    def terminal_execution_manager(self) -> TerminalExecutionManager:
+        from pytoy.lib_tools.terminal_executor import TerminalExecutionManager 
+        return TerminalExecutionManager()
+
+    @cached_property
+    def terminal_driver_manager(self) -> TerminalDriverManager:
+        from pytoy.lib_tools.terminal_runner.drivers import TerminalDriverManager
+        return TerminalDriverManager()
 
     @property
     def vim_context(self) -> GlobalVimContext:

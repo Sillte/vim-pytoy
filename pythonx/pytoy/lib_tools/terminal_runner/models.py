@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from pytoy.infra.core.models import CursorPosition
 from pytoy.infra.core.models.event import Event
 
-from typing import Callable, Literal, Sequence, Protocol,  Hashable, Any
+from typing import Callable, Literal, Sequence, Protocol,  Hashable, Any, Self
 
 from pathlib import Path
 
@@ -57,15 +57,30 @@ class TerminalDriver:
     command: str
     make_operations: Callable[[str], Sequence[InputOperation]] 
     eol: str | None  = None
+    impl_is_busy: None | Callable[[list[int], Snapshot], bool | None] = None
+    impl_interrupt: None | Callable[[int, list[int]], None | InputOperation] = None
     
     def is_busy(self, children_pids: list[int], snapshot: Snapshot) -> bool | None:
+        if self.impl_is_busy:
+            return self.impl_is_busy(children_pids, snapshot)
         return 
 
     def interrupt(self, pid: int, children_pids: list[int]) -> None | InputOperation:
+        if self.impl_interrupt:
+            return self.impl_interrupt(pid, children_pids)
         return 
     
-
-
+    @classmethod
+    def with_command_wrapper(cls, impl: TerminalDriverProtocol,  command_wrapper: Callable[[str], list[str]]) -> Self: 
+        new_command = command_wrapper(impl.command)
+        return cls(command=" ".join(new_command),
+                   name=impl.name, 
+                   make_operations=impl.make_operations,
+                   eol=impl.eol, 
+                   impl_is_busy=impl.is_busy,
+                   impl_interrupt=impl.interrupt,
+                   )
+    
 
 @dataclass
 class ConsoleConfiguration:
@@ -78,7 +93,6 @@ class TerminalJobRequest:
     driver: TerminalDriverProtocol
     name: str = "default"
     on_exit: Callable[[Any], None] | None = None
-    # Note: ConsoleConfiguration is no applicable in nvim.
     console: ConsoleConfiguration = field(default_factory=lambda :ConsoleConfiguration())
 
 @dataclass(frozen=True)
