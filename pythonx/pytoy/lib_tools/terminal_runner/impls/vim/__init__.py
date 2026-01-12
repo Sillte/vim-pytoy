@@ -12,6 +12,9 @@ from pytoy.lib_tools.terminal_runner.models import (
     ConsoleSnapshot,
     Snapshot,
     WaitOperation,
+    WaitUntilOperation, 
+    RawStr, 
+    LineStr,
     InputOperation,
     JobEvents,
     JobID
@@ -73,15 +76,16 @@ class TerminalJobVim(TerminalJobProtocol):
         self.dispose()
 
     def _send_operations(self, operations: Sequence[InputOperation]) -> None:
+
+        eol = self._driver.eol 
+        enter_eol = eol if eol else TerminalJobCore.get_default_eol()
+        snapshot_getter = (lambda : self.snapshot)
         for op in operations:
-            if isinstance(op, str):
-                # Apply line ending rule from protocol
-                eol = self._driver.eol 
-                suffix = eol if eol else TerminalJobCore.get_default_eol()
-                input_json = json.dumps(op + suffix)
+            payload = TerminalJobCore.deal_operation(op, enter_eol, snapshot_getter)
+
+            if payload is not None:
+                input_json = json.dumps(payload)
                 vim.command(f"call term_sendkeys({self._bufnr}, {input_json})")
-            elif isinstance(op, WaitOperation):
-                time.sleep(op.time)
 
     def send(self, input: str) -> None:
         if not self.alive:
@@ -91,9 +95,14 @@ class TerminalJobVim(TerminalJobProtocol):
         
     def interrupt(self) -> None:
         if self.alive:
-            ret = self._driver.interrupt(self.pid, self.children_pids)
-            if ret:
-                self._send_operations([ret])
+            i_code = self._driver.interrupt(self.pid, self.children_pids)
+            if not i_code:
+                return 
+            match i_code.preference:
+                case  "sigint":
+                    self._send_operations([RawStr("\x03")])
+                case  "kill_tree":
+                    TerminalJobCore.kill_processes(self.children_pids)
 
     def terminate(self) -> None:
         if self.alive:
@@ -128,7 +137,7 @@ class TerminalJobVim(TerminalJobProtocol):
             )
 
         # Get visual buffer lines
-        vim.command(f"call term_wait({self._bufnr}, 50)")
+        vim.command(f"call term_wait({self._bufnr}, 10)")
         size = vim.eval(f"term_getsize({self._bufnr})")
         rows = int(size[0])
         lines = [ vim.eval(f'term_getline({self.job_id}, {i + 1})') for i in range(rows) ]
