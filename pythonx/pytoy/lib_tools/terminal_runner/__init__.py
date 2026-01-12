@@ -25,6 +25,9 @@ def make_terminal_job(job_request: TerminalJobRequest, spawn_option: SpawnOption
     elif ui_enum in {UIEnum.NVIM, UIEnum.VSCODE}:
         from pytoy.lib_tools.terminal_runner.impls.nvim import TerminalJobNvim
         return TerminalJobNvim(job_request, spawn_option)
+    elif ui_enum == UIEnum.VSCODE:
+        from pytoy.lib_tools.terminal_runner.impls.vscode import TerminalJobVSCode
+        return TerminalJobVSCode(job_request, spawn_option)
     else:
         raise RuntimeError(f"Unsupported UI: {ui_enum}")
     

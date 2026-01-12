@@ -50,7 +50,10 @@ class WaitUntilOperation:
         for _ in range(self.n_trials):
             if self.predicate(snapshot_getter()):
                 return True
-            vim.command(f'sleep {round(interval * 1000)}m')
+            import time 
+            time.sleep(interval)
+            # NVim does not accept this setting in other thread. 
+            #vim.command(f'sleep {round(interval * 1000)}m')
         return False
 
 class LineStr(str):
