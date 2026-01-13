@@ -22,7 +22,7 @@ def make_terminal_job(job_request: TerminalJobRequest, spawn_option: SpawnOption
     if ui_enum == UIEnum.VIM:
         from pytoy.lib_tools.terminal_runner.impls.vim import TerminalJobVim
         return TerminalJobVim(job_request, spawn_option)
-    elif ui_enum in {UIEnum.NVIM, UIEnum.VSCODE}:
+    elif ui_enum == UIEnum.NVIM:
         from pytoy.lib_tools.terminal_runner.impls.nvim import TerminalJobNvim
         return TerminalJobNvim(job_request, spawn_option)
     elif ui_enum == UIEnum.VSCODE:

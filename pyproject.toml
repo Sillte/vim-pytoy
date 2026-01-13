@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Python utility for Vim/Neovim + VSCode integration"
 dependencies = [
     "pyte", 
+    "pywinpty", 
     "pydantic>=2.0.0",
     "typing-extensions>=4.0.0",
     "psutil",

@@ -1,6 +1,4 @@
 from __future__ import annotations
-import os
-import vim
 import shlex
 from pathlib import Path
 from typing import Protocol, runtime_checkable
@@ -17,7 +15,7 @@ class PtyConsoleProtocol(Protocol):
     @property
     def alive(self) -> bool: ...
     @property
-    def pid(self) -> int: ...
+    def pid(self) -> int | None: ...
     @property
     def size(self) -> tuple[int, int]: ...
 
@@ -39,7 +37,7 @@ class WinPtyAdapter(PtyConsoleProtocol):
             cmd, 
             cwd=str_cwd, 
             env=env, 
-            dimensions=size
+            dimensions=size,
         )
         self._size = size
 
@@ -53,12 +51,21 @@ class WinPtyAdapter(PtyConsoleProtocol):
         self._proc.write(data)
 
     def resize(self, lines: int, cols: int):
-        self._proc.set_size(lines, cols)
+        self._proc.setwinsize(lines, cols)
         self._size = (lines, cols)
 
     def send_ctrl_c(self):
-        # Windowsにおける KeyboardInterrupt 送信
-        self._proc.write("\x03")
+        """Unfortunately, this does not work in the environment
+        VSCode + neovim extension. 
+        """
+        from pytoy.lib_tools.terminal_runner.impls.utils import send_ctrl_c as func
+        from pytoy.lib_tools.terminal_runner.impls.utils import find_children
+
+        self._proc.write("\x03\x03\x03")
+        if self.pid:
+            func(self.pid)
+            for elem in find_children(self.pid):
+                func(elem)
 
     def terminate(self):
         self._proc.terminate()
@@ -68,12 +75,12 @@ class WinPtyAdapter(PtyConsoleProtocol):
         return self._proc.isalive()
 
     @property
-    def pid(self) -> int:
+    def pid(self) -> int | None:
         return self._proc.pid
 
     @property
     def size(self) -> tuple[int, int]:
-        return self._size
+        return self._proc.getwinsize()
 
 
 class PosixPtyAdapter(PtyConsoleProtocol):
@@ -120,7 +127,7 @@ class PosixPtyAdapter(PtyConsoleProtocol):
         return self._proc.isalive()
 
     @property
-    def pid(self) -> int:
+    def pid(self) -> int | None:
         return self._proc.pid
 
     @property
@@ -132,7 +139,6 @@ class PosixPtyAdapter(PtyConsoleProtocol):
 class PtyConsole:
     """
     OSごとのPty実装を隠蔽するFacadeクラス。
-    Python 3.12+ のモダンな型ヒントを適用。
     """
     def __new__(
         cls, 
@@ -142,7 +148,6 @@ class PtyConsole:
         env: dict[str, str] | None = None
     ) -> PtyConsoleProtocol:
         # WindowsかPOSIXかを判定して適切なAdapterを返す
-        if vim.eval('has("win32")') == '1':
-            return WinPtyAdapter(cmd, cwd, size, env)
-        else:
-            return PosixPtyAdapter(cmd, cwd, size, env)
+        import platform
+        adapter_class = WinPtyAdapter if platform.system() == 'Windows' else PosixPtyAdapter
+        return adapter_class(cmd, cwd, size, env)
