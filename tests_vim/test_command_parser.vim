@@ -2,8 +2,6 @@ python3 << EOF
 # Makeshift tests for CommandManager.register / exist / deregister.
 import vim 
 from pytoy.lib_tools.terminal_backend.executor import TerminalExecutorManager, TerminalExecutor
-from pytoy.tools import terminal_applications  # noqa
-from pytoy.tools.terminal_applications import get_default_app_name 
 from pytoy.infra.sub_commands import (
     MainCommandSpec,
     SubCommandSpec,
