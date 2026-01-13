@@ -197,7 +197,7 @@ class IPythonDriver(TerminalDriverProtocol):
 
         if self._is_first:
             # [Weak guess]: It seems a little bit wait is required after the dislay.
-            result += [WaitUntilOperation(_is_prepared, timeout=2.0), WaitOperation(0.5)]
+            result += [WaitUntilOperation(_is_prepared, timeout=3.0), WaitOperation(0.5)]
             self._is_first = False
 
         # Empty CRLF is uncecessary....

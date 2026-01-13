@@ -149,11 +149,9 @@ class TerminalJobNvim(TerminalJobProtocol):
             return 
         match i_code.preference:
             case  "sigint":
-                send_ctrl_c(self.pid)
-                # [TODO]: If we use the terminal, is it all right? 
-                #vim.session.threadsafe_call(
-                #    lambda: vim.call('chansend', self.job_id, str("\x03"))
-                #)
+                vim.session.threadsafe_call(
+                    lambda: vim.call('chansend', self.job_id, str("\x03\x03"))
+                )
             case  "kill_tree":
                 TerminalJobCore.kill_processes(self.children_pids)
 

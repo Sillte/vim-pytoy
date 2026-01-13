@@ -108,7 +108,11 @@ class TerminalJobVim(TerminalJobProtocol):
         if self.alive:
             # Get job from bufnr then stop
             vim.command(f"call job_stop(term_getjob({self._bufnr}))")
+            self._on_vim_exit(None, 1) # Note: Abnormal.
+        # Note: abnormal. hack.
+        # Since some times, `_on_vim_exist` is not called when `job_stop` is used.
         self.dispose()
+
 
     def dispose(self) -> None:
         if self._bufnr > 0:
