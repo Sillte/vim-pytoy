@@ -116,7 +116,7 @@ class CommandExecutionManager:
         def _deregister(_):
             self._executions.pop(execution.id, None)
             self._contexts.pop(execution.id, None)
-        execution.events.on_job_exit(_deregister)
+        execution.events.on_job_exit.subscribe(_deregister)
         
     @property
     def last_context(self) -> ExecutionContext | None:
