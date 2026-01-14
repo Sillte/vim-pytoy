@@ -8,7 +8,6 @@ from pytoy.ui.notifications import EphemeralNotification
 from pytoy.contexts.pytoy import GlobalPytoyContext
 
 from pytoy.infra.timertask import ThreadWorker
-from pytoy.tools.llm import PytoyFairy, FairyKernelManager, EditDocumentRequester
 from textwrap import dedent
 
 @CommandManager.register("PytoyLLM", range="")
@@ -20,6 +19,7 @@ class PytoyLLMCommand:
         PytoyWindow.open(path, param=param)
 
     def __call__(self, opts: OptsArgument):
+        from pytoy.tools.llm import PytoyFairy, FairyKernelManager, EditDocumentRequester
         # Currently, `ctx` cannot be accepted as the argument of __call__.
         # Since this is a bug of `CommandManager`, 
         # I have to consider this later. 
