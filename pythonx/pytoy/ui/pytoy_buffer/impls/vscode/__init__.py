@@ -63,7 +63,7 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
 
     @property
     def events(self) -> BufferEvents:
-        return BufferEvents(on_wiped=self.kernel.on_end)
+        return self._kernel.events
 
     @classmethod
     def get_current(cls) -> PytoyBufferProtocol:

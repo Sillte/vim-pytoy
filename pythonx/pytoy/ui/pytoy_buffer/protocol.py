@@ -16,6 +16,7 @@ BufferID = Hashable
 @dataclass
 class BufferEvents:
     on_wiped: Event[BufferID]
+    on_pre_buf: Event[BufferID]
 
 
 class PytoyBufferProtocol(Protocol):

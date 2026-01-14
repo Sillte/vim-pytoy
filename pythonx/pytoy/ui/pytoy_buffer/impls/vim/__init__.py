@@ -155,5 +155,5 @@ class PytoyBufferVim(PytoyBufferProtocol):
 
     @property
     def events(self) -> BufferEvents:
-        return BufferEvents(on_wiped=self.kernel.on_end)
+        return self._kernel.events
 

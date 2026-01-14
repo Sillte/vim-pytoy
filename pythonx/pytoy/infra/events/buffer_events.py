@@ -24,6 +24,9 @@ class GlobalBufferEventProvider:
     """
     NOTE: Since the `transform` of PayaloadMapper is regardes as the value  
     for checking the equivalentness, so `DO NOT lambda function here` 
+    
+    NOTE: SSOT of the events are `AutoCmdManager`. 
+    Hence, `cached_property` is intended for only speeds.  
     """
     def __init__(self,  ctx: GlobalVimContext | None=None) -> None:
         if ctx is None:
@@ -38,8 +41,16 @@ class GlobalBufferEventProvider:
     @cached_property
     def wipeout(self) -> GlobalEvent[int]:
         group: str = "PytoyAnyBufferClosedGroupAutocmd"
-        emit_spec: EmitSpec =  EmitSpec(event="BufWipeout")
+        emit_spec: EmitSpec =  EmitSpec(event="BufWipeout", pattern="*")
         payload_mapper: PayloadMapper =  PayloadMapper(arguments=["abuf"], transform=_to_bufnr)
+        autocmd = self.manager.register(group, emit_spec, payload_mapper)
+        return GlobalEvent(autocmd.event)
+
+    @cached_property
+    def write_pre(self) -> GlobalEvent[int]:
+        group = "PytoyAnyBufferBufWritePreAutocmd"
+        emit_spec = EmitSpec(event="BufWritePre", pattern="*")
+        payload_mapper = PayloadMapper(arguments=["abuf"], transform=_to_bufnr)
         autocmd = self.manager.register(group, emit_spec, payload_mapper)
         return GlobalEvent(autocmd.event)
 
@@ -51,6 +62,9 @@ class ScopedBufferEventProvider:
     def get_wipeout_event(self, bufnr: int) -> Event[int]:
         wipeout_event = self.global_provider.wipeout
         return wipeout_event.at(bufnr)
+
+    def get_write_pre(self, bufnr: int) -> Event[int]:
+        return self.global_provider.write_pre.at(bufnr)
 
     @classmethod
     def from_ctx(cls, ctx: GlobalVimContext) -> Self:
