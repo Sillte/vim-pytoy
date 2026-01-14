@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from pytoy.infra.core.entity import MortalEntityProtocol
 from pytoy.infra.core.models.event import Event
 from pytoy.infra.events.buffer_events import ScopedBufferEventProvider
+from pytoy.ui.pytoy_buffer.protocol import BufferEvents
 
 if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext
@@ -20,6 +21,8 @@ class VimBufferKernel(MortalEntityProtocol):
             ctx = GlobalVimContext.get()
         scoped_buffer_event_provider = ScopedBufferEventProvider.from_ctx(ctx)
         self._wipeout_event = scoped_buffer_event_provider.get_wipeout_event(bufnr)
+        self._write_pre_event  = scoped_buffer_event_provider.get_write_pre(bufnr)
+
         self.on_wipeout = self.on_end
 
     @property
@@ -29,7 +32,12 @@ class VimBufferKernel(MortalEntityProtocol):
     @property
     def on_end(self) -> Event[int]:
         return self._wipeout_event
-
+    
+    @property
+    def events(self) -> BufferEvents:
+        return BufferEvents(on_wiped=self._wipeout_event, 
+                            on_pre_buf=self._write_pre_event)
+                            
     @property
     def bufnr(self) -> int:
         return self._bufnr

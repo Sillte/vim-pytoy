@@ -197,7 +197,7 @@ class ThreadWorker:
     """
 
     @classmethod
-    def run(
+    def     run(
         cls,
         main_func: Callable[[], Any],
         on_finish: Callable[[Any], None] | None = None,
