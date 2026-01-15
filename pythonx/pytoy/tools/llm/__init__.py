@@ -3,26 +3,18 @@ import time
 from textwrap import dedent
 from dataclasses import dataclass, field
 from pytoy.infra.core.models import Event, EventEmitter
+from pytoy.tools.llm.models import HooksForInteraction
 from pytoy.ui.pytoy_buffer import PytoyBuffer, BufferID, BufferEvents
 from pytoy.ui.pytoy_window import PytoyWindow, CharacterRange
 from typing import Any, Callable, Protocol, Sequence, Callable
 from pydantic import BaseModel 
 from pytoy_llm.models import SyncOutput, SyncOutputFormatStr, SyncOutputFormat
 from pytoy.contexts.pytoy import GlobalPytoyContext
-
 from pytoy.infra.timertask import ThreadWorker
 
 from pytoy_llm import completion
 from pytoy_llm.models import InputMessage
 from pytoy.ui.notifications import EphemeralNotification
-
-    
-
-type PreSaveHook = Callable[[PytoyBuffer], None]
-
-@dataclass
-class HooksForInteraction:
-    pre_save: PreSaveHook | None = None
 
 
 class PytoyLLMContext(BaseModel):
@@ -39,6 +31,7 @@ class InteractionRequest:
     llm_output_format: SyncOutputFormat | SyncOutputFormatStr | type[BaseModel]
     on_success: Callable[[SyncOutput], None]
     on_failure: Callable[[Exception], None]
+    hooks: HooksForInteraction | None = None
     
 
 @dataclass
@@ -59,7 +52,7 @@ class FairyKernel:
         self.llm_context = llm_context
         self.interactions: dict[str, LLMInteraction] = {}
         
-        self.buffer.on_wiped.subscribe(lambda _: self.dispose)
+        self.buffer.on_wiped.subscribe(lambda buffer_id: self.dispose(buffer_id))
         disposables = []
         disposables.append(self.buffer.events.on_pre_buf.subscribe(lambda _: self.pre_save))
         self.disposables = []
@@ -87,8 +80,7 @@ class FairyKernel:
         return self.window.selection
     
 
-    def register_interaction(self, interaction: LLMInteraction, hooks: HooksForInteraction | None = None):
-        # [TODO]: (2026/01/15) Deal with the procesing of `hooks`.
+    def register_interaction(self, interaction: LLMInteraction):
         id_ = interaction.id
         self.interactions[id_] = interaction
         interaction.on_exit.subscribe(lambda _: self.interactions.pop(id_))
@@ -100,16 +92,12 @@ class FairyKernel:
             item.dispose()
     
     def pre_save(self) -> None:
-        # BufPre
-        ...
-        lines = self.buffer.lines
-        import re 
-        # TODO: Implement the hooks and perform filter process.
-        ...
-        content = "\n".join(lines)  
-        entire_cr = self.buffer.range_operator.entire_character_range
-        self.buffer.range_operator.replace_text(entire_cr, content)
-
+        # BufPre in the domain of VIM. 
+        # This is justified, since the simulutaneous interactions a few at most. 
+        for interaction in self.interactions.values():
+            hooks = interaction.hooks
+            if hooks and hooks.pre_save:
+                hooks.pre_save(self.buffer)
 
 class FairyKernelManager:
     def __init__(self,):
@@ -118,7 +106,7 @@ class FairyKernelManager:
     def summon(self, buffer: PytoyBuffer,  *, ctx:GlobalPytoyContext | None = None) -> FairyKernel:
         if ctx is None:
             ctx = GlobalPytoyContext.get()
-        # Currently, only 1 Fairy kernel allowes.
+        # Currently, only 1 Fairy kernel allowed.
         if self._kernels:
             if (kernel := self._kernels.get(buffer.buffer_id)):
                 return kernel
@@ -182,23 +170,23 @@ class PytoyFairy:
         return self._kernel.llm_context
 
 
-    def make_interaction(self, requester: InteractionRequesterProtocol, *, hooks: HooksForInteraction | None = None)-> LLMInteraction:
+    def make_interaction(self, requester: InteractionRequesterProtocol)-> LLMInteraction:
         request = requester(self.kernel)
         
-        emitter = EventEmitter[Any]()
+        interaction_end_emitter = EventEmitter[Any]()
         def _revised_on_finish(sync_output: SyncOutput):
             try:
                 request.on_success(sync_output)
             except Exception as e:
                 print("Unhandled exception at `on_success`", e)
-            emitter.fire(None)
+            interaction_end_emitter.fire(None)
 
         def _revised_on_error(exception: Exception):
             try:
                 request.on_failure(exception)
             except Exception as e:
                 print("Unhandled exception at `on_failure`", e)
-            emitter.fire(None)
+            interaction_end_emitter.fire(None)
             
         def _main() -> SyncOutput:
             return completion(request.inputs, output_format=request.llm_output_format)
@@ -210,8 +198,8 @@ class PytoyFairy:
         task = ThreadWorker.run(main_func=_main,
                          on_finish=_revised_on_finish,
                          on_error=_revised_on_error)
-        interaction =  LLMInteraction(id=id_, task=task, on_exit=emitter.event)
-        self.kernel.register_interaction(interaction, hooks=hooks)
+        interaction =  LLMInteraction(id=id_, task=task, on_exit=interaction_end_emitter.event, hooks=request.hooks)
+        self.kernel.register_interaction(interaction)
         return interaction
 
     
@@ -240,73 +228,150 @@ class EditDocumentRequester:
         document = buffer.content
         inputs = self._make_inputs(document)
         llm_output_format = "str"
+        
+        def _revert_ranges(buffer: PytoyBuffer):
+            start_range = buffer.range_operator.find_first(self.query_start, reverse=False)
+            if start_range:
+                buffer.range_operator.replace_text(start_range, "")
+            end_range = buffer.range_operator.find_first(self.query_end, reverse=False)
+            if end_range:
+                buffer.range_operator.replace_text(end_range, "")
 
         def on_success(output: SyncOutput) -> None:
             output = str(output)
             buffer = kernel.buffer
-            start_range = buffer.range_operator.find_first(self.query_start, reverse=True)
+            start_range = buffer.range_operator.find_first(self.query_start, reverse=False)
             end_range = buffer.range_operator.find_first(self.query_end, reverse=True)
             if start_range is None or end_range is None:
-                print("Request is gone...")
+                EphemeralNotification().notify("Request is gone, so no operations.")
                 return 
             cr = CharacterRange(start_range.start, end_range.end)
             buffer.range_operator.replace_text(cr, output)
 
         def on_error(exception: Exception) -> None:
+            _revert_ranges(kernel.buffer)
             ThreadWorker.add_message(str(exception))
             EphemeralNotification().notify("LLM Error. See `:messages`.")
-
+            
+        hooks = HooksForInteraction(pre_save=_revert_ranges) 
 
         return InteractionRequest(inputs=inputs, 
                                   llm_output_format=llm_output_format, 
                                   on_success=on_success,
-                                  on_failure=on_error) 
+                                  on_failure=on_error,
+                                  hooks=hooks) 
 
-        
+       
     def _make_inputs(self, document: str) -> list[InputMessage]:
-        prompt = self._make_prompt(document)
-        return [InputMessage(role="system", content=prompt)]
+        system_message = InputMessage(role="system", content=self._make_system_prompt())
+        user_message = InputMessage(role="user", content= self._make_user_prompt(document))
+        return [system_message, user_message]
     
-
-
-    def _make_prompt(self, document: str) -> str:
+    def _make_user_prompt(self, document: str) -> str:
         return dedent(f"""
-        You are a professional editor integrated into a document editor.
+                    Here is the document:
+                    <document>
+                    {document}
+                    </document>
+                      """).strip()
 
-        Your task:
-        - Rewrite the text strictly between the markers:
-          `{self.query_start}` and `{self.query_end}`
 
-        Bigger Goal:
-        - You and receiver collaboratively ake a nice document likeable for many people to understand. 
-          
-        Input tags:
-        - <document>...</document>: the inside of <document> tag corresponds to the target document.
+    def _make_system_prompt(self) -> str:
+        return dedent(f"""
+    You are a professional editor integrated into a document editor.
 
-        Rules:
-        - Output ONLY the rewritten text.
-        - Do NOT include the markers themselves.
-        - Do NOT output Input tags for the output.
-        - Do NOT add explanations or commentary.
-        - Keep the original intent.
-        - You may rephrase, reorganize, or clarify the content.
-        - Prefer similar length to the original unless clarity or correctness requires otherwise.
-        - Select the appropriate language from the documents and query, either English or Japanese.
-            - If Japanese is frequently used inside the document, the output is Japanese.
-            - Otherwise, the output is English. 
-        - Complete any incomplete sentences or bullet points.
-        - If the user provides hints like "???", "..." or placeholders, replace them with the most plausible information.
-        - If you need plceholders or ellipsis to balance correctness and conciseness, you "..." in bullet points.
-        - Make the tone and politeness of output to over the documnet.
-            - 日本語の場合、常態と敬体を文章中で統一せよ。
-            - In English, standardize the writing style; do not mix different registers or sentence-ending styles.
+    Your task:
+    - Rewrite the text strictly between the markers:
+      `{self.query_start}` and `{self.query_end}`
 
-        Your task: (Reminder)
-        - Rewrite the text strictly between the markers:
-          `{self.query_start}` and `{self.query_end}`
+    ============================================================
+    LANGUAGE SELECTION (MANDATORY)
+    ============================================================
 
-        <document>
-        {document}
-        </document>
-        """).strip()
+    Before rewriting, you MUST do the following internally:
+    1. Determine the dominant language of the document
+       (Japanese or English).
+    2. Choose ONLY ONE instruction set below that matches
+       the dominant language.
+    3. COMPLETELY IGNORE the other instruction set.
+
+    Do NOT output this decision or any analysis.
+
+    ============================================================
+    GLOBAL RULES (APPLY TO ALL LANGUAGES)
+    ============================================================
+
+    - Rewrite ONLY the content between the markers.
+    - Output ONLY the rewritten text.
+    - Do NOT include the markers themselves.
+    - Do NOT add explanations, commentary, or meta text.
+    - Do NOT output tags such as <document>.
+    - Preserve the original intent and meaning.
+    - Prefer similar length unless clarity or correctness requires change.
+    - The rewritten text must read naturally when placed back into the document.
+
+    ============================================================
+    LOCAL INSTRUCTION OVERRIDE
+    ============================================================
+
+    Immediately adjacent to the markers, there MAY be additional
+    instructions written by the user.
+
+    - These instructions, if present, are located:
+      - Immediately AFTER `{self.query_start}`, or
+      - Immediately BEFORE `{self.query_end}`.
+
+    If such instructions exist:
+    - You MUST follow them.
+    - They take PRIORITY over all other rules,
+      except for the absolute output constraints.
+
+    ============================================================
+    ENGLISH INSTRUCTIONS
+    ============================================================
+
+    Use these instructions ONLY if the dominant language is English.
+
+    Style and consistency:
+    - Strictly match the tone, formality, and writing style of the surrounding document.
+    - Match sentence length, paragraph structure, and level of explicitness.
+    - Do NOT introduce new metaphors, idioms, or stylistic flair.
+    - Do NOT make the text sound more “helpful” or “polite” than the rest of the document.
+
+    Editorial rules:
+    - You may rephrase, reorganize, or clarify for readability.
+    - Complete incomplete sentences or bullet points when necessary.
+    - Replace placeholders such as "...", "???", or unfinished items
+      with the most plausible content.
+    - Maintain technical accuracy and domain-appropriate vocabulary.
+
+    ============================================================
+    JAPANESE INSTRUCTIONS
+    ============================================================
+
+    Use these instructions ONLY if the dominant language is Japanese.
+
+    文体・語調の厳守（最重要）:
+    - 文書全体で使われている文体を**厳密に模倣**せよ。
+    - 文末表現（だ／である／です・ます調）を**完全に統一**せよ。
+    - 語彙の硬さ（技術文・説明文・口語）を文書全体に合わせよ。
+    - 編集箇所以外と連続して読んだときに違和感が一切ないことを最優先とせよ。
+
+    編集ルール:
+    - 内容の意図を変更してはならない。
+    - 必要な場合のみ、表現の整理・簡潔化・明確化を行ってよい。
+    - 不完全な文や箇条書きは、文脈から自然に補完せよ。
+    - "..." や "???" などのプレースホルダは、最も自然な内容で置き換えよ。
+    - 新しい語調・比喩・言い回しを**新規に導入してはならない**。
+
+    ============================================================
+    REMINDER
+    ============================================================
+
+    Your task (again):
+    - Rewrite the text strictly between:
+      `{self.query_start}` and `{self.query_end}`
+
+    Output ONLY the rewritten text.
+    """).strip()
             
