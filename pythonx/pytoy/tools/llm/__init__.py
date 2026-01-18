@@ -1,25 +1,48 @@
 import uuid
 import time
+import threading
+from pathlib import Path
 from textwrap import dedent
 from dataclasses import dataclass, field
 from pytoy.infra.core.models import Event, EventEmitter
 from pytoy.tools.llm.models import HooksForInteraction
 from pytoy.ui.pytoy_buffer import PytoyBuffer, BufferID, BufferEvents
 from pytoy.ui.pytoy_window import PytoyWindow, CharacterRange
-from typing import Any, Callable, Protocol, Sequence, Callable
+from typing import Any, Callable, Protocol, Sequence, Callable, Final
 from pydantic import BaseModel 
 from pytoy_llm.models import SyncOutput, SyncOutputFormatStr, SyncOutputFormat
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.infra.timertask import ThreadWorker
+from pytoy.lib_tools.pytoy_configuration import PytoyConfiguration
 
 from pytoy_llm import completion
 from pytoy_llm.models import InputMessage
 from pytoy.ui.notifications import EphemeralNotification
 
+from pytoy.tools.llm.references import ReferenceHandler, ReferenceSectionWriter, ReferenceCollector
 
-class PytoyLLMContext(BaseModel):
+
+
+class PytoyLLMContext:
+    LLM_ROOT_KEY: Final[str] =  "vim_pytoy_llm"
+    REFERENCE_FOLDER_KEY: Final[str] = "references"
     def __init__(self, buffer: PytoyBuffer, *, ctx: GlobalPytoyContext):
-        ...
+        self._configuration =  PytoyConfiguration(buffer.path.parent)
+        self._lock = threading.Lock
+        
+    @property
+    def root_folder(self) -> Path:
+        """Return the root folder for data related to `PytoyLLM`.
+        """
+        return self._configuration.get_folder(self.LLM_ROOT_KEY, location="local")
+
+    @property
+    def reference_folder(self) -> Path: 
+        return self.root_folder / self.REFERENCE_FOLDER_KEY
+    
+    @property
+    def reference_handler(self) -> ReferenceHandler:
+        return ReferenceHandler(self.reference_folder)
     
     def dispose(self):
         pass
@@ -52,10 +75,11 @@ class FairyKernel:
         self.llm_context = llm_context
         self.interactions: dict[str, LLMInteraction] = {}
         
-        self.buffer.on_wiped.subscribe(lambda buffer_id: self.dispose(buffer_id))
+        self.buffer.on_wiped.subscribe(self.dispose)
         disposables = []
-        disposables.append(self.buffer.events.on_pre_buf.subscribe(lambda _: self.pre_save))
-        self.disposables = []
+        disposables.append(self.buffer.events.on_pre_buf.subscribe(self.pre_save))
+        self.disposables = disposables
+
                  
     @property
     def on_end(self) -> Event[BufferID]:
@@ -91,7 +115,7 @@ class FairyKernel:
         for item in self.disposables:
             item.dispose()
     
-    def pre_save(self) -> None:
+    def pre_save(self, _: BufferID) -> None:
         # BufPre in the domain of VIM. 
         # This is justified, since the simulutaneous interactions a few at most. 
         for interaction in self.interactions.values():
@@ -129,6 +153,12 @@ class FairyKernelManager:
                 
 class InteractionRequesterProtocol(Protocol):
     def __call__(self, kernel: FairyKernel) -> InteractionRequest:
+        ...
+        
+class OperatorProtocol(Protocol):
+    """Do something syncronouslly. 
+    """
+    def __call__(self,  kernel: FairyKernel) -> None:
         ...
     
 
@@ -168,6 +198,11 @@ class PytoyFairy:
     @property
     def llm_context(self):
         return self._kernel.llm_context
+    
+    def make_operation(self, operator: OperatorProtocol) -> Any:
+        """One time operation, syncronously.
+        """
+        return operator(self.kernel)
 
 
     def make_interaction(self, requester: InteractionRequesterProtocol)-> LLMInteraction:
@@ -192,7 +227,7 @@ class PytoyFairy:
             return completion(request.inputs, output_format=request.llm_output_format)
         
         # Maybe , using `ctx`, we are able realize DI.
-        # We shoul give `event to `ThreadWorker` so that 
+        # We should give `event to `ThreadWorker` so that 
         # the deregister of `task` works.
         id_ = str(uuid.uuid1())
         task = ThreadWorker.run(main_func=_main,
@@ -224,9 +259,12 @@ class EditDocumentRequester:
 
         text = buffer.get_text(selection)
         new_text = self.query_start + "\n" + text + "\n" + self.query_end
-        target_selection = range_operator.replace_text(selection, new_text)
+        range_operator.replace_text(selection, new_text)
         document = buffer.content
-        inputs = self._make_inputs(document)
+        
+
+        inputs = self._make_inputs(document, kernel)
+
         llm_output_format = "str"
         
         def _revert_ranges(buffer: PytoyBuffer):
@@ -241,7 +279,7 @@ class EditDocumentRequester:
             output = str(output)
             buffer = kernel.buffer
             start_range = buffer.range_operator.find_first(self.query_start, reverse=False)
-            end_range = buffer.range_operator.find_first(self.query_end, reverse=True)
+            end_range = buffer.range_operator.find_first(self.query_end, reverse=False)
             if start_range is None or end_range is None:
                 EphemeralNotification().notify("Request is gone, so no operations.")
                 return 
@@ -262,8 +300,14 @@ class EditDocumentRequester:
                                   hooks=hooks) 
 
        
-    def _make_inputs(self, document: str) -> list[InputMessage]:
-        system_message = InputMessage(role="system", content=self._make_system_prompt())
+    def _make_inputs(self, document: str, kernel: FairyKernel) -> list[InputMessage]:
+        reference_handler = kernel.llm_context.reference_handler
+        if reference_handler.exist_reference:
+            ref_section_writer = reference_handler.section_writer
+            reference_section = ref_section_writer.make_section()
+        else:
+            reference_section = ""
+        system_message = InputMessage(role="system", content=self._make_system_prompt(reference_section))
         user_message = InputMessage(role="user", content= self._make_user_prompt(document))
         return [system_message, user_message]
     
@@ -276,7 +320,7 @@ class EditDocumentRequester:
                       """).strip()
 
 
-    def _make_system_prompt(self) -> str:
+    def _make_system_prompt(self, reference_section: str = "") -> str:
         return dedent(f"""
     You are a professional editor integrated into a document editor.
 
@@ -293,7 +337,7 @@ class EditDocumentRequester:
        (Japanese or English).
     2. Choose ONLY ONE instruction set below that matches
        the dominant language.
-    3. COMPLETELY IGNORE the other instruction set.
+    3. COMPLETELY IGNORE the instruction set of the other lanaguages.
 
     Do NOT output this decision or any analysis.
 
@@ -364,6 +408,8 @@ class EditDocumentRequester:
     - "..." や "???" などのプレースホルダは、最も自然な内容で置き換えよ。
     - 新しい語調・比喩・言い回しを**新規に導入してはならない**。
 
+    {reference_section}
+
     ============================================================
     REMINDER
     ============================================================
@@ -375,3 +421,19 @@ class EditDocumentRequester:
     Output ONLY the rewritten text.
     """).strip()
             
+
+class ReferenceDatasetConstructor(OperatorProtocol):
+    def __call__(self, fairy_kernel: FairyKernel) -> Any:
+        # まずは最初、全てのDatasetを作る
+        from pytoy.tools.llm.references.reference_collectors import ReferenceCollector
+        collector = fairy_kernel.llm_context.reference_handler.collector
+        # [TODO]: In remete, we would be careful.
+        # It is better to introduce `filepath` for `PytoyBuffer`.
+        root_folder = fairy_kernel.buffer.path.parent
+        if not root_folder:
+            print("No root folder ")
+            return 
+        print(r"{root_folder=} in `ReferenceDataCollector`.")
+        collector.collect_all(root_folder)
+        
+        
