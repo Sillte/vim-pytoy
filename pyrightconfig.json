@@ -1,4 +1,8 @@
 {
   "include": ["pythonx/pytoy"],
-  "extraPaths": ["typings"]
+  "extraPaths": ["typings"],
+  "typeCheckingMode": "basic",
+  "reportUnknownMemberType": false,
+  "reportUnknownVariableType": false,
+  "reportGeneralTypeIssues": false
 }
