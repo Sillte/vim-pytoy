@@ -36,7 +36,6 @@ class OutputJobVim(OutputJobProtocol):
         self._disposables = []
         self._disposables.append(self.events.on_job_exit.subscribe(lambda _ : TimerTask.execute_oneshot(_cleanup, interval=0)))
         
-        command_list = self._core.normalize_command(job_request.command)
 
         output_requests = set(job_request.outputs)
 
@@ -63,12 +62,12 @@ class OutputJobVim(OutputJobProtocol):
         import json
         self._jobid = f"{self._name}_{id(self)}"
 
-        vim.command(f"let g:{self._jobid} = job_start({json.dumps(command_list)}, {json.dumps(option)})")
+        vim.command(f"let g:{self._jobid} = job_start({json.dumps(job_request.command)}, {json.dumps(option)})")
         self._disposables.append(self.events.on_job_exit.subscribe(lambda _: vim.command(f"silent! unlet g:{self._jobid}")))
 
         debug_status = vim.eval(f"job_status(g:{self._jobid})")
         if debug_status == "fail":
-            raise ValueError(f"Failed to execute the command, `{command_list=}`, {option=}", )
+            raise ValueError(f"Failed to execute the command, `{job_request.command=}`, {option=}", )
 
     
     @property

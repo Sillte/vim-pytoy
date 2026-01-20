@@ -8,7 +8,7 @@ import time
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.lib_tools.environment_manager import ExecutionPreference  
 
-CommandWrapper = Callable[[str | list[str] | tuple[str]],  list[str]]
+CommandWrapper = Callable[[str | list[str] | tuple[str]],  list[str] | str]
 
 ExecutionWrapperType = CommandWrapper | ExecutionPreference
 
@@ -47,6 +47,8 @@ class ExecutionRequest:
 
 @dataclass(frozen=True)
 class ExecutionHooks:
+    """Recommendation policy... Use `on_finish` rather than on_success / on_failure.
+    """
     on_success: Callable[[ExecutionResult], None] | None = None
     on_failure: Callable[[ExecutionResult], None] | None = None
     on_finish: Callable[[ExecutionResult], None] | None = None
@@ -85,7 +87,7 @@ class ExecutionContext:
 @dataclass(frozen=True)
 class CommandExecution:
     runner: CommandRunner
-    command: list[str]
+    command: list[str] | str
     cwd: Path 
     id: ExecutionID
     
@@ -212,7 +214,7 @@ class CommandExecutor:
 
         return execution
         
-    def _solve_command(self, command: str | list[str] | tuple[str], command_wrapper:  ExecutionWrapperType | None, cwd: str | Path) -> list[str]:
+    def _solve_command(self, command: str | list[str] | tuple[str], command_wrapper:  ExecutionWrapperType | None, cwd: str | Path) -> list[str] | str:
         if callable(command_wrapper):
             return command_wrapper(command)
         

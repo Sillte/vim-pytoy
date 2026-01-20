@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.lib_tools.command_executor import CommandExecutor, BufferRequest, ExecutionRequest, ExecutionHooks, ExecutionResult
-from pytoy.lib_tools.command_executor import CommandExecutionManager 
+from pytoy.lib_tools.command_executor import CommandExecutionManager, CommandExecution
 
 # `set_default_execution_mode` is carried out only in `__init__.py`
 from pytoy.lib_tools.utils import get_current_directory
@@ -43,12 +43,15 @@ class PythonExecutor():
             cwd = get_current_directory()
         else:
             cwd = Path(cwd)
-        command = ["python", "-u", "-X", "utf8", str(path)]
+        command = " ".join(["python", "-u", "-X", "utf8", Path(path).as_posix()])
+        def _append_command(execution: CommandExecution) -> None:
+            execution.runner.stdout.append(str(command))
 
         buffer_request = BufferRequest(stdout=stdout, stderr=stderr)
         executor = CommandExecutor(buffer_request)
         execution_req = ExecutionRequest(command, cwd=cwd, command_wrapper="uv" if force_uv else "auto")
-        hooks = ExecutionHooks(on_finish=lambda res: self.on_closed(res, stderr=stderr, cwd=cwd))
+        hooks = ExecutionHooks(on_finish=lambda res: self.on_closed(res, stderr=stderr, cwd=cwd),
+                               on_start=_append_command)
         executor.execute(execution_req, hooks=hooks, kind=self.command_kind)
 
 

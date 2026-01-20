@@ -51,7 +51,7 @@ class QuickfixCommandExecutor:
         execution_request = command_request.execution
         
         def _on_start(execution: CommandExecution) -> None:
-            command: str = " ".join(execution.command)
+            command: str = str(execution.command)
             self._executor.stdout.append(command)
             
         def _on_finish(result: ExecutionResult) -> None:

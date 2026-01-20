@@ -53,22 +53,20 @@ class ExecutionEnvironment:
     warning: str | None = None
     
     @property
-    def command_wrapper(self) -> Callable[[str | list[str] | tuple[str]], list[str]]:
-        def wrap(arg: str | list[str] | tuple[str]) -> list[str]:
-            if isinstance(arg, str):
-                from shlex import split as shlex_split
-                import platform
-                is_windows = platform.system() == "Windows"
-                args = list(shlex_split(arg, posix=not is_windows))
-            else:
-                args = list(arg)
+    def command_wrapper(self) -> Callable[[str | list[str] | tuple[str]], list[str] | str]:
+        def wrap(arg: str | list[str] | tuple[str]) -> list[str] | str:
             match self.kind:
                 case "system":
-                    return args
+                    prefix = []
                 case "uv":
-                    return ["uv", "run"] + args
+                    prefix = ["uv", "run"]
                 case _:
                     assert_never(self.kind)
+            if isinstance(arg, str):
+                full_prefix = " ".join(prefix)
+                return f"{full_prefix} {arg}".strip()
+            else:
+                return prefix + list(arg)
         return wrap
 
 class EnvironmentSolverProtocol(Protocol):

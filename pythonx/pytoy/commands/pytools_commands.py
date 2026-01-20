@@ -87,61 +87,6 @@ class MypyCommand:
         return candidates
 
 
-@CommandManager.register(name="GotoDefinition")
-class GotoDefinitionCommand:
-    def __call__(self, arg: str = "try_both"):
-        if get_ui_enum() not in {UIEnum.VIM, UIEnum.NVIM}:
-            raise RuntimeError("This command is only available in  VIM and NVIM.")
-        if arg.lower() == "jedi":
-            self._go_to_by_jedi()
-        elif arg.lower() == "coc":
-            self._go_to_by_coc()
-        else:
-            try:
-                self._go_to_by_jedi()
-                return
-            except Exception as e:
-                print(e)
-            try:
-                self._go_to_by_coc()
-            except Exception as e:
-                print(e)
-
-    def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
-        candidates = ["jedi", "coc"]
-        valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
-        if valid_candidates:
-            return valid_candidates
-        return candidates
-
-    def _go_to_by_coc(self):
-        PytoyWindow.get_current().unique()
-        if PytoyWindow.get_current().is_left():
-            vim.command("rightbelow vsplit | wincmd l")
-            vim.command("call CocAction('jumpDefinition')")
-        else:
-            vim.command("call CocAction('jumpDefinition')")
-
-    def _go_to_by_jedi(self):
-        """
-        Utility function to handle `jedi-vim`.
-        * https://github.com/davidhalter/jedi-vim
-        """
-        import jedi_vim
-
-        PytoyWindow.get_current().unique()
-        v = vim.eval("g:jedi#use_splits_not_buffers")
-        if PytoyWindow.get_current().is_left():
-            vim.command("let g:jedi#use_splits_not_buffers='right'")
-        else:
-            vim.command("let g:jedi#use_splits_not_buffers=''")
-
-        names = jedi_vim.goto(mode="goto")
-        vim.command(f"let g:jedi#use_splits_not_buffers='{v}'")
-        if not names:
-            raise ValueError("Cannot use `jedi_vim.goto`")
-
-
 @CommandManager.register(name="CSpell")
 class CSpellCommand:
     def __call__(self):
