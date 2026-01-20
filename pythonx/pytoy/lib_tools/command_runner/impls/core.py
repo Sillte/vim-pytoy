@@ -37,14 +37,6 @@ class OutputJobCore:
 
         self.exit_emitter.fire(result)
         
-    def normalize_command(self, command: str | list[str] | tuple[str]) -> list[str]:
-        from shlex import split as shlex_split
-        if isinstance(command, str):
-            import platform
-            is_windows = platform.system() == "Windows"
-            command = list(shlex_split(command, posix=not is_windows))
-        return list(command)
-
     @property
     def snapshot(self) -> Snapshot:
         return Snapshot(

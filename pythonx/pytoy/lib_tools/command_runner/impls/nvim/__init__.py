@@ -63,8 +63,7 @@ class OutputJobNvim(OutputJobProtocol):
         if spawn_option.env:
             option["env"] = spawn_option.env
 
-        # コマンドの準備
-        cmd = self._core.normalize_command(job_request.command)
+        cmd = job_request.command
 
         # 実行
         try:
