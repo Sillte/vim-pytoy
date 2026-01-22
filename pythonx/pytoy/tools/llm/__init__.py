@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from pytoy_llm.models import SyncOutput, SyncOutputFormatStr, SyncOutputFormat
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.infra.timertask import ThreadWorker
+from pytoy.infra.timertask.thread_executor import ThreadExecutor, ThreadExecutionRequest
 from pytoy.lib_tools.pytoy_configuration import PytoyConfiguration
 
 from pytoy_llm import completion
@@ -156,7 +157,7 @@ class InteractionRequesterProtocol(Protocol):
         ...
         
 class OperatorProtocol(Protocol):
-    """Do something syncronouslly. 
+    """Do something synchronously. 
     """
     def __call__(self,  kernel: FairyKernel) -> None:
         ...
@@ -200,7 +201,7 @@ class PytoyFairy:
         return self._kernel.llm_context
     
     def make_operation(self, operator: OperatorProtocol) -> Any:
-        """One time operation, syncronously.
+        """One time operation, synchronously.
         """
         return operator(self.kernel)
 
@@ -223,17 +224,14 @@ class PytoyFairy:
                 print("Unhandled exception at `on_failure`", e)
             interaction_end_emitter.fire(None)
             
-        def _main() -> SyncOutput:
+        def _main(_) -> SyncOutput:
             return completion(request.inputs, output_format=request.llm_output_format)
         
-        # Maybe , using `ctx`, we are able realize DI.
-        # We should give `event to `ThreadWorker` so that 
-        # the deregister of `task` works.
+        execution_request = ThreadExecutionRequest(main_func=_main, on_finish=_revised_on_finish, on_error=_revised_on_error)
+        execution = ThreadExecutor().execute(execution_request)
         id_ = str(uuid.uuid1())
-        task = ThreadWorker.run(main_func=_main,
-                         on_finish=_revised_on_finish,
-                         on_error=_revised_on_error)
-        interaction =  LLMInteraction(id=id_, task=task, on_exit=interaction_end_emitter.event, hooks=request.hooks)
+
+        interaction = LLMInteraction(id=id_, task=execution, on_exit=interaction_end_emitter.event, hooks=request.hooks)
         self.kernel.register_interaction(interaction)
         return interaction
 
@@ -337,7 +335,7 @@ class EditDocumentRequester:
        (Japanese or English).
     2. Choose ONLY ONE instruction set below that matches
        the dominant language.
-    3. COMPLETELY IGNORE the instruction set of the other lanaguages.
+    3. COMPLETELY IGNORE the instruction set of the other languages.
 
     Do NOT output this decision or any analysis.
 
@@ -427,7 +425,7 @@ class ReferenceDatasetConstructor(OperatorProtocol):
         # まずは最初、全てのDatasetを作る
         from pytoy.tools.llm.references.reference_collectors import ReferenceCollector
         collector = fairy_kernel.llm_context.reference_handler.collector
-        # [TODO]: In remete, we would be careful.
+        # [TODO]: In remote, we should be careful whether it is all right.
         # It is better to introduce `filepath` for `PytoyBuffer`.
         root_folder = fairy_kernel.buffer.path.parent
         if not root_folder:

@@ -112,9 +112,10 @@ class TerminalDriver:
         return 
     
     @classmethod
-    def with_command_wrapper(cls, impl: TerminalDriverProtocol,  command_wrapper: Callable[[str], list[str]]) -> Self: 
+    def with_command_wrapper(cls, impl: TerminalDriverProtocol,  command_wrapper: Callable[[str | list[str] | tuple[str]], list[str] | str]) -> Self: 
         new_command = command_wrapper(impl.command)
-        return cls(command=" ".join(new_command),
+        new_command = new_command if isinstance(new_command, str) else " ".join(new_command)
+        return cls(command=new_command,
                    name=impl.name, 
                    make_operations=impl.make_operations,
                    eol=impl.eol, 
