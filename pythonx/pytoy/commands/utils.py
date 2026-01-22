@@ -33,16 +33,14 @@ def fallback_argument(fargs: Sequence[str], target: str) -> F_ARGS:
     return items
 
 
-
-
 def workspace_func() -> str | None:
-    from pytoy.lib_tools.environment_manager import OldEnvironmentManager
-    # Currently, `python` environment is assumed, but it may be extended.
-    venv_folder = OldEnvironmentManager().get_uv_venv()
-    if not venv_folder:
+    from pytoy.lib_tools.environment_manager import EnvironmentManager
+    from pytoy.lib_tools.utils import get_current_directory
+    current_folder = get_current_directory()
+    workspace = EnvironmentManager().get_workspace(current_folder, preference="auto")
+    if not workspace:
         print("Cannot obtain `workspace`.")
         return None
-    root_folder = venv_folder.parent
-    return str(root_folder)
+    return str(workspace)
 
 WORKSPACE_OVERRIDE_MAP = {"workspace": workspace_func}

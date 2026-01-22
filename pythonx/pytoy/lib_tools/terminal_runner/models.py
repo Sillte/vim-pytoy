@@ -3,6 +3,8 @@ from pytoy.infra.core.models import CursorPosition
 from pytoy.infra.core.models.event import Event
 
 from typing import Callable, Literal, Sequence, Protocol,  Hashable, Any, Self
+from pytoy.lib_tools.environment_manager import ExecutionPreference  , CommandWrapperType, ExecutionWrapperType
+
 
 from pathlib import Path
 
@@ -112,7 +114,8 @@ class TerminalDriver:
         return 
     
     @classmethod
-    def with_command_wrapper(cls, impl: TerminalDriverProtocol,  command_wrapper: Callable[[str | list[str] | tuple[str]], list[str] | str]) -> Self: 
+    def with_command_wrapper(cls, impl: TerminalDriverProtocol,
+                             command_wrapper: CommandWrapperType) -> Self: 
         new_command = command_wrapper(impl.command)
         new_command = new_command if isinstance(new_command, str) else " ".join(new_command)
         return cls(command=new_command,
@@ -194,5 +197,8 @@ class TerminalJobProtocol(Protocol):
     @property
     def events(self) -> JobEvents:
         ...
+
+
+
 
 

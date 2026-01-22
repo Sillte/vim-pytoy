@@ -5,7 +5,6 @@ import json
 import re
 from shlex import quote
 from pathlib import  Path
-from typing import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
@@ -45,7 +44,7 @@ class PythonExecutor():
             cwd = Path(cwd)
         command = " ".join(["python", "-u", "-X", "utf8", Path(path).as_posix()])
         def _append_command(execution: CommandExecution) -> None:
-            execution.runner.stdout.append(str(command))
+            execution.runner.stdout.append(str(execution.command))
 
         buffer_request = BufferRequest(stdout=stdout, stderr=stderr)
         executor = CommandExecutor(buffer_request)

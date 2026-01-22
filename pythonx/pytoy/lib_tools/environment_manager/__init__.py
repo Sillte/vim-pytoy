@@ -1,15 +1,13 @@
 # """EnvironmentManager.
 # This class handles the properties related to the `env` parameters of `subprocess`.
-# As of 2025/05, this class handles `uv` and `virtualenv`.
+# As of 2026/01, this class handles `uv`
 # """
 
 import os
 from pathlib import Path
-from typing import Callable, Literal, Any, Protocol, assert_never
+from typing import Callable, Literal, Protocol, assert_never, Sequence, overload, Self
 import subprocess
-from enum import Enum
 import vim
-from pytoy.ui import lightline_utils
 from pytoy.lib_tools.utils import get_current_directory
 from dataclasses import dataclass
 
@@ -19,11 +17,17 @@ type EnvironmentKind = Literal["uv"] | DefaultEnvironment
 type ExecutionPreference =  Literal["auto"]  | EnvironmentKind 
 
 
-class UvMode(str, Enum):
-    UNDEFINED = "undefined"
-    ON = "on"
-    OFF = "off"
+class CommandWrapperProtocol(Protocol):
+    @overload
+    def __call__(self, arg: str) -> str: ...
     
+    @overload
+    def __call__(self, arg: list[str] | tuple[str]) -> list[str]: ...
+
+type CommandWrapperType = CommandWrapperProtocol
+type ExecutionWrapperType = CommandWrapperType | ExecutionPreference
+
+
 __add_uv_path_fallback_tried = False
 def _add_uv_path_fallback() -> bool:
     """
@@ -46,28 +50,71 @@ def _add_uv_path_fallback() -> bool:
     except Exception: 
         return False
 
-@dataclass(frozen=True)
-class ExecutionEnvironment:
+class ToolRunnerStrategyProtocol(Protocol):
     kind: EnvironmentKind
-    workspace: Path | None = None
-    warning: str | None = None
+
+    @overload
+    def wrap(self, arg: str) -> str: ...
     
+    @overload
+    def wrap(self, arg: Sequence[str]) -> list[str]: ...
+
+    def wrap(self, arg: str | Sequence[str]) -> str | list[str]: ...
+
+@dataclass(frozen=True)
+class SystemStrategy(ToolRunnerStrategyProtocol):
+    kind: EnvironmentKind = "system"
+
+    def wrap(self, arg: str | Sequence[str]):
+        return arg
+
+@dataclass(frozen=True)
+class UvStrategy(ToolRunnerStrategyProtocol):
+    kind: EnvironmentKind = "uv"
+
+    def wrap(self, arg: str | Sequence[str]):
+        prefix = ["uv", "run"]
+        if isinstance(arg, str):
+            return f"{' '.join(prefix)} {arg}"
+        return prefix + list(arg)
+
+
+@dataclass(frozen=True)
+class ToolRunnerStrategy:
+    impl: ToolRunnerStrategyProtocol
+
     @property
-    def command_wrapper(self) -> Callable[[str | list[str] | tuple[str]], list[str] | str]:
-        def wrap(arg: str | list[str] | tuple[str]) -> list[str] | str:
-            match self.kind:
-                case "system":
-                    prefix = []
-                case "uv":
-                    prefix = ["uv", "run"]
-                case _:
-                    assert_never(self.kind)
-            if isinstance(arg, str):
-                full_prefix = " ".join(prefix)
-                return f"{full_prefix} {arg}".strip()
-            else:
-                return prefix + list(arg)
-        return wrap
+    def kind(self) -> EnvironmentKind:
+        return self.impl.kind
+
+    @property
+    def command_wrapper(self) -> CommandWrapperType:
+        return self.impl.wrap
+
+    @classmethod
+    def from_kind(cls, environment_kind: EnvironmentKind) -> Self:
+        match environment_kind:
+            case "system":
+                return cls(impl=SystemStrategy())
+            case "uv":
+                return cls(impl=UvStrategy())
+            case _:
+                assert_never(environment_kind)
+
+@dataclass(frozen=True)
+class ResolvedExecutionEnvironment:
+    tool_runner_strategy: ToolRunnerStrategy
+    workspace: Path | None
+    base_path: Path
+
+    @property
+    def kind(self) -> EnvironmentKind:
+        return self.tool_runner_strategy.kind
+
+    @property
+    def command_wrapper(self) -> CommandWrapperType:
+        return self.tool_runner_strategy.command_wrapper
+
 
 class EnvironmentSolverProtocol(Protocol):
     @property
@@ -160,159 +207,71 @@ class EnvironmentManager:
     @property
     def execution_preference(self):
         return self._execution_preference
+
+    @property 
+    def available_execution_preferences(self) -> Sequence[ExecutionPreference]:
+        base_prefs: list[ExecutionPreference] = ["auto", "system"]
+        return list(self.installed_kinds) +  base_prefs
+
     
     def set_execution_preference(self, preference: ExecutionPreference):
         self._execution_preference = preference
         
-    def solve_preference(self, path: Path | str, preference: ExecutionPreference | None = None) -> ExecutionEnvironment:
+    def solve_preference(self, path: Path | str, preference: ExecutionPreference | None = None) -> ResolvedExecutionEnvironment:
         preference = preference or self._execution_preference
+        path = Path(path)
+
         installed_kinds = self.installed_kinds
         if preference in self._solvers: # The case for setting the environment directly.
             if preference in installed_kinds:
                 workspace = self._solvers[preference].get_workspace(path)
-                if workspace:
-                    return ExecutionEnvironment(kind=preference, workspace=workspace)
-                else:
-                    return ExecutionEnvironment(kind=preference, workspace=workspace, warning="NonWorkspace")
+                strategy = ToolRunnerStrategy.from_kind(preference)
+                return ResolvedExecutionEnvironment(strategy, workspace=workspace, base_path=path)
             else:
                 msg = f"`{preference=}` is not installed."
                 raise ValueError(msg)
+
         match preference:
             case "system":
-                return ExecutionEnvironment(kind="system")
+                strategy = ToolRunnerStrategy.from_kind("system")
+                return ResolvedExecutionEnvironment(tool_runner_strategy=strategy, workspace=None, base_path=path)
             case "auto":
                 for kind in installed_kinds:
                     workspace = self._solvers[kind].get_workspace(path)
                     if workspace:
-                        return ExecutionEnvironment(kind=kind, workspace=workspace)
+                        strategy = ToolRunnerStrategy.from_kind(kind)
+                        return ResolvedExecutionEnvironment(tool_runner_strategy=strategy, workspace=workspace, base_path=path)
                 else:
-                    return ExecutionEnvironment(kind="system")
+                    strategy = ToolRunnerStrategy.from_kind("system")
+                    return ResolvedExecutionEnvironment(tool_runner_strategy=strategy, workspace=workspace, base_path=path)
         raise RuntimeError("Invalid Specication of `{preference=}`")
 
-
-class OldEnvironmentManager:
-    # Singleton.(Thread unsafe.)
-    __cache = None
-
-    def __new__(cls):
-        if cls.__cache is None:
-            self = object.__new__(cls)
-            cls.__cache = self
-            self._init()
-        else:
-            self = cls.__cache
-        return self
-
-    def _init(self):
-        self._uv_mode = UvMode.UNDEFINED
-        self._prev_venv_path = None
-
-    def get_uv_venv(self, path: str | Path | None = None) -> Path | None:
-        """Return the environment `uv run` uses if it has virtual envrinment.
-
-        # [TODO] handling of `--package`.
-        """
-        if path is None:
-            path = get_current_directory()
-            
-        def _to_python_path() -> Path | None:
-            ret = subprocess.run(
-                'uv run python -c "import sys; print(sys.executable)"',
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-                env=os.environ,
-                cwd=path, 
-                text=True,
-                shell=True,
-            )
-            if ret.returncode == 0:
-                return Path(ret.stdout.strip())
+    def get_workspace(self, start_path: str | Path, preference: None | EnvironmentKind | Literal["git", "auto"] = None) -> None | Path:
+        def _get_workspace_based_on_git(start: Path) -> Path | None:
+            for parent in [start] + list(start.parents):
+                if (parent / ".git").exists():
+                    return parent
             return None
+        start_path = Path(start_path).resolve()
 
-        if not (python_path := _to_python_path()):
-            # Maybe `bash` is not applied here.
-            _add_uv_path_fallback()
-            python_path = _to_python_path()
-        if not python_path:
-            return None
+        if preference == "git":
+            return _get_workspace_based_on_git(start_path)
 
-        if all(
-            (python_path.parent / name).exists()
-            for name in ["activate", "activate.bat"]
-        ):
-            # It should be virtual environment.
-            return python_path.parent.parent
+        elif preference in self._solvers:
+            return self._solvers[preference].get_workspace(start_path)
+
+        # 3. 'auto' または None の場合（利用可能なソルバーを順次試し、最後に git を試す）
+        elif preference == "auto" or preference is None:
+            # まずは uv などのソルバー（プロジェクトファイル）で判定
+            for solver in self._solvers.values():
+                if solver.installed:
+                    if (workspace := solver.get_workspace(start_path)):
+                        return workspace
+            return _get_workspace_based_on_git(start_path)
         else:
-            # Not virtual environment.
-            return None
+            raise ValueError(f"Invalid Argument, {preference=}")
 
-    def get_command_wrapper(
-        self, force_uv: bool | None = False
-    ) -> Callable[[str], str]:
-        # [NOTE]: In the future, parameter may become desirable.
-        # Consider `--package option`
 
-        if force_uv is True or self.get_uv_mode() == UvMode.ON:
-            return lambda cmd: f"uv run {cmd}"
-        else:
-            return lambda cmd: cmd
-
-    def on_uv_mode_on(self):
-        """Hook function when `uv_mode` becomes on.
-        Handling the global state of VIM.
-        """
-
-        uv_mode = "uv-mode"
-        if not lightline_utils.is_registered(uv_mode):
-            lightline_utils.register(uv_mode)
-        # Change the environment of `JEDI`.
-        venv_path = self.get_uv_venv()
-        prev_path = vim.vars.get("g:jedi#environment_path")
-        if prev_path:
-            self._prev_venv_path = prev_path
-        if venv_path:
-            vim.vars["g:jedi#environment_path"] = venv_path.as_posix()
-
-    def on_uv_mode_off(self):
-        """Hook function when `uv_mode` becomes off.
-        Handling the global state of VIM.
-        """
-
-        uv_mode = "uv-mode"
-        if lightline_utils.is_registered(uv_mode):
-            lightline_utils.deregister(uv_mode)
-
-        # Change the environment of `JEDI`.
-        if self._prev_venv_path:
-            vim.vars["g:jedi#environment_path"] = self._prev_venv_path
-        else:
-            vim.vars["g:jedi#environment_path"] = "auto"
-
-    def set_uv_mode(self, uv_mode: UvMode):
-        prev_mode = self._uv_mode
-        self._uv_mode = uv_mode
-        if prev_mode != uv_mode and self._uv_mode == UvMode.ON:
-            self.on_uv_mode_on()
-        elif prev_mode != uv_mode and self._uv_mode == UvMode.OFF:
-            self.on_uv_mode_off()
-        return self._uv_mode
-
-    def get_uv_mode(self):
-        if self._uv_mode == UvMode.UNDEFINED:
-            if self.get_uv_venv():
-                self.set_uv_mode(UvMode.ON)
-            else:
-                self.set_uv_mode(UvMode.OFF)
-        return self._uv_mode
-
-    def toggle_uv_mode(self):
-        if self._uv_mode == UvMode.UNDEFINED:
-            return self.get_uv_mode()
-        if self._uv_mode == UvMode.ON:
-            return self.set_uv_mode(UvMode.OFF)
-        else:
-            return self.set_uv_mode(UvMode.ON)
-        
 
 def term_start():
     import sys
@@ -321,7 +280,12 @@ def term_start():
     if get_ui_enum() != UIEnum.VIM:
         raise ValueError("This funciton is only for `VIM`.")
     
-    venv_folder = OldEnvironmentManager().get_uv_venv()
+    start_path = get_current_directory()
+    workspace = EnvironmentManager().get_workspace(start_path, preference="uv")
+    if workspace:
+        venv_folder = workspace / ".venv"
+    else:
+        venv_folder = None
     if not venv_folder:
         raise ValueError("Cannot find the `venv_folder`.")
     if sys.platform == "win32":
@@ -343,5 +307,5 @@ def term_start():
 
 
 if __name__ == "__main__":
-    manager = OldEnvironmentManager()
+    pass
 
