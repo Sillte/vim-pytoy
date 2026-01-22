@@ -6,11 +6,8 @@ from pytoy.lib_tools.command_runner.models import Snapshot, OutputJobRequest, Jo
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 import time
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.lib_tools.environment_manager import ExecutionPreference  
+from pytoy.lib_tools.environment_manager import ExecutionPreference, CommandWrapperType, ExecutionWrapperType  
 
-CommandWrapper = Callable[[str | list[str] | tuple[str]],  list[str] | str]
-
-ExecutionWrapperType = CommandWrapper | ExecutionPreference
 
 type ExecutionResult = JobResult
 type ExecutionID = JobID

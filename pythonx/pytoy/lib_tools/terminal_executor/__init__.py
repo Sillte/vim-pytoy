@@ -5,14 +5,11 @@ from typing import Callable, Sequence, Literal, Mapping, Self, Any, assert_never
 from pytoy.lib_tools.terminal_runner  import TerminalJobRunner
 from pytoy.lib_tools.terminal_runner.models import Snapshot, TerminalJobRequest,  SpawnOption, JobID, Event, JobEvents, TerminalDriverProtocol  
 from pytoy.lib_tools.terminal_runner.models import TerminalDriver
+from pytoy.lib_tools.terminal_runner.models import ExecutionWrapperType
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 import time
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.lib_tools.environment_manager import ExecutionPreference  
 
-CommandWrapper = Callable[[str | list[str] | tuple[str]],  list[str]]
-
-ExecutionWrapperType = CommandWrapper | ExecutionPreference
 
 type ExecutionID = JobID
 type ExecutionEvents = JobEvents
