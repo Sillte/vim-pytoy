@@ -7,7 +7,6 @@ from pytoy.ui.pytoy_window import CharacterRange
 from pytoy.ui.notifications import EphemeralNotification
 from pytoy.contexts.pytoy import GlobalPytoyContext
 
-from pytoy.infra.timertask import ThreadWorker
 from textwrap import dedent
 
 @CommandManager.register("PytoyLLM", range="")

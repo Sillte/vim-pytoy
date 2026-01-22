@@ -19,8 +19,12 @@ def test_buffer_init(vim_env: MockVim):
     kernel_registry = dict()
     kernel_registry[1] = VimBufferKernel(1)
     assert  kernel_registry.get(1)
+    class DummyCtx:
+        @property
+        def buffer_kernel_registry(self):
+            return kernel_registry
 
-    pytoy_buf = PytoyBufferVim(buf.number, kernel_registry=kernel_registry)
+    pytoy_buf = PytoyBufferVim(buf.number, ctx=DummyCtx())
     assert pytoy_buf._kernel is not None
 
     
@@ -47,8 +51,13 @@ def test_buffer_valid(vim_env: MockVim):
     # Create kernel that will retrieve the buffer from vim_env
     kernel = VimBufferKernel(1)
     kernel_registry[1] = kernel
+
+    class DummyCtx:
+        @property
+        def buffer_kernel_registry(self):
+            return kernel_registry
     
-    pytoy_buf = PytoyBufferVim(buf.number, kernel_registry=kernel_registry)
+    pytoy_buf = PytoyBufferVim(buf.number, ctx=DummyCtx())
     assert pytoy_buf.valid == True
     
     # Test invalid buffer by making it invalid
@@ -71,13 +80,7 @@ def test_get_current(vim_env: MockVim):
     kernel_registry[1] = VimBufferKernel(1)
     kernel_registry[1]._buffer = buf
     
-    # Temporarily patch the module-level kernel_registry
-    from pytoy.ui.pytoy_buffer.impls import vim as vim_module
-    original_registry = vim_module.kernel_registry
-    vim_module.kernel_registry = kernel_registry
     
-    try:
-        current_buf = PytoyBufferVim.get_current()
-        assert isinstance(current_buf, PytoyBufferVim)
-    finally:
-        vim_module.kernel_registry = original_registry
+    current_buf = PytoyBufferVim.get_current()
+    assert isinstance(current_buf, PytoyBufferVim)
+

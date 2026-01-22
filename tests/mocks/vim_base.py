@@ -105,6 +105,8 @@ class MockVimModule:
             return 1001
         if expr.startswith("win_id2tabwin("):
             return [1, 1]
+        if expr.startswith("timer_start"): 
+            return 1
         return self._eval_results.get(expr, "")
 
     def exec_lua(self, command: str) -> Any:
