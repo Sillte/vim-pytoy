@@ -60,16 +60,6 @@ def reset():
         if 0 <= nr:
             vim.command(f":{nr}close")
 
-
-def term():
-    """Open the terminal window
-    with virtual environment.
-
-    """
-    from pytoy.lib_tools.environment_manager import term_start
-    term_start()
-
-
 # Command definitions.
 # Maybe `Command` uses the public interfaces,
 # Hence, `import`s are placed here.

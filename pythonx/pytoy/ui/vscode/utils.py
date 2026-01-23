@@ -8,24 +8,22 @@ from pytoy.ui.pytoy_window import PytoyWindow
 
 
 def wait_until_true(
-    condition_func, timeout: float = 3.0, n_trials: int = 3, initial_wait=None
+    condition_func, timeout: float = 3.0, n_trials: int = 10, initial_wait=None
 ) -> bool:
     """Wait the `condition_func` returns true.
     If `timeout` passes and this func returns False.
     """
     import vim
 
-
     interval = timeout / n_trials
-    if initial_wait is None:
-        initial_wait = interval / 10
-        vim.command(f'sleep {round(initial_wait * 1000)}m')
     for _ in range(n_trials):
         if condition_func():
             return True
         # It is required to procced functions in other loops.
-        vim.command(f'sleep {round(interval * 1000)}m')
-        #time.sleep(interval)
+        vim.command(f'sleep 1m') # Mpve events.
+        vim.command('redraw')  # ←  RPC チャネルを処理
+        time.sleep(interval)
+
     return False
 
 
