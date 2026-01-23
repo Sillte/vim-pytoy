@@ -54,7 +54,4 @@ function! pytoy#reset()
 python3 pytoy.reset()
 endfunction
 
-" Open Terminal with the specified virtual environment.
-function! pytoy#term()
-python3 pytoy.term()
-endfunction
+
