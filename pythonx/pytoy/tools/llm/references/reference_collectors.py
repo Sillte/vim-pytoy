@@ -1,10 +1,9 @@
-from pytoy.tools.llm.references.converters import ReferenceConverterManager
-from pytoy.tools.llm.references.models import DatasetMeta, ReferenceDataset, ReferenceInfo, ReferencePathPair, ResourceUri
-
-
-import os
 from pathlib import Path
 from typing import Final, Sequence
+
+from pytoy.tools.llm.references.converters import ReferenceConverterManager
+from pytoy.tools.llm.references.models import DatasetMeta, ReferenceDataset, ReferenceInfo, ReferencePathPair, ResourceUri
+from pytoy.tools.llm.utils import FileGatherer
 
 
 class ReferenceCollector:
@@ -19,31 +18,16 @@ class ReferenceCollector:
 
         self._exclude_predicators = [lambda item: item.startswith("."), lambda item: item.startswith("__")]
 
-    def _filter_dirs(self, dirs: Sequence[str]) -> list[str]:
-        for ex_predictor in self._exclude_predicators:
-            dirs = [item for item in dirs if not ex_predictor(item)]
-        return list(dirs)
-
     def collect_all(self, root_folder: Path | str) -> ReferenceDataset:
         root_folder = Path(root_folder)
-        # https://docs.python.org/3/library/os.html#os.walk
-        filepaths = []
-        for root, dirs, files in os.walk(root_folder, topdown=True):
-            # Logic for exclusion.
-            if Path(root) == self._stored_folder:
-                dirs[:] = []
-                continue
-            dirs[:] = self._filter_dirs(dirs)
-
-            filepaths += [Path(root) / filename for filename in files]
-
+        filepaths = FileGatherer(self._exclude_predicators, [self._stored_folder]).gather(root_folder)
         path_pairs = self._dump_reference(root_folder, filepaths)
         meta = DatasetMeta(root_folder=root_folder)
         dataset = ReferenceDataset(meta=meta,path_pairs=path_pairs)
         dataset.dump(self._stored_folder)
         return dataset
 
-    def _dump_reference(self, root_folder: Path, source_paths: list[Path]) -> list[ReferencePathPair]:
+    def _dump_reference(self, root_folder: Path, source_paths: Sequence[Path]) -> Sequence[ReferencePathPair]:
         stored_folder = self._stored_folder
         ref_paths = []
         for filepath in source_paths:

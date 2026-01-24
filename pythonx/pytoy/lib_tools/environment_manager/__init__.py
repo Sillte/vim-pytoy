@@ -68,7 +68,7 @@ class EnvironmentManager:
         self._solvers["system"] = SystemEnvironmentSolver()
     
     @property
-    def installed_kinds(self) -> list[EnvironmentKind]:
+    def installed_kinds(self) -> Sequence[EnvironmentKind]:
         return [key for key, solver in self._solvers.items() if solver.installed]
 
     @property
