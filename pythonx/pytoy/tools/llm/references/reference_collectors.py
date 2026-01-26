@@ -3,7 +3,7 @@ from typing import Final, Sequence
 
 from pytoy.tools.llm.references.converters import ReferenceConverterManager
 from pytoy.tools.llm.references.models import DatasetMeta, ReferenceDataset, ReferenceInfo, ReferencePathPair, ResourceUri
-from pytoy.tools.llm.utils import FileGatherer
+from pytoy_llm.materials.utils import FileGatherer 
 
 
 class ReferenceCollector:
@@ -38,7 +38,7 @@ class ReferenceCollector:
                 markdown_path = info_path.with_suffix(".md")
 
                 info = ReferenceInfo.from_path(filepath, root_folder)
-                info_path.write_text(info.model_dump_json(), encoding="utf8")
+                info_path.write_text(info.model_dump_json(ensure_ascii=False), encoding="utf8")
                 markdown = converter.to_markdown(filepath)
                 markdown_path.write_text(markdown, encoding="utf8")
                 ref_paths.append(ReferencePathPair(markdown_path=markdown_path, info_path=info_path))
