@@ -5,6 +5,7 @@ This is a plugin framework for Vim/Neovim/VSCode
 It focuses on using python tools within vim-buffers. 
 
 
+
 ## Environment
 
 
@@ -13,6 +14,7 @@ It focuses on using python tools within vim-buffers.
 * python3.13+
 * pytest
 * lightline
+
 * psutil / pydantic / pywinpty
     - `python` is available for the environment these libraries should be installed (VIM). 
     - In the specified python environment, these libraries should be available (NVIM).  
@@ -88,4 +90,5 @@ graph TD
 ### Comments
 
 This is no more than personal hobbies, so do not have any expectation. 
+
 

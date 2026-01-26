@@ -1586,7 +1586,7 @@ wheels = [
 [[package]]
 name = "pytoy-llm"
 version = "0.1.0"
-source = { git = "https://github.com/Sillte/pytoy-llm.git?rev=main#3563016474f87a6689cf0763eb485504d3832d8a" }
+source = { git = "https://github.com/Sillte/pytoy-llm.git?rev=main#de928b76537141ee44c304e04b319cbbe7f2a714" }
 dependencies = [
     { name = "gitpython" },
     { name = "litellm" },

@@ -22,6 +22,9 @@ from pytoy.ui.notifications import EphemeralNotification
 
 from pytoy.tools.llm.references import ReferenceHandler, ReferenceSectionWriter, ReferenceCollector
 
+from pytoy_llm.materials.composers.models import LLMTask
+from pytoy_llm.materials.composers import TaskPromptComposer
+
 
 
 class PytoyLLMContext:
@@ -259,11 +262,8 @@ class EditDocumentRequester:
         new_text = self.query_start + "\n" + text + "\n" + self.query_end
         range_operator.replace_text(selection, new_text)
         document = buffer.content
-        
-
         inputs = self._make_inputs(document, kernel)
 
-        llm_output_format = "str"
         
         def _revert_ranges(buffer: PytoyBuffer):
             start_range = buffer.range_operator.find_first(self.query_start, reverse=False)
@@ -291,6 +291,7 @@ class EditDocumentRequester:
             
         hooks = HooksForInteraction(pre_save=_revert_ranges) 
 
+        llm_output_format = "str"
         return InteractionRequest(inputs=inputs, 
                                   llm_output_format=llm_output_format, 
                                   on_success=on_success,
@@ -299,139 +300,152 @@ class EditDocumentRequester:
 
        
     def _make_inputs(self, document: str, kernel: FairyKernel) -> list[InputMessage]:
+        intent = (
+            " Revise the text strictly between the markers:\n"
+            f"`{self.query_start}` and `{self.query_end}`.\n"
+            "as a part of <document>.\n"
+            "All content outside the markers must be treated as read-only context.\n"
+            "============================================================\n"
+            "LOCAL INSTRUCTION OVERRIDE\n"
+            "============================================================\n"
+            "Immediately adjacent to the markers, there MAY be additional\n"
+            "instructions written by the user.\n\n"
+            "- These instructions, if present, are located:\n"
+              f"- Immediately AFTER `{self.query_start}`, or\n"
+              f"- Immediately BEFORE `{self.query_end}`.\n"
+            "If such instructions exist:\n"
+            "- You MUST follow them.\n"
+            "- They take PRIORITY over all other instructions,\n"
+              "except for the absolute output constraints.\n"
+            "============================================================\n"
+            "LANGUAGE SELECTION (MANDATORY)\n"
+            "============================================================\n"
+
+            "Before rewriting, you MUST do the following internally:\n"
+            "1. Determine the dominant language of the document\n"
+               "(Japanese, English, or Python).\n"
+            "2. Choose ONLY ONE instruction set below that matches the dominant language.\n"
+            "3. COMPLETELY IGNORE the instruction set of the other languages.\n"
+            "Do NOT output this decision or any analysis.\n"
+            "============================================================\n"
+            "ENGLISH INSTRUCTIONS\n"
+            "============================================================\n"
+            "Use these instructions ONLY if the dominant language is English.\n"
+            "Style and consistency:\n"
+            "- Strictly match the tone, formality, and writing style of the surrounding document.\n"
+            "- Match sentence length, paragraph structure, and level of explicitness.\n"
+            "- Do NOT introduce new metaphors, idioms, or stylistic flair.\n"
+            "- Do NOT make the text sound more “helpful” or “polite” than the rest of the document.\n"
+            "Editorial rules:\n"
+            "- You may rephrase, reorganize, or clarify for readability.\n"
+            "- Complete incomplete sentences or bullet points when necessary.\n"
+            "- Replace placeholders such as `...`, `???`, or unfinished items\n"
+              "with the most plausible content.\n"
+            "- Maintain technical accuracy and domain-appropriate vocabulary.\n"
+            "- Maintain styles such as itemization or quotes.\n"
+
+            "============================================================\n"
+            "JAPANESE INSTRUCTIONS\n"
+            "============================================================\n"
+
+            "Use these instructions ONLY if the dominant language is Japanese.\n"
+
+            "文体・語調の厳守（最重要）:\n"
+            "- 文書全体で使われている文体を**厳密に模倣**せよ。\n"
+            "- 文末表現（だ／である／です・ます調）を**完全に統一**せよ。\n"
+            "- 語彙の硬さ（技術文・説明文・口語）を文書全体に合わせよ。\n"
+            "- 編集箇所以外と連続して読んだときに違和感が一切ないことを最優先とせよ。\n"
+            "- 箇条書き、引用などのスタイルを保持せよ\n"
+
+            "編集ルール:\n"
+            "- 内容の意図を変更してはならない。\n"
+            "- 必要な場合のみ、表現の整理・簡潔化・明確化を行ってよい。\n"
+            "- 不完全な文や箇条書きは、文脈から自然に補完せよ。\n"
+            "- `...` や `???` などのプレースホルダは、最も自然な内容で置き換えよ。\n"
+            "- 新しい語調・比喩・言い回しを**新規に導入してはならない**。\n"
+            "============================================================\n"
+            "PYTHON INSTRUCTIONS\n"
+            "============================================================\n"
+            "Use these instructions ONLY if the dominant language is Python.\n"
+
+            "Style and consistency (CRITICAL):\n"
+            "- Strictly preserve the coding style of the surrounding code.\n"
+            "- Match indentation, line breaks, naming conventions, and formatting.\n"
+            "- Follow the existing paradigm (procedural, functional, OOP) exactly.\n"
+            "- Do NOT introduce new abstractions, patterns, or helper functions\n"
+            "  unless they are clearly implied by the surrounding code.\n"
+
+            "Code editing rules:\n"
+            "- Do NOT change the external behavior or public interface.\n"
+            "- Maintain semantic equivalence unless the context clearly requires correction.\n"
+            "- Complete incomplete code fragments if necessary, using the most plausible intent.\n"
+            "- Replace placeholders such as `...`, `pass`, or unfinished blocks\n"
+            "  with contextually appropriate implementations.\n"
+            "- Preserve comments unless they are incorrect; match their tone and verbosity.\n"
+
+            "Technical constraints:\n"
+            "- Ensure the code remains valid Python.\n"
+            "- Do NOT optimize, refactor, or modernize unless explicitly instructed.\n"
+            "- If refactoring or modernization is required to resolve an issue, do NOT modify the code directly.\n"
+            "  Instead, leave a comment at the relevant location describing the concern. \n"
+            "- If the logic appears incorrect or ambiguous, preserve the original code and annotate the issue using comments only. \n"
+            "- Avoid adding defensive checks, logging, or documentation beyond what exists.\n"
+            )
+
+        output_description = ("You are revising the document or code. \n"
+                              "Output the most appropriate part of senetences\n"
+                              "as the completed document.\n"
+                              )
+
+        output_spec = (f"The text between `{self.query_start}` and `{self.query_end}`.")
+        
+        llm_task = LLMTask(name="Your sole goal is to produce the final rewritten content that can be pasted back verbatim into the original document.",
+                       intent=intent,
+                       rules= [
+                           "Rewrite ONLY the content between the markers.",
+                            "Output ONLY the rewritten text.",
+                            "Do NOT include the markers themselves.",
+                            "Do NOT add explanations, commentary, or meta text.",
+                            "Do NOT output tags such as <document>.",
+                            "Preserve the original intent and meaning. ",
+                            "Prefer similar length unless clarity or correctness requires change.",
+                            "The rewritten text must read naturally when placed back into the document.",
+                       ],
+                       role="You are a professional editor who revise the technical documents.",
+                       output_description=output_description,
+                       output_spec=output_spec,
+                       )
+
         reference_handler = kernel.llm_context.reference_handler
         if reference_handler.exist_reference:
             ref_section_writer = reference_handler.section_writer
-            reference_section = ref_section_writer.make_section()
+            section_data = ref_section_writer.make_section_data()
+            section_usage = ref_section_writer.make_section_usage()
+            composer = TaskPromptComposer(llm_task, [section_usage], [section_data])
         else:
-            reference_section = ""
-        system_message = InputMessage(role="system", content=self._make_system_prompt(reference_section))
-        user_message = InputMessage(role="user", content= self._make_user_prompt(document))
-        return [system_message, user_message]
+            composer = TaskPromptComposer(llm_task, [], [])
+        messages = composer.compose_messages(user_prompt=self._make_user_prompt(document))
+        return list(messages)
+
     
     def _make_user_prompt(self, document: str) -> str:
-        return dedent(f"""
-                    Here is the document:
-                    <document>
-                    {document}
-                    </document>
-                      """).strip()
-
-
-    def _make_system_prompt(self, reference_section: str = "") -> str:
-        return dedent(f"""
-    You are a professional editor integrated into a document editor.
-
-    Your task:
-    - Rewrite the text strictly between the markers:
-      `{self.query_start}` and `{self.query_end}`
-
-    ============================================================
-    LANGUAGE SELECTION (MANDATORY)
-    ============================================================
-
-    Before rewriting, you MUST do the following internally:
-    1. Determine the dominant language of the document
-       (Japanese or English).
-    2. Choose ONLY ONE instruction set below that matches
-       the dominant language.
-    3. COMPLETELY IGNORE the instruction set of the other languages.
-
-    Do NOT output this decision or any analysis.
-
-    ============================================================
-    GLOBAL RULES (APPLY TO ALL LANGUAGES)
-    ============================================================
-
-    - Rewrite ONLY the content between the markers.
-    - Output ONLY the rewritten text.
-    - Do NOT include the markers themselves.
-    - Do NOT add explanations, commentary, or meta text.
-    - Do NOT output tags such as <document>.
-    - Preserve the original intent and meaning.
-    - Prefer similar length unless clarity or correctness requires change.
-    - The rewritten text must read naturally when placed back into the document.
-
-    ============================================================
-    LOCAL INSTRUCTION OVERRIDE
-    ============================================================
-
-    Immediately adjacent to the markers, there MAY be additional
-    instructions written by the user.
-
-    - These instructions, if present, are located:
-      - Immediately AFTER `{self.query_start}`, or
-      - Immediately BEFORE `{self.query_end}`.
-
-    If such instructions exist:
-    - You MUST follow them.
-    - They take PRIORITY over all other rules,
-      except for the absolute output constraints.
-
-    ============================================================
-    ENGLISH INSTRUCTIONS
-    ============================================================
-
-    Use these instructions ONLY if the dominant language is English.
-
-    Style and consistency:
-    - Strictly match the tone, formality, and writing style of the surrounding document.
-    - Match sentence length, paragraph structure, and level of explicitness.
-    - Do NOT introduce new metaphors, idioms, or stylistic flair.
-    - Do NOT make the text sound more “helpful” or “polite” than the rest of the document.
-
-    Editorial rules:
-    - You may rephrase, reorganize, or clarify for readability.
-    - Complete incomplete sentences or bullet points when necessary.
-    - Replace placeholders such as "...", "???", or unfinished items
-      with the most plausible content.
-    - Maintain technical accuracy and domain-appropriate vocabulary.
-
-    ============================================================
-    JAPANESE INSTRUCTIONS
-    ============================================================
-
-    Use these instructions ONLY if the dominant language is Japanese.
-
-    文体・語調の厳守（最重要）:
-    - 文書全体で使われている文体を**厳密に模倣**せよ。
-    - 文末表現（だ／である／です・ます調）を**完全に統一**せよ。
-    - 語彙の硬さ（技術文・説明文・口語）を文書全体に合わせよ。
-    - 編集箇所以外と連続して読んだときに違和感が一切ないことを最優先とせよ。
-
-    編集ルール:
-    - 内容の意図を変更してはならない。
-    - 必要な場合のみ、表現の整理・簡潔化・明確化を行ってよい。
-    - 不完全な文や箇条書きは、文脈から自然に補完せよ。
-    - "..." や "???" などのプレースホルダは、最も自然な内容で置き換えよ。
-    - 新しい語調・比喩・言い回しを**新規に導入してはならない**。
-
-    {reference_section}
-
-    ============================================================
-    REMINDER
-    ============================================================
-
-    Your task (again):
-    - Rewrite the text strictly between:
-      `{self.query_start}` and `{self.query_end}`
-
-    Output ONLY the rewritten text.
-    """).strip()
+        return ("Here is the document:\n"
+                "<document>\n"
+                f"{document}\n"
+                "</document>\n"
+        )
             
 
 class ReferenceDatasetConstructor(OperatorProtocol):
     def __call__(self, fairy_kernel: FairyKernel) -> Any:
-        # まずは最初、全てのDatasetを作る
-        from pytoy.tools.llm.references.reference_collectors import ReferenceCollector
+        # First, construct the entire dataset.
         collector = fairy_kernel.llm_context.reference_handler.collector
-        # [TODO]: In remote, we should be careful whether it is all right.
+        # [TODO]: In a remote context, we should ensure the `root_folder` is valid.
         # It is better to introduce `filepath` for `PytoyBuffer`.
         root_folder = fairy_kernel.buffer.path.parent
         if not root_folder:
-            print("No root folder ")
-            return 
-        print(r"{root_folder=} in `ReferenceDataCollector`.")
+            print("No root folder found for the buffer. Cannot collect references.")
+            return
+        print(f"{root_folder=} in `ReferenceDatasetConstructor`.")
         collector.collect_all(root_folder)
-        
         

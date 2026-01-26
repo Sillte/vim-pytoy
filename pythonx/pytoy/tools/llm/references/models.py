@@ -48,7 +48,7 @@ class ResourceUri(BaseModel, frozen=True):
         return Path(self.name).suffix
 
     @property
-    def hierarchy(self) -> list[str]:
+    def location(self) -> list[str]:
         match self.source_type:
             case "web":
                 parsed = urlparse(self.path)
@@ -110,8 +110,8 @@ class ReferenceInfo(BaseModel):
         return self.uri.hash_id
 
     @property
-    def hierarchy(self) -> list[str]:
-        return self.uri.hierarchy
+    def location(self) -> list[str]:
+        return self.uri.location
 
     @property
     def name(self) -> str:
