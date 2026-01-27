@@ -22,7 +22,6 @@ class ReferenceHandler:
         except Exception:
             return False
         return True
-
         
     @property
     def collector(self) -> ReferenceCollector:

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from pytoy.lib_tools.command_executor import CommandExecutionManager 
     from pytoy.lib_tools.terminal_executor import TerminalExecutionManager 
     from pytoy.lib_tools.terminal_runner.drivers import TerminalDriverManager 
-    from pytoy.tools.llm import FairyKernelManager
+    from pytoy.tools.llm.kernel import FairyKernelManager
     #from pytoy.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
     #from pytoy.infra.autocmd.autocmd_manager import AutoCmdManager 
 
@@ -44,7 +44,7 @@ class GlobalPytoyContext:
 
     @cached_property
     def fairy_kernel_manager(self) -> FairyKernelManager:
-        from pytoy.tools.llm import FairyKernelManager
+        from pytoy.tools.llm.kernel import FairyKernelManager
         return FairyKernelManager()
 
 
