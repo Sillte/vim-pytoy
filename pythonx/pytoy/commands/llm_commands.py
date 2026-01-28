@@ -13,7 +13,7 @@ class PytoyLLMCommand:
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         """This is defined by `Command`."""
-        candidates = ["config", "create-dataset"]
+        candidates = ["config", "create-dataset", "review"]
         valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
         if valid_candidates:
             return valid_candidates
@@ -40,6 +40,9 @@ class PytoyLLMCommand:
         if opts.fargs and opts.fargs[0].strip() == "create-dataset":
             return self._make_reference_dataset()
 
+        if opts.fargs and opts.fargs[0].strip() == "review":
+            return self._make_review()
+
         current_window = PytoyWindow.get_current()
         current_buffer = current_window.buffer
         llm_fairy: PytoyFairy = PytoyFairy(buffer=current_buffer)
@@ -48,10 +51,17 @@ class PytoyLLMCommand:
         requester = EditDocumentRequester(llm_fairy)
         requester.make_interaction()
         
-    def _make_reference_dataset(self, ):
+    def _make_reference_dataset(self):
         from pytoy.tools.llm import ReferenceDatasetConstructor
         current_window = PytoyWindow.get_current()
         fairy = PytoyFairy(current_window.buffer)
         ReferenceDatasetConstructor(fairy).make_dataset()
 
+
+    def _make_review(self):
+        from pytoy.tools.llm.review_document  import ReviewDocument
+        current_window = PytoyWindow.get_current()
+        fairy = PytoyFairy(current_window.buffer)
+        review_doc = ReviewDocument(fairy)
+        review_doc.make_interaction()
         

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pytoy.infra.core.models import EventEmitter
 
 
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Protocol, Sequence
 
 from pytoy.infra.timertask.thread_executor import ThreadExecutionRequest, ThreadExecutor
 from pytoy.tools.llm.models import HooksForInteraction, LLMInteraction
@@ -22,7 +22,7 @@ from pytoy_llm.models import SyncOutput, SyncOutputFormatStr
 @dataclass
 class InteractionRequest:
     kernel: FairyKernel
-    inputs: list[InputMessage]
+    inputs: Sequence[InputMessage]
     llm_output_format: SyncOutputFormat | SyncOutputFormatStr | type[BaseModel]
     on_success: Callable[[SyncOutput], None]
     on_failure: Callable[[Exception], None]
@@ -56,7 +56,7 @@ class InteractionProvider:
 
         # 実際のLLM呼び出し処理
         def _main(_) -> SyncOutput:
-            return completion(request.inputs, output_format=request.llm_output_format)
+            return completion(list(request.inputs), output_format=request.llm_output_format)
 
         # スレッド実行リクエスト作成
         execution_request = ThreadExecutionRequest(
