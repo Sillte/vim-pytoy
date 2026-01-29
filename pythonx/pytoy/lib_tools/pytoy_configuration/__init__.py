@@ -181,9 +181,9 @@ class PytoyConfiguration:
     def __init__(self,
                 local_folder: str | Path | None = None,
                 local_config_type: LocalConfigType | None = None):
+        self._global_folder = Path.home() / ".config" / self.NAME
         self.local_config_type = self._solve_local_config_mode(local_config_type, local_folder)
         self._local_folder = self._solve_local_folder(local_folder, self.local_config_type)
-        self._global_folder = Path.home() / ".config" / self.NAME
         
     def _solve_local_config_mode(self, config_type: LocalConfigType | None, local_folder: str | Path | None = None) -> LocalConfigType:
         if config_type is not None:
@@ -249,7 +249,7 @@ class PytoyConfiguration:
         return ConfigReader(self.local_folder, self.global_folder)
 
     @property
-    def config_reader(self) -> ConfigWriter:
+    def config_writer(self) -> ConfigWriter:
         return ConfigWriter(self.local_folder, self.global_folder)
 
     def get_folder(self, relative_path: Path | str, location: Literal["global", "local"] ="local"):

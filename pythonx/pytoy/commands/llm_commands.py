@@ -1,7 +1,5 @@
 from typing import Sequence
 from pytoy.command import CommandManager
-from pytoy.tools.llm.edit_document import EditDocumentRequester
-from pytoy.tools.llm.pytoy_fairy import PytoyFairy
 from pytoy.ui.pytoy_window import PytoyWindow, WindowCreationParam
 from pytoy.infra.command.models import OptsArgument
 from pytoy.contexts.pytoy import GlobalPytoyContext
@@ -27,6 +25,7 @@ class PytoyLLMCommand:
 
     def __call__(self, opts: OptsArgument):
         from pytoy.tools.llm.pytoy_fairy import PytoyFairy
+        from pytoy.tools.llm.edit_document import EditDocumentRequester
         # Currently, `ctx` cannot be accepted as the argument of __call__.
         # Since this is a bug of `CommandManager`, 
         # I have to consider this later. 
@@ -53,6 +52,7 @@ class PytoyLLMCommand:
         
     def _make_reference_dataset(self):
         from pytoy.tools.llm import ReferenceDatasetConstructor
+        from pytoy.tools.llm.pytoy_fairy import PytoyFairy
         current_window = PytoyWindow.get_current()
         fairy = PytoyFairy(current_window.buffer)
         ReferenceDatasetConstructor(fairy).make_dataset()
@@ -60,6 +60,7 @@ class PytoyLLMCommand:
 
     def _make_review(self):
         from pytoy.tools.llm.review_document  import ReviewDocument
+        from pytoy.tools.llm.pytoy_fairy import PytoyFairy
         current_window = PytoyWindow.get_current()
         fairy = PytoyFairy(current_window.buffer)
         review_doc = ReviewDocument(fairy)
