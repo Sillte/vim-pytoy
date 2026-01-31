@@ -10,9 +10,10 @@ from pytoy.tools.llm.pytoy_fairy import PytoyFairy
 from pytoy.ui.notifications import EphemeralNotification
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_window import CharacterRange
-from pytoy_llm.materials.composers import TaskPromptComposer
-from pytoy_llm.materials.composers.models import LLMTask, SectionData, SectionUsage, TextSectionData
+from pytoy_llm.materials.composers import InvocationPromptComposer
+from pytoy_llm.materials.composers.models import SystemPromptTemplate, SectionData, SectionUsage, TextSectionData
 from pytoy_llm.models import InputMessage, SyncOutput
+from pytoy_llm.task import LLMTaskSpec, LLMTaskRequest
 
 
 import uuid
@@ -26,7 +27,7 @@ class ReviewDocument:
         
 
     def make_interaction(self) -> LLMInteraction:
-        review_task = LLMTask(
+        prompt_template = SystemPromptTemplate(
         name="Document Reviewer (Markdown Output)",
         intent=(
             "=== DOCUMENT TYPE CLASSIFICATION ===\n"
@@ -50,7 +51,7 @@ class ReviewDocument:
             "Based on the determined type, refer to `Section`. \n"
             "Based on the determined type, select the appropriate `Section` and follow its instructions to produce the output."
         ),
-        output_spec="str",
+        output_spec=str,
         role="Professional writing and coding assistant"
     )
 
@@ -200,18 +201,19 @@ class ReviewDocument:
         
         def on_success(output):
             buffer =  make_buffer(self.review_buffer_name) 
-            #cr = buffer.range_operator.entire_character_range
-            #buffer.range_operator.replace_text(cr, str(output))
             buffer.init_buffer(str(output))
 
         def on_failure(exception):
             EphemeralNotification().notify(str(exception))
             
 
-        composer = TaskPromptComposer(review_task, [jp_usage, en_usage, python_usage], [jp_section, en_section, python_section])
-        inputs =  composer.compose_messages(user_prompt=self.buffer.content)
-        request = InteractionRequest(kernel=self.pytoy_fairy.kernel,inputs=inputs, llm_output_format="str",
-                                     on_success=on_success, 
+        composer = InvocationPromptComposer(prompt_template, [jp_usage, en_usage, python_usage], [jp_section, en_section, python_section])
+        invocation_spec = composer.compose_invocation_spec()
+        task_spec = LLMTaskSpec.from_single_spec("Review document", invocation_spec)
+        task_request = LLMTaskRequest(task_spec=task_spec, task_input=self.buffer.content)
+        request = InteractionRequest(kernel=self.pytoy_fairy.kernel,
+                                     task_request=task_request,
+                                     on_success=on_success,
                                      on_failure=on_failure,
                                      )
         interaction = InteractionProvider().create(request)
