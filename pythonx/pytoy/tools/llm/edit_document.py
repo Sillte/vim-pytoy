@@ -9,8 +9,9 @@ from pytoy.tools.llm.pytoy_fairy import PytoyFairy
 from pytoy.ui.notifications import EphemeralNotification
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_window import CharacterRange
-from pytoy_llm.materials.composers import TaskPromptComposer
-from pytoy_llm.materials.composers.models import LLMTask
+from pytoy_llm.materials.composers import InvocationPromptComposer 
+from pytoy_llm.materials.composers.models import SystemPromptTemplate
+from pytoy_llm.task import LLMTaskSpec, LLMTaskRequest, LLMTaskMeta
 from pytoy_llm.models import InputMessage, SyncOutput
 
 
@@ -66,18 +67,18 @@ class EditDocumentRequester:
         self._insert_markers(buffer)
 
         document = buffer.content
-        inputs = self._make_inputs(document, kernel)
+        
+        task_request = self._make_task_request(document, kernel)
 
         request = InteractionRequest(
             kernel=kernel,
-            inputs=inputs,
-            llm_output_format="str",
+            task_request=task_request,
             on_success=lambda output: self._apply_output(buffer, output),
             on_failure=lambda exc: self._handle_error(buffer, exc),
         )
         return InteractionProvider().create(request)
 
-    def _make_inputs(self, document: str, kernel: FairyKernel) -> list[InputMessage]:
+    def _make_task_request(self, document: str, kernel: FairyKernel) -> LLMTaskRequest:
         intent = (
             " Revise the text strictly between the markers:\n"
             f"`{self.query_start}` and `{self.query_end}`.\n"
@@ -178,11 +179,10 @@ class EditDocumentRequester:
         output_description = ("You are revising the document or code. \n"
                               "Output the most appropriate part of senetences\n"
                               "as the completed document.\n"
+                              f"The output is the text between `{self.query_start}` and `{self.query_end}`."
                               )
 
-        output_spec = (f"The text between `{self.query_start}` and `{self.query_end}`.")
-
-        llm_task = LLMTask(name="Your sole goal is to produce the final rewritten content that can be pasted back verbatim into the original document.",
+        prompt_template = SystemPromptTemplate(name="Your sole goal is to produce the final rewritten content that can be pasted back verbatim into the original document.",
                        intent=intent,
                        rules= [
                            "Rewrite ONLY the content between the markers.",
@@ -198,7 +198,7 @@ class EditDocumentRequester:
                        ],
                        role="You are a professional editor who revise the technical documents.",
                        output_description=output_description,
-                       output_spec=output_spec,
+                       output_spec=str,
                        )
 
         reference_handler = kernel.llm_context.reference_handler
@@ -206,11 +206,14 @@ class EditDocumentRequester:
             ref_section_writer = reference_handler.section_writer
             section_data = ref_section_writer.make_section_data()
             section_usage = ref_section_writer.make_section_usage()
-            composer = TaskPromptComposer(llm_task, [section_usage], [section_data])
+            composer = InvocationPromptComposer(prompt_template, [section_usage], [section_data])
         else:
-            composer = TaskPromptComposer(llm_task, [], [])
-        messages = composer.compose_messages(user_prompt=self._make_user_prompt(document))
-        return list(messages)
+            composer = InvocationPromptComposer(prompt_template, [], [])
+        invocation_spec = composer.compose_invocation_spec()
+        
+        meta = LLMTaskMeta(name="EditDocument")
+        task_spec = LLMTaskSpec.from_single_spec(meta, invocation_spec)
+        return LLMTaskRequest(task_spec=task_spec, task_input=self._make_user_prompt(document))
 
 
     def _make_user_prompt(self, document: str) -> str:

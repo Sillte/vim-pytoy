@@ -5,6 +5,8 @@ from typing import Any, Callable
 from pytoy.infra.core.models import Event
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 
+from pytoy.infra.timertask.thread_executor import ThreadExecution
+
 type PreSaveHook = Callable[[PytoyBuffer], None]
 
 @dataclass
@@ -16,7 +18,7 @@ class HooksForInteraction:
 
 @dataclass
 class LLMInteraction:
-    task: Any
+    thread_execution: ThreadExecution
     on_exit: Event[Any]
     id: str = field(default_factory=lambda: str(uuid.uuid1()))
     timestamp: float = field(default_factory=lambda: time.time())

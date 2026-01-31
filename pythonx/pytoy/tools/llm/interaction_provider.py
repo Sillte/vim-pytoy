@@ -15,16 +15,16 @@ from pytoy.infra.timertask.thread_executor import ThreadExecutionRequest, Thread
 from pytoy.tools.llm.models import HooksForInteraction, LLMInteraction
 from pytoy.tools.llm.kernel import FairyKernel
 from pytoy_llm import completion
+from pytoy_llm.task import LLMTaskRequest, LLMTaskExecutor
 from pytoy_llm.models import InputMessage, SyncOutputFormat
-from pytoy_llm.models import SyncOutput, SyncOutputFormatStr
+from pytoy_llm.models import SyncOutput 
 
 
 @dataclass
 class InteractionRequest:
     kernel: FairyKernel
-    inputs: Sequence[InputMessage]
-    llm_output_format: SyncOutputFormat | SyncOutputFormatStr | type[BaseModel]
-    on_success: Callable[[SyncOutput], None]
+    task_request: LLMTaskRequest
+    on_success: Callable[[Any], None]
     on_failure: Callable[[Exception], None]
     hooks: HooksForInteraction | None = None
 
@@ -40,7 +40,7 @@ class InteractionProvider:
         """
         interaction_end_emitter = EventEmitter[Any]()
 
-        def _on_finish(sync_output: SyncOutput):
+        def _on_finish(sync_output: Any):
             try:
                 request.on_success(sync_output)
             except Exception as e:
@@ -55,8 +55,9 @@ class InteractionProvider:
             interaction_end_emitter.fire(None)
 
         # 実際のLLM呼び出し処理
-        def _main(_) -> SyncOutput:
-            return completion(list(request.inputs), output_format=request.llm_output_format)
+        def _main(_) -> Any:
+            task_response = LLMTaskExecutor().execute(request.task_request)
+            return task_response.output
 
         # スレッド実行リクエスト作成
         execution_request = ThreadExecutionRequest(
@@ -70,7 +71,7 @@ class InteractionProvider:
         id_ = str(uuid.uuid1())
         interaction = LLMInteraction(
             id=id_,
-            task=execution,
+            thread_execution=execution,
             on_exit=interaction_end_emitter.event,
             hooks=request.hooks
         )
