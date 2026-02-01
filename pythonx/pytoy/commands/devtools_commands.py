@@ -3,6 +3,7 @@ import time
 import os
 import json
 import vim
+from logging.handlers import RotatingFileHandler
 from pytoy.command import CommandManager
 from pytoy.infra.command.models import  OptsArgument
 from pytoy.devtools.vimplugin_package import VimPluginPackage
@@ -147,7 +148,6 @@ class TimerTaskManagerDebug:
 @CommandManager.register(name="PytoyExecute")
 def execute_pytoy(opts: OptsArgument):
     import vim
-    import pytoy
     from pytoy.ui.utils import to_filepath
     from pathlib import Path
     name = " ".join([elem.strip() for elem in opts.fargs])
@@ -163,3 +163,56 @@ def execute_pytoy(opts: OptsArgument):
             vim.command(f"source {path.as_posix()}")
         case _:
             raise ValueError("Cannot identify the apt execution for ``") 
+
+
+@CommandManager.register(name="PytoyOpenLog")
+class PytoyOpenLog:
+    def __call__(self, opts: OptsArgument) -> None:
+        from pytoy.contexts.core import GlobalCoreContext
+        from pytoy.infra.pytoy_configuration import PytoyConfiguration
+        from pytoy.ui.pytoy_buffer import PytoyBuffer
+        from pytoy.ui.pytoy_window import PytoyWindow
+        from pathlib import Path
+        import logging
+        logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
+        logger.info("Opening a Log file.")
+
+        c_buffer = PytoyBuffer.get_current()
+        if c_buffer.is_file:
+            pivot_folder = c_buffer.path
+        else:
+            pivot_folder = Path(".")
+            raise ValueError("Current folder should be `file`. ") 
+        workspace = GlobalCoreContext().get().environment_manager.get_workspace(pivot_folder)
+        workspace = workspace if workspace else pivot_folder
+        config = PytoyConfiguration(workspace, local_config_type=None)
+        location = None
+        if opts.fargs:
+            if opts.fargs[0] == "local":
+                location = "local"
+            elif opts.fargs[0] == "global":
+                location = "global"
+                
+        if location is not None: 
+            target_path = self._logger_to_latest_log(config.get_logger(location))
+        else:
+            if config.is_logger_exist("local"):
+                logger = config.get_logger("local")
+                target_path = self._logger_to_latest_log(logger)
+            else:
+                target_path = self._logger_to_latest_log(config.get_logger("global"))
+        if target_path is None:
+            raise ValueError("Cannot find the apt log folder.")
+        PytoyWindow.open(target_path, "vertical")
+            
+    def _logger_to_latest_log(self, logger) -> None | Path:
+        log_files = []
+        for h in logger.handlers:
+            if isinstance(h, RotatingFileHandler):
+                folder = Path(h.baseFilename).parent
+                pattern = Path(h.baseFilename).name + "*"
+                log_files.extend(folder.glob(pattern))
+        if not log_files:
+            return None
+        return sorted(log_files, key=lambda f: f.stat().st_mtime, reverse=True)[0]
+            

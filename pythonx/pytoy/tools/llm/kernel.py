@@ -1,7 +1,7 @@
 import threading
 from typing import Final, Callable, Any
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.lib_tools.pytoy_configuration import PytoyConfiguration
+from pytoy.infra.pytoy_configuration import PytoyConfiguration
 from pytoy.tools.llm.models import LLMInteraction
 from pytoy.tools.llm.references import ReferenceHandler
 from pathlib import Path

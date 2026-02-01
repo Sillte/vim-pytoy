@@ -3,6 +3,8 @@ from typing import Literal, Any, Mapping, assert_never, Sequence
 import json
 import time
 import shutil 
+from  pytoy.infra.loggers import setup_logger
+import logging  
 import hashlib
 
 type LocalConfigType = Literal["project", "centralized"]
@@ -269,6 +271,25 @@ class PytoyConfiguration:
         folder = _validate_safe_relative_path(relative_path, base_folder)
         folder.mkdir(exist_ok=True, parents=True)
         return folder
+
+    def _make_logger_name(self, location: Literal["global", "local"]) -> str:
+        if location == "global":
+            return "vim_pytoy.global"
+        else:
+            hash = hashlib.sha1(str(self.local_folder).encode()).hexdigest()[:8]
+            local_name = Path(self.local_folder).name
+            return f"vim_pytoy.{local_name}.{hash}"
+    
+    def get_logger(self,
+                   location: Literal["global", "local"] = "local",
+                   level: int | None = None) -> logging.Logger:
+        log_path = self.get_folder("__logs", location=location) / "log.txt"
+        name = self._make_logger_name(location)
+        return setup_logger(name, log_path, enable_console=False, level=level)
+    
+    def is_logger_exist(self, location: Literal["global", "local"] = "local") -> bool:
+        name = self._make_logger_name(location)
+        return name in logging.root.manager.loggerDict and bool(logging.getLogger(name).handlers)
 
 
 def _validate_safe_relative_path(path: Path | str, base_folder: Path) -> Path:
