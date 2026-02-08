@@ -1,4 +1,5 @@
 import threading
+import logging
 from typing import Final, Callable, Any
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.infra.pytoy_configuration import PytoyConfiguration
@@ -29,6 +30,13 @@ class PytoyLLMContext:
         """Return the root folder for data related to `PytoyLLM`.
         """
         return self._configuration.get_folder(self.LLM_ROOT_KEY, location="local")
+    
+    @property
+    def logger(self) -> logging.Logger:
+        logger = self._configuration.get_logger(location="global")
+        if logger.level == logging.NOTSET:
+            logger.setLevel(logging.INFO)
+        return logger
 
     @property
     def reference_folder(self) -> Path:

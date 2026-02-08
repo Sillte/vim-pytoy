@@ -8,7 +8,7 @@ def setup_logger(
     name: str = DEFAULT_LOG_NAME,
     log_file: str | Path | None = None,
     enable_console: bool = True, 
-    level: int | None =logging.INFO,
+    level: int | None = logging.INFO,
     formatter: logging.Formatter | None = None, 
     propagate: bool = False 
 ) -> logging.Logger:

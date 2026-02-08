@@ -16,7 +16,7 @@ from pytoy.tools.llm.models import HooksForInteraction, LLMInteraction
 from pytoy.tools.llm.kernel import FairyKernel
 from pytoy_llm import completion
 from pytoy_llm.task import LLMTaskRequest, LLMTaskExecutor
-from pytoy_llm.models import InputMessage, SyncOutputFormat
+from pytoy_llm.models import InputMessage 
 from pytoy_llm.models import SyncOutput 
 
 
