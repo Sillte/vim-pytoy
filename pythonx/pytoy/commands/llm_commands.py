@@ -25,7 +25,7 @@ class PytoyLLMCommand:
 
     def __call__(self, opts: OptsArgument):
         from pytoy.tools.llm.pytoy_fairy import PytoyFairy
-        from pytoy.tools.llm.edit_document import EditDocumentRequester
+        from pytoy.tools.llm.document.editors.scoped_editors import ScopedEditDocumentRequester
         # Currently, `ctx` cannot be accepted as the argument of __call__.
         # Since this is a bug of `CommandManager`, 
         # I have to consider this later. 
@@ -47,7 +47,7 @@ class PytoyLLMCommand:
         llm_fairy: PytoyFairy = PytoyFairy(buffer=current_buffer)
 
         # Edit operation.
-        requester = EditDocumentRequester(llm_fairy)
+        requester = ScopedEditDocumentRequester(llm_fairy)
         requester.make_interaction()
         
     def _make_reference_dataset(self):
@@ -59,10 +59,10 @@ class PytoyLLMCommand:
 
 
     def _make_review(self):
-        from pytoy.tools.llm.review_document  import ReviewDocument
+        from pytoy.tools.llm.document.reviewers.naive_reviewers  import NaiveReviewDocumentRequester
         from pytoy.tools.llm.pytoy_fairy import PytoyFairy
         current_window = PytoyWindow.get_current()
         fairy = PytoyFairy(current_window.buffer)
-        review_doc = ReviewDocument(fairy)
+        review_doc = NaiveReviewDocumentRequester(fairy)
         review_doc.make_interaction()
         

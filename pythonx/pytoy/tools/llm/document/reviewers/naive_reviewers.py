@@ -1,30 +1,24 @@
-from pytoy.infra.timertask import ThreadWorker
-from pytoy.ui.pytoy_buffer import make_buffer    
-
-from pytoy.tools.llm.kernel import FairyKernel
-from pytoy.tools.llm.interaction_provider import InteractionRequest
-from pytoy.tools.llm.interaction_provider import InteractionProvider
-from pytoy.tools.llm.models import HooksForInteraction, LLMInteraction
-
+from pytoy.tools.llm.interaction_provider import InteractionProvider, InteractionRequest
+from pytoy.tools.llm.models import LLMInteraction
 from pytoy.tools.llm.pytoy_fairy import PytoyFairy
 from pytoy.ui.notifications import EphemeralNotification
-from pytoy.ui.pytoy_buffer import PytoyBuffer
-from pytoy.ui.pytoy_window import CharacterRange
+from pytoy.ui.pytoy_buffer import make_buffer
 from pytoy_llm.materials.composers import InvocationPromptComposer
-from pytoy_llm.materials.composers.models import SystemPromptTemplate, SectionData, SectionUsage, TextSectionData
-from pytoy_llm.models import InputMessage, SyncOutput
-from pytoy_llm.task import LLMTaskSpec, LLMTaskRequest
+from pytoy_llm.materials.composers.models import SectionUsage, SystemPromptTemplate, TextSectionData
+from pytoy_llm.task import LLMTaskRequest, LLMTaskSpec
 
 
 import uuid
-class ReviewDocument:
+
+
+class NaiveReviewDocumentRequester:
     review_buffer_name = "__doc__"
 
     def __init__(self, pytoy_fairy: PytoyFairy):
         self._id = uuid.uuid4().hex[:8]
         self.pytoy_fairy = pytoy_fairy
-        self.buffer = self.pytoy_fairy.buffer 
-        
+        self.buffer = self.pytoy_fairy.buffer
+
 
     def make_interaction(self) -> LLMInteraction:
         prompt_template = SystemPromptTemplate(
@@ -198,14 +192,14 @@ class ReviewDocument:
             bundle_kind=python_bundle,
             usage_rule=[f"If and only if document type is {python_bundle}, utilize this section."]
         )
-        
+
         def on_success(output):
-            buffer =  make_buffer(self.review_buffer_name) 
+            buffer =  make_buffer(self.review_buffer_name)
             buffer.init_buffer(str(output))
 
         def on_failure(exception):
             EphemeralNotification().notify(str(exception))
-            
+
 
         composer = InvocationPromptComposer(prompt_template, [jp_usage, en_usage, python_usage], [jp_section, en_section, python_section])
         invocation_spec = composer.compose_invocation_spec()
