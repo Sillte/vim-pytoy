@@ -15,7 +15,7 @@ from pytoy_llm.task import InvocationSpecMeta, LLMInvocationSpec, LLMTaskRequest
 
 from pytoy.infra.timertask import ThreadWorker
 from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec
-from pytoy.tools.llm.document.editors.edit_intent import make_language_intent
+from pytoy.tools.llm.document.editors.edit_policies import make_edit_polices
 from pytoy.tools.llm.interaction_provider import InteractionProvider, InteractionRequest
 from pytoy.tools.llm.kernel import FairyKernel
 from pytoy.tools.llm.models import LLMInteraction
@@ -38,15 +38,18 @@ class ScopedEditContract:
 
     @property
     def edit_scope_intent(self) -> str:
-        return (f"- Your output MUST be the modified text between `{self.query_start}` and `{self.query_end}`.\n"
-                "- After your generation, the evaluation will be based on the full document with markers removed.\n")
+        return (
+            "Edit only the specified region of the document.\n"
+            "The surrounding text is provided for context and must be treated as read-only."
+        )
     @property
     def edit_scope_rules(self) -> list[str]:
-        return [f"You MUST edit ONLY the texts between `{self.query_start}` and `{self.query_end}`).",
-                f"The output MUST NOT include the markers (that is, `{self.query_start}` and `{self.query_end}`)",
-                "Do NOT add new context, conclusions, or summaries that are not already implied by the surrounding text.", 
-                "Do NOT restate information that exists outside the edited region unless strictly necessary for coherence.",
-               ]
+        return [
+            f"You MUST edit ONLY the text between `{self.query_start}` and `{self.query_end}`.",
+            "You MUST NOT modify or reproduce any text outside this region.",
+            f"The output MUST NOT include the markers `{self.query_start}` or `{self.query_end}`.",
+            "The output MUST consist solely of the edited content for the specified region.",
+        ]
 
     def insert_markers(self, buffer: PytoyBuffer, selection: CharacterRange) -> None:
         text = buffer.get_text(selection)
@@ -112,27 +115,25 @@ def make_scoped_edit_spec(document: str, scope_rules: Sequence[str], reference_h
     name = "Edit Document"
     output_description = "Return the entire document, editing only the text between the markers."
 
-    rules = [
-        *scope_rules,
-        "If the edited region contains placeholders such as `...`, `…`, or `???`, replace them with concrete, contextually appropriate content, unless `...` is natural itself.",
-        "Incomplete sentences or bullet points within the edited region MUST be completed naturally based on the surrounding context.",
-        "Inside the markers, you MAY format freely the content.",
-        "Determine the single dominant sentence-ending style, analying the surrounding document, including outside the markers",
-        "Use ONLY that style consistently in the edited content",
-        "Prefer similar length unless clarity or correctness requires change.",
-        "The rewritten text must read naturally when the markers are removed.",
-        "Line length consistency is a secondary preference and must not override document structure or semantic boundaries.",
-        "Do NOT add explanations, commentary, or meta text.",
-        "Prioritize sentence-ending consistency over perceived readability or politeness.",
-    ]
 
     def create_messages(document_analysis: DocumentProfile) -> list[InputMessage]:
         language = document_analysis.language
-        edit_intent = make_language_intent(language)
-        role = edit_intent.role
+        edit_policies = make_edit_polices(language)
+        role = edit_policies.role or "Expert of language"
         if document_analysis.required_role:
             role += f" / {document_analysis.required_role}"
-        intent = edit_intent.intent
+        intent = edit_policies.intent
+        rules = [
+            *scope_rules,
+            "If the edited region contains placeholders such as `...`, `…`, or `???`, replace them with concrete, contextually appropriate content, unless `...` is natural itself.",
+            "Incomplete sentences or bullet points within the edited region MUST be completed naturally based on the surrounding context.",
+            "Inside the markers, you MAY format freely the content.",
+            "Determine the single dominant sentence-ending style, analying the surrounding document, including outside the markers",
+            "Use ONLY that style consistently in the edited content",
+            "The rewritten text must read naturally when the markers are removed.",
+        ]
+
+        rules += sum((item.rules for item in edit_policies.items), [])
 
         system_prompt = SystemPromptTemplate(
             name=name,
