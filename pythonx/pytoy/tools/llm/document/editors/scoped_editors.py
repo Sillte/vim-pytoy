@@ -38,12 +38,15 @@ class ScopedEditContract:
 
     @property
     def edit_scope_intent(self) -> str:
-        return (f"- Output the entire document, but only modify the text between `{self.query_start}` and `{self.query_end}`.\n"
+        return (f"- Your output MUST be the modified text between `{self.query_start}` and `{self.query_end}`.\n"
                 "- After your generation, the evaluation will be based on the full document with markers removed.\n")
     @property
     def edit_scope_rules(self) -> list[str]:
-        return [f"The edited document must exist between markers (that is, `{self.query_start}` and `{self.query_end}`).",
-                f"The output must include the markers (that is, `{self.query_start}` and `{self.query_end}`)"]
+        return [f"You MUST edit ONLY the texts between `{self.query_start}` and `{self.query_end}`).",
+                f"The output MUST NOT include the markers (that is, `{self.query_start}` and `{self.query_end}`)",
+                "Do NOT add new context, conclusions, or summaries that are not already implied by the surrounding text.", 
+                "Do NOT restate information that exists outside the edited region unless strictly necessary for coherence.",
+               ]
 
     def insert_markers(self, buffer: PytoyBuffer, selection: CharacterRange) -> None:
         text = buffer.get_text(selection)
@@ -110,15 +113,17 @@ def make_scoped_edit_spec(document: str, scope_rules: Sequence[str], reference_h
     output_description = "Return the entire document, editing only the text between the markers."
 
     rules = [
-        "Output the entire document, but only modify the text between the markers. Do not alter other content.",
         *scope_rules,
-        "The markers must be included; they will be removed after your generation.",
-        "Do NOT add explanations, commentary, or meta text.",
+        "If the edited region contains placeholders such as `...`, `…`, or `???`, replace them with concrete, contextually appropriate content, unless `...` is natural itself.",
+        "Incomplete sentences or bullet points within the edited region MUST be completed naturally based on the surrounding context.",
+        "Inside the markers, you MAY format freely the content.",
+        "Determine the single dominant sentence-ending style, analying the surrounding document, including outside the markers",
+        "Use ONLY that style consistently in the edited content",
         "Prefer similar length unless clarity or correctness requires change.",
         "The rewritten text must read naturally when the markers are removed.",
-        "Inside the markers, you MAY organize content into separate lines, bullet points, or numbered items to improve readability.",
-        "Inside the markers, you MAY format freely the content.",
         "Line length consistency is a secondary preference and must not override document structure or semantic boundaries.",
+        "Do NOT add explanations, commentary, or meta text.",
+        "Prioritize sentence-ending consistency over perceived readability or politeness.",
     ]
 
     def create_messages(document_analysis: DocumentProfile) -> list[InputMessage]:
@@ -137,7 +142,6 @@ def make_scoped_edit_spec(document: str, scope_rules: Sequence[str], reference_h
             role=role,
             output_description=output_description,
         )
-        logger.info(str(system_prompt))
         section_data_list: list[SectionData] = [ModelSectionData(bundle_kind="DocumentAnalysis",
                        description="Analysis of the document.",
                        instances=[document_analysis])]
@@ -155,6 +159,8 @@ def make_scoped_edit_spec(document: str, scope_rules: Sequence[str], reference_h
                                             section_usages=section_usage_list,
                                             section_data_list=section_data_list)
         system_message = InputMessage(role="system", content=composer.compose_prompt())
+        logger.info(system_message.model_dump_json())
+        logger.info(user_message.model_dump_json())
         return [system_message, user_message]
 
     return LLMInvocationSpec(
