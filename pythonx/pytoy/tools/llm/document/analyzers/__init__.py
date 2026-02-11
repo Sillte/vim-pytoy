@@ -2,27 +2,18 @@ from pydantic import BaseModel, Field
 
 
 from typing import Annotated, Literal, Sequence
-from pytoy.tools.llm.document.core import DocumentLanguageType
+from pytoy.tools.llm.document.core import LanguageKind
 from pytoy_llm.materials.composers import InvocationPromptComposer
 from pytoy_llm.materials.composers.models import SystemPromptTemplate
 from pytoy_llm.models import InputMessage
 from pytoy_llm.task import InvocationSpecMeta, LLMInvocationSpec
 
-type ContentKindType = Literal["document", "mail", "config", "comment", "review"]
-
-class DocumentKind(BaseModel):
-    language: Annotated[
-        DocumentLanguageType, Field(description="The dominant language of the document.")
-    ]
-    content_kind: Annotated[
-        ContentKindType | None, Field(description="Kind of the document, if specified.")  
-    ] = None
 
 class DocumentProfile(BaseModel):
     """Analysis result of the document."""
 
     language: Annotated[
-        DocumentLanguageType, Field(description="The dominant language of the document.")
+        LanguageKind, Field(description="The dominant language of the document.")
     ]
     required_role: Annotated[
         str, Field(description="The appropriate role to edit this document, which is easily interpretable by LLM.")
