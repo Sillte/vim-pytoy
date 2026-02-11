@@ -165,7 +165,7 @@ def execute_pytoy(opts: OptsArgument):
             raise ValueError("Cannot identify the apt execution for ``") 
 
 
-@CommandManager.register(name="PytoyOpenLog")
+@CommandManager.register(name="PytoyLog")
 class PytoyOpenLog:
     def __call__(self, opts: OptsArgument) -> None:
         from pytoy.contexts.core import GlobalCoreContext

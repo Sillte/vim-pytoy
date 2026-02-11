@@ -15,7 +15,7 @@ from pytoy_llm.task import InvocationSpecMeta, LLMInvocationSpec, LLMTaskRequest
 
 from pytoy.infra.timertask import ThreadWorker
 from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec
-from pytoy.tools.llm.document.editors.edit_policies import make_edit_polices
+from pytoy.tools.llm.document.editors.edit_rules import LanguageRuleSet, CompletionRuleSet, StyleRuleSet
 from pytoy.tools.llm.interaction_provider import InteractionProvider, InteractionRequest
 from pytoy.tools.llm.kernel import FairyKernel
 from pytoy.tools.llm.models import LLMInteraction
@@ -37,18 +37,15 @@ class ScopedEditContract:
         return cls(query_start, query_end)
 
     @property
-    def edit_scope_intent(self) -> str:
-        return (
-            "Edit only the specified region of the document.\n"
-            "The surrounding text is provided for context and must be treated as read-only."
-        )
-    @property
-    def edit_scope_rules(self) -> list[str]:
+    def rules(self) -> list[str]:
         return [
             f"You MUST edit ONLY the text between `{self.query_start}` and `{self.query_end}`.",
             "You MUST NOT modify or reproduce any text outside this region.",
             f"The output MUST NOT include the markers `{self.query_start}` or `{self.query_end}`.",
             "The output MUST consist solely of the edited content for the specified region.",
+            "The rewritten text must read naturally when the markers are removed.",
+            "The text inside the marker is a fragment of a larger document."
+            "You MUST preserve stylistic conventions implied by the surrounding context (that is outside of the markers.)"
         ]
 
     def insert_markers(self, buffer: PytoyBuffer, selection: CharacterRange) -> None:
@@ -65,10 +62,10 @@ class ScopedEditContract:
             buffer.range_operator.replace_text(end_range, "")
 
     def override_target(self, buffer: PytoyBuffer, content: str) -> None:
-        """If content includes `markers`, then the inside of markers becomes the `target`. 
-        If not the entire `content` is written inside `buffer`, the all content becomes the target.
+        """Based on the contract with LLM,  `content` should be the texgt within markers.
+        Unfortunately, if content includes `markers`, then the inside of markers becomes the `target`.
         """
-        content = self._normalize_content(content)
+        content = self._recover_edit_target(content)
         start_range = buffer.range_operator.find_first(self.query_start)
         end_range = buffer.range_operator.find_first(self.query_end)
 
@@ -78,7 +75,7 @@ class ScopedEditContract:
         cr = CharacterRange(start_range.start, end_range.end)
         buffer.range_operator.replace_text(cr, content)
 
-    def _normalize_content(self, content: str) -> str:
+    def _recover_edit_target(self, content: str) -> str:
         lines = content.replace("\r\n", "\n").split("\n")
         lines = [line.strip(" ") for line in lines]
         s_index, e_index = None, None
@@ -106,34 +103,33 @@ class ScopedEditContract:
         return self._query_end
 
 
-def make_scoped_edit_spec(document: str, scope_rules: Sequence[str], reference_handler: ReferenceHandler, logger: logging.Logger) -> LLMInvocationSpec:
+def make_scoped_edit_spec(document: str, scoped_edit_contract: ScopedEditContract, reference_handler: ReferenceHandler, logger: logging.Logger) -> LLMInvocationSpec:
     """Based on the `DocumentAnalysis`. provide the edit."""
     def _make_user_prompt(document: str) -> InputMessage:
         return InputMessage(role="user", content=document)
 
     user_message = _make_user_prompt(document)
     name = "Edit Document"
-    output_description = "Return the entire document, editing only the text between the markers."
-
+    output_description = "Edit the document, focusing on the specified scope."
 
     def create_messages(document_analysis: DocumentProfile) -> list[InputMessage]:
         language = document_analysis.language
-        edit_policies = make_edit_polices(language)
-        role = edit_policies.role or "Expert of language"
+        #edit_policies = make_edit_polices(language)
+        role = "An expert editor"
         if document_analysis.required_role:
             role += f" / {document_analysis.required_role}"
-        intent = edit_policies.intent
+        intent = "Edit the document while preserving intent, structure, and coherence."
+        language_ruleset= LanguageRuleSet.from_document_kind(language)
+        style_ruleset= StyleRuleSet.from_language_and_uniformity_mode(language, "structure")
+        completion_ruleset = CompletionRuleSet.from_completion_mode(completion_mode="explicit")
+        
+    
         rules = [
-            *scope_rules,
-            "If the edited region contains placeholders such as `...`, `…`, or `???`, replace them with concrete, contextually appropriate content, unless `...` is natural itself.",
-            "Incomplete sentences or bullet points within the edited region MUST be completed naturally based on the surrounding context.",
-            "Inside the markers, you MAY format freely the content.",
-            "Determine the single dominant sentence-ending style, analying the surrounding document, including outside the markers",
-            "Use ONLY that style consistently in the edited content",
-            "The rewritten text must read naturally when the markers are removed.",
+            *language_ruleset.rules,
+            *scoped_edit_contract.rules,
+            *style_ruleset.rules,
+            *completion_ruleset.rules,
         ]
-
-        rules += sum((item.rules for item in edit_policies.items), [])
 
         system_prompt = SystemPromptTemplate(
             name=name,
@@ -174,7 +170,7 @@ def make_scoped_edit_spec(document: str, scope_rules: Sequence[str], reference_h
 class ScopedEditDocumentRequester:
     def __init__(self, pytoy_fairy: PytoyFairy):
         self._id = uuid.uuid4().hex[:8]
-        self.editscope_contract = ScopedEditContract.from_id(self._id)
+        self.scoped_edit_contract = ScopedEditContract.from_id(self._id)
         self.pytoy_fairy = pytoy_fairy
 
     @property
@@ -189,17 +185,17 @@ class ScopedEditDocumentRequester:
         output_str = str(output)
         logger = self.pytoy_fairy.kernel.llm_context.logger
         logger.info(str(output))
-        self.editscope_contract.override_target(buffer, output_str)
+        self.scoped_edit_contract.override_target(buffer, output_str)
 
     def _handle_error(self, buffer: PytoyBuffer, exception: Exception) -> None:
-        self.editscope_contract.revert_markers(buffer)
+        self.scoped_edit_contract.revert_markers(buffer)
         ThreadWorker.add_message(str(exception))
         EphemeralNotification().notify("LLM Error. See `:messages`.")
 
     def make_interaction(self) -> LLMInteraction:
         buffer = self.pytoy_fairy.buffer
         kernel = self.pytoy_fairy.kernel
-        self.editscope_contract.insert_markers(buffer, self.pytoy_fairy.selection)
+        self.scoped_edit_contract.insert_markers(buffer, self.pytoy_fairy.selection)
 
         document = buffer.content
         task_request = self._make_task_request(document, kernel)
@@ -214,8 +210,7 @@ class ScopedEditDocumentRequester:
 
     def _make_task_request(self, document: str, kernel: FairyKernel) -> LLMTaskRequest:
         analysis_spec = make_profile_spec()
-        scope_rules = self.editscope_contract.edit_scope_rules
-        edit_spec = make_scoped_edit_spec(document, scope_rules, kernel.llm_context.reference_handler, self.pytoy_fairy.kernel.llm_context.logger)
+        edit_spec = make_scoped_edit_spec(document, self.scoped_edit_contract, kernel.llm_context.reference_handler, self.pytoy_fairy.kernel.llm_context.logger)
         meta = LLMTaskSpecMeta(name="EditDocument")
         task_spec = LLMTaskSpec(invocation_specs=[analysis_spec, edit_spec], meta=meta)
         return LLMTaskRequest(task_spec=task_spec, task_input=document)
