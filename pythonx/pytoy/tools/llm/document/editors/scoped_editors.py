@@ -1,4 +1,5 @@
 import logging
+import re
 
 from typing import Sequence
 from pytoy.ui.notifications import EphemeralNotification
@@ -11,10 +12,10 @@ from pytoy_llm.materials.composers import InvocationPromptComposer
 from pytoy_llm.materials.composers.models import SectionUsage, SystemPromptTemplate
 from pytoy_llm.materials.core import ModelSectionData, SectionData
 from pytoy_llm.models import InputMessage, SyncOutput
-from pytoy_llm.task import InvocationSpecMeta, LLMInvocationSpec, LLMTaskRequest, LLMTaskSpec, LLMTaskSpecMeta
+from pytoy_llm.task import InvocationSpecMeta, LLMInvocationSpec, LLMTaskRequest, LLMTaskSpec, LLMTaskSpecMeta, FunctionInvocationSpec
 
 from pytoy.infra.timertask import ThreadWorker
-from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec
+from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec, LanguageKind
 from pytoy.tools.llm.document.editors.edit_rules import LanguageRuleSet, CompletionRuleSet, StyleRuleSet
 from pytoy.tools.llm.interaction_provider import InteractionProvider, InteractionRequest
 from pytoy.tools.llm.kernel import FairyKernel
@@ -23,7 +24,39 @@ from pytoy.tools.llm.pytoy_fairy import PytoyFairy
 from pytoy.tools.llm.references import ReferenceHandler
 
 
-class ScopedEditContract:
+def select_language_kind(document: str) -> LanguageKind:
+    ...
+    if not document.strip():
+        return "english"
+
+    # --- 1. Python detection ---
+    python_patterns = [
+        r"\bdef\b",
+        r"\bclass\b",
+        r"\bimport\b",
+        r"\bfrom\b",
+        r"\breturn\b",
+        r"if __name__",
+        r":\s*$",
+        r"```",
+    ]
+
+    python_hits = sum(bool(re.search(p, document, re.MULTILINE)) for p in python_patterns)
+    if python_hits >= 2:
+        return "python"
+
+    # --- 2. Japanese detection ---
+    japanese_chars = re.findall(r"[\u3040-\u30FF\u4E00-\u9FFF]", document)
+    ratio = len(japanese_chars) / max(len(document), 1)
+
+    if ratio > 0.15:
+        return "japanese"
+
+    # --- 3. Default to English ---
+    return "english"
+
+
+class ScopedReconstructionContract:
     def __init__(self, query_start: str, query_end: str):
         self._query_start = query_start
         self._query_end = query_end
@@ -37,16 +70,30 @@ class ScopedEditContract:
         return cls(query_start, query_end)
 
     @property
-    def rules(self) -> list[str]:
+    def rules(self) -> Sequence[str]:
         return [
-            f"You MUST edit ONLY the text between `{self.query_start}` and `{self.query_end}`.",
-            "You MUST NOT modify or reproduce any text outside this region.",
-            f"The output MUST NOT include the markers `{self.query_start}` or `{self.query_end}`.",
-            "The output MUST consist solely of the edited content for the specified region.",
-            "The rewritten text must read naturally when the markers are removed.",
-            "The text inside the marker is a fragment of a larger document."
-            "You MUST preserve stylistic conventions implied by the surrounding context (that is outside of the markers.)"
+        f"The model's modification authority is strictly limited to the text between `{self.query_start}` and `{self.query_end}`.",
+        "The model MUST NOT modify, summarize, or reproduce any text outside this region.",
+        f"The output MUST NOT include the markers `{self.query_start}` or `{self.query_end}`.",
+        "The output MUST consist solely of the reconstructed content for the scoped region.",
+        "When the markers are removed, the resulting document must read as a coherent whole.",
+        "The scoped text may be a fragment of a larger document.",
+        "If surrounding context exists, stylistic and structural conventions implied by it must be preserved."
+    ]
+        
+    @property
+    def override_directive_rules(self) -> Sequence[str]:
+        return [
+            "**Directive Handling:**",
+            "- If the first non-empty line inside the markers starts with one or more `@`, treat that line as a directive and DO NOT include it in the output.",
+            "- The number of consecutive `@` characters defines its strength:",
+            "    - @: weak directive (lower priority than the other rules.).",
+            "    - @@, @@@, @@@@ or more: absolute directive (redefines the reconstruction objective and strategy within the scoped boundary).",
+            "- Directives may redefine task intent, tone, or structural goals, but they MUST NOT violate the scoped boundary contract.",
+            "- Directives cannot authorize modification of text outside the markers.",
+            "- The directive line MUST be completely removed before reconstruction begins."
         ]
+
 
     def insert_markers(self, buffer: PytoyBuffer, selection: CharacterRange) -> None:
         text = buffer.get_text(selection)
@@ -103,25 +150,22 @@ class ScopedEditContract:
         return self._query_end
 
 
-def make_scoped_edit_spec(document: str, scoped_edit_contract: ScopedEditContract, reference_handler: ReferenceHandler, logger: logging.Logger) -> LLMInvocationSpec:
+def make_scoped_edit_spec(document: str, scoped_edit_contract: ScopedReconstructionContract, reference_handler: ReferenceHandler, logger: logging.Logger) -> LLMInvocationSpec:
     """Based on the `DocumentAnalysis`. provide the edit."""
     def _make_user_prompt(document: str) -> InputMessage:
         return InputMessage(role="user", content=document)
 
     user_message = _make_user_prompt(document)
-    name = "Edit Document"
-    output_description = "Edit the document, focusing on the specified scope."
+    name = "Edit or generation of the part of document inside markers"
+    output_description = "A part of the document, focusing on the specified scope between markers."
 
-    def create_messages(document_analysis: DocumentProfile) -> list[InputMessage]:
-        language = document_analysis.language
-        #edit_policies = make_edit_polices(language)
-        role = "An expert editor"
-        if document_analysis.required_role:
-            role += f" / {document_analysis.required_role}"
-        intent = "Edit the document while preserving intent, structure, and coherence."
+    def create_messages(language_kind: LanguageKind) -> list[InputMessage]:
+        language = language_kind
+        role = "An expert writer and editor"
+        intent = "Recontruction of the part of the document while preserving intent, structure, and coherence."
         language_ruleset= LanguageRuleSet.from_document_kind(language)
         style_ruleset= StyleRuleSet.from_language_and_uniformity_mode(language, "structure")
-        completion_ruleset = CompletionRuleSet.from_completion_mode(completion_mode="explicit")
+        completion_ruleset = CompletionRuleSet.from_completion_mode(completion_mode="conservative")
         
     
         rules = [
@@ -129,6 +173,7 @@ def make_scoped_edit_spec(document: str, scoped_edit_contract: ScopedEditContrac
             *scoped_edit_contract.rules,
             *style_ruleset.rules,
             *completion_ruleset.rules,
+            *scoped_edit_contract.override_directive_rules,
         ]
 
         system_prompt = SystemPromptTemplate(
@@ -139,22 +184,9 @@ def make_scoped_edit_spec(document: str, scoped_edit_contract: ScopedEditContrac
             role=role,
             output_description=output_description,
         )
-        section_data_list: list[SectionData] = [ModelSectionData(bundle_kind="DocumentAnalysis",
-                       description="Analysis of the document.",
-                       instances=[document_analysis])]
-        section_usage_list = [SectionUsage(bundle_kind="DocumentAnalysis",
-                                     usage_rule=[
-                                         "Use the advice to guide revision.",
-                                     ],
-                                     )]
-        if reference_handler.exist_reference:
-            ref_section_writer = reference_handler.section_writer
-            section_data_list.append(ref_section_writer.make_section_data())
-            section_usage_list.append(ref_section_writer.make_section_usage())
 
-        composer = InvocationPromptComposer(prompt_template=system_prompt,
-                                            section_usages=section_usage_list,
-                                            section_data_list=section_data_list)
+
+        composer = InvocationPromptComposer(prompt_template=system_prompt)
         system_message = InputMessage(role="system", content=composer.compose_prompt())
         logger.info(system_message.model_dump_json())
         logger.info(user_message.model_dump_json())
@@ -163,14 +195,14 @@ def make_scoped_edit_spec(document: str, scoped_edit_contract: ScopedEditContrac
     return LLMInvocationSpec(
         create_messages=create_messages,
         output_spec=str,
-        meta=InvocationSpecMeta(name=name, intent="Edit the document."),
+        meta=InvocationSpecMeta(name=name, intent="Scoped edit of the document."),
     )
 
 
 class ScopedEditDocumentRequester:
     def __init__(self, pytoy_fairy: PytoyFairy):
         self._id = uuid.uuid4().hex[:8]
-        self.scoped_edit_contract = ScopedEditContract.from_id(self._id)
+        self.scoped_edit_contract = ScopedReconstructionContract.from_id(self._id)
         self.pytoy_fairy = pytoy_fairy
 
     @property
@@ -209,8 +241,8 @@ class ScopedEditDocumentRequester:
         return InteractionProvider().create(request)
 
     def _make_task_request(self, document: str, kernel: FairyKernel) -> LLMTaskRequest:
-        analysis_spec = make_profile_spec()
+        select_language_spec = FunctionInvocationSpec.from_any(select_language_kind)
         edit_spec = make_scoped_edit_spec(document, self.scoped_edit_contract, kernel.llm_context.reference_handler, self.pytoy_fairy.kernel.llm_context.logger)
-        meta = LLMTaskSpecMeta(name="EditDocument")
-        task_spec = LLMTaskSpec(invocation_specs=[analysis_spec, edit_spec], meta=meta)
+        meta = LLMTaskSpecMeta(name="ScopedEditDocument")
+        task_spec = LLMTaskSpec(invocation_specs=[select_language_spec, edit_spec], meta=meta)
         return LLMTaskRequest(task_spec=task_spec, task_input=document)

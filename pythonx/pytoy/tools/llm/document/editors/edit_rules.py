@@ -74,7 +74,7 @@ class ConceptCoherenceRuleSet(BaseModel, frozen=True):
         )
         
 
-type CompletionMode = Literal["similar", "explicit", "expressive"]
+type CompletionMode = Literal["conservative", "clarifying", "expansive"]
 
 
 class CompletionRuleSet(BaseModel, frozen=True):
@@ -83,27 +83,45 @@ class CompletionRuleSet(BaseModel, frozen=True):
 
     @classmethod
     def from_completion_mode(cls, completion_mode: CompletionMode) -> Self:
+
+        base_rules = [
+            "If placeholders such as `...`, `…`, or `???` appear and are not natural as literal expressions, they MUST be replaced with contextually appropriate content.",
+            "The minimal reconstruction constraint does NOT justify leaving placeholders unresolved.",
+        ]
+
         match completion_mode:
-            case "similar":
-                rules = [
-                    "If the edited region contains placeholders such as `...`, `…`, or `???`, replace them with concrete, contextually appropriate content, unless `...` is natural itself.",
-                    "Incomplete sentences or bullet points within the edited region MUST be completed naturally based on the surrounding context.",
+
+            case "conservative":
+                rules = base_rules + [
+                    "Perform only the minimal necessary reconstruction required to achieve coherence.",
+                    "Preserve original wording, structure, and tone whenever possible.",
+                    "Avoid noticeable expansion in volume.",
+                    "The length of reconstruction should remain proportionate to the original scoped content.",
+                    "Do NOT introduce new themes, claims, or expansions beyond what is required for coherence.",
                 ]
                 return cls(rules=rules, mode=completion_mode)
-            case "explicit":
-                rules = [
-                    "Replace ellipses or fragmented expressions with explicit sentences or words.",
-                    "Avoid leaving implicit subjects, objects, or conclusions when they can be reasonably inferred from context.",
-                    "Preserve the original sentences and words unless the sentence or paragraphs break.",
+
+            case "clarifying":
+                rules = base_rules + [
+                    "Make implicit subjects, objects, or conclusions explicit when this improves clarity.",
+                    "Resolve fragmented expressions into logically clear sentences.",
+                    "Preserve original intent and structure unless clarity requires adjustment.",
+                    "Avoid introducing ideas that are not reasonably inferable from context.",
+                    "Expansion is permitted only to the extent necessary for clarity.", 
+                    "Do not significantly increase the length unless required for understanding.",
                 ]
                 return cls(rules=rules, mode=completion_mode)
-            case "expressive":
-                rules = [
-                    "Expand fragmented thoughts into emotionally or narratively rich expressions.",
-                    "Preserve the original tone, but allow expressive elaboration when appropriate.",
-                    "Do NOT introduce themes or facts not implied by the original text.",
+
+            case "expansive":
+                rules = base_rules + [
+                    "Allow controlled elaboration when it improves clarity or expressive richness.",
+                    "Expand fragmented thoughts into well-developed expressions when appropriate.",
+                    "Preserve original intent and thematic direction.",
+                    "Do NOT introduce speculative information.",
+                    "Do not significantly increase the length unless required for understanding.",
                 ]
                 return cls(rules=rules, mode=completion_mode)
+
             case _:
                 assert_never(completion_mode)
 
