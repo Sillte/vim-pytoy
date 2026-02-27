@@ -109,7 +109,7 @@ class ScopedReconstructionContract:
             buffer.range_operator.replace_text(end_range, "")
 
     def override_target(self, buffer: PytoyBuffer, content: str) -> None:
-        """Based on the contract with LLM,  `content` should be the texgt within markers.
+        """Based on the contract with LLM,  `content` should be the text within markers.
         Unfortunately, if content includes `markers`, then the inside of markers becomes the `target`.
         """
         content = self._recover_edit_target(content)
@@ -124,7 +124,6 @@ class ScopedReconstructionContract:
 
     def _recover_edit_target(self, content: str) -> str:
         lines = content.replace("\r\n", "\n").split("\n")
-        lines = [line.strip(" ") for line in lines]
         s_index, e_index = None, None
         for i, line in enumerate(lines):
             if line.find(self.query_start.strip()) == 0:
@@ -184,9 +183,12 @@ def make_scoped_edit_spec(document: str, scoped_edit_contract: ScopedReconstruct
             role=role,
             output_description=output_description,
         )
-
-
-        composer = InvocationPromptComposer(prompt_template=system_prompt)
+        if reference_handler.exist_reference:
+            section_usage = reference_handler.section_writer.make_section_usage()
+            section_data = reference_handler.section_writer.make_section_data()
+            composer = InvocationPromptComposer(prompt_template=system_prompt, section_usages=[section_usage], section_data_list=[section_data])
+        else:
+            composer = InvocationPromptComposer(prompt_template=system_prompt)
         system_message = InputMessage(role="system", content=composer.compose_prompt())
         logger.info(system_message.model_dump_json())
         logger.info(user_message.model_dump_json())
@@ -207,11 +209,11 @@ class ScopedEditDocumentRequester:
 
     @property
     def query_start(self) -> str:
-        return f"[pytoy-llm][{self._id}]>$>"
+        return self.scoped_edit_contract.query_start
 
     @property
     def query_end(self) -> str:
-        return f">$>[pytoy-llm][{self._id}]"
+        return self.scoped_edit_contract.query_end
 
     def _apply_output(self, buffer: PytoyBuffer, output: SyncOutput) -> None:
         output_str = str(output)
@@ -242,7 +244,7 @@ class ScopedEditDocumentRequester:
 
     def _make_task_request(self, document: str, kernel: FairyKernel) -> LLMTaskRequest:
         select_language_spec = FunctionInvocationSpec.from_any(select_language_kind)
-        edit_spec = make_scoped_edit_spec(document, self.scoped_edit_contract, kernel.llm_context.reference_handler, self.pytoy_fairy.kernel.llm_context.logger)
+        edit_spec = make_scoped_edit_spec(document, self.scoped_edit_contract, kernel.llm_context.reference_handler, kernel.llm_context.logger)
         meta = LLMTaskSpecMeta(name="ScopedEditDocument")
         task_spec = LLMTaskSpec(invocation_specs=[select_language_spec, edit_spec], meta=meta)
         return LLMTaskRequest(task_spec=task_spec, task_input=document)

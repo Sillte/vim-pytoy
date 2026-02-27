@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar
 from functools import cached_property
-from pytoy.infra.core.entity import EntityRegistry
 from pytoy.contexts.vim import GlobalVimContext
 from pytoy.contexts.vscode import GlobalVSCodeContext
 from pytoy.contexts.core import GlobalCoreContext
