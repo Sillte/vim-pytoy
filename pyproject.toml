@@ -13,6 +13,7 @@ dependencies = [
     "typing-extensions>=4.0.0",
     "psutil",
     "parso",
+    "toml", 
     "markitdown", 
     "GitPython",
     "pytoy-llm @ git+https://github.com/Sillte/pytoy-llm.git@main",

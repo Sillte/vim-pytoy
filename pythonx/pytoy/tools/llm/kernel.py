@@ -20,10 +20,13 @@ class PytoyLLMContext:
         self._lock = threading.Lock()
         self.ctx = ctx
 
-        
     @property
     def workspace(self) -> Path:
         return self._workspace
+    
+    @property
+    def configuration(self) -> PytoyConfiguration: 
+        return self._configuration
 
     @property
     def root_folder(self) -> Path:
