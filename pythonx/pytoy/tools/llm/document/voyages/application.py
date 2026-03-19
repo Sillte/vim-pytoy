@@ -3,7 +3,7 @@ import functools
 from textwrap import dedent
 from typing import Annotated, cast, Callable
 from pydantic import BaseModel, Field
-from pytoy.tools.llm.document.voyages.domain import Compass, EvolvePolicy, Bearing
+from pytoy.tools.llm.document.voyages.domain import Compass, EvolvePolicy, Bearing, VoyageState
 
 from pytoy_llm.models import InputMessage, LLMConfig
 
