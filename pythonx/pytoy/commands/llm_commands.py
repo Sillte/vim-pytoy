@@ -75,7 +75,7 @@ class PytoyVoyageDocument:
 
     def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
         """This is defined by `Command`."""
-        candidates = ["reflect", "evolve", "reset", "config"]
+        candidates = ["reflect", "evolve", "reset", "config", "check-state"]
         valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
         if valid_candidates:
             return valid_candidates
@@ -96,6 +96,8 @@ class PytoyVoyageDocument:
             return self._reflect()
         if opts.fargs and opts.fargs[0].strip() == "reset":
             return self._initialize_voyage_ui()
+        if opts.fargs and opts.fargs[0].strip() == "check-state":
+            return self._check_state()
         
         if not opts.fargs:
             if self.voyage_ui is None:
@@ -137,4 +139,10 @@ class PytoyVoyageDocument:
         if not self.voyage_ui:
             raise RuntimeError("Implmenetation Error.")
         self.voyage_ui.reflect()
+
+    def _check_state(self):
+        if not self.voyage_ui:
+            raise ValueError("No `VoyageUI` yet.")
+        from pytoy.tools.llm.document.voyages.presentation import DocumentVoyageUI
+        cast(DocumentVoyageUI,self.voyage_ui).check_state()
 

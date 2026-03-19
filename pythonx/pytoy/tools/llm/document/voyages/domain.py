@@ -1,14 +1,18 @@
 from pydantic import BaseModel, Field
-from typing import Literal, Self
+from typing import Literal, Self, Mapping, Any, Self
 from typing_extensions import Annotated
 from textwrap import dedent
 
 CompassProgress = Annotated[
     Literal["emerging", "shaping", "committed"],
-    Field(description=("Degree of maturity of the objective:\n"
-                       "- emerging: not yet fixed\n"
-                       "- shaping: partially clarified\n"
-                       "- committed: fixed and prioritized\n")),
+    Field(
+        description=(
+            "Degree of maturity of the objective:\n"
+            "- emerging: not yet fixed\n"
+            "- shaping: partially clarified\n"
+            "- committed: fixed and prioritized\n"
+        )
+    ),
 ]
 
 
@@ -25,15 +29,6 @@ class Compass(BaseModel, frozen=True):
         str,
         Field(description="Objective of what we are creating. Can be empty initially."),
     ]
-
-    @property
-    def prompt_fragment(self) -> str:
-        prompt = (
-            f"Manuscript Objective: {self.objective or '(not yet defined)'}\n"
-            f"Progress: {self.progress} (Refer to the schema of `Compass` for details.)\n"
-        )
-        return prompt
-
 
 
 AlignmentState = Annotated[
@@ -62,9 +57,7 @@ class CompassAlignment(BaseModel, frozen=True):
     """
 
     state: AlignmentState
-    reason: Annotated[
-        str, Field(description="The reason explaining the alignment state.")
-    ]
+    reason: Annotated[str, Field(description="The reason explaining the alignment state.")]
 
 
 class Bearing(BaseModel, frozen=True):
@@ -77,9 +70,7 @@ class Bearing(BaseModel, frozen=True):
     """
 
     alignment: CompassAlignment
-    assessment: Annotated[
-        str, Field(description="Evaluation of the document's current state.")
-    ]
+    assessment: Annotated[str, Field(description="Evaluation of the document's current state.")]
 
     @property
     def bearing_description(self) -> str:
@@ -94,12 +85,13 @@ class Bearing(BaseModel, frozen=True):
         )
 
 
-class EvolvePolicy(BaseModel):
+class EvolvePolicy(BaseModel, frozen=True):
     """Policy of edit or generation of `manuscript`.
 
     When degree is "extreme", prioritize breaking creative stagnation
     over preserving local coherence.
     """
+
     degree: Annotated[
         Literal["auto", "low", "medium", "high", "extreme"],
         Field(
@@ -108,15 +100,12 @@ class EvolvePolicy(BaseModel):
 
     - auto:
         Adjust pressure based on Compass progress and current maturity.
-
     - low:
         Gentle refinement. Preserve structure and voice.
         Stimulate subtle improvement.
-
     - medium:
         Strong refinement. Improve structure, sharpen themes,
         enhance emotional dynamics.
-
     - high:
         Intensive stimulation. Bold reinterpretation and structural
         reshaping are allowed while preserving the Compass objective.
@@ -128,9 +117,55 @@ class EvolvePolicy(BaseModel):
         or thematic emphasis if necessary.
         The Compass objective must still be satisfied.
     """
-        )
+        ),
     ] = "auto"
 
-    comment: Annotated[str, 
-                       Field(description="Comments for the current manuscript, revision. or critique.")] = "No specific comments. Apply the growth pressure autonomously."
+    comment: Annotated[str, Field(description="Comments for the current manuscript, revision. or critique.")] = (
+        "No specific comments. Apply the growth pressure autonomously."
+    )
 
+
+class VoyageState(BaseModel, frozen=True):
+    """
+    Represents the current navigation state of the document voyage.
+
+    This is the aggregate root of the structured writing system.
+
+    Attributes:
+        compass: The objective definition and its maturity.
+        evolve_policy: The growth pressure applied to the manuscript.
+        bearing: The current evaluation of the manuscript.
+    """
+
+    compass: Annotated[Compass, Field(description="The current objective and its maturity level.")]
+
+    evolve_policy: Annotated[EvolvePolicy, Field(description="The current growth pressure policy.")]
+
+    bearing: Annotated[Bearing, Field(description="The current evaluation state of the manuscript.")]
+
+    def to_basemodels(self) -> Mapping[str, Any]:
+        return {
+            "compass": self.compass,
+            "evolve_policy": self.evolve_policy,
+            "bearing": self.bearing,
+        }
+
+    @classmethod
+    def schema_map(cls) -> Mapping[str, Any]:
+        return {
+            "compass": Compass,
+            "evolve_policy": EvolvePolicy,
+            "bearing": Bearing,
+        }
+
+    @classmethod
+    def initial(cls) -> "VoyageState":
+        """Create a default initial state."""
+        return cls(
+            compass=Compass(progress="emerging", objective="\nTo be determined\n"),
+            evolve_policy=EvolvePolicy(comment="\nMake a good document.\n"),
+            bearing=Bearing(
+                alignment=CompassAlignment(state="undefined", reason="Compass is not determined."),
+                assessment="Not applicable.",
+            ),
+        )

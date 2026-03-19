@@ -1,7 +1,8 @@
+import logging
 from pytoy.ui.pytoy_buffer import make_buffer
 from pytoy.infra.timertask import ThreadWorker
 from pytoy.tools.llm.pytoy_fairy import PytoyFairy, FairyKernel
-from pytoy.tools.llm.document.voyages.domain import Compass, EvolvePolicy, Bearing, CompassAlignment
+from pytoy.tools.llm.document.voyages.domain import Compass, EvolvePolicy, Bearing, CompassAlignment, VoyageState
 from pytoy.tools.llm.document.voyages.application import EvolveRequest, EvolveResponse, ReflectRequest, ReflectResponse, VoyageInteractionCreator
 from pytoy.tools.llm.utils import TomlConverter
 from pytoy.ui.notifications import EphemeralNotification
@@ -16,7 +17,12 @@ class DocumentVoyageUI:
         self._interaction_creator = VoyageInteractionCreator(self._pytoy_fairy.kernel)
         self._directive_buffer_name = directive_buffer_name
         self._toml_converter = TomlConverter()
-        self._toml_class_map = {"compass": Compass, "evolve_policy": EvolvePolicy, "bearing": Bearing}
+        self._toml_class_map = VoyageState.schema_map()
+        
+    @property
+    def logger(self) -> logging.Logger:
+        return self._pytoy_fairy.llm_context.logger
+
         
     @property
     def pytoy_fairy(self) -> PytoyFairy:
@@ -27,30 +33,33 @@ class DocumentVoyageUI:
         """Get the manuscript.
         """
         return self.pytoy_fairy.buffer.content
-    
 
-    def _from_basemodels(self, basemodels: Mapping[str, Any]) -> tuple[Compass, EvolvePolicy, Bearing]:
-        return (basemodels["compass"],  basemodels["evolve_policy"], basemodels["bearing"])
-    
-    def _to_basemodels(self, compass: Compass, evolve_policy: EvolvePolicy, bearing: Bearing) -> Mapping[str, Any]:
-        return {"compass": compass, "evolve_policy": evolve_policy, "bearing": bearing}
-
-    
-    def _complete_states(self) -> tuple[Compass, EvolvePolicy, Bearing]:
+    def _complete_states(self) -> VoyageState:
         directive_buffer = make_buffer(self._directive_buffer_name, mode="vertical")
         toml_text = directive_buffer.content
-        default_basemodels = {"compass": Compass(progress="emerging", objective="Please fulfill my objective."),
-                      "evolve_policy": EvolvePolicy(degree="auto", comment="Make a good document."),
-                      "bearing": Bearing(alignment=CompassAlignment(state="undefined", reason="Uncertain compass"), assessment="N/A")
-                      }
+        initial_state = VoyageState.initial()
         try:
             basemodels = self._toml_converter.to_basemodels(toml_text, self._toml_class_map)
+            state = initial_state.model_copy(update=basemodels)
         except (ValueError):
-            basemodels = default_basemodels
+            state = initial_state
+        return state
+    
+    def check_state(self) -> None:
+        directive_buffer = make_buffer(self._directive_buffer_name, mode="vertical")
+        toml_text = directive_buffer.content
+        try:
+            basemodels = self._toml_converter.to_basemodels(toml_text, self._toml_class_map)
+        except ValueError as e:
+            EphemeralNotification().notify("Not valid `State`. See `Log`.")
+            self.logger.info(str(e))
+        try:
+            VoyageState.model_validate(basemodels)
+        except Exception as e:
+            self.logger.info(str(e))
+            EphemeralNotification().notify("Not valid `VoyageState`. See `Log`.")
         else:
-            basemodels = {key: basemodels.get(key, default_basemodels[key]) for key in default_basemodels.keys()}
-        
-        return self._from_basemodels(basemodels)
+            EphemeralNotification().notify("OK. valid `VoyageState`.")
     
     def on_failure(self, exception: Exception):
         self.pytoy_fairy.llm_context.logger.info(f"Exception:{exception}")
@@ -59,8 +68,9 @@ class DocumentVoyageUI:
     
     def on_evolve(self, evolve_response: EvolveResponse) -> None:
         self.pytoy_fairy.llm_context.logger.info(f"EvolveResponse:{evolve_response}")
-        compass, evolve_policy, bearing = self._complete_states()
-        basemodels = self._to_basemodels(evolve_response.compass, evolve_policy, bearing)
+        state = self._complete_states()
+        new_state = state.model_copy(update={"compass": evolve_response.compass})
+        basemodels = new_state.to_basemodels()
         directive_content = self._toml_converter.from_basemodels(basemodels)
         directive_buffer = make_buffer(self._directive_buffer_name, mode="vertical")
         directive_buffer.init_buffer(directive_content)
@@ -68,24 +78,26 @@ class DocumentVoyageUI:
 
     
     def _construct_evolve_request(self) -> EvolveRequest:
-        compass, evolve_policy, bearing = self._complete_states()
+        state = self._complete_states()
         manuscript = self.pytoy_fairy.buffer.content
-        evolve_request = EvolveRequest(compass=compass, evolve_policy=evolve_policy, manuscript=manuscript)
+        evolve_request = EvolveRequest(compass=state.compass, evolve_policy=state.evolve_policy, manuscript=manuscript)
         self.pytoy_fairy.llm_context.logger.info("EvolveRequest:" +  str(evolve_request))
         return evolve_request
 
     
     def _construct_reflect_request(self) -> ReflectRequest:
-        compass, evolve_policy, bearing = self._complete_states()
+        state = self._complete_states()
         manuscript = self.pytoy_fairy.buffer.content
-        reflect_request= ReflectRequest(manuscript=manuscript, compass=compass)
+        reflect_request= ReflectRequest(manuscript=manuscript, compass=state.compass)
         self.pytoy_fairy.llm_context.logger.info("ReflectRequest:" +  str(reflect_request))
         return reflect_request
 
     def on_reflect(self, reflect_response: ReflectResponse) -> None:
         self.pytoy_fairy.llm_context.logger.info(f"ReflectResponse:{reflect_response}")
-        compass, evolve_policy, bearing = self._complete_states()
-        basemodels = self._to_basemodels(reflect_response.compass, evolve_policy, reflect_response.bearing)
+        state = self._complete_states()
+
+        new_state = state.model_copy(update={"compass": reflect_response.compass, "bearing": reflect_response.bearing})
+        basemodels = new_state.to_basemodels()
         directive_content = self._toml_converter.from_basemodels(basemodels)
         directive_buffer = make_buffer(self._directive_buffer_name, mode="vertical")
         directive_buffer.init_buffer(directive_content)
