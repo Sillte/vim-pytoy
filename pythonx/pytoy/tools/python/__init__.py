@@ -8,11 +8,11 @@ from pathlib import  Path
 from dataclasses import dataclass
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.lib_tools.command_executor import CommandExecutor, BufferRequest, ExecutionRequest, ExecutionHooks, ExecutionResult
-from pytoy.lib_tools.command_executor import CommandExecutionManager, CommandExecution
+from pytoy.job_execution.command_executor import CommandExecutor, BufferRequest, ExecutionRequest, ExecutionHooks, ExecutionResult
+from pytoy.job_execution.command_executor import CommandExecutionManager, CommandExecution
 
 # `set_default_execution_mode` is carried out only in `__init__.py`
-from pytoy.lib_tools.utils import get_current_directory
+from pytoy.job_execution.utils import get_current_directory
 
 
 from pytoy.shared.ui import PytoyBuffer, PytoyQuickfix, handle_records, QuickfixRecord

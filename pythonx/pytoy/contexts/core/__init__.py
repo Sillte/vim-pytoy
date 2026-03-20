@@ -5,10 +5,10 @@ from functools import cached_property
 
 # Only for lazy loading to speed up. 
 if TYPE_CHECKING:
-    from pytoy.lib_tools.environment_manager import EnvironmentManager
+    from pytoy.job_execution.environment_manager import EnvironmentManager
     from pytoy.shared.timertask.thread_executor import ThreadExecutionManager
     ...
-    #from pytoy.lib_tools.command_executor import CommandExecutionManager 
+    #from pytoy.job_execution.command_executor import CommandExecutionManager 
     #from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
     #from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
 
@@ -24,7 +24,7 @@ class GlobalCoreContext:
     
     @cached_property
     def environment_manager(self) -> EnvironmentManager:
-        from pytoy.lib_tools.environment_manager import EnvironmentManager
+        from pytoy.job_execution.environment_manager import EnvironmentManager
         return EnvironmentManager()
 
     @cached_property

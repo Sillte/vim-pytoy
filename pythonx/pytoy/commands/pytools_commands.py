@@ -4,8 +4,6 @@ from typing import Sequence
 import vim
 from pytoy.command import CommandManager
 from pytoy.shared.ui.pytoy_buffer import make_buffer
-from pytoy.shared.ui.ui_enum import get_ui_enum, UIEnum
-from pytoy.shared.ui.pytoy_window import PytoyWindow
 from pytoy.shared.ui.utils import to_filepath
 from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord
 
@@ -16,10 +14,10 @@ class PyTestCommand:
 
     def __call__(self, command_type: str = "func"):
         import vim
-        from pytoy.lib_tools.command_executor import QuickfixCommandExecutor
-        from pytoy.lib_tools.command_executor import QuickfixCommandRequest
-        from pytoy.lib_tools.command_executor import ExecutionRequest
-        from pytoy.lib_tools.command_executor import BufferRequest
+        from pytoy.job_execution.command_executor import QuickfixCommandExecutor
+        from pytoy.job_execution.command_executor import QuickfixCommandRequest
+        from pytoy.job_execution.command_executor import ExecutionRequest
+        from pytoy.job_execution.command_executor import BufferRequest
         from pytoy.tools.pytest.utils import to_func_command, PytestDecipher
         from pytoy import TERM_STDOUT
 
@@ -57,8 +55,8 @@ class PyTestCommand:
 @CommandManager.register(name="Mypy")
 class MypyCommand:
     def __call__(self, opts: dict):
-        from pytoy.lib_tools.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
-        from pytoy.lib_tools.command_executor import BufferRequest
+        from pytoy.job_execution.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
+        from pytoy.job_execution.command_executor import BufferRequest
         from pytoy import TERM_STDOUT
         from pytoy.commands.utils import override, workspace_func, fallback_argument
         import vim
@@ -116,8 +114,8 @@ class RuffChecker:
         from pytoy.commands.utils import override, workspace_func, fallback_argument
         from pytoy.contexts.core import GlobalCoreContext
 
-        from pytoy.lib_tools.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
-        from pytoy.lib_tools.command_executor import BufferRequest
+        from pytoy.job_execution.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
+        from pytoy.job_execution.command_executor import BufferRequest
         import vim
 
         current_path = to_filepath(vim.current.buffer.name)

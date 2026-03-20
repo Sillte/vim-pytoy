@@ -22,9 +22,9 @@ def mywindow_func2():
     # print(window.buffer)
     # print(window.buffer.content)
     # window.focus()
-    from pytoy.lib_tools.utils import get_current_directory
+    from pytoy.job_execution.utils import get_current_directory
 
-    val = Api().eval_with_return("vscode.env.remoteName")
+    Api().eval_with_return("vscode.env.remoteName") 
     print("GETCURRENT", get_current_directory())
     return
 

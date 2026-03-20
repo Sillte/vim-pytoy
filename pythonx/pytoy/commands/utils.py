@@ -34,8 +34,8 @@ def fallback_argument(fargs: Sequence[str], target: str) -> F_ARGS:
 
 
 def workspace_func() -> str | None:
-    from pytoy.lib_tools.environment_manager import EnvironmentManager
-    from pytoy.lib_tools.utils import get_current_directory
+    from pytoy.job_execution.environment_manager import EnvironmentManager
+    from pytoy.job_execution.utils import get_current_directory
     current_folder = get_current_directory()
     workspace = EnvironmentManager().get_workspace(current_folder, preference="auto")
     if not workspace:

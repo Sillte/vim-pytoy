@@ -5,7 +5,7 @@ from typing import List, Callable
 from subprocess import PIPE
 from pathlib import Path
 from urllib import parse
-from pytoy.lib_tools.utils import get_current_directory
+from pytoy.job_execution.utils import get_current_directory
 
 
 class GitUser:
