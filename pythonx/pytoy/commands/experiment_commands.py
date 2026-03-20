@@ -1,5 +1,5 @@
 from pytoy.shared.command.models import OptsArgument
-from pytoy.lib_tools.utils import get_current_directory
+from pytoy.job_execution.utils import get_current_directory
 from pytoy.command import CommandManager
 
 from pathlib import Path 
@@ -17,7 +17,7 @@ class GatherTextFiles:
     def __call__(self):
         from pytoy_llm.materials.text_files import TextFilesCollector 
         from pytoy_llm.materials.composers import NaiveSectionComposer 
-        from pytoy.lib_tools.environment_manager import EnvironmentManager
+        from pytoy.job_execution.environment_manager import EnvironmentManager
         buffer = PytoyBuffer.get_current()
         if not buffer.is_file:
             raise ValueError("Target buffer is not file.")
@@ -41,7 +41,7 @@ class GatherGitDiffs:
         from pytoy_llm.materials.git_diffs.collectors import GitDiffCollector
         from pytoy_llm.materials.git_diffs.models import GitDiffBundleQuery
         from pytoy_llm.materials.composers import NaiveSectionComposer 
-        from pytoy.lib_tools.environment_manager import EnvironmentManager
+        from pytoy.job_execution.environment_manager import EnvironmentManager
         buffer = PytoyBuffer.get_current()
         if not buffer.is_file:
             raise ValueError("Target buffer is not file.")

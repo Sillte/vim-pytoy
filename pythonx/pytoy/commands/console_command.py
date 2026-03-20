@@ -1,9 +1,9 @@
 from pytoy.shared.command.models import OptsArgument
 import vim
-from pytoy.lib_tools.utils import get_current_directory
+from pytoy.job_execution.utils import get_current_directory
 
-from pytoy.lib_tools.terminal_executor import TerminalExecutor, TerminalExecution, BufferRequest, ExecutionRequest
-from pytoy.lib_tools.terminal_runner.drivers import TerminalDriverManager, TerminalDriverProtocol, DEFAULT_SHELL_DRIVER_NAME
+from pytoy.job_execution.terminal_executor import TerminalExecutor, TerminalExecution, BufferRequest, ExecutionRequest
+from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager, TerminalDriverProtocol, DEFAULT_SHELL_DRIVER_NAME
 from pytoy.contexts.pytoy import GlobalPytoyContext
 
 from pytoy.shared.command.sub_commands import (
