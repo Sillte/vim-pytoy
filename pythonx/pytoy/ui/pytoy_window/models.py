@@ -3,7 +3,7 @@ from enum import StrEnum
 from pathlib import Path 
 from typing import Literal, Self, TYPE_CHECKING, assert_never
 from dataclasses import dataclass
-from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
+from pytoy.shared.lib.models import CursorPosition, CharacterRange, LineRange
 
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol

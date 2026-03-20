@@ -19,9 +19,7 @@ from pytoy.lib_tools.terminal_runner.models import (
     JobID
 )
 from typing import Any, Callable
-from pytoy.infra.core.models import CursorPosition
-from pytoy.infra.vim_function import PytoyVimFunctions
-from pytoy.infra.events import EventEmitter
+from pytoy.shared.lib.events import EventEmitter
 from pytoy.lib_tools.process_utils import find_children_pids
 
 

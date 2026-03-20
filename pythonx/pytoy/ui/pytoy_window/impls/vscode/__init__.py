@@ -4,8 +4,8 @@ from __future__ import annotations
 # * Editor of PytoyWindow: the buffers of windows is managed in neovim.
 
 from pathlib import Path
-from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
-from pytoy.infra.core.models import Event
+from pytoy.shared.lib.models import CursorPosition, CharacterRange, LineRange
+from pytoy.shared.lib.event import Event
 from pytoy.ui.pytoy_window.impls.vscode.kernel import WindowURISolver
 from pytoy.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver

@@ -2,10 +2,10 @@ import uuid
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
-from pytoy.infra.core.models import Event
+from pytoy.shared.lib.event import Event
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 
-from pytoy.infra.timertask.thread_executor import ThreadExecution
+from pytoy.shared.timertask.thread_executor import ThreadExecution
 
 type PreSaveHook = Callable[[PytoyBuffer], None]
 

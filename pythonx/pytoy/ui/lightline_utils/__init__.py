@@ -22,7 +22,7 @@ Thank you for the great plugin!
 import vim
 from typing import Callable
 from pytoy.ui.lightline_utils._lightline import _Lightline
-from pytoy.infra.vim_function import PytoyVimFunctions
+from pytoy.shared.lib.vim_function import PytoyVimFunctions
 
 
 class LightlineUser:

@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 from pytoy.ui.vscode.uri import Uri
 from pytoy.ui.vscode.api import Api
-from pytoy.infra.core.models import CursorPosition
+from pytoy.shared.lib.models import CursorPosition
 from pytoy.ui.pytoy_window import PytoyWindow
 
 

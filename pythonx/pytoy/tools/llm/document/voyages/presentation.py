@@ -1,6 +1,6 @@
 import logging
 from pytoy.ui.pytoy_buffer import make_buffer
-from pytoy.infra.timertask import ThreadWorker
+from pytoy.shared.timertask import ThreadWorker
 from pytoy.tools.llm.pytoy_fairy import PytoyFairy, FairyKernel
 from pytoy.tools.llm.document.voyages.domain import Compass, EvolvePolicy, Bearing, CompassAlignment, VoyageState
 from pytoy.tools.llm.document.voyages.application import EvolveRequest, EvolveResponse, ReflectRequest, ReflectResponse, VoyageInteractionCreator

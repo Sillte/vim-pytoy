@@ -1,4 +1,4 @@
-from pytoy.infra.command.models import OptsArgument
+from pytoy.shared.command.models import OptsArgument
 import vim
 from pytoy.lib_tools.utils import get_current_directory
 
@@ -6,7 +6,7 @@ from pytoy.lib_tools.terminal_executor import TerminalExecutor, TerminalExecutio
 from pytoy.lib_tools.terminal_runner.drivers import TerminalDriverManager, TerminalDriverProtocol, DEFAULT_SHELL_DRIVER_NAME
 from pytoy.contexts.pytoy import GlobalPytoyContext
 
-from pytoy.infra.sub_commands import (
+from pytoy.shared.command.sub_commands import (
     MainCommandSpec,
     SubCommandSpec,
     OptionSpec,
@@ -15,7 +15,7 @@ from pytoy.infra.sub_commands import (
 
 from pathlib import Path 
 
-from pytoy.infra.command import Command
+from pytoy.shared.command import Command
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 
 

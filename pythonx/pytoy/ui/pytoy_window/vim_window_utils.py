@@ -1,4 +1,4 @@
-from pytoy.infra.core.models import CursorPosition, CharacterRange
+from pytoy.shared.lib.models import CursorPosition, CharacterRange
 import vim  # (vscode-neovim extention)
 from typing import Sequence
 

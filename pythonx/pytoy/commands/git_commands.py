@@ -1,6 +1,6 @@
 """git_commands"""
 
-from pytoy.infra.command.models import OptsArgument
+from pytoy.shared.command.models import OptsArgument
 import vim
 from pathlib import Path
 from pytoy.command import CommandManager

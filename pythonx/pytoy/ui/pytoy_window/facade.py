@@ -7,8 +7,8 @@ from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowC
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.ui_enum import get_ui_enum, UIEnum
 
-from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
-from pytoy.infra.core.models.event import Event
+from pytoy.shared.lib.models import CursorPosition, CharacterRange, LineRange
+from pytoy.shared.lib.event import Event
 from typing import Sequence, Literal
 
 

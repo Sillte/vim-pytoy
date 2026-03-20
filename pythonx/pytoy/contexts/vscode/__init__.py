@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar
 from functools import cached_property
-from pytoy.infra.core.entity import EntityRegistry
+from pytoy.shared.lib.entity import EntityRegistry
 from pytoy.contexts.vim import GlobalVimContext
 
 
@@ -9,7 +9,7 @@ from pytoy.contexts.vim import GlobalVimContext
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel
     from pytoy.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
-    from pytoy.infra.autocmd.autocmd_manager import AutoCmdManager 
+    from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
 
 
 class GlobalVSCodeContext:
@@ -37,7 +37,7 @@ class GlobalVSCodeContext:
 
     @cached_property
     def autocmd_manager(self) -> AutoCmdManager:
-        from pytoy.infra.autocmd.autocmd_manager import AutoCmdManager 
+        from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
         return AutoCmdManager()
 
     @property
