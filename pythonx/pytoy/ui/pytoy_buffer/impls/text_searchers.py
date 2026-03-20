@@ -1,4 +1,4 @@
-from pytoy.infra.core.models import CursorPosition, CharacterRange
+from pytoy.shared.lib.models import CursorPosition, CharacterRange
 from typing import Sequence, Self
 
 

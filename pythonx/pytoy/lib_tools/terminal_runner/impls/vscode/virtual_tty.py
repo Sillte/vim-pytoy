@@ -9,7 +9,7 @@ from typing import Callable, Optional
 from pyte import Screen, Stream
 
 from pytoy.lib_tools.terminal_runner.models import Snapshot, ConsoleSnapshot, CursorPosition
-from pytoy.infra.core.models import CursorPosition
+from pytoy.shared.lib.models import CursorPosition
 from pytoy.lib_tools.terminal_runner.impls.vscode.pty_console import PtyConsole, PtyConsoleProtocol
 
 

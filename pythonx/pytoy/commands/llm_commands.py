@@ -2,7 +2,7 @@ from typing import Sequence, cast
 from pytoy.command import CommandManager
 from pytoy.ui.pytoy_window import PytoyWindow, WindowCreationParam
 from pytoy.ui.pytoy_buffer import PytoyBuffer
-from pytoy.infra.command.models import OptsArgument
+from pytoy.shared.command.models import OptsArgument
 from pytoy.contexts.pytoy import GlobalPytoyContext
 
 from textwrap import dedent

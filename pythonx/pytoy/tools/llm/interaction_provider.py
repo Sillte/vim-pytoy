@@ -6,12 +6,12 @@ InteractionRequester : Do something with LLM using `FairyKernel`.
 import uuid
 from pydantic import BaseModel
 from dataclasses import dataclass
-from pytoy.infra.core.models import EventEmitter
+from pytoy.shared.lib.event import EventEmitter
 
 
 from typing import Any, Callable, Protocol, Sequence
 
-from pytoy.infra.timertask.thread_executor import ThreadExecutionRequest, ThreadExecutor
+from pytoy.shared.timertask.thread_executor import ThreadExecutionRequest, ThreadExecutor
 from pytoy.tools.llm.models import HooksForInteraction, LLMInteraction
 from pytoy.tools.llm.kernel import FairyKernel
 from pytoy_llm import completion

@@ -2,7 +2,7 @@
 # Once the utility class iss implemented, change it. 
 
 from collections import defaultdict
-from pytoy.infra.vim_function import PytoyVimFunctions, VimFunctionName
+from pytoy.shared.lib.vim_function import PytoyVimFunctions, VimFunctionName
 from pytoy.ui.status_line.models import StatusLineItemFunction
 
 

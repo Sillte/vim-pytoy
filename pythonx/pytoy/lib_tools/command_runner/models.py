@@ -1,8 +1,7 @@
-from dataclasses import dataclass, field
-from pytoy.infra.core.models import CursorPosition
-from pytoy.infra.core.models.event import Event
+from dataclasses import dataclass
+from pytoy.shared.lib.event import Event
 
-from typing import Callable, Literal, Sequence, Protocol, Literal, Hashable, Any, Mapping
+from typing import Callable, Literal, Sequence, Protocol, Hashable, Any, Mapping
 
 from pathlib import Path
 

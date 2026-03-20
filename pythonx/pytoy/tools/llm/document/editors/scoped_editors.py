@@ -14,7 +14,7 @@ from pytoy_llm.materials.core import ModelSectionData, SectionData
 from pytoy_llm.models import InputMessage, SyncOutput
 from pytoy_llm.task import InvocationSpecMeta, LLMInvocationSpec, LLMTaskRequest, LLMTaskSpec, LLMTaskSpecMeta, FunctionInvocationSpec
 
-from pytoy.infra.timertask import ThreadWorker
+from pytoy.shared.timertask import ThreadWorker
 from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec, LanguageKind
 from pytoy.tools.llm.document.editors.edit_rules import LanguageRuleSet, CompletionRuleSet, StyleRuleSet
 from pytoy.tools.llm.interaction_provider import InteractionProvider, InteractionRequest

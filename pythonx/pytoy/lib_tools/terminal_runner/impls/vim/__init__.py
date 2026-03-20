@@ -21,9 +21,8 @@ from pytoy.lib_tools.terminal_runner.models import (
 )
 
 from pytoy.lib_tools.terminal_runner.impls.core import TerminalJobCore
-from pytoy.infra.core.models import CursorPosition
-from pytoy.infra.vim_function import PytoyVimFunctions
-from pytoy.infra.events import EventEmitter
+from pytoy.shared.lib.models import CursorPosition
+from pytoy.shared.lib.vim_function import PytoyVimFunctions
 from pytoy.lib_tools.process_utils import find_children_pids
 
 class TerminalJobVim(TerminalJobProtocol):
@@ -79,7 +78,7 @@ class TerminalJobVim(TerminalJobProtocol):
 
         eol = self._driver.eol 
         enter_eol = eol if eol else TerminalJobCore.get_default_eol()
-        snapshot_getter = (lambda : self.snapshot)
+        snapshot_getter = (lambda : self.snapshot)  #noqa
         for op in operations:
             payload = TerminalJobCore.deal_operation(op, enter_eol, snapshot_getter)
 
@@ -125,7 +124,7 @@ class TerminalJobVim(TerminalJobProtocol):
         self._core.exit_emitter.dispose()
             
         # Asyncronous hack is important, since this must be called after `Job` `on_exit` is called.
-        from pytoy.infra.timertask import TimerTask 
+        from pytoy.shared.timertask import TimerTask 
         def _inner():
             PytoyVimFunctions.deregister(self._on_exit_name)
             PytoyVimFunctions.deregister(self._on_out_name)
@@ -165,12 +164,14 @@ class TerminalJobVim(TerminalJobProtocol):
 
     @property
     def alive(self) -> bool:
-        if self._bufnr <= 0: return False
+        if self._bufnr <= 0:
+            return False
         return vim.eval(f"job_status(term_getjob({self._bufnr}))") == "run"
 
     @property
     def pid(self) -> int:
-        if not self.alive: return -1
+        if not self.alive:
+            return -1
         try:
             # Extract process ID from job_info
             info = vim.eval(f"job_info(term_getjob({self._bufnr}))")

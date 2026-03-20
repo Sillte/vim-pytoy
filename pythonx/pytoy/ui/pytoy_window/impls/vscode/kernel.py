@@ -1,5 +1,5 @@
 from __future__ import annotations
-from pytoy.infra.core.models import Event
+from pytoy.shared.lib.event import Event
 from pytoy.ui.pytoy_window.protocol import PytoyWindowID, WindowEvents
 from dataclasses import dataclass
 from typing import Self, TYPE_CHECKING

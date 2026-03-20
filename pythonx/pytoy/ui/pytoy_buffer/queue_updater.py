@@ -1,5 +1,5 @@
 from queue import Queue, Empty
-from pytoy.infra.timertask import TimerTask
+from pytoy.shared.timertask import TimerTask
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol
 
 

@@ -1,6 +1,5 @@
-from pytoy.infra.core.models import CursorPosition, LineRange
+from pytoy.shared.lib.models import CursorPosition, LineRange, CharacterRange
 import vim
-from pytoy.infra.core.models import CharacterRange
 from typing import Sequence
 
 

@@ -1,14 +1,14 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar
 from functools import cached_property
-from pytoy.infra.core.entity import EntityRegistry
+from pytoy.shared.lib.entity import EntityRegistry
 
 
 # Only for lazy loading to speed up. 
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
     from pytoy.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
-    from pytoy.infra.autocmd.autocmd_manager import AutoCmdManager 
+    from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
 
 
 class GlobalVimContext:
@@ -36,5 +36,5 @@ class GlobalVimContext:
 
     @cached_property
     def autocmd_manager(self) -> AutoCmdManager:
-        from pytoy.infra.autocmd.autocmd_manager import AutoCmdManager 
+        from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
         return AutoCmdManager()

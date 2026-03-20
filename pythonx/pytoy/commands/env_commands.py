@@ -1,5 +1,5 @@
 from pytoy.command import CommandManager
-from pytoy.infra.command.models import OptsArgument
+from pytoy.shared.command.models import OptsArgument
 
 
 @CommandManager.register(name="ToolChainSelect")

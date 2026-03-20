@@ -2,7 +2,6 @@ from pathlib import Path
 import vim
 from typing import Sequence
 
-from pytoy.infra.timertask import TimerTask
 from pytoy.ui.pytoy_quickfix.protocol import  PytoyQuickfixUIProtocol
 from pytoy.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
 from pytoy.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam, BufferSource
@@ -39,7 +38,6 @@ class PytoyQuickfixVSCodeUI(PytoyQuickfixUIProtocol):
         cursor = record.cursor
         param = WindowCreationParam.for_in_place(try_reuse=True, anchor=None, cursor=cursor)
         PytoyWindowProvider().open_window(BufferSource.from_path(path), param)
-        #TimerTask.execute_oneshot(lambda : window.move_cursor(cursor), interval=50)
         return record
 
 

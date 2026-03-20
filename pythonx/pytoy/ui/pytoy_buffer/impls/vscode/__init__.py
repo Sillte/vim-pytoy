@@ -1,10 +1,11 @@
 from __future__ import annotations
 from pathlib import Path
-from pytoy.infra.core.entity import EntityRegistry
+from pytoy.shared.lib.entity import EntityRegistry
+from pytoy.shared.lib.event import Event
 from pytoy.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel
 from pytoy.ui.pytoy_buffer.impls.vscode.kernel import normalize_lf_code
 from pytoy.ui.pytoy_buffer.impls.vscode.range_operator import RangeOperatorVSCode
-from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, Event, BufferID, BufferEvents
+from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, BufferID, BufferEvents
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver, Uri
 from pytoy.ui.vscode.document import Document
 from pytoy.ui.utils import to_filepath

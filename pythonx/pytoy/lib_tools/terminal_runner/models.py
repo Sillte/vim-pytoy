@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
-from pytoy.infra.core.models import CursorPosition
-from pytoy.infra.core.models.event import Event
+from pytoy.shared.lib.models import CursorPosition
+from pytoy.shared.lib.event import Event
 
 from typing import Callable, Literal, Sequence, Protocol,  Hashable, Any, Self
-from pytoy.lib_tools.environment_manager import ExecutionPreference  , CommandWrapperType, ExecutionWrapperType
+from pytoy.lib_tools.environment_manager import CommandWrapperType, ExecutionWrapperType  #noqa
+  
 
 
 from pathlib import Path

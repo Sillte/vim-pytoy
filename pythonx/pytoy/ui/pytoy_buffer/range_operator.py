@@ -1,7 +1,6 @@
-from pytoy.infra.core.models import CursorPosition
+from pytoy.shared.lib.models import CursorPosition, LineRange, CharacterRange
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol
 from pytoy.ui import get_ui_enum, UIEnum
-from pytoy.infra.core.models import CharacterRange, LineRange
 from typing import Sequence
 
 

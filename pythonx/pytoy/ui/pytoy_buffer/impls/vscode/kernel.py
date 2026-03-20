@@ -3,8 +3,7 @@ import vim
 
 from typing import TYPE_CHECKING
 
-from pytoy.infra.core.entity import MortalEntityProtocol
-from pytoy.infra.events.buffer_events import ScopedBufferEventProvider
+from pytoy.shared.lib.entity import MortalEntityProtocol
 from pytoy.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.ui.pytoy_buffer.protocol import Event, BufferEvents
 from pytoy.ui.vscode.buffer_uri_solver import BufferURISolver, Uri

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from pytoy.lib_tools.terminal_runner.drivers import TerminalDriverManager 
     from pytoy.tools.llm.kernel import FairyKernelManager
     #from pytoy.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
-    #from pytoy.infra.autocmd.autocmd_manager import AutoCmdManager 
+    #from pytoy.shared.autocmd.autocmd_manager import AutoCmdManager 
 
 
 class GlobalPytoyContext:

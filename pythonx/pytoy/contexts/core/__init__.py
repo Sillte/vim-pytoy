@@ -6,11 +6,11 @@ from functools import cached_property
 # Only for lazy loading to speed up. 
 if TYPE_CHECKING:
     from pytoy.lib_tools.environment_manager import EnvironmentManager
-    from pytoy.infra.timertask.thread_executor import ThreadExecutionManager
+    from pytoy.shared.timertask.thread_executor import ThreadExecutionManager
     ...
     #from pytoy.lib_tools.command_executor import CommandExecutionManager 
     #from pytoy.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
-    #from pytoy.infra.autocmd.autocmd_manager import AutoCmdManager 
+    #from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
 
 
 class GlobalCoreContext:
@@ -29,5 +29,5 @@ class GlobalCoreContext:
 
     @cached_property
     def thread_execution_manager(self) -> ThreadExecutionManager:
-        from pytoy.infra.timertask.thread_executor import ThreadExecutionManager
+        from pytoy.shared.timertask.thread_executor import ThreadExecutionManager
         return ThreadExecutionManager()

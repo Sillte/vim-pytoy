@@ -5,10 +5,10 @@ import json
 import vim
 from logging.handlers import RotatingFileHandler
 from pytoy.command import CommandManager
-from pytoy.infra.command.models import  OptsArgument
+from pytoy.shared.command.models import  OptsArgument
 from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.devtools.vim_rebooter import VimRebooter
-from pytoy.infra.timertask import TimerTask
+from pytoy.shared.timertask import TimerTask
 from pytoy.ui import get_ui_enum, UIEnum
 from pytoy.ui import to_filepath
 
@@ -169,7 +169,7 @@ def execute_pytoy(opts: OptsArgument):
 class PytoyOpenLog:
     def __call__(self, opts: OptsArgument) -> None:
         from pytoy.contexts.core import GlobalCoreContext
-        from pytoy.infra.pytoy_configuration import PytoyConfiguration
+        from pytoy.shared.pytoy_configuration import PytoyConfiguration
         from pytoy.ui.pytoy_buffer import PytoyBuffer
         from pytoy.ui.pytoy_window import PytoyWindow
         from pathlib import Path

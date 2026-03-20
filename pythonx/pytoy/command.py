@@ -1,7 +1,7 @@
-# This module is a alias of `pytoy.infra.command`.
+# This module is a alias of `pytoy.shared.command`.
 # The below three classes are the public interfaces
 # intended to be used.
 
-from pytoy.infra.command import Command  # NOQA
-from pytoy.infra.command import CommandManager  # NOQA
-from pytoy.infra.command.models import OptsArgument  # NOQA
+from pytoy.shared.command import Command  # NOQA
+from pytoy.shared.command import CommandManager  # NOQA
+from pytoy.shared.command.models import OptsArgument  # NOQA

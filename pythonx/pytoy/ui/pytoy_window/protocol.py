@@ -3,13 +3,13 @@ from dataclasses import dataclass
 from typing import Protocol, Sequence, Literal, Self, Any, TYPE_CHECKING
 from pathlib import Path
 
-from pytoy.infra.core.models.event import Event
-from pytoy.infra.events.window_events import ScopedWindowEventProvider
+from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.events.window_events import ScopedWindowEventProvider
 from pytoy.ui.pytoy_buffer import PytoyBuffer
-from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
+from pytoy.shared.lib.models import CursorPosition, CharacterRange, LineRange
 from pytoy.ui.pytoy_window.models import ViewportMoveMode
 from pytoy.ui.pytoy_window.models import BufferSource, WindowCreationParam
-from pytoy.ui.status_line.protocol import StatusLineManagerProtocol, StatusLineItem
+from pytoy.ui.status_line.protocol import StatusLineManagerProtocol
 
 if TYPE_CHECKING: 
     from pytoy.contexts.vim import GlobalVimContext

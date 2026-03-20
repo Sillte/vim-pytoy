@@ -3,9 +3,9 @@ import vim
 from pytoy.lib_tools.command_runner.models import OutputJobRequest, SpawnOption, JobID, JobEvents, Snapshot, OutputJobProtocol
 from pytoy.lib_tools.command_runner.impls.core import OutputJobCore
 from pytoy.lib_tools.process_utils import  find_children_pids
-from pytoy.infra.core.models.event import Event, EventEmitter
-from pytoy.infra.vim_function import PytoyVimFunctions
-from pytoy.infra.timertask import TimerTask
+from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.vim_function import PytoyVimFunctions
+from pytoy.shared.timertask import TimerTask
 from typing import TYPE_CHECKING, Any, Callable
 from pathlib import Path
 

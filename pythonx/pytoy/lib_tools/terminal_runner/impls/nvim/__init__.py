@@ -22,9 +22,8 @@ from pytoy.lib_tools.terminal_runner.models import (
     JobID
 )
 from pytoy.lib_tools.terminal_runner.impls.core import TerminalJobCore
-from pytoy.infra.core.models import CursorPosition
-from pytoy.infra.vim_function import PytoyVimFunctions
-from pytoy.infra.events import EventEmitter
+from pytoy.shared.lib.models import CursorPosition
+from pytoy.shared.lib.vim_function import PytoyVimFunctions
 from pytoy.lib_tools.process_utils import find_children_pids
 from pytoy.lib_tools.terminal_runner.impls.utils import send_ctrl_c
 
@@ -60,7 +59,7 @@ class _InputSolverTask:
             try:
                 payload = TerminalJobCore.deal_operation(op, self.enter_eol, self.snapshot_getter)
                 if payload is not None:
-                    vim.session.threadsafe_call(
+                    vim.session.threadsafe_call(  #type: ignore
                         lambda: vim.call('chansend', self.job_id, str(payload))
                     )
             except Exception:
@@ -114,7 +113,7 @@ class TerminalJobNvim(TerminalJobProtocol):
             raise RuntimeError(f"Neovim jobstart failed: {self._job_id}")
 
         # 4. Input Thread
-        snapshot_getter = lambda _: self.snapshot
+        snapshot_getter = lambda _: self.snapshot  #noqa 
         self._input_task = _InputSolverTask(self._job_id, self._driver, snapshot_getter)
         self._input_thread = Thread(target=self._input_task.loop, daemon=True)
         self._input_thread.start()
@@ -149,7 +148,7 @@ class TerminalJobNvim(TerminalJobProtocol):
             return 
         match i_code.preference:
             case  "sigint":
-                vim.session.threadsafe_call(
+                vim.session.threadsafe_call(  # type: ignore
                     lambda: vim.call('chansend', self.job_id, str("\x03\x03"))
                 )
             case  "kill_tree":
@@ -167,7 +166,7 @@ class TerminalJobNvim(TerminalJobProtocol):
         self._input_task.queue.put(None) 
         self._core.dispose()
 
-        from pytoy.infra.timertask import TimerTask
+        from pytoy.shared.timertask import TimerTask
         def _inner():
             PytoyVimFunctions.deregister(self._on_out_name)
             PytoyVimFunctions.deregister(self._on_exit_name)
@@ -193,13 +192,15 @@ class TerminalJobNvim(TerminalJobProtocol):
 
     @property
     def alive(self) -> bool:
-        if self._job_id is None: return False
+        if self._job_id is None:
+            return False
         # In Neovim, jobwait with timeout 0 returns -1 if still running
         return vim.call('jobwait', [self._job_id], 0)[0] == -1
 
     @property
     def pid(self) -> int:
-        if self._job_id is None: return -1
+        if self._job_id is None:
+            return -1
         try:
             return int(vim.call('jobpid', self._job_id))
         except Exception:

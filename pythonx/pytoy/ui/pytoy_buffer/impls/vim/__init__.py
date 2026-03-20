@@ -8,8 +8,8 @@ from typing import Sequence, TYPE_CHECKING
 VIM_ERROR = getattr(vim, "error", Exception)
 
 from pytoy.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, BufferID, BufferEvents
-from pytoy.infra.core.entity import EntityRegistry
-from pytoy.infra.events.buffer_events import Event
+from pytoy.shared.lib.entity import EntityRegistry
+from pytoy.shared.lib.event import Event
 
 if TYPE_CHECKING:
     from pytoy.ui.pytoy_window.protocol import PytoyWindowProtocol

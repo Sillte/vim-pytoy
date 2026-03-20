@@ -1,10 +1,10 @@
 from __future__ import annotations
 from pathlib import Path
-from pytoy.infra.core.models.event import Event
+from pytoy.shared.lib.event import Event
 from pytoy.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
 import vim
 from typing import Sequence, assert_never, cast, Literal, Self, TYPE_CHECKING
-from pytoy.infra.core.models import CursorPosition, CharacterRange, LineRange
+from pytoy.shared.lib.models import CursorPosition, CharacterRange, LineRange
 from pytoy.ui.pytoy_buffer import PytoyBuffer
 from pytoy.ui.pytoy_buffer.impls.vim import PytoyBufferVim
 from pytoy.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam

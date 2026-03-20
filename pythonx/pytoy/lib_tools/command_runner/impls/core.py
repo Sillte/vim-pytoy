@@ -1,8 +1,8 @@
 from __future__ import annotations 
 import vim
 from pytoy.lib_tools.command_runner.models import OutputJobRequest, SpawnOption, JobID, JobEvents, Snapshot, OutputJobProtocol, JobResult
-from pytoy.infra.core.models.event import Event, EventEmitter
-from pytoy.infra.timertask import TimerTask
+from pytoy.shared.lib.event import Event, EventEmitter
+from pytoy.shared.timertask import TimerTask
 from typing import TYPE_CHECKING, Any, Sequence
 from pathlib import Path
 
