@@ -1,7 +1,7 @@
 # Simple test for `Document`.
 from pathlib import Path
-from pytoy.ui.vscode.uri import Uri
-from pytoy.ui.vscode.document import Document
+from pytoy.shared.ui.vscode.uri import Uri
+from pytoy.shared.ui.vscode.document import Document
 
 
 current_doc = Document.get_current()

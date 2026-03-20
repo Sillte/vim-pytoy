@@ -9,10 +9,10 @@ class VimRebooter:
 
     def __call__(self):
         import vim
-        from pytoy.ui import get_ui_enum, UIEnum
+        from pytoy.shared.ui import get_ui_enum, UIEnum
 
         if get_ui_enum() == UIEnum.VSCODE:
-            from pytoy.ui.vscode.api import Api
+            from pytoy.shared.ui.vscode.api import Api
 
             api = Api()
             api.action("vscode-neovim.restart")

@@ -5,8 +5,8 @@ import vim
 from pathlib import Path
 from pytoy.command import CommandManager
 from pytoy.tools.git import get_remote_link
-from pytoy.ui import to_filepath
-from pytoy.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.utils import to_filepath
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
 
 @CommandManager.register(name="GitAddress", range="")

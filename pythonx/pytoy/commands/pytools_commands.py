@@ -3,11 +3,11 @@
 from typing import Sequence
 import vim
 from pytoy.command import CommandManager
-from pytoy.ui import make_buffer
-from pytoy.ui.ui_enum import get_ui_enum, UIEnum
-from pytoy.ui.pytoy_window import PytoyWindow
-from pytoy.ui.utils import to_filepath
-from pytoy.ui.pytoy_quickfix import QuickfixRecord
+from pytoy.shared.ui.pytoy_buffer import make_buffer
+from pytoy.shared.ui.ui_enum import get_ui_enum, UIEnum
+from pytoy.shared.ui.pytoy_window import PytoyWindow
+from pytoy.shared.ui.utils import to_filepath
+from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord
 
 
 @CommandManager.register(name="Pytest")
@@ -93,8 +93,8 @@ class CSpellCommand:
         from pathlib import Path
         from pytoy import TERM_STDOUT
         from pytoy.tools.cspell import CSpellOneFileChecker
-        from pytoy.ui import to_filepath
-        from pytoy.ui.pytoy_quickfix import PytoyQuickfix, handle_records, to_quickfix_creator
+        from pytoy.shared.ui import to_filepath
+        from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, handle_records, to_quickfix_creator
 
         path = to_filepath(vim.current.buffer.name)
 

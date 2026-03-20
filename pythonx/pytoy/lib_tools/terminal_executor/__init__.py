@@ -6,7 +6,7 @@ from pytoy.lib_tools.terminal_runner  import TerminalJobRunner
 from pytoy.lib_tools.terminal_runner.models import Snapshot, TerminalJobRequest,  SpawnOption, JobID, Event, JobEvents, TerminalDriverProtocol  
 from pytoy.lib_tools.terminal_runner.models import TerminalDriver
 from pytoy.lib_tools.terminal_runner.models import ExecutionWrapperType
-from pytoy.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 import time
 from pytoy.contexts.pytoy import GlobalPytoyContext
 

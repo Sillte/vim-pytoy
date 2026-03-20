@@ -1,7 +1,7 @@
 from pytoy.command import CommandManager
 from pytoy.shared.command.models import OptsArgument
-from pytoy.ui import get_ui_enum, UIEnum
-from pytoy.ui.utils import to_filepath
+from pytoy.shared.ui import get_ui_enum, UIEnum
+from pytoy.shared.ui.utils import to_filepath
 
 
 @CommandManager.register(name="Source")
@@ -15,7 +15,7 @@ def source(opts: OptsArgument):
 @CommandManager.register(name="MyWindow", range=True)
 def mywindow_func2():
     print("hgoegege")
-    from pytoy.ui.pytoy_window import PytoyWindowProvider
+    from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
 
     # window = PytoyWindow.get_current()
     # PytoyWindowProvider().create_window("hgoehoge", "s")
@@ -28,7 +28,7 @@ def mywindow_func2():
     print("GETCURRENT", get_current_directory())
     return
 
-    from pytoy.ui.pytoy_window.impl_vscode import (
+    from pytoy.shared.ui.pytoy_window.impl_vscode import (
         PytoyBufferVSCode,
     )
 
@@ -44,14 +44,14 @@ def mywindow_func2():
 @CommandManager.register(name="IsRemote")
 def mywindow_func():
     print("hgoegege")
-    from pytoy.ui.pytoy_window import PytoyWindowProvider
+    from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
     # window = PytoyWindow.get_current()
     # PytoyWindowProvider().create_window("hgoehoge", "s")
     # print(window.buffer)
     # print(window.buffer.content)
     # window.focus()
 
-    from pytoy.ui.pytoy_window.impls.vscode import (
+    from pytoy.shared.ui.pytoy_window.impls.vscode import (
         PytoyBufferVSCode,
     )
 
@@ -73,9 +73,9 @@ from pytoy.command import CommandManager
 
 
 if get_ui_enum() == UIEnum.VSCODE:
-    from pytoy.ui.vscode.api import Api
-    from pytoy.ui.vscode.document import Api
-    from pytoy.ui.vscode.editor import Editor
+    from pytoy.shared.ui.vscode.api import Api
+    from pytoy.shared.ui.vscode.document import Api
+    from pytoy.shared.ui.vscode.editor import Editor
 
     def script():
         jscode = """

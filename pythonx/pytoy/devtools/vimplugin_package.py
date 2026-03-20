@@ -25,7 +25,7 @@ class VimPluginPackage:
         """
         if start_folder is None:
             import vim
-            from pytoy.ui import to_filepath
+            from pytoy.shared.ui import to_filepath
 
             try:
                 current = to_filepath(vim.eval("expand('%:p:h')"))

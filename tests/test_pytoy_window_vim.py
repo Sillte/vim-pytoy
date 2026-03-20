@@ -8,8 +8,8 @@ from .mocks.vim import MockVim
 
 # Import implementations
 
-from pytoy.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
-from pytoy.ui.pytoy_window.impls.vim import PytoyWindowVim
+from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
+from pytoy.shared.ui.pytoy_window.impls.vim import PytoyWindowVim
 
 class MockKernelRegistry:
     kernels = {}

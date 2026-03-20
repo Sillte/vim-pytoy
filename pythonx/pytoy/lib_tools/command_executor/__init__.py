@@ -3,7 +3,7 @@ from dataclasses import dataclass, field, replace
 from typing import Callable, Sequence, Literal, Mapping, Self, Any, assert_never
 from pytoy.lib_tools.command_runner import CommandRunner
 from pytoy.lib_tools.command_runner.models import Snapshot, OutputJobRequest, JobResult, SpawnOption, JobID, Event, JobEvents
-from pytoy.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 import time
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.lib_tools.environment_manager import ExecutionPreference, CommandWrapperType, ExecutionWrapperType  

@@ -1,6 +1,6 @@
 import vim
 
-from pytoy.ui import to_filepath
+from pytoy.shared.ui import to_filepath
 
 from pytoy.tools.python import PythonExecutor
 
@@ -21,7 +21,7 @@ def run(path=None):
     if executor.is_running:
         raise RuntimeError("Currently, `PythonExecutor` is running.")
 
-    from pytoy.ui import make_duo_buffers
+    from pytoy.shared.ui import make_duo_buffers
 
     stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
 
@@ -32,7 +32,7 @@ def rerun():
     """Perform `python` with the previous `path`."""
     executor = PythonExecutor()
 
-    from pytoy.ui import make_duo_buffers, PytoyBuffer
+    from pytoy.shared.ui import make_duo_buffers, PytoyBuffer
 
     stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
 

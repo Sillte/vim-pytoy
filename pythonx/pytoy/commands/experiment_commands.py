@@ -5,8 +5,8 @@ from pytoy.command import CommandManager
 from pathlib import Path 
 
 from pytoy.shared.command import Command
-from pytoy.ui.pytoy_buffer import PytoyBuffer
-from pytoy.ui.pytoy_buffer import make_buffer
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_buffer import make_buffer
 
 
 @CommandManager.register("GatherTextFiles")

@@ -9,8 +9,8 @@ from pytoy.shared.command.models import  OptsArgument
 from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.devtools.vim_rebooter import VimRebooter
 from pytoy.shared.timertask import TimerTask
-from pytoy.ui import get_ui_enum, UIEnum
-from pytoy.ui import to_filepath
+from pytoy.shared.ui import get_ui_enum, UIEnum
+from pytoy.shared.ui import to_filepath
 
 
 class VimRebootExecutor:
@@ -69,7 +69,7 @@ class VimRebootExecutor:
     def reboot(self):
         ui_enum = get_ui_enum()
         if ui_enum == ui_enum.VSCODE:
-            from pytoy.ui.vscode.api import Api
+            from pytoy.shared.ui.vscode.api import Api
 
             api = Api()
             api.action("vscode-neovim.restart")
@@ -84,7 +84,7 @@ class VimReboot:
     name = "VimReboot"
 
     def __call__(self):
-        from pytoy.ui.vscode.api import Api
+        from pytoy.shared.ui.vscode.api import Api
 
         executor = VimRebootExecutor()
         executor()
@@ -148,7 +148,7 @@ class TimerTaskManagerDebug:
 @CommandManager.register(name="PytoyExecute")
 def execute_pytoy(opts: OptsArgument):
     import vim
-    from pytoy.ui.utils import to_filepath
+    from pytoy.shared.ui.utils import to_filepath
     from pathlib import Path
     name = " ".join([elem.strip() for elem in opts.fargs])
     if not name:
@@ -170,8 +170,8 @@ class PytoyOpenLog:
     def __call__(self, opts: OptsArgument) -> None:
         from pytoy.contexts.core import GlobalCoreContext
         from pytoy.shared.pytoy_configuration import PytoyConfiguration
-        from pytoy.ui.pytoy_buffer import PytoyBuffer
-        from pytoy.ui.pytoy_window import PytoyWindow
+        from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+        from pytoy.shared.ui.pytoy_window import PytoyWindow
         from pathlib import Path
         import logging
         logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)

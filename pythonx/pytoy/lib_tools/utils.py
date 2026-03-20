@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import vim
-from pytoy.ui.utils import to_filepath
-from pytoy.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.utils import to_filepath
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
 
 def get_current_directory(buffer: PytoyBuffer | None = None) -> Path:

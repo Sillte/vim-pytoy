@@ -1,7 +1,7 @@
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.tools.llm.kernel import FairyKernel
-from pytoy.ui.pytoy_buffer import PytoyBuffer
-from pytoy.ui.pytoy_window import CharacterRange, PytoyWindow
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_window import CharacterRange, PytoyWindow
 
 
 from pathlib import Path

@@ -6,7 +6,7 @@ from typing import Generator
 
 
 # Now we can import our actual implementation
-from pytoy.ui.pytoy_buffer.impls.vim import PytoyBufferVim, VimBufferKernel
+from pytoy.shared.ui.pytoy_buffer.impls.vim import PytoyBufferVim, VimBufferKernel
 
 from tests.mocks.vim import MockVim
 
