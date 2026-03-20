@@ -1,13 +1,13 @@
 import pytest
-from pytoy.infra.sub_commands.tokenizer import Token, tokenize
-from pytoy.infra.sub_commands.specs import (
+from pytoy.shared.command.sub_commands.tokenizer import Token, tokenize
+from pytoy.shared.command.sub_commands.specs import (
     ArgumentSpec,
     OptionSpec,
     SubCommandSpec,
     MainCommandSpec,
 )
 
-from pytoy.infra.sub_commands.parse_provider import ParseProvider
+from pytoy.shared.command.sub_commands.parse_provider import ParseProvider
 
 @pytest.fixture
 def parse_provider() -> ParseProvider:

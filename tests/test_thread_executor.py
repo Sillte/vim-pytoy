@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock
-from pytoy.infra.timertask.thread_executor import ThreadExecutionManager, ThreadExecutionManager, ThreadExecutor, ThreadExecutionRequest, TimerStopException
+from pytoy.shared.timertask.thread_executor import ThreadExecutionManager, ThreadExecutionManager, ThreadExecutor, ThreadExecutionRequest, TimerStopException
 import time
 
 def test_naive():

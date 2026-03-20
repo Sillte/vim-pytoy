@@ -1,4 +1,4 @@
-from pytoy.infra.sub_commands.tokenizer import tokenize 
+from pytoy.shared.command.sub_commands.tokenizer import tokenize 
 
 def test_basic_tokenization():
     cmd = 'mycmd --input=abc --flag --output "some file.txt"'
