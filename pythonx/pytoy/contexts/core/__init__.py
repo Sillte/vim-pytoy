@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from pytoy.shared.timertask.thread_executor import ThreadExecutionManager
     ...
     #from pytoy.lib_tools.command_executor import CommandExecutionManager 
-    #from pytoy.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
+    #from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
     #from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
 
 

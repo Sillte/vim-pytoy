@@ -1,6 +1,6 @@
 # Please execute this with `:PytoyExecute`
-from pytoy.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam
-from pytoy.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.infra.core.models import CursorPosition, LineRange
 from pathlib import Path
 

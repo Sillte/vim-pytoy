@@ -1,11 +1,11 @@
 import logging
-from pytoy.ui.pytoy_buffer import make_buffer
+from pytoy.shared.ui.pytoy_buffer import make_buffer
 from pytoy.shared.timertask import ThreadWorker
 from pytoy.tools.llm.pytoy_fairy import PytoyFairy, FairyKernel
 from pytoy.tools.llm.document.voyages.domain import Compass, EvolvePolicy, Bearing, CompassAlignment, VoyageState
 from pytoy.tools.llm.document.voyages.application import EvolveRequest, EvolveResponse, ReflectRequest, ReflectResponse, VoyageInteractionCreator
 from pytoy.tools.llm.utils import TomlConverter
-from pytoy.ui.notifications import EphemeralNotification
+from pytoy.shared.ui.notifications import EphemeralNotification
 from typing import Mapping, Any
 
 

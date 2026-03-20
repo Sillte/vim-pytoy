@@ -2,11 +2,11 @@ from typing import Sequence, Mapping
 import vim
 from pytoy.lib_tools.command_executor import ExecutionRequest, ExecutionHooks, ExecutionResult,  BufferRequest 
 from pytoy.lib_tools.command_executor import CommandExecutor, CommandExecution
-from pytoy.ui.pytoy_quickfix import PytoyQuickfix
+from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from dataclasses import dataclass 
 
-from pytoy.ui.pytoy_quickfix import to_quickfix_creator, QuickfixCreator, QuickfixRecordRegex, QuickfixRecord
+from pytoy.shared.ui.pytoy_quickfix import to_quickfix_creator, QuickfixCreator, QuickfixRecordRegex, QuickfixRecord
 from pathlib import Path 
 
 @dataclass

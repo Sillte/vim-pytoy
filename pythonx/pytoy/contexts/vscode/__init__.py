@@ -7,8 +7,8 @@ from pytoy.contexts.vim import GlobalVimContext
 
 # Only for lazy loading to speed up. 
 if TYPE_CHECKING:
-    from pytoy.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel
-    from pytoy.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
+    from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel
+    from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
     from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
 
 
@@ -23,14 +23,14 @@ class GlobalVSCodeContext:
 
     @cached_property
     def buffer_kernel_registry(self) -> EntityRegistry[int, VSCodeBufferKernel]:
-        from pytoy.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel
+        from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel
         def factory(bufnr: int) -> VSCodeBufferKernel:
             return VSCodeBufferKernel(bufnr, ctx=self)
         return EntityRegistry(VSCodeBufferKernel, factory=factory)
 
     @cached_property
     def window_kernel_registry(self) -> EntityRegistry[int, VSCodeWindowKernel]:
-        from pytoy.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
+        from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
         def factory(winid: int) -> VSCodeWindowKernel:
             return VSCodeWindowKernel(winid, ctx=self)
         return EntityRegistry(VSCodeWindowKernel, factory=factory)

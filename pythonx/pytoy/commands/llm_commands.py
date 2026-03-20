@@ -1,7 +1,7 @@
 from typing import Sequence, cast
 from pytoy.command import CommandManager
-from pytoy.ui.pytoy_window import PytoyWindow, WindowCreationParam
-from pytoy.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_window import PytoyWindow, WindowCreationParam
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.command.models import OptsArgument
 from pytoy.contexts.pytoy import GlobalPytoyContext
 
@@ -114,7 +114,7 @@ class PytoyVoyageDocument:
         return self.voyage_ui.pytoy_fairy.buffer
         
     def _initialize_voyage_ui(self):
-        from pytoy.ui.pytoy_buffer import PytoyBuffer
+        from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
         from pytoy.tools.llm.document.voyages.presentation import DocumentVoyageUI
         from pytoy.tools.llm.pytoy_fairy import PytoyFairy
         buffer = PytoyBuffer.get_current()

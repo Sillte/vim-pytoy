@@ -2,9 +2,9 @@ import logging
 import re
 
 from typing import Sequence
-from pytoy.ui.notifications import EphemeralNotification
-from pytoy.ui.pytoy_buffer import PytoyBuffer
-from pytoy.ui.pytoy_window import CharacterRange
+from pytoy.shared.ui.notifications import EphemeralNotification
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_window import CharacterRange
 
 import uuid
 

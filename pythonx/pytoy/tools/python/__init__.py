@@ -15,7 +15,7 @@ from pytoy.lib_tools.command_executor import CommandExecutionManager, CommandExe
 from pytoy.lib_tools.utils import get_current_directory
 
 
-from pytoy.ui import PytoyBuffer, PytoyQuickfix, handle_records, QuickfixRecord
+from pytoy.shared.ui import PytoyBuffer, PytoyQuickfix, handle_records, QuickfixRecord
 
 
 

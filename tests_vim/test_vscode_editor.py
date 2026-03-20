@@ -1,8 +1,8 @@
 
 from pathlib import Path
-from pytoy.ui.vscode.uri import Uri
-from pytoy.ui.vscode.document import Document
-from pytoy.ui.vscode.editor import Editor
+from pytoy.shared.ui.vscode.uri import Uri
+from pytoy.shared.ui.vscode.document import Document
+from pytoy.shared.ui.vscode.editor import Editor
 
 current = Editor.get_current()
 doc = current.document #  `document` is fixed, here. not dynamic.

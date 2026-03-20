@@ -2,8 +2,8 @@ import logging
 from pytoy.tools.llm.interaction_provider import InteractionProvider, InteractionRequest
 from pytoy.tools.llm.models import LLMInteraction
 from pytoy.tools.llm.pytoy_fairy import PytoyFairy, FairyKernel
-from pytoy.ui.notifications import EphemeralNotification
-from pytoy.ui.pytoy_buffer import make_buffer
+from pytoy.shared.ui.notifications import EphemeralNotification
+from pytoy.shared.ui.pytoy_buffer import make_buffer
 from pytoy_llm.materials.composers import InvocationPromptComposer
 from pytoy_llm.materials.composers.models import SectionUsage, SystemPromptTemplate, TextSectionData
 from pytoy_llm.task import LLMTaskRequest, LLMTaskSpec

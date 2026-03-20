@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Callable, Mapping, Any, TYPE_CHECKING
 
 from pytoy.lib_tools.command_runner.models import OutputJobProtocol, OutputJobRequest, SpawnOption, JobEvents, JobID
-from pytoy.ui.ui_enum import get_ui_enum, UIEnum
-from pytoy.ui import PytoyBuffer
-from pytoy.ui.pytoy_buffer import make_buffer, make_duo_buffers
+from pytoy.shared.ui.ui_enum import get_ui_enum, UIEnum
+from pytoy.shared.ui import PytoyBuffer
+from pytoy.shared.ui.pytoy_buffer import make_buffer, make_duo_buffers
 if TYPE_CHECKING:
     from pytoy.contexts.pytoy import GlobalPytoyContext
 

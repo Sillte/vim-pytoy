@@ -16,7 +16,7 @@ from pytoy.shared.command.sub_commands import (
 from pathlib import Path 
 
 from pytoy.shared.command import Command
-from pytoy.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
 
 @Command.register(name="Console", range=True)

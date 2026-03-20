@@ -2,8 +2,8 @@
 
 # (replace_text): 
 # It is very low risk that the difference of `start` changes problem 
-from pytoy.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam
-from pytoy.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.infra.core.models import CursorPosition, CharacterRange
 from pathlib import Path
 

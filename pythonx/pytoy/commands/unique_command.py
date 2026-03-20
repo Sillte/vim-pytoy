@@ -1,6 +1,6 @@
 from pytoy.shared.command import Command
 from pytoy.shared.command.models import OptsArgument
-from pytoy.ui.pytoy_window import PytoyWindow
+from pytoy.shared.ui.pytoy_window import PytoyWindow
 
 from pytoy.shared.command.sub_commands import (
     MainCommandSpec,
