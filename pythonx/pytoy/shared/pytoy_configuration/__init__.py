@@ -3,7 +3,7 @@ from typing import Literal, Any, Mapping, assert_never, Sequence
 import json
 import time
 import shutil 
-from pytoy.shared.lib.loggers import setup_logger
+from pytoy.shared.loggers import setup_logger
 import logging  
 import hashlib
 
