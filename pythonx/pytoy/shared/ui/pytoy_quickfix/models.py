@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Self, Mapping
 from pathlib import Path
-from pytoy.shared.lib.models import CursorPosition
+from pytoy.shared.lib.text import CursorPosition
 
 @dataclass
 class QuickfixRecord:

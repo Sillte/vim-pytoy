@@ -3,5 +3,14 @@
         "./pythonx"
     ],
     "remote.autoForwardPortsFallback": 0,
-    "editor.cursorSurroundingLines": 0
+    "editor.cursorSurroundingLines": 0,
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.git": true,
+        "**/node_modules": true
+    },
+    "search.exclude": {
+        "**/__pycache__": true,
+        "**/node_modules": true
+    }
 }

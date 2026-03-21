@@ -10,7 +10,7 @@ This module is intended to provide the common interface for bufffer.
 from pathlib import Path
 from typing import Literal, TYPE_CHECKING, Sequence
 from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, Event, BufferID, BufferEvents
-from pytoy.shared.lib.models import CharacterRange, LineRange
+from pytoy.shared.lib.text import CharacterRange, LineRange
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window import PytoyWindow
