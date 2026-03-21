@@ -1,7 +1,7 @@
 from typing import Protocol, Hashable, Callable
 from weakref import WeakValueDictionary
 
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 
 
 class MortalEntityProtocol[T](Protocol):

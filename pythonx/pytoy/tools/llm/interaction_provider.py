@@ -6,7 +6,7 @@ InteractionRequester : Do something with LLM using `FairyKernel`.
 import uuid
 from pydantic import BaseModel
 from dataclasses import dataclass
-from pytoy.shared.lib.event import EventEmitter
+from pytoy.shared.lib.event.domain import EventEmitter
 
 
 from typing import Any, Callable, Protocol, Sequence

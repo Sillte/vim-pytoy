@@ -2,7 +2,7 @@ import uuid
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
 from pytoy.shared.timertask.thread_executor import ThreadExecution

@@ -2,7 +2,7 @@ from __future__ import annotations
 from pytoy.shared.ui.pytoy_window.protocol import WindowEvents
 import vim
 from pytoy.shared.lib.entity import MortalEntityProtocol
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowID
 
 from typing import Sequence, assert_never, cast, Literal, Self, TYPE_CHECKING

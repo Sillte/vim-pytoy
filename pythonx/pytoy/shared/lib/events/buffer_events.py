@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext
 
 
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 
 # NOTE:
 # Since the transform of PayloadMapper uses the functions for identity check. 

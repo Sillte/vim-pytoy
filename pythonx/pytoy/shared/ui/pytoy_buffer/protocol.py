@@ -3,7 +3,7 @@ from typing import Protocol, Sequence, TYPE_CHECKING, Hashable
 from dataclasses import dataclass
 from pathlib import Path
 from pytoy.shared.lib.text import CharacterRange, LineRange
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol

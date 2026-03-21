@@ -1,5 +1,5 @@
 from textwrap import dedent
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 from pytoy.tools.llm.pytoy_fairy import PytoyFairy
 
 

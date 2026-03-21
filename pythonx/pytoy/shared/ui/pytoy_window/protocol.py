@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Protocol, Sequence, Literal, Self, Any, TYPE_CHECKING
 from pathlib import Path
 
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.window_events import ScopedWindowEventProvider
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange

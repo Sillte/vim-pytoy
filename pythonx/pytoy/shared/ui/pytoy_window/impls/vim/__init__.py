@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
 import vim
 from typing import Sequence, assert_never, cast, Literal, Self, TYPE_CHECKING
