@@ -37,16 +37,16 @@ class Event[T](EventProtocol):
         return self.subscribe(listener)
 
     def once(self) -> "Event":
-        from pytoy.shared.lib import event_utils
-        return event_utils.once(self)
+        from pytoy.shared.lib.event import utils
+        return utils.once(self)
 
     def map(self, transform: Callable[[T], Any]) -> "Event":
-        from pytoy.shared.lib import event_utils
-        return event_utils.map_event(self, transform)
+        from pytoy.shared.lib.event import utils
+        return utils.map_event(self, transform)
 
     def filter(self, predicate: Callable[[T], bool]) -> "Event":
-        from pytoy.shared.lib import event_utils
-        return event_utils.filter(self, predicate)
+        from pytoy.shared.lib.event import utils
+        return utils.filter(self, predicate)
 
 
 class EventEmitter[T]:

@@ -9,7 +9,7 @@ VIM_ERROR = getattr(vim, "error", Exception)
 
 from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, BufferID, BufferEvents
 from pytoy.shared.lib.entity import EntityRegistry
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol

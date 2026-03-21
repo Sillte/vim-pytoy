@@ -8,7 +8,7 @@ from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.ui_enum import get_ui_enum, UIEnum
 
 from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 from typing import Sequence, Literal
 
 

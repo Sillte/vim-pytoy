@@ -1,1 +1,1 @@
-from pytoy.shared.lib.event import EventEmitter, Event
+from pytoy.shared.lib.event.domain import EventEmitter, Event

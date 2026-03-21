@@ -1,6 +1,6 @@
-from pytoy.shared.lib.event import Listener
+from pytoy.shared.lib.event.domain import Listener
 from collections import defaultdict
-from pytoy.shared.lib.event import Disposable, Event, EventProtocol
+from pytoy.shared.lib.event.domain import Disposable, Event, EventProtocol
 
 
 from typing import Hashable, Self, Sequence, Callable, Any

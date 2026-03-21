@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import WindowURISolver
 from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver

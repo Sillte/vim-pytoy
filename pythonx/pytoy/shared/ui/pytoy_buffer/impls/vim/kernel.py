@@ -4,7 +4,7 @@ import vim
 from typing import TYPE_CHECKING
 
 from pytoy.shared.lib.entity import MortalEntityProtocol
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.buffer_events import ScopedBufferEventProvider
 from pytoy.shared.ui.pytoy_buffer.protocol import BufferEvents
 
