@@ -1,4 +1,4 @@
-from pytoy.shared.lib.models import CursorPosition, LineRange, CharacterRange
+from pytoy.shared.lib.text import CursorPosition, LineRange, CharacterRange
 import vim
 from typing import Sequence
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Protocol, Sequence, TYPE_CHECKING, Hashable
 from dataclasses import dataclass
 from pathlib import Path
-from pytoy.shared.lib.models import CharacterRange, LineRange
+from pytoy.shared.lib.text import CharacterRange, LineRange
 from pytoy.shared.lib.event import Event
 
 if TYPE_CHECKING:

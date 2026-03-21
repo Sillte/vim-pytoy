@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Any, TypeAlias
-from pytoy.shared.lib.models import LineRange
+from pytoy.shared.lib.text import LineRange
 
 
 # Type alias for command functions (can be callable, classmethod, or staticmethod)

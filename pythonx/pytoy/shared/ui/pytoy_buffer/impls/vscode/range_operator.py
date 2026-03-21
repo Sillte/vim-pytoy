@@ -1,4 +1,4 @@
-from pytoy.shared.lib.models import CharacterRange, CursorPosition, LineRange
+from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
 from pytoy.shared.ui.pytoy_buffer.impls.vim_buffer_utils import VimBufferRangeHandler
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel, Uri, Document, normalize_lf_code
 from pytoy.shared.ui.pytoy_buffer.protocol import RangeOperatorProtocol

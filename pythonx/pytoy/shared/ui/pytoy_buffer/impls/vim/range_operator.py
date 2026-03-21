@@ -1,7 +1,7 @@
 import vim
 
 
-from pytoy.shared.lib.models import CharacterRange, CursorPosition, LineRange
+from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.shared.ui.pytoy_buffer.impls.vim_buffer_utils import VimBufferRangeHandler
 from pytoy.shared.ui.pytoy_buffer.protocol import RangeOperatorProtocol
