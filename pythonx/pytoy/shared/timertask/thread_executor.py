@@ -1,6 +1,8 @@
-from pytoy.shared.timertask.stdout_rescuer import StdoutProxy
-from pytoy.shared.timertask.timer import TimerTask, TimerStopException
-from pytoy.contexts.core import GlobalCoreContext 
+from pytoy.shared.timertask.timer import TimerTask
+from pytoy.shared.timertask.domain import TimerStopException
+from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
+from pytoy.shared.lib.backend import can_use_vim
+from pytoy.contexts.core import GlobalCoreContext
 
 import threading
 from queue import Queue, Empty
@@ -51,9 +53,10 @@ class ThreadExecutionRequest:
     def __post_init__(self) -> None:
         self.main_func = self._solve_main_func(self.main_func)
 
-    def _solve_main_func(self, main_func: Callable[[CancelToken], Any] | Callable[[], Any]) -> Callable[[CancelToken], Any]:
-        """Wrap the function without the argument.
-        """
+    def _solve_main_func(
+        self, main_func: Callable[[CancelToken], Any] | Callable[[], Any]
+    ) -> Callable[[CancelToken], Any]:
+        """Wrap the function without the argument."""
         from inspect import signature, Parameter
         from functools import wraps
 
@@ -65,9 +68,10 @@ class ThreadExecutionRequest:
 
             @wraps(original)
             def wrapper(event: Event) -> Any:
-                return original() # type: ignore
+                return original()  # type: ignore
+
             return wrapper
-        return main_func # type: ignore
+        return main_func  # type: ignore
 
 
 @dataclass(frozen=True)
@@ -76,14 +80,26 @@ class ExecutionResult:
     result_type: ResultType
     result: Any | None = None
     exception: Exception | None = None
+    
+def get_backend_thread_util() -> BackendThreadUtilProtocol:
+    """Get the backend thread util implementation."""
+    if can_use_vim():
+        from pytoy.shared.timertask.vim.stdout_rescuer import VimThreadUtil
+        return VimThreadUtil()
+    else:  
+        from pytoy.shared.timertask.domain import FakeThreadUtil
+        return FakeThreadUtil()
+
 
 
 class ThreadExecutionManager:
-    def __init__(self):
+    def __init__(self, backend_thread_util: BackendThreadUtilProtocol | None = None):
         self._executions: dict[ThreadID, ThreadExecution] = {}
         self._queue: Queue[ExecutionResult] = Queue()
         self._started: bool = False
         self._timertask_name: None | str = None
+        self._backend_thread_util = backend_thread_util or get_backend_thread_util()
+
 
     def assert_main_thread(self) -> None:
         if threading.current_thread() is not threading.main_thread():
@@ -97,18 +113,18 @@ class ThreadExecutionManager:
     def executions(self) -> dict[ThreadID, ThreadExecution]:
         return self._executions
 
-
     def _start(self) -> None:
         if not self._started:
             self._timertask_name = TimerTask.register(self._polling, interval=200)
             self._started = True
-            StdoutProxy.ensure_activate()
+            self._backend_thread_util.prepare() 
 
-
-    def start_and_register(self, thread: Thread, cancel_token: Event, request: ThreadExecutionRequest) -> ThreadExecution:
+    def start_and_register(
+        self, thread: Thread, cancel_token: Event, request: ThreadExecutionRequest
+    ) -> ThreadExecution:
         self.assert_main_thread()
         # NOTE: It is important to prepare the environment where execution of Thread is possible.
-        # E.g., refer to `StdoutProxy`. 
+        # E.g., refer to `BackendThreadUtilProtocol`.
         self._start()
         thread.start()
         execution = ThreadExecution(
@@ -120,15 +136,13 @@ class ThreadExecutionManager:
         self._executions[execution.id] = execution
         return execution
 
-
     def cancel(self, id: ThreadID) -> None:
-        """It only requests cancel to `main_function`. 
-        It is caller's responsibility that `cancel.is_set` is checked, 
-        periodically. 
+        """It only requests cancel to `main_function`.
+        It is caller's responsibility that `cancel.is_set` is checked,
+        periodically.
         """
         self.assert_main_thread()
         self._executions[id].cancel_token.set()
-
 
     def _polling(self) -> None:
         while True:
@@ -183,9 +197,15 @@ class ThreadExecutor:
 
         thread = Thread(target=_run, daemon=True, args=(cancel_token,))
         return self._execution_manager.start_and_register(thread, cancel_token, request)
-    
+
+
+def add_log_message(message: str) -> None:
+    """Add log message to the stdout. It is used for debugging."""
+    # [TODO]: Once the enum which represents the environment background (vim / nvim / vscode / fake...), then
+    # change the function.
+    get_backend_thread_util().add_message(message)
+
 if __name__ == "__main__":
-    pass
     import time
 
     # ダミーの GlobalCoreContext を作る
@@ -218,16 +238,12 @@ if __name__ == "__main__":
             if cancel_token.is_set():
                 print("Task cancelled")
                 return "cancelled"
-            print(f"Working {i+1}/3")
+            print(f"Working {i + 1}/3")
             time.sleep(0.5)
         print("Task finished")
         return 42
 
-    request = ThreadExecutionRequest(
-        main_func=simple_task,
-        on_finish=on_finish,
-        on_error=on_error
-    )
+    request = ThreadExecutionRequest(main_func=simple_task, on_finish=on_finish, on_error=on_error)
 
     exec_obj = executor.execute(request)
 

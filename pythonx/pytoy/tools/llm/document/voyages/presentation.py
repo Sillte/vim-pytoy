@@ -1,6 +1,6 @@
 import logging
 from pytoy.shared.ui.pytoy_buffer import make_buffer
-from pytoy.shared.timertask.stdout_rescuer import StdoutProxy
+from pytoy.shared.timertask import add_log_message
 from pytoy.tools.llm.pytoy_fairy import PytoyFairy, FairyKernel
 from pytoy.tools.llm.document.voyages.domain import Compass, EvolvePolicy, Bearing, CompassAlignment, VoyageState
 from pytoy.tools.llm.document.voyages.application import EvolveRequest, EvolveResponse, ReflectRequest, ReflectResponse, VoyageInteractionCreator
@@ -63,7 +63,7 @@ class DocumentVoyageUI:
     
     def on_failure(self, exception: Exception):
         self.pytoy_fairy.llm_context.logger.info(f"Exception:{exception}")
-        StdoutProxy.add_message(str(exception))
+        add_log_message(str(exception))
         EphemeralNotification().notify("Error happens. See `log` or `:messages`.")
     
     def on_evolve(self, evolve_response: EvolveResponse) -> None:
