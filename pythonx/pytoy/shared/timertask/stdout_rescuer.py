@@ -170,6 +170,9 @@ class StdoutProxy:
         else:
             vim.command("echo '[echom] is used. See `:messages`. '")
 
+    @classmethod
+    def add_message(cls, message: str) -> None:
+        cls._vim_message(message, level=None, with_echo=False)
 
     @classmethod
     def loop_function(cls):
