@@ -3,6 +3,7 @@ import sys
 from queue import Empty, Full, Queue
 
 from pytoy.shared.timertask.timer import TimerTask
+from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
 from typing import Any, Literal
 
 # If you would like to Thread,
@@ -178,3 +179,11 @@ class StdoutProxy:
     def loop_function(cls):
         cls._output_stdout()
         cls._output_stderr()
+
+
+class VimThreadUtil(BackendThreadUtilProtocol):
+    def prepare(self) -> None:
+        StdoutProxy.ensure_activate()
+
+    def add_message(self, message: str) -> None:
+        StdoutProxy.add_message(message)

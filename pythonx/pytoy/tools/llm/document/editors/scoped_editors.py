@@ -14,7 +14,7 @@ from pytoy_llm.materials.core import ModelSectionData, SectionData
 from pytoy_llm.models import InputMessage, SyncOutput
 from pytoy_llm.task import InvocationSpecMeta, LLMInvocationSpec, LLMTaskRequest, LLMTaskSpec, LLMTaskSpecMeta, FunctionInvocationSpec
 
-from pytoy.shared.timertask.stdout_rescuer import StdoutProxy
+from pytoy.shared.timertask import add_log_message
 from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec, LanguageKind
 from pytoy.tools.llm.document.editors.edit_rules import LanguageRuleSet, CompletionRuleSet, StyleRuleSet
 from pytoy.tools.llm.interaction_provider import InteractionProvider, InteractionRequest
@@ -223,7 +223,7 @@ class ScopedEditDocumentRequester:
 
     def _handle_error(self, buffer: PytoyBuffer, exception: Exception) -> None:
         self.scoped_edit_contract.revert_markers(buffer)
-        StdoutProxy.add_message(str(exception))
+        add_log_message(str(exception))
         EphemeralNotification().notify("LLM Error. See `:messages`.")
 
     def make_interaction(self) -> LLMInteraction:
