@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Sequence, TYPE_CHECKING
 from pytoy.shared.ui.status_line.models import StatusLineItem
 from pytoy.shared.ui.status_line.protocol import StatusLineManagerProtocol
-from pytoy.shared.ui.ui_enum import get_ui_enum, UIEnum
+from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window.protocol import WindowEvents
 
@@ -30,17 +30,11 @@ class StatusLineManager(StatusLineManagerProtocol):
 
 def _get_impl(events: "WindowEvents") -> StatusLineManagerProtocol:
     """Get the appropriate StatusLineManager implementation based on the UI environment."""
-    ui_enum = get_ui_enum()
-
-    if ui_enum == UIEnum.VIM or ui_enum == UIEnum.NVIM:
-        import vim
-        from pytoy.shared.ui.status_line.impl_vim import StatusLineManagerVim
-        return StatusLineManagerVim(events)
-    elif ui_enum == UIEnum.VSCODE:
-        # Currenty, rely on the mechanism of `neovim-vscode` extension.
-        import vim
+    backend_enum = get_backend_enum()
+    
+    if backend_enum in (BackendEnum.VIM, BackendEnum.NVIM, BackendEnum.VSCODE):
         from pytoy.shared.ui.status_line.impl_vim import StatusLineManagerVim
         return StatusLineManagerVim(events)
     else:
-        raise ValueError(f"Unknown UI environment: {ui_enum}")
-
+        from pytoy.shared.ui.status_line.impl_dummy import StatusLineManagerDummy
+        return StatusLineManagerDummy()

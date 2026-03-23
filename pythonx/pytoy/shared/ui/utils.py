@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from pytoy.shared.ui.ui_enum import UIEnum, get_ui_enum
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 
 
 _pattern = re.compile(r"^vscode\-remote://[^/]+")
@@ -20,7 +20,7 @@ def to_filepath(path: str | Path) -> Path:
     * https://code.visualstudio.com/api/references/vscode-api#TextDocument
     """
     path_str = str(path)
-    if get_ui_enum() == UIEnum.VSCODE:
+    if get_backend_enum() == BackendEnum.VSCODE:
         path_str = _pattern.sub("", path_str)
     return Path(path_str)
 

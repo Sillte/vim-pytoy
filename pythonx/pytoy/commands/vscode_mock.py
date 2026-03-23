@@ -1,6 +1,6 @@
 from pytoy.command import CommandManager
 from pytoy.shared.command.models import OptsArgument
-from pytoy.shared.ui import get_ui_enum, UIEnum
+from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 from pytoy.shared.ui.utils import to_filepath
 
 
@@ -72,7 +72,7 @@ def mywindow_func():
 from pytoy.command import CommandManager
 
 
-if get_ui_enum() == UIEnum.VSCODE:
+if get_backend_enum() == BackendEnum.VSCODE:
     from pytoy.shared.ui.vscode.api import Api
     from pytoy.shared.ui.vscode.document import Api
     from pytoy.shared.ui.vscode.editor import Editor

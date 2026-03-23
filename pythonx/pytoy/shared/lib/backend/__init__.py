@@ -5,7 +5,7 @@ class BackendEnum(StrEnum):
     VIM = "vim"
     NVIM = "nvim"
     VSCODE = "vscode" # This is neovim-vscode.
-    FAKE = "fake"
+    DUMMY = "dummy"
 
 
 __backend_enum: BackendEnum | None = None
@@ -27,14 +27,14 @@ def _resolve_backend_enum() -> BackendEnum:
     try:
         import vim
     except Exception:
-        return BackendEnum.FAKE
+        return BackendEnum.DUMMY
 
     try:
         result = int(vim.eval("1+1"))
         if result != 2:
-            return BackendEnum.FAKE
+            return BackendEnum.DUMMY
     except Exception:
-        return BackendEnum.FAKE
+        return BackendEnum.DUMMY
 
     if int(vim.eval("has('nvim')")):
         if int(vim.eval("exists('g:vscode')")):
