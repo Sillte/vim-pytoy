@@ -8,7 +8,6 @@ _VIM_FUNC_NAME_RE = re.compile(r"[^0-9A-Za-z_]")
 type VimFunctionName = str
 
 
-
 class PytoyVimFunctions:
     """Wrappers of `python` functions for `vim` functions.
 
