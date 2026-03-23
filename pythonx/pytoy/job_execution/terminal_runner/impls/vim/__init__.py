@@ -22,7 +22,7 @@ from pytoy.job_execution.terminal_runner.models import (
 
 from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
 from pytoy.shared.lib.text import CursorPosition
-from pytoy.shared.lib.vim_function import PytoyVimFunctions
+from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.job_execution.process_utils import find_children_pids
 
 class TerminalJobVim(TerminalJobProtocol):
@@ -37,8 +37,8 @@ class TerminalJobVim(TerminalJobProtocol):
 
     def _start(self) -> None:
         # 1. Register global Vim functions for callbacks
-        self._on_exit_name = PytoyVimFunctions.register(self._on_vim_exit, prefix="VimTTYExit")
-        self._on_out_name = PytoyVimFunctions.register(self._on_vim_output, prefix="VimTTYOut")
+        self._on_exit = FunctionRegistry.register(self._on_vim_exit, prefix="VimTTYExit")
+        self._on_out = FunctionRegistry.register(self._on_vim_output, prefix="VimTTYOut")
 
         # 2. Build term_start options
         cols = self._request.console.cols or 80
@@ -48,9 +48,9 @@ class TerminalJobVim(TerminalJobProtocol):
             "hidden": 1,
             "term_cols": cols,
             "term_rows": rows,
-            "out_cb": self._on_out_name,
-            "err_cb": self._on_out_name,
-            "exit_cb": self._on_exit_name,
+            "out_cb": self._on_out.impl_name,
+            "err_cb": self._on_out.impl_name,
+            "exit_cb": self._on_exit.impl_name,
             "norestore": 1,
         }
 
@@ -126,8 +126,8 @@ class TerminalJobVim(TerminalJobProtocol):
         # Asyncronous hack is important, since this must be called after `Job` `on_exit` is called.
         from pytoy.shared.timertask import TimerTask 
         def _inner():
-            PytoyVimFunctions.deregister(self._on_exit_name)
-            PytoyVimFunctions.deregister(self._on_out_name)
+            FunctionRegistry.deregister(self._on_exit)
+            FunctionRegistry.deregister(self._on_out)
         TimerTask.execute_oneshot(_inner, interval=0)
 
     @property
@@ -143,7 +143,7 @@ class TerminalJobVim(TerminalJobProtocol):
         vim.command(f"call term_wait({self._bufnr}, 10)")
         size = vim.eval(f"term_getsize({self._bufnr})")
         rows = int(size[0])
-        lines = [ vim.eval(f'term_getline({self.job_id}, {i + 1})') for i in range(rows) ]
+        lines = [ vim.eval(f'term_getline({self._bufnr}, {i + 1})') for i in range(rows) ]
         
         # Get terminal state via eval
         cursor = vim.eval(f"term_getcursor({self._bufnr})") # returns ["row", "col"]

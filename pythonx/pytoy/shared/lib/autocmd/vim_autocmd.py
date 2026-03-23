@@ -1,6 +1,4 @@
 from pytoy.shared.lib.event.domain import Disposable, Event, EventEmitter
-import vim
-from pytoy.shared.lib.vim_function import PytoyVimFunctions, VimFunctionName
 from typing import Callable, Any, Literal, assert_never, Sequence
 
 ArgumentSpec = Literal["count", "event", "abuf", "afile"]

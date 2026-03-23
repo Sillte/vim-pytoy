@@ -23,7 +23,7 @@ from pytoy.job_execution.terminal_runner.models import (
 )
 from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
 from pytoy.shared.lib.text import CursorPosition
-from pytoy.shared.lib.vim_function import PytoyVimFunctions
+from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.job_execution.terminal_runner.impls.utils import send_ctrl_c
 
@@ -88,17 +88,17 @@ class TerminalJobNvim(TerminalJobProtocol):
 
     def _start(self) -> None:
         # 1. Setup Callbacks
-        self._on_out_name = PytoyVimFunctions.register(self._on_vim_output, prefix="NvimTTYOut")
-        self._on_exit_name = PytoyVimFunctions.register(self._on_vim_exit, prefix="NvimTTYExit")
+        self._on_out = FunctionRegistry.register(self._on_vim_output, prefix="NvimTTYOut")
+        self._on_exit = FunctionRegistry.register(self._on_vim_exit, prefix="NvimTTYExit")
 
         # 2. Options for jobstart
         options = {
             'pty': True,
             'width': self._screen.columns,
             'height': self._screen.lines,
-            'on_stdout': self._on_out_name,
-            'on_stderr': self._on_out_name,
-            'on_exit': self._on_exit_name,
+            'on_stdout': self._on_out.impl_name,
+            'on_stderr': self._on_out.impl_name,
+            'on_exit': self._on_exit.impl_name,
             'stdout_buffered': False
         }
 
@@ -168,8 +168,8 @@ class TerminalJobNvim(TerminalJobProtocol):
 
         from pytoy.shared.timertask import TimerTask
         def _inner():
-            PytoyVimFunctions.deregister(self._on_out_name)
-            PytoyVimFunctions.deregister(self._on_exit_name)
+            FunctionRegistry.deregister(self._on_out)
+            FunctionRegistry.deregister(self._on_exit)
         TimerTask.execute_oneshot(_inner, interval=0)
 
     @property

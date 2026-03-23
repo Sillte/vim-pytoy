@@ -7,6 +7,13 @@ from pytoy.shared.lib.function.domain import FunctionRegistryProtocol, FunctionN
 _VIM_FUNC_NAME_RE = re.compile(r"[^0-9A-Za-z_]")
 
 
+def wrap_str_callable(func: Callable) -> StrCallable:
+    def wrapper(*args: str) -> str:
+        return str(func(*args))
+    wrapper.__name__ = f"wrapped_{getattr(func, '__name__', 'func')}"
+    return wrapper
+
+
 class FunctionRegistryVim(FunctionRegistryProtocol):
     instances: dict[int, Self] = dict()  # type: dict[str, Self]
 
@@ -30,7 +37,7 @@ class FunctionRegistryVim(FunctionRegistryProtocol):
         name = _VIM_FUNC_NAME_RE.sub("_", name)
         return name.capitalize()
 
-    def register(self, function: StrCallable, name: str) -> RegisteredFunction:
+    def register(self, function: Callable, name: str) -> RegisteredFunction:
         if not name:
             name = getattr(function, "__name__", function.__class__.__name__)
             if name == "<lambda>":
@@ -51,9 +58,9 @@ class FunctionRegistryVim(FunctionRegistryProtocol):
         procedures = dedent(f"""
         python3 << EOF
         {import_prefix}
-        args = [str(x) for x in vim.eval("a:000")]
+        args = vim.eval("a:000")
         ret = FunctionRegistryVim.get_instance({self.id})._get_function('{name}')(*args)
-        vim.vars['{ret_var_name}'] = str(ret)
+        vim.vars['{ret_var_name}'] = ret
         EOF
         """).strip()
 
