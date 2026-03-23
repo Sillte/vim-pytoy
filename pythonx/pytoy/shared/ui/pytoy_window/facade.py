@@ -5,7 +5,7 @@ from pytoy.shared.ui.pytoy_window.protocol import (
 )
 from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
-from pytoy.shared.ui.ui_enum import get_ui_enum, UIEnum
+from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 
 from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange
 from pytoy.shared.lib.event.domain import Event
@@ -99,15 +99,16 @@ class PytoyWindow(PytoyWindowProtocol):
 class PytoyWindowProvider(PytoyWindowProviderProtocol):
     def __init__(self, impl: PytoyWindowProviderProtocol | None = None):
         if impl is None:
-            ui_enum = get_ui_enum()
-            if ui_enum == UIEnum.VSCODE:
+            backend_enum = get_backend_enum()
+            if backend_enum == BackendEnum.VSCODE:
                 from pytoy.shared.ui.pytoy_window.impls.vscode import PytoyWindowProviderVSCode
-
                 impl = PytoyWindowProviderVSCode()
-            else:
+            elif backend_enum in (BackendEnum.VIM, BackendEnum.NVIM):
                 from pytoy.shared.ui.pytoy_window.impls.vim import PytoyWindowProviderVim
-
                 impl = PytoyWindowProviderVim()
+            else:
+                from pytoy.shared.ui.pytoy_window.impls.dummy import PytoyWindowProviderDummy
+                impl = PytoyWindowProviderDummy()
         self._impl = impl
 
     @property

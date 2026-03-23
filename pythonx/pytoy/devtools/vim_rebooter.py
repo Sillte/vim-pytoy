@@ -9,14 +9,18 @@ class VimRebooter:
 
     def __call__(self):
         import vim
-        from pytoy.shared.ui import get_ui_enum, UIEnum
+        from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
+        backend_enum = get_backend_enum()
 
-        if get_ui_enum() == UIEnum.VSCODE:
+        if backend_enum == BackendEnum.VSCODE:
             from pytoy.shared.ui.vscode.api import Api
-
             api = Api()
             api.action("vscode-neovim.restart")
             return
+        elif backend_enum in {BackendEnum.DUMMY}:
+            print("Reboot is not supported for `Dummy`.")
+            return
+        # BackendEnum.VIM or BackendEnum.NVIM
 
         if int(vim.eval("&term == 'builtin_gui'")):
             is_gui = True
@@ -62,7 +66,7 @@ def _start_vim_detached(cmd):
             cmd,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            preexec_fn=os.setpgrp,
+            preexec_fn=os.setpgrp,  # type: ignore
             shell=False,
         )
 

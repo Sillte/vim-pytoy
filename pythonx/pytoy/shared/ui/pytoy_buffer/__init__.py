@@ -140,16 +140,19 @@ def make_duo_buffers(
 
 
 def _get_current_impl() -> PytoyBufferProtocol:
-    from pytoy.shared.ui.ui_enum import get_ui_enum, UIEnum
+    from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 
-    ui_enum = get_ui_enum()
-    if ui_enum == UIEnum.VSCODE:
+    backend_enum = get_backend_enum()
+    if backend_enum == BackendEnum.VSCODE:
         from pytoy.shared.ui.pytoy_buffer.impls.vscode import PytoyBufferVSCode
         current_impl = PytoyBufferVSCode.get_current()
-    else:
+    elif backend_enum in (BackendEnum.VIM, BackendEnum.NVIM):
         from pytoy.shared.ui.pytoy_buffer.impls.vim import PytoyBufferVim
-
         current_impl = PytoyBufferVim.get_current()
+    else:
+        from pytoy.shared.ui.pytoy_buffer.impls.dummy import PytoyBufferDummy
+        current_impl = PytoyBufferDummy.get_current()
+
     return current_impl
 
 

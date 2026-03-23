@@ -5,11 +5,11 @@ import json
 import vim
 from logging.handlers import RotatingFileHandler
 from pytoy.command import CommandManager
-from pytoy.shared.command.models import  OptsArgument
+from pytoy.shared.command.models import OptsArgument
 from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.devtools.vim_rebooter import VimRebooter
 from pytoy.shared.timertask import TimerTask
-from pytoy.shared.ui import get_ui_enum, UIEnum
+from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 from pytoy.shared.ui import to_filepath
 
 
@@ -31,23 +31,21 @@ class VimRebootExecutor:
         session_cache_path = folder / self.SESSION_CACHE_NAME
         self._dump_reboot_info(json_cache_path, session_cache_path)
         if not self.package:
-            raise ValueError(
-                "Current folder is not within a plugin folder, so no reboot."
-            )
+            raise ValueError("Current folder is not within a plugin folder, so no reboot.")
         self.reboot()
 
     def get_cache_folder(self) -> Path:
         """Get the cache path.
         By reloading the `cache` file at the start of `.vimrc` / `init.lua`,
         """
-        ui_enum = get_ui_enum()
-        if ui_enum in {UIEnum.VSCODE, UIEnum.NVIM}:
+        backend_enum = get_backend_enum()
+        if backend_enum in {BackendEnum.VSCODE, BackendEnum.NVIM}:
             nvim_folder = Path(vim.eval("stdpath('cache')"))
             nvim_folder = to_filepath(nvim_folder)
             if not nvim_folder:
                 nvim_folder.mkdir(parents=True)
             return nvim_folder
-        elif ui_enum == UIEnum.VIM:
+        elif backend_enum == BackendEnum.VIM:
             if "XDG_CACHE_HOME" in os.environ:
                 cache_dir = Path(os.environ["XDG_CACHE_HOME"])
             else:
@@ -56,6 +54,10 @@ class VimRebootExecutor:
             if not vim_folder.exists():
                 vim_folder.mkdir(parents=True)
             return vim_folder
+        else:
+            dummy_folder = Path.home() / ".cache" / "dummy_pytoy"
+            dummy_folder.mkdir(parents=True, exist_ok=True)
+            return dummy_folder
         raise RuntimeError("Not Implmented.")
 
     def _dump_reboot_info(self, json_path, session_path):
@@ -67,16 +69,18 @@ class VimRebootExecutor:
         vim.command(f"mksession! {session_path.as_posix()}")
 
     def reboot(self):
-        ui_enum = get_ui_enum()
-        if ui_enum == ui_enum.VSCODE:
+        backend_enum = get_backend_enum()
+        if backend_enum == BackendEnum.VSCODE:
             from pytoy.shared.ui.vscode.api import Api
 
             api = Api()
             api.action("vscode-neovim.restart")
             return
-        rebooter = VimRebooter()
-
-        rebooter()
+        elif backend_enum in {BackendEnum.VIM, BackendEnum.NVIM}:
+            rebooter = VimRebooter()
+            rebooter()
+        else:
+            print("Reboot is not supported for `Dummy`.")
 
 
 @CommandManager.register(name="VimReboot")
@@ -88,15 +92,16 @@ class VimReboot:
 
         executor = VimRebootExecutor()
         executor()
+        backend_enum = get_backend_enum()
 
-        if get_ui_enum() in {UIEnum.VIM, UIEnum.NVIM}:
+        if backend_enum in {BackendEnum.VIM, BackendEnum.NVIM}:
             try:
                 package = VimPluginPackage()
             except ValueError as e:
                 print("Current folder is not within a plugin folder.", e)
             else:
                 package.restart(with_vimrc=True, kill_myprocess=True)
-        elif get_ui_enum() == UIEnum.VSCODE:
+        elif backend_enum == BackendEnum.VSCODE:
             try:
                 package = VimPluginPackage()
                 plugin_folder = package.root_folder.as_posix()
@@ -109,6 +114,8 @@ class VimReboot:
 
             api = Api()
             api.action("vscode-neovim.restart")
+        else:
+            print("Reboot is not supported for `Dummy`.")
 
 
 @CommandManager.register(name="DebugInfo")
@@ -150,6 +157,7 @@ def execute_pytoy(opts: OptsArgument):
     import vim
     from pytoy.shared.ui.utils import to_filepath
     from pathlib import Path
+
     name = " ".join([elem.strip() for elem in opts.fargs])
     if not name:
         path = to_filepath(vim.current.buffer.name)
@@ -162,7 +170,7 @@ def execute_pytoy(opts: OptsArgument):
         case ".vim":
             vim.command(f"source {path.as_posix()}")
         case _:
-            raise ValueError("Cannot identify the apt execution for ``") 
+            raise ValueError("Cannot identify the apt execution for ``")
 
 
 @CommandManager.register(name="PytoyLog")
@@ -174,6 +182,7 @@ class PytoyOpenLog:
         from pytoy.shared.ui.pytoy_window import PytoyWindow
         from pathlib import Path
         import logging
+
         logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
         logger.info("Opening a Log file.")
 
@@ -182,7 +191,7 @@ class PytoyOpenLog:
             pivot_folder = c_buffer.path
         else:
             pivot_folder = Path(".")
-            raise ValueError("Current folder should be `file`. ") 
+            raise ValueError("Current folder should be `file`. ")
         workspace = GlobalCoreContext().get().environment_manager.get_workspace(pivot_folder)
         workspace = workspace if workspace else pivot_folder
         config = PytoyConfiguration(workspace, local_config_type=None)
@@ -192,8 +201,8 @@ class PytoyOpenLog:
                 location = "local"
             elif opts.fargs[0] == "global":
                 location = "global"
-                
-        if location is not None: 
+
+        if location is not None:
             target_path = self._logger_to_latest_log(config.get_logger(location))
         else:
             if config.is_logger_exist("local"):
@@ -204,7 +213,7 @@ class PytoyOpenLog:
         if target_path is None:
             raise ValueError("Cannot find the apt log folder.")
         PytoyWindow.open(target_path, "vertical")
-            
+
     def _logger_to_latest_log(self, logger) -> None | Path:
         log_files = []
         for h in logger.handlers:
@@ -215,4 +224,3 @@ class PytoyOpenLog:
         if not log_files:
             return None
         return sorted(log_files, key=lambda f: f.stat().st_mtime, reverse=True)[0]
-            
