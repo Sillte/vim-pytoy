@@ -3,7 +3,7 @@ import vim
 from pytoy.job_execution.command_runner.models import OutputJobRequest, SpawnOption, JobID, JobEvents, Snapshot, OutputJobProtocol
 from pytoy.job_execution.command_runner.impls.core import OutputJobCore
 from pytoy.job_execution.process_utils import  find_children_pids
-from pytoy.shared.lib.vim_function import VimFunctionName, PytoyVimFunctions
+from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.shared.timertask import TimerTask
 from typing import TYPE_CHECKING, Any
 from pathlib import Path
@@ -22,14 +22,14 @@ class OutputJobVim(OutputJobProtocol):
         self._start(job_request, spawn_option)
         
     def _start(self, job_request: OutputJobRequest, spawn_option: SpawnOption):
-        on_out = PytoyVimFunctions.register(lambda _, line: self._core.emit_stdout(line), prefix="OutputJobOut")
-        on_err = PytoyVimFunctions.register(lambda _, line: self._core.emit_stderr(line), prefix="OutputJobErr")
-        on_exit = PytoyVimFunctions.register(lambda _j, status: self._core.emit_exit(self, status), prefix="OutputJobExit")
+        on_out = FunctionRegistry.register(lambda _, line: self._core.emit_stdout(line), prefix="OutputJobOut")
+        on_err = FunctionRegistry.register(lambda _, line: self._core.emit_stderr(line), prefix="OutputJobErr")
+        on_exit = FunctionRegistry.register(lambda _, status: self._core.emit_exit(self, status), prefix="OutputJobExit")
         vim_funcs = [on_out, on_err, on_exit]
 
         def _cleanup():
             for f in vim_funcs:
-                PytoyVimFunctions.deregister(f)
+                FunctionRegistry.deregister(f)
             vim.command(f"silent! unlet g:{self._jobid}")
             self.dispose()
         
@@ -40,15 +40,15 @@ class OutputJobVim(OutputJobProtocol):
         output_requests = set(job_request.outputs)
 
         option = {
-            "exit_cb": on_exit,
+            "exit_cb": on_exit.impl_name, 
             "mode": "nl",  # 行単位
         }
 
         if "stdout" in output_requests:
-            option["out_cb"] = on_out
+            option["out_cb"] = on_out.impl_name
 
         if "stderr" in output_requests:
-            option["err_cb"] = on_err
+            option["err_cb"] = on_err.impl_name
 
         if not (cwd := spawn_option.cwd):
             cwd = Path().cwd()

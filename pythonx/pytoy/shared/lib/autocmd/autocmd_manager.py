@@ -1,11 +1,11 @@
 from pytoy.shared.lib.autocmd.vim_autocmd import Group, EmitSpec, VimAutocmd,  PayloadMapper
-from pytoy.shared.lib.vim_function import VimFunctionName, PytoyVimFunctions
+from pytoy.shared.lib.function import FunctionRegistry, RegisteredFunction
 from typing import Any, Callable
 
 
 class AutoCmdManager:
     def __init__(self) -> None:
-        self._dispatcher_vimname: VimFunctionName = PytoyVimFunctions.register(self._dispatcher)
+        self._dispatcher_vimfunc: RegisteredFunction = FunctionRegistry.register(self._dispatcher)
 
         self._autocmds: dict[Group, VimAutocmd] = {}
         self._owners: dict[Group, object] = {}
@@ -35,7 +35,7 @@ class AutoCmdManager:
     def _create_autocmd(self, group: Group, emitter_spec: EmitSpec, payload_mapper: PayloadMapper, owner: object | None) -> VimAutocmd:
         import vim
         cmd = VimAutocmd(group, emitter_spec, payload_mapper)
-        command = cmd.make_command(self._dispatcher_vimname)
+        command = cmd.make_command(self._dispatcher_vimfunc.impl_name)
         vim.command(command)
         self._autocmds[cmd.group] = cmd
         self._owners[cmd.group] = owner

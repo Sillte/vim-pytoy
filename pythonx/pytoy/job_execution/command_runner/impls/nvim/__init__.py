@@ -4,7 +4,7 @@ from pytoy.job_execution.command_runner.models import OutputJobRequest, SpawnOpt
 from pytoy.job_execution.command_runner.impls.core import OutputJobCore
 from pytoy.job_execution.process_utils import  find_children_pids
 from pytoy.shared.lib.event.domain import Event
-from pytoy.shared.lib.vim_function import PytoyVimFunctions
+from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.shared.timertask import TimerTask
 from typing import TYPE_CHECKING, Any, Callable
 from pathlib import Path
@@ -41,10 +41,10 @@ class OutputJobNvim(OutputJobProtocol):
                 self._core.emit_exit(self, exit_code) 
 
         # イベントハンドラの登録
-        on_event_vimfunc = PytoyVimFunctions.register(_on_event, prefix="OutputJobNvim")
+        on_event_vimfunc = FunctionRegistry.register(_on_event, prefix="OutputJobNvim")
 
         def _cleanup():
-            PytoyVimFunctions.deregister(on_event_vimfunc)
+            FunctionRegistry.deregister(on_event_vimfunc)
             self.dispose()
 
         # 終了時クリーンアップ
@@ -55,9 +55,9 @@ class OutputJobNvim(OutputJobProtocol):
         self._cwd = str(spawn_option.cwd or Path().cwd().absolute())
         # Neovim の jobstart オプション
         option: dict[str, Any] = {
-            "on_stdout": on_event_vimfunc,
-            "on_stderr": on_event_vimfunc,
-            "on_exit": on_event_vimfunc,
+            "on_stdout": on_event_vimfunc.impl_name,
+            "on_stderr": on_event_vimfunc.impl_name,
+            "on_exit": on_event_vimfunc.impl_name,
             "cwd": self._cwd,
         }
         if spawn_option.env:

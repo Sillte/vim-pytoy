@@ -1,6 +1,6 @@
 from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
 from pytoy.shared.ui.pytoy_window import PytoyWindow
-from pytoy.infra.core.models import CursorPosition
+from pytoy.shared.lib.text import CursorPosition
 from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
 
 

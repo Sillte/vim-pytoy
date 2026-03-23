@@ -27,7 +27,7 @@ from pytoy.job_execution.terminal_runner.models import (
     JobID
 )
 from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
-from pytoy.shared.lib.vim_function import PytoyVimFunctions
+from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.job_execution.process_utils import find_children_pids
 
 from .virtual_tty import VirtualTTY
@@ -40,7 +40,7 @@ class TerminalJobVSCode(TerminalJobProtocol):
     def _on_update(self):
         self._core.update_emitter.fire(self.pid)
 
-    def _on_exit(self):
+    def _on_tty_exit(self):
         def _inner():
             self._core.exit_emitter.fire(0)
             self.dispose()
@@ -78,13 +78,15 @@ class TerminalJobVSCode(TerminalJobProtocol):
         lines = self._request.console.lines or 96
         self._cwd = cwd
         
-        self._on_out_name = PytoyVimFunctions.register(self._on_update, prefix="CommonTTYOut")
-        self._on_exit_name = PytoyVimFunctions.register(self._on_exit,  prefix="CommonTTYExit")
+        self._on_out = FunctionRegistry.register(self._on_update, prefix="CommonTTYOut")
+        
+        # Note: Curretly, `self._on_exit` is not used.
+        self._on_exit = FunctionRegistry.register(self._on_tty_exit,  prefix="CommonTTYExit")
 
         self._tty = VirtualTTY(cmd, cwd=cwd, env=env, lines=lines, cols=cols, on_output=self._schedule_update)
 
     def _inner(self):
-        vim.session.threadsafe_call(lambda: vim.call(self._on_out_name))  # type: ignore
+        vim.session.threadsafe_call(lambda: vim.call(self._on_out.impl_name))  # type: ignore
 
     def send(self, input: str) -> None:
         def _send_thread():
@@ -114,6 +116,7 @@ class TerminalJobVSCode(TerminalJobProtocol):
         self.terminate()
         # Cleanup input thread
         self._core.dispose()
+        
 
 
     @property
