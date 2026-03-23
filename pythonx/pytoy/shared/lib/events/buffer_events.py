@@ -2,7 +2,7 @@ from __future__ import annotations
 from pytoy.shared.lib.autocmd.autocmd_manager import get_autocmd_manager, AutoCmdManager, EmitSpec, PayloadMapper
 from pytoy.shared.lib.autocmd.vim_autocmd import EmitterPayload
 
-from pytoy.shared.lib.events.entity_event import GlobalEvent
+from pytoy.shared.lib.event.global_event import GlobalEvent
 
 from typing import Callable, Any, TYPE_CHECKING, Self
 from functools import cached_property
