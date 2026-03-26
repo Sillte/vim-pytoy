@@ -39,7 +39,7 @@ class TimerTaskImplProtocol(Protocol):
     def is_registered(self, name: TaskName) -> bool: ...
 
 
-class TimerTaskImplFake(TimerTaskImplProtocol):
+class TimerTaskImplDummy(TimerTaskImplProtocol):
     """Currently, the registered `func` is not executed..."""
 
     def __init__(self):

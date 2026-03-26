@@ -10,7 +10,7 @@ from pyte import Screen, Stream
 
 from pytoy.job_execution.terminal_runner.models import Snapshot, ConsoleSnapshot
 from pytoy.shared.lib.text import CursorPosition
-from pytoy.job_execution.terminal_runner.impls.vscode.pty_console import PtyConsole, PtyConsoleProtocol
+from pytoy.job_execution.terminal_runner.impls.utils.pty_console import PtyConsole, PtyConsoleProtocol
 
 
 class VirtualTTY:

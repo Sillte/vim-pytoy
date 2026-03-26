@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Mapping, Any, TYPE_CHECKING
 
-#from pytoy.job_execution.buffer_runner.models import OutputJobProtocol, OutputJobRequest, SpawnOption, JobEvents
 from pytoy.job_execution.terminal_runner.models import TerminalJobProtocol, TerminalJobRequest, SpawnOption, JobEvents, Snapshot, JobID
 from pytoy.shared.ui.ui_enum import get_ui_enum, UIEnum
+from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import make_buffer, make_duo_buffers
 if TYPE_CHECKING:
@@ -18,18 +18,19 @@ def _solve_buffer(buffer: PytoyBuffer | str):
     return buffer
 
 def make_terminal_job(job_request: TerminalJobRequest, spawn_option: SpawnOption) -> TerminalJobProtocol:
-    ui_enum = get_ui_enum()
-    if ui_enum == UIEnum.VIM:
+    backend_enum = get_backend_enum()
+    if backend_enum == BackendEnum.VIM:
         from pytoy.job_execution.terminal_runner.impls.vim import TerminalJobVim
         return TerminalJobVim(job_request, spawn_option)
-    elif ui_enum == UIEnum.NVIM:
+    elif backend_enum == BackendEnum.NVIM:
         from pytoy.job_execution.terminal_runner.impls.nvim import TerminalJobNvim
         return TerminalJobNvim(job_request, spawn_option)
-    elif ui_enum == UIEnum.VSCODE:
+    elif backend_enum == BackendEnum.VSCODE:
         from pytoy.job_execution.terminal_runner.impls.vscode import TerminalJobVSCode
         return TerminalJobVSCode(job_request, spawn_option)
     else:
-        raise RuntimeError(f"Unsupported UI: {ui_enum}")
+        from pytoy.job_execution.terminal_runner.impls.dummy import TerminalJobDummy
+        return TerminalJobDummy(job_request, spawn_option)
     
 
 class TerminalJobRunner:
@@ -174,5 +175,4 @@ if __name__ == "__main__":
 
     TimerTask.execute_oneshot(lambda :runner.send("dir"), interval=500)
     TimerTask.execute_oneshot(lambda :runner.send("echo BAfAFAF"), interval=1200)
-    TimerTask.execute_oneshot(lambda : print(runner.snapshot.content), interval=3000)
-
+    TimerTask.execute_oneshot(lambda : print(runner.snapshot.content), interval=3000)  # type: ignore
