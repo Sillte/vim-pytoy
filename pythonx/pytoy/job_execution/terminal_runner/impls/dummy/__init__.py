@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import vim
 from pathlib import Path
 from pytoy.job_execution.terminal_runner.impls.utils.pty_console import PtyConsole
 
@@ -25,7 +24,7 @@ from pytoy.job_execution.terminal_runner.impls.utils.virtual_tty import VirtualT
 from pytoy.shared.timertask import TimerTask
 
 
-class TerminalJobVSCode(TerminalJobProtocol):
+class TerminalJobDummy(TerminalJobProtocol):
     def _on_update(self):
         self._core.update_emitter.fire(self.pid)
 
@@ -46,10 +45,7 @@ class TerminalJobVSCode(TerminalJobProtocol):
             self._update_scheduled = False
             self._core.update_emitter.fire(self.pid)
 
-        if hasattr(vim, "session"):
-            vim.session.threadsafe_call(_fire)  # type: ignore
-        else:
-            TimerTask.execute_oneshot(lambda: _fire())
+        TimerTask.execute_oneshot(lambda: _fire())
 
     def __init__(self, request: TerminalJobRequest, spawn_option: SpawnOption | None = None):
         self._request = request
@@ -75,7 +71,7 @@ class TerminalJobVSCode(TerminalJobProtocol):
         self._tty = VirtualTTY(cmd, cwd=cwd, env=env, lines=lines, cols=cols, on_output=self._schedule_update)
 
     def _inner(self):
-        vim.session.threadsafe_call(lambda: vim.call(self._on_out.impl_name))  # type: ignore
+        self._on_out()
 
     def send(self, input: str) -> None:
         def _send_thread():

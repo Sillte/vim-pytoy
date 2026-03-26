@@ -1,6 +1,5 @@
 from pytoy.shared.lib.text import CursorPosition, LineRange, CharacterRange
 from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol
-from pytoy.shared.ui import get_ui_enum, UIEnum
 from typing import Sequence
 
 

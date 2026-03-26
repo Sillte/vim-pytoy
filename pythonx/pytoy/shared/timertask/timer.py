@@ -31,8 +31,8 @@ def get_timer_task_impl() -> TimerTaskImplProtocol:
         from pytoy.shared.timertask.vim.timertask_impl import TimerTaskImplVim
         return TimerTaskImplVim()
     else:
-        from pytoy.shared.timertask.domain import TimerTaskImplFake
-        return TimerTaskImplFake()
+        from pytoy.shared.timertask.domain import TimerTaskImplDummy
+        return TimerTaskImplDummy()
 
 
 class TimerTask:
