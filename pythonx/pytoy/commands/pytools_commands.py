@@ -1,7 +1,6 @@
 """Python related commands."""
 
 from typing import Sequence
-import vim
 from pytoy.command import CommandManager
 from pytoy.shared.ui.pytoy_buffer import make_buffer
 from pytoy.shared.ui.utils import to_filepath
@@ -93,6 +92,7 @@ class CSpellCommand:
         from pytoy.tools.cspell import CSpellOneFileChecker
         from pytoy.shared.ui import to_filepath
         from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, handle_records, to_quickfix_creator
+        import vim
 
         path = to_filepath(vim.current.buffer.name)
 

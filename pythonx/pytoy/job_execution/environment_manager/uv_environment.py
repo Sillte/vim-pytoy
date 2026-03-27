@@ -4,7 +4,6 @@ from pytoy.job_execution.environment_manager.models import EnvironmentKind
 from dataclasses import dataclass
 from typing import Sequence
 from pytoy.job_execution.utils import get_current_directory
-import vim
 
 import os
 import subprocess
@@ -111,7 +110,11 @@ def _add_uv_path_fallback() -> bool:
         current_path = os.environ.get('PATH', '')
         new_path = f"{folder}{os.pathsep}{current_path}"
         os.environ['PATH'] = new_path
-        vim.command(f'let $PATH="{new_path}"')
+        try:
+            import vim
+            vim.command(f'let $PATH="{new_path}"')
+        except ImportError:
+            pass
         return True
     except Exception:
         return False
