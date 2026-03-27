@@ -1,7 +1,4 @@
 """Exectuor for `Python`."""
-
-import vim
-import json
 import re
 from shlex import quote
 from pathlib import  Path

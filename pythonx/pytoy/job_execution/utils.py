@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import vim
 from pytoy.shared.ui.utils import to_filepath
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
@@ -22,6 +21,8 @@ def get_current_directory(buffer: PytoyBuffer | None = None) -> Path:
         filename = to_filepath(buffer.path)
         current_folder = filename.parent
     else:
+        # TODO: Define the utility function for all backends.
+        import vim
         cwd = vim.eval("getcwd()")
         current_folder = Path(cwd)
 

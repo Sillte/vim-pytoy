@@ -1,5 +1,3 @@
-import vim
-
 from pytoy.shared.ui import to_filepath
 
 from pytoy.tools.python import PythonExecutor
@@ -14,6 +12,7 @@ IPYTHON_TERMINAL = None  # TERMINAL MANAGER for `ipython`.
 
 def run(path=None):
     """Perform `python {path}`."""
+    import vim
     if not path:
         path = vim.current.buffer.name
         path = to_filepath(path)
@@ -46,6 +45,7 @@ def stop():
 
 
 def is_running() -> int:
+    import vim 
     executor = PythonExecutor()
     ret = executor.is_running
     vim.command(f"let g:pytoy_return = {int(ret)}")
@@ -54,6 +54,7 @@ def is_running() -> int:
 
 def reset():
     """Reset the state of windows."""
+    import vim
     vim.command(":lclose")
     for term in (TERM_STDOUT, TERM_STDERR):
         nr = int(vim.eval(f'bufwinnr("{term}")'))
