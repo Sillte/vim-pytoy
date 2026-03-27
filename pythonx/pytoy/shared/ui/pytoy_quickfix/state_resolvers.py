@@ -1,8 +1,7 @@
 from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
-from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixStateResolverProtocol
 from typing import Sequence
 
-class PytoyQuickfixStateResolver(PytoyQuickfixStateResolverProtocol):
+class PytoyQuickfixStateResolver:
     def resolve_record(
         self, 
         records: Sequence[QuickfixRecord],

@@ -7,10 +7,10 @@ Due to specification, In case of VSCode, only quickfix-like code is used.
 from pathlib import Path
 from typing import Sequence, Callable
 
-from pytoy.shared.ui.ui_enum import get_ui_enum, UIEnum
+from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixProtocol
 from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
-from pytoy.shared.ui.pytoy_quickfix.orchestrators import PytoyQuickfixOrchestrator
+from pytoy.shared.ui.pytoy_quickfix.service import PytoyQuickfixService
 from pytoy.shared.ui.pytoy_quickfix.state_resolvers import PytoyQuickfixStateResolver
 
 
@@ -24,7 +24,7 @@ class PytoyQuickfix:
         if impl is None:
             if name is None:
                 raise ValueError("impl or name must be set.")
-            impl = _get_orchestrator(name)
+            impl = _get_service(name)
         self._impl = impl
 
     @property
@@ -56,27 +56,31 @@ class PytoyQuickfix:
 _quickfix_cache = dict()
 
 
-def _get_orchestrator(name: str) -> PytoyQuickfixProtocol:
+def _get_service(name: str) -> PytoyQuickfixProtocol:
     if name in _quickfix_cache:
         return _quickfix_cache[name]
 
-    ui_enum = get_ui_enum()
+    backend_enum = get_backend_enum()
 
     def make_vscode():
         from pytoy.shared.ui.pytoy_quickfix.impls.vscode import PytoyQuickfixVSCodeUI
-        return PytoyQuickfixOrchestrator(PytoyQuickfixStateResolver(), PytoyQuickfixVSCodeUI())
+        return PytoyQuickfixService(PytoyQuickfixStateResolver(), PytoyQuickfixVSCodeUI())
 
     def make_vim():
         from pytoy.shared.ui.pytoy_quickfix.impls.vim import PytoyQuickfixVimUI
-        return PytoyQuickfixOrchestrator(PytoyQuickfixStateResolver(), PytoyQuickfixVimUI())
+        return PytoyQuickfixService(PytoyQuickfixStateResolver(), PytoyQuickfixVimUI())
 
-    creators = {UIEnum.VSCODE: make_vscode, UIEnum.VIM: make_vim, UIEnum.NVIM: make_vim}
-    _quickfix_cache[name] = creators[ui_enum]()
+    def make_dummy():
+        from pytoy.shared.ui.pytoy_quickfix.impls.dummy import PytoyQuickfixDummyUI
+        return PytoyQuickfixService(PytoyQuickfixStateResolver(), PytoyQuickfixDummyUI())
+
+    creators = {BackendEnum.VSCODE: make_vscode, BackendEnum.VIM: make_vim, BackendEnum.NVIM: make_vim, BackendEnum.DUMMY: make_dummy}
+    _quickfix_cache[name] = creators[backend_enum]()
     return _quickfix_cache[name]
 
 
 def get_pytoy_quickfix(name: str) -> PytoyQuickfix:
-    impl = _get_orchestrator(name)
+    impl = _get_service(name)
     return PytoyQuickfix(impl)
 
 

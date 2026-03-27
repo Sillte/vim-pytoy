@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Callable, Mapping, Any, TYPE_CHECKING
 
 from pytoy.job_execution.terminal_runner.models import TerminalJobProtocol, TerminalJobRequest, SpawnOption, JobEvents, Snapshot, JobID
-from pytoy.shared.ui.ui_enum import get_ui_enum, UIEnum
 from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import make_buffer, make_duo_buffers

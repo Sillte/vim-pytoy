@@ -1,6 +1,6 @@
 from pytoy.shared.ui.notifications.models import LEVEL, NotificationParam
 from pytoy.shared.ui.notifications.protocol import EphemeralNotificationProtocol     
-from pytoy.shared.ui.ui_enum import get_ui_enum, UIEnum
+from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 
 class EphemeralNotification(EphemeralNotificationProtocol):
     def __init__(self, impl: EphemeralNotificationProtocol | None = None) -> None:
@@ -21,17 +21,18 @@ class EphemeralNotification(EphemeralNotificationProtocol):
         
 
 def _get_implementation() -> EphemeralNotificationProtocol:
-    ui_enum = get_ui_enum()
-    if ui_enum == UIEnum.VIM:
+    backend_enum = get_backend_enum()
+    if backend_enum == BackendEnum.VIM:
         from pytoy.shared.ui.notifications.impls.vim import EphemeralNotificationVim
         return EphemeralNotificationVim()
-    elif ui_enum == UIEnum.NVIM:
+    elif backend_enum == BackendEnum.NVIM:
         from pytoy.shared.ui.notifications.impls.nvim import EphemeralNotificationNVim
         return EphemeralNotificationNVim()
-    elif ui_enum == UIEnum.VSCODE:
+    elif backend_enum == BackendEnum.VSCODE:
         from pytoy.shared.ui.notifications.impls.vscode import EphemeralNotificationVSCode
         return EphemeralNotificationVSCode()
     else:
-        raise RuntimeError("Implementation Error")
+        from pytoy.shared.ui.notifications.impls.dummy import EphemeralNotificationDummy
+        return EphemeralNotificationDummy()
 
 

@@ -1,14 +1,13 @@
 from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
-from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixStateResolverProtocol, PytoyQuickfixUIProtocol, PytoyQuickfixProtocol
+from pytoy.shared.ui.pytoy_quickfix.state_resolvers import PytoyQuickfixStateResolver
+from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixUIProtocol
 
 
 from typing import Sequence
 
 
-class PytoyQuickfixOrchestrator(PytoyQuickfixProtocol):
-    def __init__(self,
-                 state_resolver: PytoyQuickfixStateResolverProtocol,
-                 ui_impl: PytoyQuickfixUIProtocol):
+class PytoyQuickfixService:
+    def __init__(self, state_resolver: PytoyQuickfixStateResolver, ui_impl: PytoyQuickfixUIProtocol):
         self._state_resolver = state_resolver
         self._ui_impl = ui_impl
 
@@ -60,7 +59,7 @@ class PytoyQuickfixOrchestrator(PytoyQuickfixProtocol):
         return self.state_resolver.fix_index(state, index)
 
     @property
-    def state_resolver(self) -> PytoyQuickfixStateResolverProtocol:
+    def state_resolver(self) -> PytoyQuickfixStateResolver:
         return self._state_resolver
 
     @property
