@@ -2,7 +2,6 @@ from pathlib import Path
 import time
 import os
 import json
-import vim
 from logging.handlers import RotatingFileHandler
 from pytoy.command import CommandManager
 from pytoy.shared.command.models import OptsArgument
@@ -40,12 +39,14 @@ class VimRebootExecutor:
         """
         backend_enum = get_backend_enum()
         if backend_enum in {BackendEnum.VSCODE, BackendEnum.NVIM}:
+            import vim
             nvim_folder = Path(vim.eval("stdpath('cache')"))
             nvim_folder = to_filepath(nvim_folder)
             if not nvim_folder:
                 nvim_folder.mkdir(parents=True)
             return nvim_folder
         elif backend_enum == BackendEnum.VIM:
+            import vim
             if "XDG_CACHE_HOME" in os.environ:
                 cache_dir = Path(os.environ["XDG_CACHE_HOME"])
             else:
@@ -61,6 +62,7 @@ class VimRebootExecutor:
         raise RuntimeError("Not Implmented.")
 
     def _dump_reboot_info(self, json_path, session_path):
+        import vim
         plugin_folder = self.package.root_folder.as_posix() if self.package else None
         data: dict[str, float | str] = {"time": time.time()}
         if plugin_folder:
@@ -107,6 +109,7 @@ class VimReboot:
                 plugin_folder = package.root_folder.as_posix()
             except ValueError:
                 plugin_folder = None
+            import vim
             path = Path(vim.eval("stdpath('cache')")) / "vscode_restarted.json"
             path = to_filepath(path)
             data = {"plugin_folder": plugin_folder, "time": time.time()}

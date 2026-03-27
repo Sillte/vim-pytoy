@@ -1,22 +1,25 @@
 import shlex
-from typing import Callable
+from typing import Callable, Any
 from typing import TypeAlias
+from typing import Protocol
 import inspect
 
 from pytoy.shared.command.models import RangeCountOption, CommandFunction
-import vim
 
 from pytoy.shared.command.models import RangeCountType
 from pytoy.shared.command._opts_converter import _OptsConverter
 from pytoy.shared.command._customlist_manager import _CustomListManager
 
 from pytoy.shared.command.models import OptsArgument, NARGS, CommandFunction  # NOQA
+from pytoy.shared.command.utils import get_vim_impl, VimCommandUserProtocol
+
 
 
 class CommandManager:
     FUNCTION_MAPS: dict[str, CommandFunction] = dict()
     COMMAND_MAPS: dict[str, str] = dict()
     CONVERTER_MAPS: dict[str, _OptsConverter] = dict()
+    vim: VimCommandUserProtocol = get_vim_impl()
 
     @classmethod
     def register(
@@ -143,7 +146,7 @@ opts = {class_uri}._iterpret_opt_argument(**{rc_opt.to_dict()})
 args, kwargs = {class_uri}.CONVERTER_MAPS['{name}'](opts)
 {class_uri}.FUNCTION_MAPS['{vim_funcname}'](*args, **kwargs)
 EOF""".strip()
-        vim.command(
+        cls.vim.command(
             f"""function! {vim_funcname}({cls._make_vimfunc_params(rc_opt)}) 
             {procedure}
             endfunction
@@ -153,7 +156,7 @@ EOF""".strip()
             nargs = "*"
         command = cls._make_command(nargs, name, vim_funcname, rc_opt, complete, addr)
         # print("command", command)
-        vim.command(command)
+        cls.vim.command(command)
         assert vim_funcname not in cls.FUNCTION_MAPS, "Duplicated Command"
         cls.FUNCTION_MAPS[vim_funcname] = func
         cls.COMMAND_MAPS[name] = command
@@ -251,7 +254,7 @@ EOF""".strip()
         """
         opts = dict()
 
-        opts["args"] = vim.eval("a:q_args")
+        opts["args"] = cls.vim.eval("a:q_args")
         # [TODO] This is crude implementation
         # It is desirable to approach to the "true" implementation.
         # For example, this cannot handle the case where `space` is included
@@ -261,12 +264,12 @@ EOF""".strip()
         if count is not None:
             # Func(count, q_args)
             # (<count>, <q-args>)
-            opts["count"] = int(vim.eval("a:count"))
+            opts["count"] = int(cls.vim.eval("a:count"))
         elif range is not None:
             # Func(line1, line2, q_args)
             # (<count>, <q-args>)
-            opts["line1"] = int(vim.eval("a:line1"))
-            opts["line2"] = int(vim.eval("a:line2"))
+            opts["line1"] = int(cls.vim.eval("a:line1"))
+            opts["line2"] = int(cls.vim.eval("a:line2"))
             opts["range"] = opts["line2"] - opts["line1"] + 1
         return opts
 
@@ -286,8 +289,8 @@ EOF""".strip()
     @classmethod
     def _deregister_for_func(cls, name: str):
         vim_funcname = cls.to_vimfunc_name(name)
-        vim.command(f"delfunction {vim_funcname}")
-        vim.command(f"delcommand {name}")
+        cls.vim.command(f"delfunction {vim_funcname}")
+        cls.vim.command(f"delcommand {name}")
 
         del cls.FUNCTION_MAPS[vim_funcname]
         del cls.COMMAND_MAPS[name]

@@ -1,8 +1,8 @@
 import inspect
-import vim
 import json
 import textwrap
 from pytoy.shared.command.models import CommandFunction
+from pytoy.shared.command.utils import get_vim_impl, VimCommandUserProtocol
 
 
 def _signature(target) -> inspect.Signature:
@@ -20,13 +20,14 @@ class _CustomListManager:
     def get_class_uri(cls) -> str:
         try:
             _prefix = f"{__name__}."
-        except:
+        except Exception:
             _prefix = ""
         return f"{_prefix}_CustomListManager"
 
     FUNCTION_MAP: dict[str, CommandFunction] = dict()
     VIMFUNC_TABLE: dict[str, str] = dict()
     V_CUSTOMLIST_VARIABLE = "g:customlist_manager_result"
+    vim: VimCommandUserProtocol = get_vim_impl()
 
     @classmethod
     def register(cls, name: str, target: CommandFunction) -> str:
@@ -45,7 +46,7 @@ class _CustomListManager:
 
         class_uri = cls.get_class_uri()
 
-        vim.command(
+        cls.vim.command(
             cls.WRAP_INVOKE_CUSTOMLIST_TEMPLATE.format(
                 vimfunc_name=vimfunc_name,
                 class_uri=class_uri,
@@ -79,7 +80,7 @@ class _CustomListManager:
         except Exception as e:
             result = [f"{name} _invoke_customlist_error: {e}"]
         result = json.dumps(result)
-        vim.command(f"let {cls.V_CUSTOMLIST_VARIABLE}={result}")
+        cls.vim.command(f"let {cls.V_CUSTOMLIST_VARIABLE}={result}")
 
     @classmethod
     def to_vimfunc_name(cls, name: str) -> str:
@@ -91,6 +92,6 @@ class _CustomListManager:
         if name not in cls.VIMFUNC_TABLE:
             return
         vimfunc_name = cls.VIMFUNC_TABLE[name]
-        vim.command(f"delfunction {vimfunc_name}")
+        cls.vim.command(f"delfunction {vimfunc_name}")
         del cls.VIMFUNC_TABLE[name]
         del cls.FUNCTION_MAP[name]

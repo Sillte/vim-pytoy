@@ -1,5 +1,4 @@
 from pytoy.shared.command.models import OptsArgument
-import vim
 from pytoy.job_execution.utils import get_current_directory
 
 from pytoy.job_execution.terminal_executor import TerminalExecutor, TerminalExecution, BufferRequest, ExecutionRequest

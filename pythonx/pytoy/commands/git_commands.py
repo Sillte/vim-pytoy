@@ -1,8 +1,5 @@
 """git_commands"""
-
 from pytoy.shared.command.models import OptsArgument
-import vim
-from pathlib import Path
 from pytoy.command import CommandManager
 from pytoy.tools.git import get_remote_link
 from pytoy.shared.ui.utils import to_filepath
@@ -15,8 +12,8 @@ def get_gitaddress(opts: OptsArgument):
     line2 = opts.line2
 
     filepath = to_filepath(PytoyBuffer.get_current().path)
-    import subprocess
 
+    import vim
     remote_link = get_remote_link(filepath, line1, line2)
     vim.command(f'let @c="{remote_link}"')
     vim.command(f'let @*="{remote_link}"')
