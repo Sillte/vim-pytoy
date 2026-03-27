@@ -1,4 +1,3 @@
-import vim
 from typing import Callable, Any, Literal, Protocol, Self
 from textwrap import dedent
 from dataclasses import dataclass

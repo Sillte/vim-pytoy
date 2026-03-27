@@ -1,4 +1,4 @@
-from pytoy.shared.lib.models import CursorPosition, CharacterRange
+from pytoy.shared.lib.text import CursorPosition, CharacterRange
 from pytoy.shared.ui.pytoy_buffer.impls.text_searchers import TextSearcher
 
 def test_find_first_single_line():
