@@ -9,4 +9,3 @@ nnoremap <F12> :<c-u>UVToggle<CR>
 nnoremap <leader>d :GotoDefinition<CR>
 " It seems that invocation of the plugin is necessary.
 call pytoy#init_python()
-"python3 import pytoy 
