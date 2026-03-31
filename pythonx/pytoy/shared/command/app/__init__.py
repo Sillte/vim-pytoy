@@ -74,7 +74,8 @@ class CommandApplicationVim:
         pass
 
     def command(self, name:str, *, invocation_spec: InvocationSpec | None = None, exists_ok: bool = True) -> Callable:
-        name = name.capitalize()
+        # [TODO]: Sophisticated name check is required.
+        name = name.title()
         def decorator(fn: Callable):
             VimAdapter.register_command(name=name, fn=fn)
             return fn

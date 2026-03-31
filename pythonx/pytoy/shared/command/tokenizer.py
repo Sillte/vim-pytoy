@@ -80,7 +80,7 @@ class InterpretedInput:
 
 @dataclass(frozen=True)
 class ResolvedInput:
-    args: Sequence[Any]
+    arg_kwargs: Mapping[str, Any]
     kwargs: Mapping[str, Any]
 
     @classmethod
@@ -112,22 +112,36 @@ class ResolvedInput:
         return converted
 
     @classmethod
-    def from_interpurted_input(cls, command_model: CommandModel, interpreted_input: InterpretedInput) -> Self:
+    def from_interpreted_input(cls, command_model: CommandModel, interpreted_input: InterpretedInput) -> Self:
         if interpreted_input.exceptions:
             raise interpreted_input.exceptions[0]
 
-        args = []
         kwargs = {}
+        
+        arg_kwargs = {}
 
-        for i, arg_def in enumerate(command_model.arguments):
-            if i < len(interpreted_input.arguments):
-                val_str = interpreted_input.arguments[i]
-            else:
-                raise ValueError(f"Missing required argument: {arg_def.name}")
+        if len(interpreted_input.arguments) > len(command_model.arguments):
+            raise ValueError("Too many arguments")
+        required_arguments = [elem for elem in command_model.arguments if elem.required]
+        non_required_arguments =  [elem for elem in command_model.arguments if not elem.required]
+
+        if len(interpreted_input.arguments) < len(required_arguments):
+            raise ValueError("Too little arguments")
+        given_arguments = required_arguments + non_required_arguments[:len(interpreted_input.arguments) - len(required_arguments)]
+        non_given_arguments =  non_required_arguments[len(interpreted_input.arguments) - len(required_arguments):]
+        for i, arg_def in enumerate(given_arguments):
+            val_str = interpreted_input.arguments[i]
             converted = cls._convert_element(val_str, arg_def.types, arg_def.literal_values, arg_def.only_literal)
             if converted is MISSING_DEFAULT:
                 raise TypeError(f"Cannot convert argument '{arg_def.name}' value '{val_str}' to any allowed type")
-            args.append(converted)
+            arg_kwargs[arg_def.name] = converted
+
+        for arg_def in non_given_arguments:
+            value = arg_def.default
+            if value is MISSING_DEFAULT:
+                raise TypeError(f"Cannot convert argument '{arg_def.name}' does not have the default.")
+            arg_kwargs[arg_def.name] = value
+
 
         for opt_def in command_model.options:
             name = opt_def.name
@@ -169,10 +183,7 @@ class ResolvedInput:
             if key not in {opt.name for opt in command_model.options}:
                 raise ValueError(f"Unknown option: {key}")
 
-        if len(interpreted_input.arguments) > len(command_model.arguments):
-            raise ValueError("Too many arguments")
-
-        return cls(args=args, kwargs=kwargs)
+        return cls(arg_kwargs=arg_kwargs, kwargs=kwargs)
 
 
 def tokenize(cmd_line: str) -> list[Token]:

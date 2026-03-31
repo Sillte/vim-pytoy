@@ -6,16 +6,17 @@ from typing import (
     Mapping,
     TYPE_CHECKING,
     Self,
+    Literal,
 )
 from dataclasses import dataclass, field
 from pytoy.shared.lib.text import LineRange
 from pytoy.shared.command.utils import flatten_union, is_union, unwrap_annotated, is_literal, literal_values
 
-type AcceptableType = str | int | float | bool | None
-
 RangeParam = LineRange
 if TYPE_CHECKING:
     from inspect import Parameter
+
+MISSING_DEFAULT = object()
 
 
 def _get_types(annotation: Any, default_type: type = str) -> set[type]:
@@ -32,24 +33,6 @@ def _get_types(annotation: Any, default_type: type = str) -> set[type]:
         return flatten_union(unwrapped)
     else:
         return {unwrapped}
-
-
-MISSING_DEFAULT = object()
-
-
-def _get_default(param: "Parameter") -> Any:
-    from inspect import Parameter
-
-    if param.default is not Parameter.empty:
-        return param.default
-
-    _, metadata = unwrap_annotated(param.annotation)
-    for meta in metadata:
-        if isinstance(meta, Field):
-            default_getter = DefaultGetter.from_field(meta)
-            if default_getter:
-                return default_getter
-    return MISSING_DEFAULT
 
 
 def _get_literal_values(annotation: Any) -> Sequence[Any] | None:
@@ -75,18 +58,61 @@ type InjectedParam = RangeParam | CountParam
 
 
 @dataclass(frozen=True)
-class Argument:
-    name: str
-    types: set[type]
-    literal_values: Sequence[Any] | None = None
-    only_literal: bool = False
-    # completer: Callable[[], list[Any]] | None = None  # Not yet used.
-
-
-@dataclass(frozen=True)
 class Field:
     default: Any = MISSING_DEFAULT
     default_factory: Callable | None = None
+    # completer: Callable[[], list[Any]] | None = None  # Not yet used.
+
+
+class Argument:
+    def __init__(self, default: Any = MISSING_DEFAULT, *, default_factory: Any = None, help: str | None = ""):
+        self._default = default
+        self._help = help
+        self._default_factory = default_factory
+
+    def __repr__(self):
+        return f"Argument(default={self._default!r})"
+
+    @property
+    def required(self) -> bool:
+        return self.default is MISSING_DEFAULT and self.default_factory is None
+
+    @property
+    def default(self) -> Any:
+        return self._default
+
+    @property
+    def default_factory(self) -> Any:
+        return self._default_factory
+
+    @property
+    def help(self) -> str | None:
+        return self._help
+
+
+class Option:
+    def __init__(
+        self,
+        default: Any = MISSING_DEFAULT,
+        *,
+        default_factory: Any = None,
+        help: str | None = None,
+    ):
+        self._default = default
+        self._default_factory = default_factory
+        self._help = help
+
+    @property
+    def default(self) -> Any:
+        return self._default
+
+    @property
+    def default_factory(self) -> Any:
+        return self._default_factory
+
+    @property
+    def help(self) -> str | None:
+        return self._help
 
 
 @dataclass(frozen=True)
@@ -97,6 +123,14 @@ class DefaultGetter:
     @classmethod
     def from_field(cls, field: Field) -> Self:
         return cls(default=field.default, default_factory=field.default_factory)
+
+    @classmethod
+    def from_option(cls, option: Option) -> Self:
+        return cls(default=option.default, default_factory=option.default_factory)
+
+    @classmethod
+    def from_argument(cls, argument: Argument) -> Self:
+        return cls(default=argument.default, default_factory=argument.default_factory)
 
     def __bool__(self):
         return (self.default is not MISSING_DEFAULT) or (self.default_factory is not None)
@@ -110,10 +144,30 @@ class DefaultGetter:
 
 
 @dataclass(frozen=True)
-class Option:
+class ArgumentModel:
     name: str
     types: set[type]
-    default_getter: Any | DefaultGetter
+    literal_values: Sequence[Any] | None = None
+    only_literal: bool = False
+    default_getter: DefaultGetter | None = None
+    # completer: Callable[[], list[Any]] | None = None  # Not yet used.
+
+    @property
+    def required(self) -> bool:
+        return self.default_getter is None
+
+    @property
+    def default(self) -> Any:
+        if self.default_getter is None:
+            return MISSING_DEFAULT
+        return self.default_getter.get_default()
+
+
+@dataclass(frozen=True)
+class OptionModel:
+    name: str
+    types: set[type]
+    default_getter: DefaultGetter
     literal_values: Sequence[Any] | None = None
     only_literal: bool = False
 
@@ -121,25 +175,79 @@ class Option:
 
     @property
     def default(self) -> Any:
-        if isinstance(self.default_getter, DefaultGetter):
-            return self.default_getter.get_default()
-        return self.default_getter
-    
+        return self.default_getter.get_default()
+
     def get_candidate_values(self) -> Sequence[str]:
         if self.literal_values:
             return self.literal_values
         return []
 
 
+def _resolve_type_and_default(param) -> tuple[Literal["Argument", "Option"], DefaultGetter | None]:
+
+    from inspect import Parameter
+
+    # Type-like handling. 
+    # To be specific, when domain object is given.
+    raw_default = param.default
+    if isinstance(raw_default, Argument):
+        if raw_default.required:
+            dg = None
+        else:
+            dg = DefaultGetter.from_argument(raw_default)
+        return "Argument", dg
+
+    if isinstance(raw_default, Option):
+        return "Option", DefaultGetter.from_option(raw_default)
+
+    if isinstance(raw_default, DefaultGetter):
+        return "Option", raw_default
+
+
+    # FastAPI-like handling and fallback.
+    if raw_default is not Parameter.empty:
+        dg = DefaultGetter(default=raw_default)
+    else:
+        dg = None
+
+    param_type = None 
+    # Annotated(Field) fallback
+    _, metadata = unwrap_annotated(param.annotation)
+    for meta in metadata:
+        # Fallback for class specification.
+        if meta is Argument:
+            meta = Argument()
+        elif meta is Option:
+            meta = Option()
+
+        if isinstance(meta, Field):
+            if dg is None and (cand:=DefaultGetter.from_field(meta)):
+                dg = cand
+        elif isinstance(meta, Argument):
+            if dg is None and (cand:=DefaultGetter.from_argument(meta)):
+                dg = cand
+            param_type = "Argument"
+        elif isinstance(meta, Option):
+            if dg is None and (cand:=DefaultGetter.from_option(meta)):
+                dg = cand
+            param_type = "Option"
+            
+    if param_type is None:
+        if dg is None:
+            param_type = "Argument"
+        else:
+            param_type = "Option"
+    return param_type, dg
+
+
 @dataclass(frozen=True)
 class CommandModel:
-    arguments: Sequence[Argument]
-    options: Sequence[Option]
-    impl: Callable 
+    arguments: Sequence[ArgumentModel]
+    options: Sequence[OptionModel]
+    impl: Callable
     injected_params: Mapping[str, type[InjectedParam]] = field(default_factory=dict)
     args_name: str | None = None
     kwargs_name: str | None = None
-
 
     @classmethod
     def from_callable(cls, function: Callable) -> Self:
@@ -149,8 +257,8 @@ class CommandModel:
         args_name: str | None = None
         kwargs_name: str | None = None
         injected_params: dict[str, type[InjectedParam]] = {}
-        arguments: list[Argument] = []
-        options: list[Option] = []
+        arguments: list[ArgumentModel] = []
+        options: list[OptionModel] = []
         for param in sig.parameters.values():
             if param.kind == Parameter.VAR_POSITIONAL:
                 args_name = param.name
@@ -178,29 +286,34 @@ class CommandModel:
                 injected_params[param.name] = targets.pop()
                 continue
 
-            default = _get_default(param)
             literal_values = _get_literal_values(param.annotation)
             is_only_literal = _is_only_literal(param.annotation)
+            arg_type, default_getter = _resolve_type_and_default(param)
+            if arg_type == "Option" and (not default_getter):
+                raise ValueError(f"Option `{param}` requires a default")
 
-            if default is MISSING_DEFAULT:
+            if arg_type == "Argument":
                 arguments.append(
-                    Argument(
+                    ArgumentModel(
                         name=param.name,
                         types=annotated_types,
+                        literal_values=literal_values,
+                        only_literal=is_only_literal,
+                        default_getter=default_getter,
+                    )
+                )
+            elif arg_type == "Option" and default_getter is not None:
+                options.append(
+                    OptionModel(
+                        name=param.name,
+                        types=annotated_types,
+                        default_getter=default_getter,
                         literal_values=literal_values,
                         only_literal=is_only_literal,
                     )
                 )
             else:
-                options.append(
-                    Option(
-                        name=param.name,
-                        types=annotated_types,
-                        default_getter=default,
-                        literal_values=literal_values,
-                        only_literal=is_only_literal,
-                    )
-                )
+                raise RuntimeError("Implementation Error.")
         return cls(
             arguments=arguments,
             options=options,
@@ -233,16 +346,5 @@ class BooleanOptions:
         return cls(names=names)
 
 
-
-def func(arg: str): ...
-
-
 if __name__ == "__main__":
-    from typing import Callable
-
-    class CommandApplication:
-        def __init__(
-            self,
-        ): ...
-
-        def command(self, name: str) -> Callable: ...
+    ...

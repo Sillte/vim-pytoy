@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Sequence, Literal, Mapping, assert_never
 from collections import defaultdict
-from pytoy.shared.command.models import CommandModel, Argument, Option, Token, BooleanOptions
+from pytoy.shared.command.models import CommandModel, ArgumentModel, OptionModel, Token, BooleanOptions
 from pytoy.shared.command.tokenizer import tokenize, InterpretedInput, OptionValueMissingError
 
 # Input to the inside of the domain.
@@ -12,7 +12,6 @@ class CompletionParam:
     cmd_line: str
     cursor_pos: int  # Already, `offset` is subtracted.
     offset: int  # Required offset for response.
-
 
 
 @dataclass(frozen=True)
@@ -111,7 +110,7 @@ class CmdlineStatus:
 
 @dataclass(frozen=True)
 class ArgumentAppeal:
-    argument: Argument
+    argument: ArgumentModel
     type: Literal["Argument"] = "Argument"
 
     @property
@@ -124,13 +123,13 @@ class ArgumentAppeal:
 
 @dataclass(frozen=True)
 class OptionAppeal:
-    options: Mapping[str, Option]
+    options: Mapping[str, OptionModel]
     type: Literal["Option"] = "Option"
 
 
 @dataclass(frozen=True)
 class OptionValueAppeal:
-    option: Option
+    option: OptionModel
     type: Literal["OptionValue"] = "OptionValue"
 
 
