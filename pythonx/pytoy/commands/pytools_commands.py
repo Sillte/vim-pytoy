@@ -1,60 +1,18 @@
 """Python related commands."""
 
-from typing import Sequence, Callable, assert_never
-from pytoy.command import CommandManager
+from typing import Sequence, assert_never
 from pytoy.shared.ui.pytoy_buffer import make_buffer
 from pytoy.shared.ui.utils import to_filepath
 from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord
 
+from pytoy.shared.command import App, Argument
+from typing import Literal, Annotated
 
-@CommandManager.register(name="Pytest")
-class PyTestCommand:
-    name = "Pytest"
-
-    def __call__(self, command_type: str = "func"):
-        import vim
-        from pytoy.job_execution.command_executor import QuickfixCommandExecutor
-        from pytoy.job_execution.command_executor import QuickfixCommandRequest
-        from pytoy.job_execution.command_executor import ExecutionRequest
-        from pytoy.job_execution.command_executor import BufferRequest
-        from pytoy.tools.pytest.utils import to_func_command, PytestDecipher
-        from pytoy import TERM_STDOUT
-
-        path = to_filepath(vim.current.buffer.name)
-        cwd = path.parent
-        line = int(vim.eval("line('.')"))
-
-        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
-
-        command_type_to_func = {}
-        suffix = "--capture=no --quiet"
-        command_type_to_func["func"] = lambda path, line: to_func_command(path, line, suffix)
-        command_type_to_func["file"] = lambda path, line: f'pytest "{path}" {suffix}'
-        command_type_to_func["all"] = lambda path, line: f"pytest {suffix}"
-
-        def make_qf_records(content: str) -> Sequence[QuickfixRecord]:
-            rows = PytestDecipher(content).records
-            return [QuickfixRecord.from_dict(row, cwd) for row in rows]
-
-        command = command_type_to_func[command_type](path, line)
-
-        executor = QuickfixCommandExecutor(BufferRequest(stdout=pytoy_buffer))
-        execution = ExecutionRequest(command=command, cwd=cwd)
-        request = QuickfixCommandRequest(execution=execution, creator=make_qf_records)
-        executor.execute(request)
-
-    def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
-        candidates = ["func", "file", "all"]
-        valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
-        if valid_candidates:
-            return valid_candidates
-        return candidates
-    
-from pytoy.shared.command import App
-from typing import Literal
 app = App()
-@app.command("PytestNew")
-def pytest_new(command_type: Literal["func", "file", "all"]):
+
+
+@app.command("Pytest")
+def pytest_command(command_type: Annotated[Literal["func", "file", "all"], Argument()] = "func"):
 
     import vim
     from pytoy.job_execution.command_executor import QuickfixCommandExecutor
@@ -94,119 +52,127 @@ def pytest_new(command_type: Literal["func", "file", "all"]):
     executor.execute(request)
 
 
+@app.command(name="Mypy")
+def mypy_command(target: Annotated[Literal["workspace", "current"] | str | None, Argument()] = None):
+    from pathlib import Path
+    from pytoy.job_execution.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
+    from pytoy.job_execution.command_executor import BufferRequest
+    from pytoy import TERM_STDOUT
+    from pytoy.commands.utils import override, workspace_func, fallback_argument
+    import vim
 
-@CommandManager.register(name="Mypy")
-class MypyCommand:
-    def __call__(self, opts: dict):
-        from pytoy.job_execution.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
-        from pytoy.job_execution.command_executor import BufferRequest
-        from pytoy import TERM_STDOUT
-        from pytoy.commands.utils import override, workspace_func, fallback_argument
-        import vim
+    current_path = to_filepath(vim.current.buffer.name)
+    if target == "workspace":
+        path = workspace_func()
+    elif target == "current":
+        path = current_path
+    else:
+        path = workspace_func() or current_path
 
-        current_path = to_filepath(vim.current.buffer.name)
+    pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
+    command = f'mypy --show-traceback --show-column-numbers "{path}"'
+    executor = QuickfixCommandExecutor(buffer_request=BufferRequest(stdout=pytoy_buffer))
+    execution = ExecutionRequest(command=command, cwd=current_path.parent)
 
-        fargs = opts["fargs"]
-        fargs = override(fargs, {"workspace": workspace_func})
-        fargs = fallback_argument(fargs, str(current_path))
-
-        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
-        arg = " ".join(map(str, fargs))
-        command = f'mypy --show-traceback --show-column-numbers "{arg}"'
-        executor = QuickfixCommandExecutor(buffer_request=BufferRequest(stdout=pytoy_buffer))
-        execution = ExecutionRequest(command=command, cwd=current_path.parent)
-
-        quickfix_regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<_type>(.+)):(?P<text>(.+))"
-        request = QuickfixCommandRequest(execution=execution, creator=quickfix_regex)
-        executor.execute(request)
-
-    def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
-        candidates = ["workspace"]
-        valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
-        if valid_candidates:
-            return valid_candidates
-        return candidates
+    quickfix_regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<_type>(.+)):(?P<text>(.+))"
+    request = QuickfixCommandRequest(execution=execution, creator=quickfix_regex)
+    executor.execute(request)
 
 
-@CommandManager.register(name="CSpell")
-class CSpellCommand:
-    def __call__(self):
-        from pathlib import Path
-        from pytoy import TERM_STDOUT
-        from pytoy.tools.cspell import CSpellOneFileChecker
-        from pytoy.shared.ui import to_filepath
-        from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, handle_records, to_quickfix_creator
-        import vim
+@app.command(name="CSpell")
+def cspell_command():
+    from pathlib import Path
+    from pytoy import TERM_STDOUT
+    from pytoy.tools.cspell import CSpellOneFileChecker
+    from pytoy.shared.ui import to_filepath
+    from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, handle_records, to_quickfix_creator
+    import vim
 
-        path = to_filepath(vim.current.buffer.name)
+    path = to_filepath(vim.current.buffer.name)
 
-        if Path(path).suffix == ".py":
-            checker = CSpellOneFileChecker(only_python_string=True)
-        else:
-            checker = CSpellOneFileChecker(only_python_string=False)
-        output = checker(path)
-        regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+).*\((?P<text>(.+))\)"
-        maker = to_quickfix_creator(regex, cwd=path.parent)
-        records = maker(output)
-        handle_records(PytoyQuickfix(), records)
+    if Path(path).suffix == ".py":
+        checker = CSpellOneFileChecker(only_python_string=True)
+    else:
+        checker = CSpellOneFileChecker(only_python_string=False)
+    output = checker(path)
+    regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+).*\((?P<text>(.+))\)"
+    maker = to_quickfix_creator(regex, cwd=path.parent)
+    records = maker(output)
+    handle_records(PytoyQuickfix(), records)
 
 
-@CommandManager.register(name="RuffCheck")
-class RuffChecker:
-    def __call__(self, opts: dict):
-        from pytoy import TERM_STDOUT
-        from pytoy.commands.utils import override, workspace_func, fallback_argument
-        from pytoy.contexts.core import GlobalCoreContext
+@app.command(name="RuffCheck")
+def ruff_check(
+    target: Annotated[Literal["workspace", "current"] | None | str, Argument()] = None,
+    fix: bool = True,
+    format: bool = False,
+    unsafe: bool = False,
+):
 
-        from pytoy.job_execution.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
-        from pytoy.job_execution.command_executor import BufferRequest
-        import vim
+    from pytoy import TERM_STDOUT
+    from pytoy.commands.utils import override, workspace_func, fallback_argument
+    from pytoy.contexts.core import GlobalCoreContext
 
-        current_path = to_filepath(vim.current.buffer.name)
-        cwd = current_path.parent
-        env_manager = GlobalCoreContext.get().environment_manager
-        execution_env = env_manager.solve_preference(cwd, preference=None)
-        pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
+    from pytoy.job_execution.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
+    from pytoy.job_execution.command_executor import BufferRequest
+    from pathlib import Path
+    import vim
 
-        def _format() -> None:
-            import subprocess
+    current_path = to_filepath(vim.current.buffer.name)
+    cwd = current_path.parent
+    env_manager = GlobalCoreContext.get().environment_manager
+    execution_env = env_manager.solve_preference(cwd, preference=None)
+    pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
 
-            command = f"ruff format {fargs[0]}"
-            command = execution_env.command_wrapper(command)
+    def _format(path: str | Path) -> None:
+        import subprocess
 
-            result = subprocess.run(
-                command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                cwd=cwd,
-                text=True,
-            )
-            pytoy_buffer.init_buffer(result.stdout)
+        command = f'ruff format "{path}"'
+        command = execution_env.command_wrapper(command)
 
-        fargs = opts["fargs"]
-        fargs = override(fargs, {"workspace": workspace_func})
-        fargs = fallback_argument(fargs, str(current_path))
-        fargs = override(fargs, {"--format": _format})
-
-        buffer_request = BufferRequest(stdout=pytoy_buffer)
-        pytoy_buffer.init_buffer()
-        executor = QuickfixCommandExecutor(buffer_request)
-
-        command = f"ruff check {' '.join(map(str, fargs))} --output-format=concise"
-        execution = ExecutionRequest(
-            command=command, cwd=current_path.parent, command_wrapper=execution_env.command_wrapper
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=cwd,
+            text=True,
         )
-        qf_creator = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<text>(.+))"
+        pytoy_buffer.init_buffer(result.stdout)
 
-        request = QuickfixCommandRequest(execution=execution, creator=qf_creator)
-        executor.execute(request, init_buffer=False)
+    if target == "workspace":
+        path = workspace_func()
+    elif target == "current":
+        path = current_path
+    elif isinstance(target, str):
+        path = Path(target)
+    elif target is None:
+        path = current_path or workspace_func()
+    else:
+        path = current_path
 
-    def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
-        candidates = ["workspace", "--fix", "--format", "--unsafe-fixes"]
-        valid_candidates = [elem for elem in candidates if elem.startswith(arg_lead)]
-        if valid_candidates:
-            return valid_candidates
-        return candidates
+    if path is None:
+        raise ValueError("Given input is not valid.")
+
+    if format:
+        _format(path)
+
+    buffer_request = BufferRequest(stdout=pytoy_buffer)
+    pytoy_buffer.init_buffer()
+    executor = QuickfixCommandExecutor(buffer_request)
+    option_str = ""
+    if fix is True:
+        option_str += " --fix "
+    if unsafe is True:
+        option_str += " --unsafe-fixes "
+
+    command = f'ruff check "{path}" --output-format=concise {option_str}'
+    execution = ExecutionRequest(
+        command=command, cwd=current_path.parent, command_wrapper=execution_env.command_wrapper
+    )
+    qf_creator = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<text>(.+))"
+
+    request = QuickfixCommandRequest(execution=execution, creator=qf_creator)
+    executor.execute(request, init_buffer=False)
 
 
 if __name__ == "__main__":

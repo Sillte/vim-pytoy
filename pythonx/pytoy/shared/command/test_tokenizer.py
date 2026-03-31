@@ -22,8 +22,8 @@ def test_literal_basic():
     assert interp.arguments == ["fast"]
     assert interp.options == {}
 
-    resolved = ResolvedInput.from_interpurted_input(model, interp)
-    assert resolved.args == ["fast"]
+    resolved = ResolvedInput.from_interpreted_input(model, interp)
+    assert resolved.arg_kwargs["mode"] == "fast"
     assert resolved.kwargs == {}
 
 
@@ -68,7 +68,7 @@ def test_interpret_tokens_option_value_assignment():
     interp = InterpretedInput.from_tokens(tokens, model)
     assert interp.arguments == ["input.txt"]
     assert interp.options["output"] == ["result.txt"]
-    r_input = ResolvedInput.from_interpurted_input(model, interp)
+    r_input = ResolvedInput.from_interpreted_input(model, interp)
     assert r_input.kwargs["output"] == Path("result.txt")
 
 
@@ -79,9 +79,9 @@ def test_resolved_input_converts_types_and_uses_defaults():
 
     tokens = tokenize("42 --debug --tags=hello --tags=world")
     interp = InterpretedInput.from_tokens(tokens, model)
-    resolved = ResolvedInput.from_interpurted_input(model, interp)
+    resolved = ResolvedInput.from_interpreted_input(model, interp)
 
-    assert resolved.args == [42]
+    assert resolved.arg_kwargs["count"] == 42
     assert resolved.kwargs["debug"] is True
     assert resolved.kwargs["tags"] == ["hello", "world"]
 
@@ -93,7 +93,7 @@ def test_resolved_input_rejects_unknown_option():
     interp = InterpretedInput(arguments=["foo"], options={"bad": ["value"]})
 
     with pytest.raises(ValueError, match="Unknown option: bad"):
-        ResolvedInput.from_interpurted_input(model, interp)
+        ResolvedInput.from_interpreted_input(model, interp)
 
 
 def test_resolved_input_rejects_too_many_arguments():
@@ -103,7 +103,7 @@ def test_resolved_input_rejects_too_many_arguments():
     interp = InterpretedInput(arguments=["foo", "bar"], options={})
 
     with pytest.raises(ValueError, match="Too many arguments"):
-        ResolvedInput.from_interpurted_input(model, interp)
+        ResolvedInput.from_interpreted_input(model, interp)
 
 
 def test_resolved_input_rejects_unconvertible_argument():
@@ -113,4 +113,7 @@ def test_resolved_input_rejects_unconvertible_argument():
     interp = InterpretedInput(arguments=["not-a-number"], options={})
 
     with pytest.raises(TypeError, match="Cannot convert argument 'value' value 'not-a-number' to any allowed type"):
-        ResolvedInput.from_interpurted_input(model, interp)
+        ResolvedInput.from_interpreted_input(model, interp)
+
+if __name__ == "__main__":
+    pytest.main([__file__, "--capture=no"])
