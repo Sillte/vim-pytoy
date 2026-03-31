@@ -1,5 +1,5 @@
 try:
-    from pytoy.shared.command.sub_commands.specs import (
+    from pytoy.shared.old_command.sub_commands.specs import (
         ArgumentSpec,
         OptionSpec,
         Completion,
@@ -9,9 +9,9 @@ try:
         ContextType,
         ParsedArguments,
     )  # noqa
-    from pytoy.shared.command.sub_commands.completion_context_maker import CompletionContextMaker
-    from pytoy.shared.command.sub_commands.completion_provider import CompletionProvider
-    from pytoy.shared.command.sub_commands.parse_provider import ParseProvider
+    from pytoy.shared.old_command.sub_commands.completion_context_maker import CompletionContextMaker
+    from pytoy.shared.old_command.sub_commands.completion_provider import CompletionProvider
+    from pytoy.shared.old_command.sub_commands.parse_provider import ParseProvider
 except ImportError:
     from specs import (
         ArgumentSpec,
@@ -25,7 +25,7 @@ except ImportError:
     )  # noqa
     from completion_context_maker import CompletionContextMaker
     from completion_provider import CompletionProvider
-    from pytoy.shared.command.sub_commands.parse_provider import ParseProvider
+    from pytoy.shared.old_command.sub_commands.parse_provider import ParseProvider
 
 
 class SubCommandsHandler:

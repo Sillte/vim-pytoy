@@ -1,7 +1,7 @@
 from collections.abc import Mapping as AbcMapping
 from typing import Annotated, Any, get_args, get_origin
-from pytoy.shared.command.protocol import ConverterProviderProtocol, CommandFunction
-from pytoy.shared.command.models import OptsArgument, RangeCountOption, NARGS
+from pytoy.shared.old_command.protocol import ConverterProviderProtocol, CommandFunction
+from pytoy.shared.old_command.models import OptsArgument, RangeCountOption, NARGS
 
 
 import inspect

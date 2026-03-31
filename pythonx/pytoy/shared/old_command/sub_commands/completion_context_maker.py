@@ -1,5 +1,5 @@
-from pytoy.shared.command.sub_commands.tokenizer import Token, tokenize
-from pytoy.shared.command.sub_commands.specs import (
+from pytoy.shared.old_command.sub_commands.tokenizer import Token, tokenize
+from pytoy.shared.old_command.sub_commands.specs import (
     MainCommandSpec,
     CompletionContext,
     ContextType,

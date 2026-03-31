@@ -4,7 +4,7 @@ import os
 import json
 from logging.handlers import RotatingFileHandler
 from pytoy.command import CommandManager
-from pytoy.shared.command.models import OptsArgument
+from pytoy.shared.old_command.models import OptsArgument
 from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.devtools.vim_rebooter import VimRebooter
 from pytoy.shared.timertask import TimerTask

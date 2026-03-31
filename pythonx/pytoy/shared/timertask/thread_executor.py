@@ -222,7 +222,7 @@ if __name__ == "__main__":
 
     ctx = DummyContext().get()
 
-    executor = ThreadExecutor(ctx=ctx)
+    executor = ThreadExecutor(ctx=ctx)  #type: ignore
 
     # finish / error callback
     def on_finish(result):

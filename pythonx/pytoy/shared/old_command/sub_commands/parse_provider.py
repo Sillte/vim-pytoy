@@ -1,5 +1,5 @@
-from pytoy.shared.command.sub_commands.tokenizer import Token, tokenize
-from pytoy.shared.command.sub_commands.specs import (
+from pytoy.shared.old_command.sub_commands.tokenizer import Token, tokenize
+from pytoy.shared.old_command.sub_commands.specs import (
     ArgumentSpec,
     OptionSpec,
     OptionType,
@@ -11,7 +11,7 @@ from pytoy.shared.command.sub_commands.specs import (
     ParsedArguments,
     _DefaultSentinel,
 )
-from pytoy.shared.command.sub_commands.completion_context_maker import CompletionContextMaker
+from pytoy.shared.old_command.sub_commands.completion_context_maker import CompletionContextMaker
 from dataclasses import dataclass
 
 
