@@ -1,4 +1,4 @@
-from pytoy.shared.command.sub_commands.specs import (
+from pytoy.shared.old_command.sub_commands.specs import (
     ArgumentSpec,
     OptionSpec,
     Completion,
@@ -7,7 +7,7 @@ from pytoy.shared.command.sub_commands.specs import (
     CompletionContext,
     ContextType,
 )
-from pytoy.shared.command.sub_commands.completion_context_maker import CompletionContextMaker
+from pytoy.shared.old_command.sub_commands.completion_context_maker import CompletionContextMaker
 
 
 class _OptionCandidatesProvider:

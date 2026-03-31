@@ -19,9 +19,9 @@ whle the Role 2 is is carried out at the definition time of the Command.
 import inspect
 from inspect import Signature
 from typing import Any, Sequence, Mapping
-from pytoy.shared.command.protocol import ConverterProviderProtocol, CommandFunction
-from pytoy.shared.command.models import OptsArgument, RangeCountOption, NARGS
-from pytoy.shared.command._opts_arguments_converters import (
+from pytoy.shared.old_command.protocol import ConverterProviderProtocol, CommandFunction
+from pytoy.shared.old_command.models import OptsArgument, RangeCountOption, NARGS
+from pytoy.shared.old_command._opts_arguments_converters import (
     NoArgumentConverter,
     OptArgumentConverter,
     OneStringArgumentConverter,

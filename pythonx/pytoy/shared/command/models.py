@@ -1,87 +1,248 @@
+import types
+from typing import (
+    Sequence,
+    Any,
+    Callable,
+    Mapping,
+    TYPE_CHECKING,
+    Self,
+)
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Callable, Any, TypeAlias
 from pytoy.shared.lib.text import LineRange
+from pytoy.shared.command.utils import flatten_union, is_union, unwrap_annotated, is_literal, literal_values
+
+type AcceptableType = str | int | float | bool | None
+
+RangeParam = LineRange
+if TYPE_CHECKING:
+    from inspect import Parameter
 
 
-# Type alias for command functions (can be callable, classmethod, or staticmethod)
-CommandFunction: TypeAlias = Callable[..., Any] | staticmethod
-NARGS: TypeAlias = str | int
+def _get_types(annotation: Any, default_type: type = str) -> set[type]:
+    """Return the non-union types."""
+    import inspect
+
+    if annotation is inspect.Parameter.empty:
+        return {default_type}
+    if annotation is None:
+        return {type(None)}
+
+    unwrapped, _ = unwrap_annotated(annotation)
+    if is_union(unwrapped):
+        return flatten_union(unwrapped)
+    else:
+        return {unwrapped}
 
 
-class RangeCountType(Enum):
-    RANGE = "range"
-    COUNT = "count"
-    NONE = None
+MISSING_DEFAULT = object()
 
 
-@dataclass
-class RangeCountOption:
-    """In definition of commands, only one of `range` and `count`
-    can be set.
-    This class handles this relationship.
-    """
+def _get_default(param: "Parameter") -> Any:
+    from inspect import Parameter
 
-    _type: RangeCountType = field(init=False, default=RangeCountType.NONE)
-    _value: str | int | None = field(init=False, default=None)
+    if param.default is not Parameter.empty:
+        return param.default
 
-    def __init__(self, range: None | str | int = None, count: int | None = None):
-        if range is not None and count is not None:
-            raise ValueError("Either of `range` or `count` can be set")
+    _, metadata = unwrap_annotated(param.annotation)
+    for meta in metadata:
+        if isinstance(meta, Field):
+            default_getter = DefaultGetter.from_field(meta)
+            if default_getter:
+                return default_getter
+    return MISSING_DEFAULT
 
-        if range is not None:
-            self._type = RangeCountType.RANGE
-            self._value = range
-        if count is not None:
-            self._type = RangeCountType.COUNT
-            self._value = count
+
+def _get_literal_values(annotation: Any) -> Sequence[Any] | None:
+    result = []
+    flatten_types = _get_types(annotation)
+    for typ in flatten_types:
+        if is_literal(typ):
+            result += list(literal_values(typ))
+    return result if result else None
+
+
+def _is_only_literal(annotation: Any) -> bool:
+    flatten_types = _get_types(annotation)
+    return all(is_literal(typ) for typ in flatten_types)
+
+
+@dataclass(frozen=True)
+class CountParam:
+    count: int
+
+
+type InjectedParam = RangeParam | CountParam
+
+
+@dataclass(frozen=True)
+class Argument:
+    name: str
+    types: set[type]
+    literal_values: Sequence[Any] | None = None
+    only_literal: bool = False
+    # completer: Callable[[], list[Any]] | None = None  # Not yet used.
+
+
+@dataclass(frozen=True)
+class Field:
+    default: Any = MISSING_DEFAULT
+    default_factory: Callable | None = None
+
+
+@dataclass(frozen=True)
+class DefaultGetter:
+    default: Any = MISSING_DEFAULT
+    default_factory: Callable | None = None
+
+    @classmethod
+    def from_field(cls, field: Field) -> Self:
+        return cls(default=field.default, default_factory=field.default_factory)
+
+    def __bool__(self):
+        return (self.default is not MISSING_DEFAULT) or (self.default_factory is not None)
+
+    def get_default(self):
+        if self.default is not MISSING_DEFAULT:
+            return self.default
+        if self.default_factory is not None:
+            return self.default_factory()
+        return MISSING_DEFAULT
+
+
+@dataclass(frozen=True)
+class Option:
+    name: str
+    types: set[type]
+    default_getter: Any | DefaultGetter
+    literal_values: Sequence[Any] | None = None
+    only_literal: bool = False
+
+    # completer: Callable[[], list[Any]] | None = None  # Not yet used.
 
     @property
-    def type(self) -> RangeCountType:
-        return self._type
-
-    def set_pair(self, type_: RangeCountType, value: str | int):
-        """Setter of the instance values."""
-        if self._type is not RangeCountType.NONE:
-            raise ValueError(
-                "`set_pair` can only be called if the type is NONE (unset)."
-            )
-        self._type = type_
-        self._value = value
-
-    @property
-    def pair(self) -> tuple[RangeCountType, str | None | int]:
-        """Return the option parameter
-
-        In case of `range` (range, (value))
-        In case of `count` (count, (value))
-        In case of `None` (None, None)
-        """
-        return (self._type, self._value)
-
-    def to_dict(self) -> dict[str, str]:
-        """Provide the info of the instance as dict."""
-        result = {}
-        if self._type is RangeCountType.RANGE:
-            result[RangeCountType.RANGE.value] = self._value
-        if self._type is RangeCountType.COUNT:
-            result[RangeCountType.COUNT.value] = self._value
-        return result
+    def default(self) -> Any:
+        if isinstance(self.default_getter, DefaultGetter):
+            return self.default_getter.get_default()
+        return self.default_getter
+    
+    def get_candidate_values(self) -> Sequence[str]:
+        if self.literal_values:
+            return self.literal_values
+        return []
 
 
-@dataclass
-class OptsArgument:
-    """This is a naive wrapper of `dict` as `opts`."""
+@dataclass(frozen=True)
+class CommandModel:
+    arguments: Sequence[Argument]
+    options: Sequence[Option]
+    impl: Callable 
+    injected_params: Mapping[str, type[InjectedParam]] = field(default_factory=dict)
+    args_name: str | None = None
+    kwargs_name: str | None = None
 
-    args: str
-    fargs: list
-    count: int | None = None
-    line1: int | None = None
-    line2: int | None = None
-    range: tuple[int, int] | int | None = None
 
-    @property
-    def line_range(self) -> LineRange | None:
-        if self.line1 is None or self.line2 is None:
-            return None
-        return LineRange(self.line1 - 1, self.line2)  # exclusive and 1-based start.
+    @classmethod
+    def from_callable(cls, function: Callable) -> Self:
+        from inspect import signature, Parameter
+
+        sig = signature(function)
+        args_name: str | None = None
+        kwargs_name: str | None = None
+        injected_params: dict[str, type[InjectedParam]] = {}
+        arguments: list[Argument] = []
+        options: list[Option] = []
+        for param in sig.parameters.values():
+            if param.kind == Parameter.VAR_POSITIONAL:
+                args_name = param.name
+                continue
+            elif param.kind == Parameter.VAR_KEYWORD:
+                kwargs_name = param.name
+                continue
+
+            default_type = type(param.default) if param.default is not Parameter.empty else str
+            annotated_types = _get_types(param.annotation, default_type=default_type)
+
+            # def _get_intersection(annotated_types: set[type], required:tuple[type]):
+            #    return {cand for cand in annotated_types if any(issubclass(cand, elem) for elem in required)}
+            def _get_intersection(annotated_types: set[type], required: Sequence[type]):
+                result = set()
+                for cand in annotated_types:
+                    if cand is type(None):
+                        continue
+                    for elem in required:
+                        if cand is elem or (isinstance(cand, type) and issubclass(cand, elem)):
+                            result.add(cand)
+                return result
+
+            if targets := _get_intersection(annotated_types, (RangeParam, CountParam)):
+                injected_params[param.name] = targets.pop()
+                continue
+
+            default = _get_default(param)
+            literal_values = _get_literal_values(param.annotation)
+            is_only_literal = _is_only_literal(param.annotation)
+
+            if default is MISSING_DEFAULT:
+                arguments.append(
+                    Argument(
+                        name=param.name,
+                        types=annotated_types,
+                        literal_values=literal_values,
+                        only_literal=is_only_literal,
+                    )
+                )
+            else:
+                options.append(
+                    Option(
+                        name=param.name,
+                        types=annotated_types,
+                        default_getter=default,
+                        literal_values=literal_values,
+                        only_literal=is_only_literal,
+                    )
+                )
+        return cls(
+            arguments=arguments,
+            options=options,
+            args_name=args_name,
+            kwargs_name=kwargs_name,
+            injected_params=injected_params,
+            impl=function,
+        )
+
+
+@dataclass(frozen=True)
+class Token:
+    value: str
+    start: int  # スライス用 start index
+    end: int  # スライス用 end index (cmd_line[start:end])
+    index: int  # トークンの順番
+
+    def is_current_token(self, current_pos: int):
+        # スライス感覚で統一
+        return self.start <= current_pos < self.end
+
+
+@dataclass(frozen=True)
+class BooleanOptions:
+    names: Sequence[str]
+
+    @classmethod
+    def from_command_model(cls, command_model: CommandModel) -> Self:
+        names = [opt.name for opt in command_model.options if bool in opt.types]
+        return cls(names=names)
+
+
+
+def func(arg: str): ...
+
+
+if __name__ == "__main__":
+    from typing import Callable
+
+    class CommandApplication:
+        def __init__(
+            self,
+        ): ...
+
+        def command(self, name: str) -> Callable: ...

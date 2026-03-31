@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Type
-from pytoy.shared.command.sub_commands.tokenizer import Token
+from pytoy.shared.old_command.sub_commands.tokenizer import Token
 
 
 type Completion = list[str] | Callable[[], list[str]]

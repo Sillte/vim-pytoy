@@ -1,8 +1,8 @@
-from pytoy.shared.command import Command
-from pytoy.shared.command.models import OptsArgument
+from pytoy.shared.old_command import Command
+from pytoy.shared.old_command.models import OptsArgument
 from pytoy.shared.ui.pytoy_window import PytoyWindow
 
-from pytoy.shared.command.sub_commands import (
+from pytoy.shared.old_command.sub_commands import (
     MainCommandSpec,
     SubCommandSpec,
     SubCommandsHandler,

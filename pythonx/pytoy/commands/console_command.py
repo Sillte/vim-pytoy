@@ -1,11 +1,11 @@
-from pytoy.shared.command.models import OptsArgument
+from pytoy.shared.old_command.models import OptsArgument
 from pytoy.job_execution.utils import get_current_directory
 
 from pytoy.job_execution.terminal_executor import TerminalExecutor, TerminalExecution, BufferRequest, ExecutionRequest
 from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager, TerminalDriverProtocol, DEFAULT_SHELL_DRIVER_NAME
 from pytoy.contexts.pytoy import GlobalPytoyContext
 
-from pytoy.shared.command.sub_commands import (
+from pytoy.shared.old_command.sub_commands import (
     MainCommandSpec,
     SubCommandSpec,
     OptionSpec,
@@ -14,7 +14,7 @@ from pytoy.shared.command.sub_commands import (
 
 from pathlib import Path 
 
-from pytoy.shared.command import Command
+from pytoy.shared.old_command import Command
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
 

@@ -1,4 +1,4 @@
-from pytoy.shared.command.models import RangeCountOption, CommandFunction, NARGS
+from pytoy.shared.old_command.models import RangeCountOption, CommandFunction, NARGS
 
 
 from inspect import Signature

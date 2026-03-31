@@ -1,5 +1,5 @@
 """git_commands"""
-from pytoy.shared.command.models import OptsArgument
+from pytoy.shared.old_command.models import OptsArgument
 from pytoy.command import CommandManager
 from pytoy.tools.git import get_remote_link
 from pytoy.shared.ui.utils import to_filepath

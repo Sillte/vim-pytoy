@@ -2,6 +2,6 @@
 # The below three classes are the public interfaces
 # intended to be used.
 
-from pytoy.shared.command import Command  # NOQA
-from pytoy.shared.command import CommandManager  # NOQA
-from pytoy.shared.command.models import OptsArgument  # NOQA
+from pytoy.shared.old_command import Command  # NOQA
+from pytoy.shared.old_command import CommandManager  # NOQA
+from pytoy.shared.old_command.models import OptsArgument  # NOQA

@@ -1,6 +1,6 @@
 """Python related commands."""
 
-from typing import Sequence
+from typing import Sequence, Callable, assert_never
 from pytoy.command import CommandManager
 from pytoy.shared.ui.pytoy_buffer import make_buffer
 from pytoy.shared.ui.utils import to_filepath
@@ -49,6 +49,50 @@ class PyTestCommand:
         if valid_candidates:
             return valid_candidates
         return candidates
+    
+from pytoy.shared.command import App
+from typing import Literal
+app = App()
+@app.command("PytestNew")
+def pytest_new(command_type: Literal["func", "file", "all"]):
+
+    import vim
+    from pytoy.job_execution.command_executor import QuickfixCommandExecutor
+    from pytoy.job_execution.command_executor import QuickfixCommandRequest
+    from pytoy.job_execution.command_executor import ExecutionRequest
+    from pytoy.job_execution.command_executor import BufferRequest
+    from pytoy.tools.pytest.utils import to_func_command, PytestDecipher
+    from pytoy import TERM_STDOUT
+
+    path = to_filepath(vim.current.buffer.name)
+    cwd = path.parent
+    line = int(vim.eval("line('.')"))
+
+    pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
+
+    def build_command(command_type: Literal["func", "file", "all"], path, line, suffix):
+        match command_type:
+            case "func":
+                return to_func_command(path, line, suffix)
+            case "file":
+                return f'pytest "{path}" {suffix}'
+            case "all":
+                return f"pytest {suffix}"
+            case _:
+                assert_never(command_type)
+
+    suffix = "--capture=no --quiet"
+    command = build_command(command_type, path, line, suffix)
+
+    def make_qf_records(content: str) -> Sequence[QuickfixRecord]:
+        rows = PytestDecipher(content).records
+        return [QuickfixRecord.from_dict(row, cwd) for row in rows]
+
+    executor = QuickfixCommandExecutor(BufferRequest(stdout=pytoy_buffer))
+    execution = ExecutionRequest(command=command, cwd=cwd)
+    request = QuickfixCommandRequest(execution=execution, creator=make_qf_records)
+    executor.execute(request)
+
 
 
 @CommandManager.register(name="Mypy")

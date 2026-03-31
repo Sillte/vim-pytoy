@@ -1,10 +1,10 @@
-from pytoy.shared.command.models import OptsArgument
+from pytoy.shared.old_command.models import OptsArgument
 from pytoy.job_execution.utils import get_current_directory
 from pytoy.command import CommandManager
 
 from pathlib import Path 
 
-from pytoy.shared.command import Command
+from pytoy.shared.old_command import Command
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import make_buffer
 

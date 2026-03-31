@@ -1,8 +1,8 @@
 import inspect
 import json
 import textwrap
-from pytoy.shared.command.models import CommandFunction
-from pytoy.shared.command.utils import get_vim_impl, VimCommandUserProtocol
+from pytoy.shared.old_command.models import CommandFunction
+from pytoy.shared.old_command.utils import get_vim_impl, VimCommandUserProtocol
 
 
 def _signature(target) -> inspect.Signature:
