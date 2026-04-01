@@ -8,47 +8,34 @@ from pytoy.shared.old_command.sub_commands import (
     SubCommandsHandler,
 )
 
-BUFFER_ARG = "buffer"
-EDITOR_ARG = "editor"
-WINDOW_ARG = "window"
-TAB_ARG = "tab"
+from typing import Annotated, Literal, assert_never
+from pytoy.shared.command import App, Argument, Option
+app = App()
 
-
-@Command.register(name="Unique")
-class UniqueCommand:
-    def __init__(self):
-        sub_commands = [
-            SubCommandSpec(BUFFER_ARG),
-            SubCommandSpec(EDITOR_ARG),
-            SubCommandSpec(WINDOW_ARG),
-            SubCommandSpec(TAB_ARG),
-        ]
-        command_spec = MainCommandSpec(sub_commands)
-        self.handler = SubCommandsHandler(command_spec)
-
-    def __call__(self, opts: OptsArgument):
-        args: str = opts.args
-        parsed_arguments = self.handler.parse(args)
-        sub_command = parsed_arguments.sub_command
-
-        if sub_command in {BUFFER_ARG}:
+@app.command("Unique")
+def unique_command(arg: Annotated[Literal["buffer", "editor", "window", "tab"] | None, Argument()] = None):
+    match arg: 
+        case "buffer":
             within_tabs = True
             within_windows = True
-        elif sub_command in {EDITOR_ARG, WINDOW_ARG}:
+        case "editor":
             within_tabs = False
             within_windows = True
-        elif sub_command in {TAB_ARG}:
+        case "window":
+            within_tabs = False
+            within_windows = True
+        case "tab":
             within_tabs = True
             within_windows = False
-        else:
+        case None:
             if 2 <= len(PytoyWindow.get_windows()):
                 within_tabs = False
                 within_windows = True
             else:
                 within_tabs = True
                 within_windows = False
-        current = PytoyWindow.get_current()
-        current.unique(within_tabs=within_tabs, within_windows=within_windows)
+        case _:
+            assert_never(arg)
 
-    def customlist(self, arg_lead: str, cmd_line: str, cursor_pos: int):
-        return self.handler.complete(arg_lead, cmd_line, cursor_pos)
+    current = PytoyWindow.get_current()
+    current.unique(within_tabs=within_tabs, within_windows=within_windows)

@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from pytoy.shared.lib.text import LineRange
 from pytoy.shared.command.utils import flatten_union, is_union, unwrap_annotated, is_literal, literal_values
 
+# 0-based, exclusive range [start, end)
 RangeParam = LineRange
 if TYPE_CHECKING:
     from inspect import Parameter
