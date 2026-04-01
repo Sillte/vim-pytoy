@@ -1,21 +1,24 @@
-from pytoy.command import CommandManager
+from pytoy.shared.command import App
 
 
-@CommandManager.register(name="Qnext")
+app = App()
+
+
+@app.command(name="Qnext")
 def q_next():
     from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix
 
     PytoyQuickfix().next()
 
 
-@CommandManager.register(name="Qprev")
+@app.command(name="Qprev")
 def q_prev():
     from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix
 
     PytoyQuickfix().prev()
 
 
-@CommandManager.register(name="QQ")
+@app.command(name="QQ")
 def QQ():
     from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix
 

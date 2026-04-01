@@ -1,20 +1,20 @@
 """git_commands"""
-from pytoy.shared.old_command.models import OptsArgument
-from pytoy.command import CommandManager
+from pytoy.shared.command import App, RangeParam
 from pytoy.tools.git import get_remote_link
 from pytoy.shared.ui.utils import to_filepath
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
+app = App()
 
-@CommandManager.register(name="GitAddress", range="")
-def get_gitaddress(opts: OptsArgument):
-    line1 = opts.line1
-    line2 = opts.line2
-
+@app.command(name="GitAddress")
+def get_gitaddress(line_range: RangeParam):
+    start = line_range.start
+    end = line_range.end
     filepath = to_filepath(PytoyBuffer.get_current().path)
 
+    # TODO: It is required to eliminate explicit usage of `vim`.
     import vim
-    remote_link = get_remote_link(filepath, line1, line2)
+    remote_link = get_remote_link(filepath, start + 1, end)  # 1-based, inclusive.
     vim.command(f'let @c="{remote_link}"')
     vim.command(f'let @*="{remote_link}"')
     print("@c/@*", remote_link)

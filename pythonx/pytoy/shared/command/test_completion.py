@@ -45,13 +45,6 @@ def run_case(cmd_line: str, cursor_pos: int, model: CommandModel, debug: bool = 
     return result
 
 
-def test_case1():
-    def func(arg: str, input: str = "DDD"): ...
-    model = CommandModel.from_callable(func)
-    result = run_case("--i", 2, model)
-    assert set(result["candidates"]) == {CompletionCandidate(start=0, end=3, value="--input")}
-    
-
 # --- functions ---
 def arg_and_input(arg: str, input: str = "DDD"): ...
 def arg_and_input_literal_dd(arg: str, input: Literal["DDD", "DDQ"] = "DDD"): ...
@@ -59,6 +52,7 @@ def arg_and_input_literal_kk(arg: str, input: Literal["DDD", "KKK"] = "KKK"): ..
 def arg_literal(arg: Literal["apple", "banana"]): ...
 def arg_literal_with_option(arg: Literal["foo", "bar"], input: str = "hogehoge"): ...
 def only_option(input: str = "hogehoge"): ...
+def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
 
 @pytest.mark.parametrize(
     "cmd_line,cursor,func,expected",
@@ -140,12 +134,37 @@ def only_option(input: str = "hogehoge"): ...
             only_option,
             set(),
         ),
+        (
+            "--opti",
+            5,
+            option_with_under_bar,
+            {CompletionCandidate(start=0, end=6, value="--option-bar")}
+        ),
+        (
+            "--opti    ",
+            0,
+            option_with_under_bar,
+            {CompletionCandidate(start=0, end=6, value="--option-bar")}
+        ),
+        (
+            "--option-bar=de",
+            13,
+            option_with_under_bar,
+            {CompletionCandidate(start=0, end=15, value="--option-bar=default")}
+        ),
+        
     ],
 )
 def test_completion(cmd_line, cursor, func, expected):
     model = CommandModel.from_callable(func)
-    result = run_case(cmd_line, cursor, model)
+    result = run_case(cmd_line, cursor, model, debug=False)
     assert set(result["candidates"]) == expected
 
 if __name__ == "__main__":
     pytest.main([__file__, "--capture=no"])
+
+
+    #cmd_line = "--option-bar=de"
+    #cursor = 12
+    #model = CommandModel.from_callable(option_with_under_bar)
+    #result = run_case(cmd_line, cursor, model, debug=True)

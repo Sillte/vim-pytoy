@@ -75,7 +75,7 @@ class CommandApplicationVim:
 
     def command(self, name:str, *, invocation_spec: InvocationSpec | None = None, exists_ok: bool = True) -> Callable:
         # [TODO]: Sophisticated name check is required.
-        name = name.title()
+        name = name[0].upper() + name[1:]
         def decorator(fn: Callable):
             VimAdapter.register_command(name=name, fn=fn)
             return fn
@@ -105,8 +105,10 @@ class VimAdapter:
         command_model = cls.COMMAND_MAPS[name]
         executor = CommandExecutor()
 
+        line1, line2 = sorted([line1, line2], reverse=False)
+        range_param = RangeParam(line1 - 1, line2)  # 0-based, exclusive.
         injected_params = []
-        injected_params.append(RangeParam(start=line1, end=line2))
+        injected_params.append(range_param)
         if count is not None:
             injected_params.append(CountParam(count=count))
         return executor.execute(command_model, command_line=args, injected_params=injected_params)
@@ -161,15 +163,24 @@ EOF
 
 
         quotated_name = f'"{name}"'
+        #vim.command(rf"""
+        #function! {complete_func_name}(arglead, cmdline, cursorpos)
+        #    return py3eval("{cls.get_class_uri()}.complete(" . '{quotated_name}' . "," . string(a:arglead) . "," . string(a:cmdline) . "," . a:cursorpos . ")")
+        #endfunction
+        #""")
+
         vim.command(rf"""
         function! {complete_func_name}(arglead, cmdline, cursorpos)
-            return py3eval("{cls.get_class_uri()}.complete(" . '{quotated_name}' . "," . string(a:arglead) . "," . string(a:cmdline) . "," . a:cursorpos . ")")
+            return py3eval("{cls.get_class_uri()}.complete(" . '{quotated_name}' . "," . json_encode(a:arglead) . "," . json_encode(a:cmdline) . "," . a:cursorpos . ")")
         endfunction
         """)
 
+
         vim.command(f"""
-        command! -count -range -nargs=* -complete=customlist,{complete_func_name} {name} call {func_name}(<line1>, <line2>, <count>, <q-args>)
+        command! -range -nargs=* -complete=customlist,{complete_func_name} {name} call {func_name}(<line1>, <line2>, <count>, <q-args>)
         """.strip())
+
+
 
 
 """

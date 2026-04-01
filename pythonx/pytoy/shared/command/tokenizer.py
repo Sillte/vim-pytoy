@@ -71,11 +71,23 @@ class InterpretedInput:
                         exceptions.append(BooleanOptionTakesNoValue(key))
                     str_val = not is_no_flag
 
-                options[key].append(str_val)
+                options[cls.convert_key(key)].append(str_val)
             else:
                 arguments.append(token.value)
             i += 1
         return cls(arguments=arguments, options=options, exceptions=exceptions)
+    
+    @classmethod
+    def convert_key(cls, key: str) -> str:
+        """`-` in option is normalize to `_`.
+        """
+        return key.replace("-", "_")
+
+    @classmethod
+    def revert_key(cls, key: str) -> str:
+        """`-` in option is normalize to `_`.
+        """
+        return key.replace("_", "-")
 
 
 @dataclass(frozen=True)

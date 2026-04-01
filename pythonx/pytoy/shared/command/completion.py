@@ -220,7 +220,7 @@ class CandiateFactory:
 
                 if leading_key and value is not None:
                     value = value or ""
-                    if option := appeal.options.get(leading_key):
+                    if option := appeal.options.get(InterpretedInput.convert_key(leading_key)):
                         cands = option.get_candidate_values()
                         cands = [elem for elem in cands if elem.startswith(value)]
                         token_values = [f"--{leading_key}={cand}" for cand in cands]
@@ -231,15 +231,15 @@ class CandiateFactory:
                         return []
                 elif leading_key and value is None:
                     token_values = [
-                        f"--{key}" for key in appeal.options.keys()
-                        if key.startswith(leading_key)
+                        f"--{InterpretedInput.revert_key(key)}" for key in appeal.options.keys()
+                        if key.startswith(InterpretedInput.convert_key(leading_key))
                     ]
                     return [
                         CompletionCandidate(start=start, end=end, value=token_value)
                         for token_value in token_values
                     ]
                 else:
-                    token_values = [f"--{key}" for key in appeal.options.keys()]
+                    token_values = [f"--{InterpretedInput.revert_key(key)}" for key in appeal.options.keys()]
                     return [
                         CompletionCandidate(start=start, end=end, value=token_value) for token_value in token_values
                     ]
