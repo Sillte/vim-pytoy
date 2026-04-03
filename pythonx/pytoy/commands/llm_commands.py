@@ -1,8 +1,6 @@
 from typing import Sequence, cast, Annotated, Literal, assert_never, ClassVar, TYPE_CHECKING
-from pytoy.command import CommandManager
 from pytoy.shared.ui.pytoy_window import PytoyWindow, WindowCreationParam
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
-from pytoy.shared.old_command.models import OptsArgument
 from pytoy.shared.command import App, Argument
 
 if TYPE_CHECKING:

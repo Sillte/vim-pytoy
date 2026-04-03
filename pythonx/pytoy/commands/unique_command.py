@@ -1,12 +1,4 @@
-from pytoy.shared.old_command import Command
-from pytoy.shared.old_command.models import OptsArgument
 from pytoy.shared.ui.pytoy_window import PytoyWindow
-
-from pytoy.shared.old_command.sub_commands import (
-    MainCommandSpec,
-    SubCommandSpec,
-    SubCommandsHandler,
-)
 
 from typing import Annotated, Literal, assert_never
 from pytoy.shared.command import App, Argument, Option
