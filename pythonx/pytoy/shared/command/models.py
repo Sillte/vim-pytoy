@@ -56,20 +56,29 @@ class CountParam:
 
 
 type InjectedParam = RangeParam | CountParam
+type Completer = Callable[[], Sequence[str]]
 
 
 @dataclass(frozen=True)
 class Field:
     default: Any = MISSING_DEFAULT
     default_factory: Callable | None = None
-    # completer: Callable[[], list[Any]] | None = None  # Not yet used.
+    completer: Completer | None = None
 
 
 class Argument:
-    def __init__(self, default: Any = MISSING_DEFAULT, *, default_factory: Any = None, help: str | None = ""):
+    def __init__(
+        self,
+        default: Any = MISSING_DEFAULT,
+        *,
+        default_factory: Any = None,
+        help: str | None = "",
+        completer: Completer | None = None,
+    ):
         self._default = default
         self._help = help
         self._default_factory = default_factory
+        self._completer = completer
 
     def __repr__(self):
         return f"Argument(default={self._default!r})"
@@ -90,6 +99,10 @@ class Argument:
     def help(self) -> str | None:
         return self._help
 
+    @property
+    def completer(self) -> Completer | None:
+        return self._completer
+
 
 class Option:
     def __init__(
@@ -98,10 +111,12 @@ class Option:
         *,
         default_factory: Any = None,
         help: str | None = None,
+        completer: Completer | None = None,
     ):
         self._default = default
         self._default_factory = default_factory
         self._help = help
+        self._completer = completer
 
     @property
     def default(self) -> Any:
@@ -114,6 +129,10 @@ class Option:
     @property
     def help(self) -> str | None:
         return self._help
+
+    @property
+    def completer(self) -> Completer | None:
+        return self._completer
 
 
 @dataclass(frozen=True)
@@ -142,6 +161,25 @@ class DefaultGetter:
         if self.default_factory is not None:
             return self.default_factory()
         return MISSING_DEFAULT
+    
+
+type CompletionFunction = Callable[[], Sequence[str]]
+
+@dataclass(frozen=True)
+class CompleterModel:
+    impl: CompletionFunction
+
+    @classmethod
+    def from_any(cls, arg: Any) -> Self:
+        if callable(arg):
+            return cls(impl=arg)  #type: ignore
+        elif isinstance(arg, Sequence):
+            return cls(impl=lambda: arg)
+        raise TypeError(f"Cannot convert `{arg}` to `CompleterModel`")
+        
+    
+    def __call__(self) -> Sequence[str]:
+        return self.impl()
 
 
 @dataclass(frozen=True)
@@ -151,7 +189,7 @@ class ArgumentModel:
     literal_values: Sequence[Any] | None = None
     only_literal: bool = False
     default_getter: DefaultGetter | None = None
-    # completer: Callable[[], list[Any]] | None = None  # Not yet used.
+    completer: CompleterModel | None = None
 
     @property
     def required(self) -> bool:
@@ -162,6 +200,14 @@ class ArgumentModel:
         if self.default_getter is None:
             return MISSING_DEFAULT
         return self.default_getter.get_default()
+    
+    def get_candidate_values(self) -> Sequence[str]:
+        result = []
+        if self.literal_values:
+            result += self.literal_values
+        if self.completer:
+            result += self.completer()
+        return result
 
 
 @dataclass(frozen=True)
@@ -171,24 +217,26 @@ class OptionModel:
     default_getter: DefaultGetter
     literal_values: Sequence[Any] | None = None
     only_literal: bool = False
-
-    # completer: Callable[[], list[Any]] | None = None  # Not yet used.
+    completer: CompleterModel | None = None
 
     @property
     def default(self) -> Any:
         return self.default_getter.get_default()
 
     def get_candidate_values(self) -> Sequence[str]:
+        result = []
         if self.literal_values:
-            return self.literal_values
-        return []
+            result += self.literal_values
+        if self.completer:
+            result += self.completer()
+        return result
 
 
 def _resolve_type_and_default(param) -> tuple[Literal["Argument", "Option"], DefaultGetter | None]:
 
     from inspect import Parameter
 
-    # Type-like handling. 
+    # Type-like handling.
     # To be specific, when domain object is given.
     raw_default = param.default
     if isinstance(raw_default, Argument):
@@ -204,14 +252,13 @@ def _resolve_type_and_default(param) -> tuple[Literal["Argument", "Option"], Def
     if isinstance(raw_default, DefaultGetter):
         return "Option", raw_default
 
-
     # FastAPI-like handling and fallback.
     if raw_default is not Parameter.empty:
         dg = DefaultGetter(default=raw_default)
     else:
         dg = None
 
-    param_type = None 
+    param_type = None
     # Annotated(Field) fallback
     _, metadata = unwrap_annotated(param.annotation)
     for meta in metadata:
@@ -222,23 +269,41 @@ def _resolve_type_and_default(param) -> tuple[Literal["Argument", "Option"], Def
             meta = Option()
 
         if isinstance(meta, Field):
-            if dg is None and (cand:=DefaultGetter.from_field(meta)):
+            if dg is None and (cand := DefaultGetter.from_field(meta)):
                 dg = cand
         elif isinstance(meta, Argument):
-            if dg is None and (cand:=DefaultGetter.from_argument(meta)):
+            if dg is None and (cand := DefaultGetter.from_argument(meta)):
                 dg = cand
             param_type = "Argument"
         elif isinstance(meta, Option):
-            if dg is None and (cand:=DefaultGetter.from_option(meta)):
+            if dg is None and (cand := DefaultGetter.from_option(meta)):
                 dg = cand
             param_type = "Option"
-            
+
     if param_type is None:
         if dg is None:
             param_type = "Argument"
         else:
             param_type = "Option"
     return param_type, dg
+
+
+def _resolve_completer(param) -> Completer | None:
+    raw_default = param.default
+    if isinstance(raw_default, (Argument, Option)):
+        if raw_default.completer:
+            return raw_default.completer
+
+    _, metadata = unwrap_annotated(param.annotation)
+    for meta in metadata:
+        # Fallback for class specification.
+        if isinstance(meta, Field):
+            if meta.completer:
+                return meta.completer
+        elif isinstance(meta, (Argument, Option)):
+            if meta.completer:
+                return meta.completer
+    return None
 
 
 @dataclass(frozen=True)
@@ -290,6 +355,8 @@ class CommandModel:
             literal_values = _get_literal_values(param.annotation)
             is_only_literal = _is_only_literal(param.annotation)
             arg_type, default_getter = _resolve_type_and_default(param)
+            completer = _resolve_completer(param)
+
             if arg_type == "Option" and (not default_getter):
                 raise ValueError(f"Option `{param}` requires a default")
 
@@ -301,6 +368,7 @@ class CommandModel:
                         literal_values=literal_values,
                         only_literal=is_only_literal,
                         default_getter=default_getter,
+                        completer=CompleterModel.from_any(completer) if completer else None,
                     )
                 )
             elif arg_type == "Option" and default_getter is not None:
@@ -311,6 +379,7 @@ class CommandModel:
                         default_getter=default_getter,
                         literal_values=literal_values,
                         only_literal=is_only_literal,
+                        completer=CompleterModel.from_any(completer) if completer else None,
                     )
                 )
             else:
