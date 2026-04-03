@@ -1,7 +1,5 @@
 import shlex
 from typing import Callable, Any
-from typing import TypeAlias
-from typing import Protocol
 import inspect
 
 from pytoy.shared.old_command.models import RangeCountOption, CommandFunction
@@ -10,7 +8,7 @@ from pytoy.shared.old_command.models import RangeCountType
 from pytoy.shared.old_command._opts_converter import _OptsConverter
 from pytoy.shared.old_command._customlist_manager import _CustomListManager
 
-from pytoy.shared.old_command.models import OptsArgument, NARGS, CommandFunction  # NOQA
+from pytoy.shared.old_command.models import  NARGS, CommandFunction  # NOQA
 from pytoy.shared.old_command.utils import get_vim_impl, VimCommandUserProtocol
 
 
@@ -304,8 +302,6 @@ EOF""".strip()
             else:
                 raise ValueError(f"The same `command` is already registered. `{name=}`")
 
-
-Command: TypeAlias = CommandManager
 
 
 if __name__ == "__main__":

@@ -1,8 +1,7 @@
-from pytoy.shared.old_command.models import RangeCountOption, CommandFunction, NARGS
+from .models import RangeCountOption, CommandFunction, NARGS
 
 
-from inspect import Signature
-from typing import Any, Protocol, Callable
+from typing import Any, Protocol
 
 
 class ConverterProviderProtocol(Protocol):
