@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import Sequence, Literal, Mapping, assert_never
-from collections import defaultdict
 from pytoy.shared.command.models import CommandModel, ArgumentModel, OptionModel, Token, BooleanOptions
 from pytoy.shared.command.tokenizer import tokenize, InterpretedInput, OptionValueMissingError
 
@@ -113,14 +112,6 @@ class ArgumentAppeal:
     argument: ArgumentModel
     type: Literal["Argument"] = "Argument"
 
-    @property
-    def candidates(self) -> Sequence[str]:
-        if self.argument.literal_values:
-            return self.argument.literal_values
-        else:
-            return []
-
-
 @dataclass(frozen=True)
 class OptionAppeal:
     options: Mapping[str, OptionModel]
@@ -173,9 +164,11 @@ class NextTokenResolver:
 
 # Output to the outside of the domain.
 
-
 @dataclass(frozen=True)
 class CompletionCandidate:
+    """Replace [start, end) position's with `value`.
+    Note that `start` is inclusive, but `end` is exclusive. 
+    """
     start: int
     end: int
     value: str
@@ -202,7 +195,7 @@ class CandiateFactory:
                 if is_option:
                     return []
                 else:
-                    candidates = appeal.candidates
+                    candidates = appeal.argument.get_candidate_values()
                     candidates = [elem for elem in candidates if elem.startswith(leading)]
                     return [CompletionCandidate(start=start, end=end, value=elem) for elem in candidates]
             case "Option":
