@@ -4,7 +4,7 @@ from typing import Sequence, Mapping, Any, Self, get_args, get_origin
 from collections.abc import Sequence as ABCSequence
 import shlex
 import re
-from pytoy.shared.command.models import BooleanOptions, CommandModel, MISSING_DEFAULT, Token
+from pytoy.shared.command.core.models import BooleanOptions, CommandModel, MISSING_DEFAULT, Token
 
 
 class OptionValueMissingError(Exception):

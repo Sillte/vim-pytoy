@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Sequence, Literal, Mapping, assert_never
-from pytoy.shared.command.models import CommandModel, ArgumentModel, OptionModel, Token, BooleanOptions
-from pytoy.shared.command.tokenizer import tokenize, InterpretedInput, OptionValueMissingError
+from pytoy.shared.command.core.models import CommandModel, ArgumentModel, OptionModel, Token, BooleanOptions
+from pytoy.shared.command.core.tokenizer import tokenize, InterpretedInput, OptionValueMissingError
 
 # Input to the inside of the domain.
 
@@ -181,7 +181,7 @@ class CompletionResult:
     candidates: Sequence[CompletionCandidate]
 
 
-class CandiateFactory:
+class CandidateFactory:
     def __init__(self):
         pass
 
@@ -298,6 +298,6 @@ class CompletionService:
             prev_tokens = tokens
         appeals = resolver.resolve_appeals(prev_tokens, command_model)
 
-        factory = CandiateFactory()
+        factory = CandidateFactory()
         candidates = factory.create(current_position, appeals, command_model)
         return CompletionResult(offset=offset, candidates=candidates)
