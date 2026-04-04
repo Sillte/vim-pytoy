@@ -1,9 +1,9 @@
 from typing import Sequence, Any
-from pytoy.shared.command.models import CommandModel, InjectedParam   
-from pytoy.shared.command.tokenizer import tokenize, InterpretedInput, ResolvedInput  
+from pytoy.shared.command.core.models import CommandModel, InjectedParam   
+from pytoy.shared.command.core.tokenizer import tokenize, InterpretedInput, ResolvedInput  
 
 
-class CommandExecutor:
+class ExecutionService:
     def __init__(self, ):
         pass
 
