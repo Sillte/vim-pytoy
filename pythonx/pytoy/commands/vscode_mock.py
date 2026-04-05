@@ -1,17 +1,8 @@
 from pytoy.shared.command import App
 from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
-from pytoy.shared.ui.utils import to_filepath
 
 app = App()
 
-
-#@app.command(name="Source")
-# TODO: It is required to think about specification of Argument`.
-#def source(fargs: list[str]):
-#    import vim
-#    vals = [vim.eval(f'expand("{elem}")') for elem in opts.fargs]
-#    vals = [to_filepath(elem) for elem in vals]
-#    vim.command(f'source {" ".join(map(str, vals))}') 
 
 
 @app.command(name="MyWindow")

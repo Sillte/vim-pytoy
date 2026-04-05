@@ -1,4 +1,3 @@
-from pytoy.shared.ui import to_filepath
 
 from pytoy.tools.python import PythonExecutor
 
@@ -12,10 +11,9 @@ IPYTHON_TERMINAL = None  # TERMINAL MANAGER for `ipython`.
 
 def run(path=None):
     """Perform `python {path}`."""
-    import vim
+    from pytoy.shared.ui import PytoyBuffer
     if not path:
-        path = vim.current.buffer.name
-        path = to_filepath(path)
+        path = PytoyBuffer.get_current().file_path
     executor = PythonExecutor()
     if executor.is_running:
         raise RuntimeError("Currently, `PythonExecutor` is running.")
@@ -42,14 +40,6 @@ def stop():
     from pytoy.contexts.pytoy import GlobalPytoyContext
     for item in GlobalPytoyContext.get().command_execution_manager.get_running():
         item.runner.terminate()
-
-
-def is_running() -> int:
-    import vim 
-    executor = PythonExecutor()
-    ret = executor.is_running
-    vim.command(f"let g:pytoy_return = {int(ret)}")
-    return ret
 
 
 def reset():

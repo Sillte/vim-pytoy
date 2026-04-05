@@ -7,7 +7,7 @@ from pytoy.contexts.pytoy import GlobalPytoyContext
 
 from pathlib import Path 
 
-from pytoy.shared.command import Argument, App, Option, RangeParam
+from pytoy.shared.command import Argument, App, Option, RangeParam, Group
 from pytoy.shared.lib.text import LineRange
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from typing import Literal, Annotated
@@ -110,6 +110,21 @@ def console(kind: Annotated[Literal["run", "stop", "terminate"] | None,  Argumen
         case _:
             raise ValueError(f"Unknown command. {kind}")
 
+
+class RunnerController:
+    
+    @classmethod
+    def func(cls):
+        ...
+
+
+
+group = Group("Script") 
+@group.command("run")
+def run_script(path: Annotated[Path | None, Option()] = None, 
+               cwd: Annotated[Path | None, Option()] = None):
+    path = path or None
+    print("TODO: ...")
 
 
 #@Command.register(name="Console", range=True)

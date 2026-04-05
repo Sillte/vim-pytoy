@@ -53,6 +53,15 @@ class PytoyBuffer(PytoyBufferProtocol):
     def is_file(self) -> bool:
         """Return whether this buffer corresponds to the file or not."""
         return self.impl.is_file
+    
+    @property
+    def file_path(self) -> Path:
+        """Return the path of buffer.
+        It is assured that the return path is the path to the physical location.
+        """
+        if not self.is_file:
+            raise ValueError("Buffer does not correspond to the file.")
+        return self.path
 
     @property
     def is_normal_type(self) -> bool:

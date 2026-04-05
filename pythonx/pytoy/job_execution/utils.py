@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from pytoy.shared.ui.utils import to_filepath
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
 
@@ -18,7 +17,7 @@ def get_current_directory(buffer: PytoyBuffer | None = None) -> Path:
     if not buffer:
         buffer = PytoyBuffer.get_current()
     if buffer.is_file:
-        filename = to_filepath(buffer.path)
+        filename = buffer.file_path
         current_folder = filename.parent
     else:
         # TODO: Define the utility function for all backends.

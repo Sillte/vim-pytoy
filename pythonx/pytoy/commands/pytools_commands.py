@@ -2,7 +2,6 @@
 
 from typing import Sequence, assert_never
 from pytoy.shared.ui.pytoy_buffer import make_buffer
-from pytoy.shared.ui.utils import to_filepath
 from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord
 
 from pytoy.shared.command import App, Argument
@@ -14,17 +13,19 @@ app = App()
 @app.command("Pytest")
 def pytest_command(command_type: Annotated[Literal["func", "file", "all"], Argument()] = "func"):
 
-    import vim
     from pytoy.job_execution.command_executor import QuickfixCommandExecutor
     from pytoy.job_execution.command_executor import QuickfixCommandRequest
     from pytoy.job_execution.command_executor import ExecutionRequest
     from pytoy.job_execution.command_executor import BufferRequest
+    from pytoy.shared.ui import PytoyBuffer, PytoyWindow
     from pytoy.tools.pytest.utils import to_func_command, PytestDecipher
     from pytoy import TERM_STDOUT
 
-    path = to_filepath(vim.current.buffer.name)
+    current_window = PytoyWindow.get_current()
+    current_buffer: PytoyBuffer = current_window.buffer
+    path = current_buffer.file_path
     cwd = path.parent
-    line = int(vim.eval("line('.')"))
+    line_1based = current_window.cursor.line + 1
 
     pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
 
@@ -40,7 +41,7 @@ def pytest_command(command_type: Annotated[Literal["func", "file", "all"], Argum
                 assert_never(command_type)
 
     suffix = "--capture=no --quiet"
-    command = build_command(command_type, path, line, suffix)
+    command = build_command(command_type, path, line_1based, suffix)
 
     def make_qf_records(content: str) -> Sequence[QuickfixRecord]:
         rows = PytestDecipher(content).records
@@ -54,14 +55,14 @@ def pytest_command(command_type: Annotated[Literal["func", "file", "all"], Argum
 
 @app.command(name="Mypy")
 def mypy_command(target: Annotated[Literal["workspace", "current"] | str | None, Argument()] = None):
-    from pathlib import Path
     from pytoy.job_execution.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
     from pytoy.job_execution.command_executor import BufferRequest
     from pytoy import TERM_STDOUT
-    from pytoy.commands.utils import override, workspace_func, fallback_argument
-    import vim
+    from pytoy.commands.utils import workspace_func
+    from pytoy.shared.ui import PytoyBuffer
+    
+    current_path = PytoyBuffer.get_current().file_path
 
-    current_path = to_filepath(vim.current.buffer.name)
     if target == "workspace":
         path = workspace_func()
     elif target == "current":
@@ -84,11 +85,10 @@ def cspell_command():
     from pathlib import Path
     from pytoy import TERM_STDOUT
     from pytoy.tools.cspell import CSpellOneFileChecker
-    from pytoy.shared.ui import to_filepath
     from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, handle_records, to_quickfix_creator
-    import vim
+    from pytoy.shared.ui import PytoyBuffer
 
-    path = to_filepath(vim.current.buffer.name)
+    path = PytoyBuffer.get_current().file_path
 
     if Path(path).suffix == ".py":
         checker = CSpellOneFileChecker(only_python_string=True)
@@ -110,15 +110,15 @@ def ruff_check(
 ):
 
     from pytoy import TERM_STDOUT
-    from pytoy.commands.utils import override, workspace_func, fallback_argument
+    from pytoy.commands.utils import workspace_func
     from pytoy.contexts.core import GlobalCoreContext
 
     from pytoy.job_execution.command_executor import QuickfixCommandExecutor, QuickfixCommandRequest, ExecutionRequest
     from pytoy.job_execution.command_executor import BufferRequest
     from pathlib import Path
-    import vim
+    from pytoy.shared.ui import PytoyBuffer
 
-    current_path = to_filepath(vim.current.buffer.name)
+    current_path = PytoyBuffer.get_current().file_path
     cwd = current_path.parent
     env_manager = GlobalCoreContext.get().environment_manager
     execution_env = env_manager.solve_preference(cwd, preference=None)
