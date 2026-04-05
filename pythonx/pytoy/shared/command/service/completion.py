@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Sequence, Literal, Mapping, assert_never
 from pytoy.shared.command.core.models import CommandModel, ArgumentModel, OptionModel, Token, BooleanOptions
 from pytoy.shared.command.core.tokenizer import tokenize, InterpretedInput, OptionValueMissingError
@@ -177,7 +177,6 @@ class CompletionCandidate:
 
 @dataclass(frozen=True)
 class CompletionResult:
-    offset: int 
     candidates: Sequence[CompletionCandidate]
 
 
@@ -300,4 +299,8 @@ class CompletionService:
 
         factory = CandidateFactory()
         candidates = factory.create(current_position, appeals, command_model)
-        return CompletionResult(offset=offset, candidates=candidates)
+        
+        # Resolve offsets.
+        if offset != 0:
+            candidates = [replace(cand, start=cand.start + offset, end=cand.end + offset) for cand in candidates]
+        return CompletionResult(candidates=candidates)
