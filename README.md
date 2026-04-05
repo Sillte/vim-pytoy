@@ -5,7 +5,7 @@ designed to run and integrate developer tools directly inside editor buffers.
 This project is not intended for public release.
 For now, it serves as a personal practice project for Vim plugin development.
 
-## Example of command.
+## Example of command
 
 1. Create a file for commands.
 
@@ -50,7 +50,7 @@ def hello(arg: Annotated[Literal["morning", "evening"] | None, Argument()] = Non
       ```json
       {
        "vscode-neovim.useWSL": true, 
-       "vscode-neovim.neovimExecutablePaths.linux": "/home/zaube/.local/bin/nvim",
+       "vscode-neovim.neovimExecutablePaths.linux": "<Path to `neovim`>",
       }
       ```
 * For specific dependency, please refer to [pyproject.toml](./pyproject.toml)
@@ -92,14 +92,10 @@ Cross-platform abstraction providing consistent APIs across all editors:
   - Window navigation, splitting, layout management
 
 - **`pytoy_quickfix`**: Error list abstraction  
-  - `QuickfixRecord`: Unified error/warning representation
-  - `handle_records()`: Display errors across editors
+  - Primitive.
 
 - **`notifications`**: Cross-platform message display
-
-- **`status_line`**: Status bar integration  
-
-- **`vscode/`**: VSCode-specific implementations
+  - Very primitive.
 
 #### **shared/timertask/** - Asynchronous Callbacks
 - Python functions as Vim timer callbacks (integrates with `timer_start`, `timer_stop`)
@@ -118,10 +114,6 @@ Cross-platform abstraction providing consistent APIs across all editors:
 
 #### **job_execution/terminal_executor/** - Terminal Management  
 - `TerminalExecutionManager`: Manage interactive terminal sessions
-- Multi-driver architecture:
-  - `impl_win.py`: Windows console driver
-  - `impl_unix.py`: Unix/TTY driver  
-  - Pluggable driver system
 
 #### **job_execution/environment_manager/** - Environment Isolation
 - Virtual environment management (uv)
@@ -130,52 +122,25 @@ Cross-platform abstraction providing consistent APIs across all editors:
 - Low-level command/process execution
 - Output stream capture and forwarding
 
-#### **tools/python/** - Python Script Execution
-- `PythonExecutor`: Execute `.py` files with isolated STDOUT/STDERR
-- Integration with buffer output system
-
-#### **tools/pytest/** - Test Framework Integration
-- Test discovery and execution
-- Result parsing and quickfix display
-
-#### **tools/git/** - Git Integration
-- Git related opeations
-
-
 #### **commands/** - User-Facing Commands
 Vim command definitions that compose tools and infrastructure:
 
 - `console_command.py`: Interactive console (REPL)
-- `env_commands.py`: Virtual environment management
 - `git_commands.py`: Git operations
-- `llm_commands.py`: AI-assisted coding  
 - `pytools_commands.py`: Python tools (pytest, execution, etc.)
-- `devtools_commands.py`: Development utilities
-- `vscode_commands/`: VSCode-specific adapters
 
-#### **contexts/[core|vim|vscode|pytoy]/** - Global State
-Singleton pattern for cross-module coordination:
+## Design Patterns
 
-- `GlobalPytoyContext`: Main entry point
-  - `command_execution_manager`: Running commands
-  - `terminal_execution_manager`: Active terminals
-  - `terminal_driver_manager`: Terminal driver allocation
-  - `fairy_kernel_manager`: LLM kernels
-
-- Environment-specific contexts for Vim, Neovim, VSCode
-
-#### **devtools/** - Development Support
-- `vim_rebooter`: Plugin reload for development
-- `vimplugin_package`: Plugin packaging utilities
-
-### Design Patterns
-
-- **Singleton**: Global context managers ensure single instance coordination
 - **Decorator**: Commands defined via `@app.command()` decorators
 - **Lazy Loading**: Components initialized on-demand for startup performance
 
-### Comments
+## Comments
 
 This project is primarily a personal exploration,
 but it aims to experiment with structured plugin design.
+
+
+## TODO 
+
+* Explanation and usage of `VimReboot`. 
 
