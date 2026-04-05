@@ -27,10 +27,6 @@ else:
 EOF
 endfunction
 
-function! pytoy#reset_python()
-python3 pytoy.reset_python()
-endfunction
-
 
 " Python Execution.
 
@@ -44,10 +40,6 @@ endfunction
 
 function! pytoy#stop()
 python3 pytoy.stop()
-endfunction
-
-function! pytoy#is_running()
-  return py3eval('pytoy.is_running()')
 endfunction
 
 function! pytoy#reset()

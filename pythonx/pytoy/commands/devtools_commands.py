@@ -8,7 +8,6 @@ from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.devtools.vim_rebooter import VimRebooter
 from pytoy.shared.timertask import TimerTask
 from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
-from pytoy.shared.ui import to_filepath
 from pytoy.shared.command import App, Argument
 
 
@@ -42,7 +41,6 @@ class VimRebootExecutor:
             import vim
 
             nvim_folder = Path(vim.eval("stdpath('cache')"))
-            nvim_folder = to_filepath(nvim_folder)
             if not nvim_folder:
                 nvim_folder.mkdir(parents=True)
             return nvim_folder
@@ -113,7 +111,6 @@ def vim_reboot():
         import vim
 
         path = Path(vim.eval("stdpath('cache')")) / "vscode_restarted.json"
-        path = to_filepath(path)
         data = {"plugin_folder": plugin_folder, "time": time.time()}
         path.write_text(json.dumps(data, indent=4))
         from pytoy.shared.ui.vscode.api import Api
@@ -160,13 +157,13 @@ def timer_task_stop():
 @app.command("PytoyExecute")
 def pytoy_execute(input_path: Annotated[str | None, Argument()] = None):
     import vim
-    from pytoy.shared.ui.utils import to_filepath
+    from pytoy.shared.ui import PytoyBuffer
     from pathlib import Path
 
     if not input_path:
-        path = to_filepath(vim.current.buffer.name)
+        path = PytoyBuffer.get_current().file_path
     else:
-        path = to_filepath(input_path)
+        path = Path(input_path)
 
     match path.suffix:
         case ".py" | ".pyi":
