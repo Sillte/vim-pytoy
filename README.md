@@ -47,13 +47,13 @@ def hello(arg: Annotated[Literal["morning", "evening"] | None, Argument()] = Non
     - [VSCode](https://code.visualstudio.com/)
     - [VSCode+neovim](https://github.com/vscode-neovim/vscode-neovim)
     - When you would like to use `WSL`, the following settings are necessary.
-    - ```json
-    {
-     "vscode-neovim.useWSL": true, 
-     "vscode-neovim.neovimExecutablePaths.linux": "/home/zaube/.local/bin/nvim",
-    }
+      ```json
+      {
+       "vscode-neovim.useWSL": true, 
+       "vscode-neovim.neovimExecutablePaths.linux": "/home/zaube/.local/bin/nvim",
+      }
       ```
-* For specific dependecy, please refer to [pyproject.toml](pyproject.toml)
+* For specific dependency, please refer to [pyproject.toml](./pyproject.toml)
 
 ## Design Overview
 
