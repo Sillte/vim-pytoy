@@ -1,6 +1,7 @@
 from typing import Sequence
 from pathlib import Path
-from pytoy.shared.ui.pytoy_window.models import WindowCreationParam, BufferSource
+from pytoy.shared.ui.pytoy_buffer.models import BufferSource
+from pytoy.shared.ui.pytoy_window.models import WindowCreationParam
 from pytoy.shared.ui.pytoy_buffer.impls.dummy import PytoyBufferDummy
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.lib.event.domain import Event, EventEmitter
@@ -104,6 +105,5 @@ class PytoyWindowProviderDummy(PytoyWindowProviderProtocol):
     ) -> PytoyWindowProtocol:
         if not isinstance(source, BufferSource):
             source = BufferSource.from_any(source)
-        is_file = source.type == "file"
-        impl = PytoyBufferDummy(buffer_id=id(source), is_file=is_file)
+        impl = PytoyBufferDummy(buffer_source=source)
         return self._append_window(buffer=PytoyBuffer(impl))

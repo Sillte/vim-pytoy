@@ -1,4 +1,4 @@
-from pytoy.shared.ui.vscode.document import Api, Uri, Document
+from pytoy.shared.ui.vscode.document import Api, VSCodeUri, Document
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
 from pydantic import BaseModel, ConfigDict, ValidationError, Field, PrivateAttr
 from typing import Sequence, Self, Literal
@@ -48,7 +48,7 @@ class Editor(BaseModel):
         return [Editor.model_validate(data) for data in data_list]
 
     @property
-    def uri(self) -> Uri:
+    def uri(self) -> VSCodeUri:
         return self.document.uri
 
     @property
@@ -65,7 +65,7 @@ class Editor(BaseModel):
         api = Api()
         pairs = api.eval_with_return(jscode, with_await=True)
         try:
-            pairs = [(Uri.model_validate(pair[0]), pair[1]) for pair in pairs]
+            pairs = [(VSCodeUri.model_validate(pair[0]), pair[1]) for pair in pairs]
         except ValidationError:
             return False
 
@@ -74,7 +74,7 @@ class Editor(BaseModel):
         return uri_to_views.get(self.uri, -1) == self.viewColumn
 
     @classmethod
-    def create(cls, uri: Uri, split_mode: Literal["vertical", "horizontal"] = "vertical", cursor: tuple[int, int] | None = None) -> Self:
+    def create(cls, uri: VSCodeUri, split_mode: Literal["vertical", "horizontal"] = "vertical", cursor: tuple[int, int] | None = None) -> Self:
         jscode = """
         (async (args) => {
             const uri = vscode.Uri.parse(args.uriKey);
@@ -114,7 +114,7 @@ class Editor(BaseModel):
 
     def show(
         self,
-        uri: Uri,
+        uri: VSCodeUri,
         position: tuple[int , int] | None = None,
         preview: bool = False
     ) -> "Editor":
@@ -245,7 +245,7 @@ class Editor(BaseModel):
             self.viewColumn == other.viewColumn
         )
 
-    def get_clean_target_uris_for_unique(self, within_tabs: bool = False, within_windows: bool = True) -> Sequence[Uri]:
+    def get_clean_target_uris_for_unique(self, within_tabs: bool = False, within_windows: bool = True) -> Sequence[VSCodeUri]:
         from pytoy.shared.ui.vscode.editor.clearners import EditorCleaner
         return EditorCleaner(self).get_clean_target_uris_for_unique(within_tabs=within_tabs,
                                                                      within_windows=within_windows)

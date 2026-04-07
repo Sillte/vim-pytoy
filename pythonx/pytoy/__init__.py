@@ -1,55 +1,27 @@
-
-from pytoy.tools.python import PythonExecutor
-
-
 TERM_STDOUT = "__pystdout__"  # TERIMINAL NAME of `stdout`.
 TERM_STDERR = "__pystderr__"  # TERIMINAL NAME of `stderr`.
-IPYTHON_TERMINAL = None  # TERMINAL MANAGER for `ipython`.
-
-# Python Execution Interface
 
 
 def run(path=None):
     """Perform `python {path}`."""
-    from pytoy.shared.ui import PytoyBuffer
-    if not path:
-        path = PytoyBuffer.get_current().file_path
-    executor = PythonExecutor()
-    if executor.is_running:
-        raise RuntimeError("Currently, `PythonExecutor` is running.")
-
-    from pytoy.shared.ui import make_duo_buffers
-
-    stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
-
-    executor.runfile(path, stdout_buffer, stderr_buffer)
+    from pytoy.commands.console_command import script_run
+    script_run(path=path)
 
 
 def rerun():
     """Perform `python` with the previous `path`."""
-    executor = PythonExecutor()
-
-    from pytoy.shared.ui import make_duo_buffers, PytoyBuffer
-
-    stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
-
-    executor.rerun(stdout_buffer, stderr_buffer)
+    from pytoy.commands.console_command import script_rerun
+    script_rerun()
 
 
 def stop():
-    from pytoy.contexts.pytoy import GlobalPytoyContext
-    for item in GlobalPytoyContext.get().command_execution_manager.get_running():
-        item.runner.terminate()
+    from pytoy.commands.console_command import script_stop
+    script_stop()
 
 
 def reset():
-    """Reset the state of windows."""
-    import vim
-    vim.command(":lclose")
-    for term in (TERM_STDOUT, TERM_STDERR):
-        nr = int(vim.eval(f'bufwinnr("{term}")'))
-        if 0 <= nr:
-            vim.command(f":{nr}close")
+    from pytoy.commands.console_command import hide_temporary
+    hide_temporary()
 
 # Command definitions.
 # Maybe `Command` uses the public interfaces,

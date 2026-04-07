@@ -16,7 +16,10 @@ class PytoyFairy:
             ctx = GlobalPytoyContext.get()
         kernel_manager = ctx.fairy_kernel_manager
         if workspace is None:
-            workspace = buffer.path.parent
+            if buffer.is_file:
+                workspace = buffer.file_path.parent
+            else:
+                workspace = Path.cwd()
         else:
             workspace = Path(workspace)
         self._kernel = kernel_manager.summon(workspace)

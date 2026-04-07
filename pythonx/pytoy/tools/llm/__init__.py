@@ -14,7 +14,10 @@ class ReferenceDatasetConstructor:
         collector = kernel.llm_context.reference_handler.collector
         # [TODO]: In a remote context, we should ensure the `root_folder` is valid.
         # It is better to introduce `filepath` for `PytoyBuffer`.
-        root_folder = buffer.path.parent
+        if  buffer.is_file:
+            root_folder = buffer.file_path.parent
+        else:
+            root_folder = None
         if not root_folder:
             print("No root folder found for the buffer. Cannot collect references.")
             return

@@ -1,28 +1,17 @@
 from __future__ import annotations
 from typing import Protocol, Sequence, TYPE_CHECKING, Hashable
-from dataclasses import dataclass
 from pathlib import Path
 from pytoy.shared.lib.text import CharacterRange, LineRange
 from pytoy.shared.lib.event.domain import Event
+from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferID, BufferQuery, URI, BufferSource
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol
 
 
-
-BufferID = Hashable
-
-@dataclass
-class BufferEvents:
-    on_wiped: Event[BufferID]
-    on_pre_buf: Event[BufferID]
-
-
 class PytoyBufferProtocol(Protocol):
-
     @property
-    def buffer_id(self) -> BufferID:
-        ...
+    def buffer_id(self) -> BufferID: ...
 
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
@@ -35,9 +24,15 @@ class PytoyBufferProtocol(Protocol):
         """Whether the buffer is alive or not."""
         ...
 
+
     @property
-    def path(self) -> Path:
+    def uri(self) -> URI:
         """Return the file path."""
+        ...
+        
+    @property
+    def source(self) -> BufferSource:
+        """Return the source of buffer."""
         ...
 
     @property
@@ -59,7 +54,7 @@ class PytoyBufferProtocol(Protocol):
     @property
     def content(self) -> str: ...
 
-    @property 
+    @property
     def lines(self) -> list[str]: ...
 
     def show(self) -> None: ...
@@ -67,8 +62,7 @@ class PytoyBufferProtocol(Protocol):
     def hide(self) -> None: ...
 
     @property
-    def range_operator(self) -> "RangeOperatorProtocol":
-        ...
+    def range_operator(self) -> "RangeOperatorProtocol": ...
 
     def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindowProtocol"]:
         """Get windows displaying this buffer.
@@ -77,16 +71,21 @@ class PytoyBufferProtocol(Protocol):
                           If False, return all windows backeed recognizes.
         """
         ...
-        
+
     @property
     def on_wiped(self) -> Event[BufferID]:
-        """The event of deletion is special. 
-        """
+        """The event of deletion is special."""
         ...
-        
+
     @property
-    def events(self) -> BufferEvents:
-        ...
+    def events(self) -> BufferEvents: ...
+
+
+class PytoyBufferProviderProtocol(Protocol):
+    def get_buffers(self, is_normal_type: bool = True) -> Sequence[PytoyBufferProtocol]: ...
+
+    def get_current(self) -> PytoyBufferProtocol: ...
+    
 
 
 class RangeOperatorProtocol(Protocol):
@@ -103,13 +102,11 @@ class RangeOperatorProtocol(Protocol):
         text: str,
         target_range: CharacterRange | None = None,
         reverse: bool = False,
-    ) -> CharacterRange | None:
-        ...
+    ) -> CharacterRange | None: ...
 
     def find_all(self, text: str, target_range: CharacterRange | None = None) -> list[CharacterRange]:
         """return the all matched selections of `text`"""
         ...
 
     @property
-    def entire_character_range(self) -> CharacterRange:
-        ...
+    def entire_character_range(self) -> CharacterRange: ...

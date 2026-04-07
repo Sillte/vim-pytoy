@@ -8,7 +8,7 @@ from typing import Self, Sequence
 from pytoy.shared.ui.vscode.api import Api
 
 
-class Uri(BaseModel):
+class VSCodeUri(BaseModel):
     scheme: str
     path: str = ""  # Some `scheme` may not have the path.
     authority: str = "" # Some `scheme` does not have the path.
@@ -72,7 +72,7 @@ class Uri(BaseModel):
         return self
 
     def __eq__(self, other) -> bool:
-        if isinstance(other, Uri):
+        if isinstance(other, VSCodeUri):
             if self.scheme == "file":
                 return (self._norm_filepath(self.path), self.scheme) == (
                     self._norm_filepath(other.path),
@@ -105,7 +105,7 @@ def get_remote_authority() -> str:
     if not is_remote_vscode():
         return ""
     
-    uris = Uri.get_uris()
+    uris = VSCodeUri.get_uris()
     uris = [uri for uri in uris if uri.scheme == "vscode-remote"]
     authorities = set(uri.authority for uri in uris)
     if 2 <= len(authorities):
@@ -117,7 +117,7 @@ def get_remote_authority() -> str:
     # Inference based on working folder.
     api = Api()
     jscode = "vscode.workspace.workspaceFolders.map(folder => {folder.uri});"
-    uris = [Uri.model_validate(elem) for elem in api.eval_with_return(jscode, with_await=False)]
+    uris = [VSCodeUri.model_validate(elem) for elem in api.eval_with_return(jscode, with_await=False)]
     uris = [uri for uri in uris if uri.scheme == "vscode-remote"]
     authorities = set(uri.authority for uri in uris)
     if 2 <= len(authorities):

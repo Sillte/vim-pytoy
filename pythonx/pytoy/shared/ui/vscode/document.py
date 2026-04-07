@@ -4,11 +4,11 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict
 
 from pytoy.shared.ui.vscode.api import Api
-from pytoy.shared.ui.vscode.uri import Uri
+from pytoy.shared.ui.vscode.uri import VSCodeUri
 
 
 class Document(BaseModel):
-    uri: Uri
+    uri: VSCodeUri
     model_config = ConfigDict(extra="allow")
 
     @classmethod
@@ -20,7 +20,7 @@ class Document(BaseModel):
         return cls.model_validate(doc)
 
     @classmethod
-    def create(cls, uri: Uri) -> Self:
+    def create(cls, uri: VSCodeUri) -> Self:
         api = Api()
         js_code = """
         (async (uriKey) => {
@@ -56,7 +56,7 @@ class Document(BaseModel):
         return cls.model_validate(ret)
       
     @classmethod
-    def open(cls, uri: Uri, position: tuple[int, int] | None = None) -> Self:
+    def open(cls, uri: VSCodeUri, position: tuple[int, int] | None = None) -> Self:
       """posistion=(lnum, lcol)
       lnum: 0-based. 
       lcol: 0-based, characters.
