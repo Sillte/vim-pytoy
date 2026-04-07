@@ -1,6 +1,6 @@
 import time
 from pathlib import Path
-from pytoy.shared.ui.vscode.uri import Uri
+from pytoy.shared.ui.vscode.uri import VSCodeUri
 from pytoy.shared.ui.vscode.api import Api
 from pytoy.shared.lib.text import CursorPosition
 from pytoy.shared.ui.pytoy_window import PytoyWindow
@@ -31,7 +31,7 @@ def open_file(path: str | Path, position: CursorPosition | None = None) -> None:
     from pytoy.shared.ui.vscode.document import Document
     path = Path(path)
 
-    uri = Uri.from_filepath(path)
+    uri = VSCodeUri.from_filepath(path)
     if position:
         vscode_position = (position.line, position.col)
     else:

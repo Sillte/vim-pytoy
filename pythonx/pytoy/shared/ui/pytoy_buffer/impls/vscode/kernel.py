@@ -1,12 +1,13 @@
 from __future__ import annotations
+from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, URI
 import vim
 
 from typing import TYPE_CHECKING
 
 from pytoy.shared.lib.entity import MortalEntityProtocol
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
-from pytoy.shared.ui.pytoy_buffer.protocol import Event, BufferEvents
-from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver, Uri
+from pytoy.shared.ui.pytoy_buffer.protocol import Event
+from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver, VSCodeUri
 from pytoy.shared.ui.vscode.document import Document
 
 if TYPE_CHECKING: 
@@ -47,13 +48,20 @@ class VSCodeBufferKernel(MortalEntityProtocol):
         return self._vim_kernel.buffer
 
     @property
-    def uri(self) -> Uri | None:
+    def uri(self) -> URI:
+        vscode_uri = BufferURISolver.get_uri(self.bufnr)
+        if vscode_uri is None:
+            raise RuntimeError(f"Correspoing URI is not existent, {self.bufnr=}")
+        return URI(scheme=vscode_uri.scheme, path=vscode_uri.path, authority=vscode_uri.authority)
+
+    @property
+    def vscode_uri(self) -> VSCodeUri | None:
         return BufferURISolver.get_uri(self.bufnr)
 
     @property
     def document(self) -> Document | None:
-        uri = self.uri
-        return Document(uri=uri) if uri else None
+        vscode_uri = self.vscode_uri
+        return Document(uri=vscode_uri) if vscode_uri else None
 
     @property
     def content(self) -> str:

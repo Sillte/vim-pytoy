@@ -5,8 +5,10 @@ from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import normalize_lf_code
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.range_operator import RangeOperatorVSCode
-from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, BufferID, BufferEvents
-from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver, Uri
+from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferQuery, BufferSource
+from pytoy.shared.ui.pytoy_buffer.models import URI as PytoyURI
+from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, PytoyBufferProviderProtocol, BufferID
+from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver, VSCodeUri
 from pytoy.shared.ui.vscode.document import Document
 from pytoy.shared.ui.utils import to_filepath
 from typing import Sequence, TYPE_CHECKING, Self
@@ -39,16 +41,13 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     def bufnr(self, ) -> BufferID:
         return self._kernel.bufnr
     
-    @property
-    def uri(self) -> Uri:
-        uri = self._kernel.uri
-        if uri is None:
-            raise RuntimeError(f"Correspoing URI is not existent, {self.bufnr=}")
-        return uri
-        
+
     @property
     def document(self) -> Document:
-        return Document(uri=self.uri)
+        vscode_uri = self._kernel.vscode_uri
+        if vscode_uri is None:
+            raise RuntimeError(f"Correspoing URI is not existent, {self.bufnr=}")
+        return Document(uri=vscode_uri)
         
     @classmethod
     def from_document(cls, document: Document) -> Self:
@@ -71,20 +70,45 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         return PytoyBufferVSCode.from_document(Document.get_current())
 
     @property
+    def uri(self) -> PytoyURI:
+        uri = self._kernel.uri
+        if uri is None:
+            raise RuntimeError(f"Correspoing URI is not existent, {self.bufnr=}")
+        return uri
+
+    @property
+    def source(self) -> BufferSource:
+        vscode_uri = self._kernel.vscode_uri
+        if vscode_uri is None:
+            raise RuntimeError(f"Correspoing URI is not existent, {self.bufnr=}")
+        if self.is_file:
+            if vscode_uri.fsPath:
+                elem = vscode_uri.fsPath
+                elem = elem.replace("\\", "/")  # required to replace.
+                path = to_filepath(elem)
+            else:
+                path = to_filepath(vscode_uri.path)
+            return BufferSource.from_path(path)
+        else:
+            return BufferSource.from_str(vscode_uri.path)
+        
+    @property
     def path(self) -> Path:
-        uri = self.uri
-        if uri.fsPath:
-            elem = uri.fsPath
+        vscode_uri = self._kernel.vscode_uri
+        if vscode_uri is None:
+            raise RuntimeError(f"Correspoing URI is not existent, {self.bufnr=}")
+        if vscode_uri.fsPath:
+            elem = vscode_uri.fsPath
             elem = elem.replace("\\", "/")  # required to replace.
             return to_filepath(elem)
         else:
-            return to_filepath(uri.path)
+            return to_filepath(vscode_uri.path)
 
     @property
     def is_file(self) -> bool:
         """Return True if the buffer corresponds to a file on disk."""
         return self.uri.scheme in {"file", "vscode-remote"}
-
+    
     @property
     def is_normal_type(self) -> bool:
         """Return whether this buffer is editable/usable by pytoy.
@@ -137,7 +161,11 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     def hide(self):
         # [NOTE]: Due to the difference of management of window and `Editor` in vscode
         # this it not implemented.
-        pass
+        for window in self.get_windows(only_visible=True):
+            try:
+                window.close()
+            except Exception:
+                pass
 
     @property
     def range_operator(self) -> RangeOperatorProtocol:
@@ -150,3 +178,15 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         res = vim.eval(f"win_findbuf({self.bufnr})")
         winids = [int(wid) for wid in res] if res else []
         return [PytoyWindowVSCode(winid) for winid in winids]
+
+
+class PytoyBufferProviderVSCode(PytoyBufferProviderProtocol):
+    def get_buffers(self, is_normal_type: bool = True) -> Sequence[PytoyBufferVSCode]: 
+        buffers = [PytoyBufferVSCode(buffer.number) for buffer in vim.buffers if buffer.valid]
+        if is_normal_type:
+            buffers = [buffer for buffer in buffers if buffer.is_normal_type]
+        return buffers
+
+    def get_current(self) -> PytoyBufferProtocol:
+        return PytoyBufferVSCode.from_document(Document.get_current())
+    

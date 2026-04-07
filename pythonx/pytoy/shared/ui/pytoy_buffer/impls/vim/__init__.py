@@ -1,13 +1,14 @@
 from __future__ import annotations
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.shared.ui.pytoy_buffer.impls.vim.range_operator import RangeOperatorVim
+from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferQuery, BufferSource, URI
 import vim
 from pathlib import Path
 from typing import Sequence, TYPE_CHECKING 
 
 VIM_ERROR = getattr(vim, "error", Exception)
 
-from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, BufferID, BufferEvents
+from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, PytoyBufferProviderProtocol, BufferID
 from pytoy.shared.lib.entity import EntityRegistry
 from pytoy.shared.lib.event.domain import Event
 
@@ -59,6 +60,24 @@ class PytoyBufferVim(PytoyBufferProtocol):
     @property
     def path(self) -> Path:
         return Path(self.buffer.name)
+    
+    @property
+    def uri(self) -> URI:
+        buftype = vim.eval(f"getbufvar({self.buffer.number}, '&buftype')")
+        if buftype == "":
+            return URI(scheme="file", path=self.buffer.name)
+        else:
+            return URI(scheme=buftype, path=self.buffer.name)
+        
+    @property
+    def source(self) -> BufferSource:
+        buftype = vim.eval(f"getbufvar({self.buffer.number}, '&buftype')")
+        if buftype == "":
+            return BufferSource.from_path(Path(self.buffer.name))
+        else:
+            # [NOTE]: For non-file buffer, we use `nofile` as the type and the buffer name as the name.
+            # In some cases, the buffer name includes the current working directory, so we use `Path(self.buffer.name).name` to get the basename.
+            return BufferSource.from_no_file(Path(self.buffer.name).name)
 
     @property
     def is_file(self) -> bool:
@@ -157,3 +176,27 @@ class PytoyBufferVim(PytoyBufferProtocol):
     def events(self) -> BufferEvents:
         return self._kernel.events
 
+
+class PytoyBufferProviderVim(PytoyBufferProviderProtocol):
+    def get_buffers(self, is_normal_type: bool = True) -> Sequence[PytoyBufferProtocol]:
+        return self._get_pytoy_buffer_vim_impls(is_normal_type=is_normal_type)
+    
+    def _get_pytoy_buffer_vim_impls(self, is_normal_type: bool = True) -> Sequence[PytoyBufferVim]:
+        buffers = [ PytoyBufferVim.from_buffer(buf) for buf in vim.buffers if buf.valid ]
+        if is_normal_type:
+            buffers = [elem for elem in buffers if elem.is_normal_type]
+        return buffers
+
+    def get_current(self) -> PytoyBufferProtocol: 
+        return PytoyBufferVim.from_buffer(vim.current.buffer)
+    
+    def query(self, query: BufferQuery) -> Sequence[PytoyBufferProtocol]:
+        buffers = self._get_pytoy_buffer_vim_impls(query.is_normal_type)
+        buffer_sources = query.buffer_sources
+        if buffer_sources is None:
+            return buffers
+        else:
+            result = []
+            for source in buffer_sources:
+                result += [elem for elem in buffers if elem.is_file and elem.source == source]
+            return result

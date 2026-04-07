@@ -15,7 +15,7 @@ def gather_text_files():
     buffer = PytoyBuffer.get_current()
     if not buffer.is_file:
         raise ValueError("Target buffer is not file.")
-    path = buffer.path
+    path = buffer.file_path
     workspace = EnvironmentManager().get_workspace(path, preference="system")
     workspace = workspace or path.parent
     collector = TextFilesCollector(path, workspace=workspace)
@@ -33,11 +33,12 @@ def gather_git_diffs():
     from pytoy_llm.materials.git_diffs.models import GitDiffBundleQuery
     from pytoy_llm.materials.composers import NaiveSectionComposer
     from pytoy.job_execution.environment_manager import EnvironmentManager
+    from pathlib import Path
 
     buffer = PytoyBuffer.get_current()
     if not buffer.is_file:
         raise ValueError("Target buffer is not file.")
-    path = buffer.path
+    path = buffer.file_path if buffer.is_file else Path().cwd()
     workspace = EnvironmentManager().get_workspace(path, preference="system")
     workspace = workspace or path.parent
 

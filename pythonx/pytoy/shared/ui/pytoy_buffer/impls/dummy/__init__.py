@@ -1,8 +1,14 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Sequence, TYPE_CHECKING
+from typing import Sequence, TYPE_CHECKING, ClassVar
 
-from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, BufferID, BufferEvents
+from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferSource, BufferQuery, URI
+from pytoy.shared.ui.pytoy_buffer.protocol import (
+    PytoyBufferProtocol,
+    PytoyBufferProviderProtocol,
+    RangeOperatorProtocol,
+    BufferID,
+)
 from pytoy.shared.lib.entity import EntityRegistry
 from pytoy.shared.lib.event.domain import Event, EventEmitter
 from pytoy.shared.lib.text import LineRange, CharacterRange, CursorPosition
@@ -83,18 +89,19 @@ class RangeOperatorDummy(RangeOperatorProtocol):
 
 
 class PytoyBufferDummy(PytoyBufferProtocol):
-    def __init__(self, buffer_id: BufferID, is_file: bool = False):
+    def __init__(self, buffer_source: BufferSource):
         self._lines: list[str] = []
-        self._buffer_id = buffer_id
+        self._buffer_source = buffer_source
+        self._buffer_id = id(buffer_source)
         self.on_wiped_emitter = EventEmitter[BufferID]()
         self.on_pre_buf_emitter = EventEmitter[BufferID]()
         self._events = BufferEvents(on_wiped=self.on_wiped_emitter.event, on_pre_buf=self.on_pre_buf_emitter.event)
         self._range_operator = RangeOperatorDummy(self._lines)
-        self._is_file = is_file
-        
+        self._is_file = bool(buffer_source.type == "file")
+
     @classmethod
     def get_current(cls) -> PytoyBufferDummy:
-        return cls(buffer_id=-1)
+        return PytoyBufferProviderDummy().get_current()
 
     @property
     def range_operator(self) -> RangeOperatorProtocol:
@@ -110,14 +117,22 @@ class PytoyBufferDummy(PytoyBufferProtocol):
 
     @property
     def buffer_id(self) -> BufferID:
-        return self.buffer_id
+        return self._buffer_id
 
     def init_buffer(self, content: str = ""):
         self._lines = content.splitlines()
 
     @property
     def path(self) -> Path:
-        return Path("null")
+        return Path(self._buffer_source.name)
+    
+    @property
+    def uri(self) -> URI:
+        return URI(scheme=self._buffer_source.type, path=self._buffer_source.name)
+    
+    def source(self) -> BufferSource:
+        return self._buffer_source
+        
 
     @property
     def is_file(self) -> bool:
@@ -149,8 +164,33 @@ class PytoyBufferDummy(PytoyBufferProtocol):
         pass
 
     def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindowProtocol"]:
+        # TODO: this is temporary.
         from pytoy.shared.ui.pytoy_window.impls.dummy import PytoyWindowDummy
         from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+
         return [PytoyWindowDummy(winid=id(self), buffer=PytoyBuffer(self))]
 
 
+class PytoyBufferProviderDummy(PytoyBufferProviderProtocol):
+    buffers: ClassVar[dict[BufferID, PytoyBufferDummy]] = {}
+
+    @classmethod
+    def create_buffer(cls, buffer_source: BufferSource | None = None) -> PytoyBufferDummy:
+        import uuid
+
+        buffer_source = buffer_source or BufferSource(name=str(uuid.uuid4()), type="nofile")
+        buffer_impl = PytoyBufferDummy(buffer_source)
+        cls.buffers[buffer_impl.buffer_id] = buffer_impl
+        return cls.buffers[buffer_impl.buffer_id]
+
+    def get_buffers(self, is_normal_type: bool = True) -> Sequence[PytoyBufferProtocol]:
+        items = list(self.buffers.values())
+        if is_normal_type:
+            items = [item for item in items if item.is_normal_type]
+        return items
+
+    def get_current(self) -> PytoyBufferDummy:
+        if self.buffers:
+            return list(self.buffers.values())[0]
+        else:
+            return self.create_buffer()

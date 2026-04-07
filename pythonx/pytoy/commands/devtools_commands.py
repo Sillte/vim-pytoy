@@ -199,7 +199,7 @@ def pytoy_log(location: Annotated[Literal["local", "global"] | None, Argument()]
 
     c_buffer = PytoyBuffer.get_current()
     if c_buffer.is_file:
-        pivot_folder = c_buffer.path
+        pivot_folder = c_buffer.file_path
     else:
         pivot_folder = Path(".")
         raise ValueError("Current folder should be `file`. ")

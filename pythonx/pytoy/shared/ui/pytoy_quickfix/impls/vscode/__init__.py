@@ -1,10 +1,11 @@
 from pathlib import Path
+from pytoy.shared.ui.pytoy_buffer.models import BufferSource
 import vim
 from typing import Sequence
 
 from pytoy.shared.ui.pytoy_quickfix.protocol import  PytoyQuickfixUIProtocol
 from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
-from pytoy.shared.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam, BufferSource
+from pytoy.shared.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam
 
 
 class PytoyQuickfixVSCodeUI(PytoyQuickfixUIProtocol):

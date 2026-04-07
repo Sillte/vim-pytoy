@@ -7,8 +7,9 @@ from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.window_events import ScopedWindowEventProvider
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange
+from pytoy.shared.ui.pytoy_buffer.models import BufferSource
 from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode
-from pytoy.shared.ui.pytoy_window.models import BufferSource, WindowCreationParam
+from pytoy.shared.ui.pytoy_window.models import WindowCreationParam
 from pytoy.shared.ui.status_line.protocol import StatusLineManagerProtocol
 
 if TYPE_CHECKING: 

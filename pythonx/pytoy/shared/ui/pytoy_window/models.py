@@ -1,6 +1,5 @@
 from __future__ import annotations
 from enum import StrEnum
-from pathlib import Path 
 from typing import Literal, Self, TYPE_CHECKING, assert_never
 from dataclasses import dataclass
 from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange
@@ -29,36 +28,6 @@ class ViewPort():
     def line_range(self) -> LineRange:
         return LineRange(self.top_line, self.end_line)
 
-
-
-@dataclass
-class BufferSource:
-    """Source of buffer.
-    """
-    type: Literal["file", "nofile"]
-    name: str
-    
-    @classmethod
-    def from_path(cls, path: Path) -> Self:
-        return cls(type="file", name=path.absolute().as_posix())
-
-    @classmethod
-    def from_str(cls, name: str, type: Literal["file", "nofile"] | None = None) -> Self:
-        if not type: 
-            if name.find(".") == -1 and name.find("/") == -1 and name.find("\\") == -1:
-                type = "nofile"
-            else:
-                type = "file"
-        return cls(type=type, name=name)
-
-    @classmethod
-    def from_any(cls, arg: Path | str) -> Self:
-
-        if isinstance(arg, Path):
-            return cls.from_path(arg)
-        elif isinstance(arg, str):
-            return cls.from_str(arg)
-        raise ValueError("Type is invalid in `BufferSource`")
 
 
 @dataclass

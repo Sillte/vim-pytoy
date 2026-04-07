@@ -1,4 +1,4 @@
-from pytoy.shared.ui.vscode.document import Api, Uri
+from pytoy.shared.ui.vscode.document import Api, VSCodeUri
 from typing import Sequence, Self
 
 from pytoy.shared.ui.vscode.editor import Editor
@@ -11,7 +11,7 @@ class EditorCleaner:
     def editor(self) -> Editor:
         return self._editor
 
-    def get_clean_target_uris_for_unique(self, within_tabs: bool = False, within_windows: bool = True) -> Sequence[Uri]:
+    def get_clean_target_uris_for_unique(self, within_tabs: bool = False, within_windows: bool = True) -> Sequence[VSCodeUri]:
         """Return the `dirty` uris which should be empty for the smooth `unique`.
         """
         jscode = """
@@ -125,7 +125,7 @@ class EditorCleaner:
             msg = "`viewColumn` must not be None in `unique`."
             raise ValueError(msg)
         result = api.eval_with_return(jscode, with_await=True, opts=args)
-        return [Uri.model_validate(elem) for elem in result]
+        return [VSCodeUri.model_validate(elem) for elem in result]
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True):
         """Make it an unique editor."""

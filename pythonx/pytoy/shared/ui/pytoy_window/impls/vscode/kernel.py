@@ -8,18 +8,18 @@ import vim
 
 
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
-from pytoy.shared.ui.vscode.uri import Uri
+from pytoy.shared.ui.vscode.uri import VSCodeUri
 
 
 class WindowURISolver:
 
     @classmethod
-    def to_uri(cls, winid: int) -> Uri | None:
+    def to_uri(cls, winid: int) -> VSCodeUri | None:
         bufnr = int(vim.eval(f"winbufnr({winid})"))
         return BufferURISolver.get_bufnr_to_uris().get(bufnr)
 
     @classmethod
-    def from_uri(cls, uri: Uri) -> int | None:
+    def from_uri(cls, uri: VSCodeUri) -> int | None:
         bufnr = BufferURISolver.get_bufnr(uri)
         if not bufnr:
             return None
@@ -50,7 +50,7 @@ class VSCodeWindowKernel[MortalEntityProtocol]:
         uri = self.uri
         if uri is None:
             raise RuntimeError(f"Given `{winid=}` is invalid.")
-        self._snapped_uri: Uri | None = uri # This is for debug purpose.
+        self._snapped_uri: VSCodeUri | None = uri # This is for debug purpose.
 
 
 
@@ -72,7 +72,7 @@ class VSCodeWindowKernel[MortalEntityProtocol]:
         return self._winid
 
     @property
-    def uri(self) -> Uri | None:
+    def uri(self) -> VSCodeUri | None:
         return WindowURISolver.to_uri(self.winid)
 
 

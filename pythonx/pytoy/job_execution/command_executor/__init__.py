@@ -27,8 +27,7 @@ class BufferRequest:
     def to_str_request(self) -> "BufferRequest":
         def _to_name(buffer: PytoyBuffer | str) -> str:
             if isinstance(buffer, PytoyBuffer):
-                #[TODO]: This is crucial...May be this should be revised. 
-                return Path(buffer.path).name
+                return buffer.source.name
             return buffer
         stdout = _to_name(self.stdout)
         stderr = _to_name(self.stderr) if self.stderr else None

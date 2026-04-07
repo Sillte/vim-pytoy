@@ -6,11 +6,12 @@ from __future__ import annotations
 from pathlib import Path
 from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange
 from pytoy.shared.lib.event.domain import Event
+from pytoy.shared.ui.pytoy_buffer.models import BufferSource
 from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import WindowURISolver
 from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.shared.ui.vscode.editor.models import TextEditorRevealType
-from pytoy.shared.ui.vscode.uri import Uri
+from pytoy.shared.ui.vscode.uri import VSCodeUri
 import vim  # (vscode-neovim extention)
 from typing import Sequence, Literal, assert_never, cast, TYPE_CHECKING
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
@@ -25,7 +26,7 @@ from pytoy.shared.ui.pytoy_window.protocol import (
 from pytoy.shared.ui.vscode.document import Api, Document
 from pytoy.shared.ui.vscode.editor import Editor
 from pytoy.shared.ui.vscode.utils import wait_until_true
-from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, BufferSource, WindowCreationParam
+from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
 
 from pytoy.shared.ui.pytoy_window.vim_window_utils import get_last_selection
 from ...vim_window_utils import VimWinIDConverter
@@ -59,7 +60,7 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         return self._kernel
 
     @property
-    def uri(self) -> Uri:
+    def uri(self) -> VSCodeUri:
         uri = self._kernel.uri
         if uri is None:
             raise ValueError(f"Uri does not exist, {self._kernel}")
@@ -236,12 +237,12 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
 
         raise RuntimeError("Implementation Error") 
 
-    def _to_uri(self, bufname: str, *, type: Literal["file", "nofile"] = "nofile",) -> Uri:
+    def _to_uri(self, bufname: str, *, type: Literal["file", "nofile"] = "nofile",) -> VSCodeUri:
         match type: 
             case "file":
-                query_uri = Uri.from_filepath(bufname)
+                query_uri = VSCodeUri.from_filepath(bufname)
             case "nofile":
-                query_uri = Uri.from_untitled_name(bufname)
+                query_uri = VSCodeUri.from_untitled_name(bufname)
             case _:
                 assert_never(type)
         return query_uri
