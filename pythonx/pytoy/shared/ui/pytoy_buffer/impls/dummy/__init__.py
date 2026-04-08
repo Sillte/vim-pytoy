@@ -122,9 +122,6 @@ class PytoyBufferDummy(PytoyBufferProtocol):
     def init_buffer(self, content: str = ""):
         self._lines = content.splitlines()
 
-    @property
-    def path(self) -> Path:
-        return Path(self._buffer_source.name)
     
     @property
     def uri(self) -> URI:

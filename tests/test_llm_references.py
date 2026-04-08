@@ -1,7 +1,7 @@
 from pytoy.tools.llm.references import ReferenceCollector
 from pathlib import Path
 
-def test_naive():
+def check_naive():
     stored_folder = "./__save"
     collector = ReferenceCollector(stored_folder)
     ret = collector.collect_all("./")

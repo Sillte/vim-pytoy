@@ -163,36 +163,37 @@ class PytoyBufferProvider(PytoyBufferProviderProtocol):
         else:
             result = []
             for source in buffer_sources:
-                print("buffers-sources", [elem.source for elem in buffers])
-                print("source", source)
+                #print("buffers-sources", [elem.source for elem in buffers])
+                #print("source", source)
                 result += [elem for elem in buffers if elem.source == source]
             return result
 
 
-def make_buffer(stdout_name: str, mode: Literal["vertical", "horizontal"] = "vertical") -> PytoyBuffer:
+def make_buffer(source: str | Path | BufferSource, mode: Literal["vertical", "horizontal"] = "vertical") -> PytoyBuffer:
     from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
     from pytoy.shared.ui.pytoy_window.models import WindowCreationParam
-
+    source = BufferSource.from_any(source)
     param = WindowCreationParam.for_split("vertical", try_reuse=True, anchor=None)
-    stdout_window = PytoyWindowProvider().open_window(stdout_name, param)
+    stdout_window = PytoyWindowProvider().open_window(source, param)
     return stdout_window.buffer
 
 
 def make_duo_buffers(
-    stdout_name: str, stderr_name: str
+    source1: str | Path | BufferSource, source2: str | Path | BufferSource
 ) -> tuple[PytoyBuffer, PytoyBuffer]:
     """Create 2 buffers, which is intended to `STDOUT` and `STDERR`."""
+    source1 = BufferSource.from_any(source1)
+    source2 = BufferSource.from_any(source2)
 
     from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
     from pytoy.shared.ui.pytoy_window.models import WindowCreationParam
     
-
     provider = PytoyWindowProvider()
     param = WindowCreationParam.for_split("vertical", try_reuse=True, anchor=None)
-    stdout_window = provider.open_window(stdout_name, param)
+    stdout_window = provider.open_window(source1, param)
 
     param = WindowCreationParam.for_split("horizontal", try_reuse=True, anchor=stdout_window)
-    stderr_window = provider.open_window(stderr_name, param)
+    stderr_window = provider.open_window(source2, param)
     
     return (stdout_window.buffer, stderr_window.buffer)
 

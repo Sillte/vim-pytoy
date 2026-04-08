@@ -57,9 +57,6 @@ class PytoyBufferVim(PytoyBufferProtocol):
     def get_current(cls) -> PytoyBufferProtocol:
         return PytoyBufferVim.from_buffer(vim.current.buffer)
 
-    @property
-    def path(self) -> Path:
-        return Path(self.buffer.name)
     
     @property
     def uri(self) -> URI:

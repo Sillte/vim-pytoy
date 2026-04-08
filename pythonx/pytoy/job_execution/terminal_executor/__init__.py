@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from dataclasses import dataclass, field, replace
 from typing import Callable, Sequence, Literal, Mapping, Self, Any, assert_never
@@ -6,7 +5,7 @@ from pytoy.job_execution.terminal_runner  import TerminalJobRunner
 from pytoy.job_execution.terminal_runner.models import Snapshot, TerminalJobRequest,  SpawnOption, JobID, Event, JobEvents, TerminalDriverProtocol  
 from pytoy.job_execution.terminal_runner.models import TerminalDriver
 from pytoy.job_execution.terminal_runner.models import ExecutionWrapperType
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, BufferSource
 import time
 from pytoy.contexts.pytoy import GlobalPytoyContext
 
@@ -19,19 +18,23 @@ type ExecutionName = str
 
 @dataclass(frozen=True)
 class BufferRequest:
-    stdout: str | PytoyBuffer
+    source: BufferSource
     
     @classmethod
-    def from_str(cls, stdout: str) -> Self:
-        return cls(stdout=stdout)
+    def from_str(cls, source: str) -> Self:
+        return cls(source=BufferSource.from_str(source))
 
-    def to_str_request(self) -> "BufferRequest":
-        def _to_name(buffer: PytoyBuffer | str) -> str:
-            if isinstance(buffer, PytoyBuffer):
-                return buffer.source.name
-            return buffer
-        stdout = _to_name(self.stdout)
-        return BufferRequest(stdout=stdout)
+    @classmethod
+    def from_path(cls, path: str | Path) -> Self:
+        return cls(source=BufferSource.from_path(Path(path)))
+    
+    @classmethod
+    def from_no_file(cls, name: str) -> Self:
+        return cls(source=BufferSource.from_no_file(name))
+
+    @classmethod
+    def from_buffer(cls, buffer: PytoyBuffer) -> Self:
+        return cls(source=buffer.source)
 
 
 @dataclass(frozen=True)
@@ -70,7 +73,7 @@ class ExecutionHooks:
 class ExecutionContext:
     """ This should be used for repeating the same `Application` again.
     """
-    buffer: BufferRequest
+    buffer_source: BufferSource
     execution_request: ExecutionRequest
     hooks: ExecutionHooks
     name: ExecutionName 
@@ -146,7 +149,7 @@ class TerminalExecutor:
         self._execution_manager: TerminalExecutionManager = ctx.terminal_execution_manager
         self._environment_manager = ctx.core_context.environment_manager
         self._buffer_request = buffer_request
-        self._stdout = TerminalJobRunner.solve_buffer(buffer_request.stdout)
+        self._stdout = TerminalJobRunner.solve_buffer(buffer_request.source)
         
     @property
     def execution_manager(self) -> TerminalExecutionManager:
@@ -184,7 +187,7 @@ class TerminalExecutor:
         spawn_option = SpawnOption(cwd=cwd, env=env)
         runner.run(job_request, spawn_option)
         
-        context = ExecutionContext(buffer=self._buffer_request.to_str_request(), name=driver.name, 
+        context = ExecutionContext(buffer_source=self._buffer_request.source, name=driver.name, 
                                    execution_request=replace(request, cwd=cwd, env=env),
                                    hooks=hooks)
         execution = TerminalExecution(runner=runner, driver=driver, cwd=cwd, id=runner.job_id)
