@@ -92,17 +92,6 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         else:
             return BufferSource.from_str(vscode_uri.path)
         
-    @property
-    def path(self) -> Path:
-        vscode_uri = self._kernel.vscode_uri
-        if vscode_uri is None:
-            raise RuntimeError(f"Correspoing URI is not existent, {self.bufnr=}")
-        if vscode_uri.fsPath:
-            elem = vscode_uri.fsPath
-            elem = elem.replace("\\", "/")  # required to replace.
-            return to_filepath(elem)
-        else:
-            return to_filepath(vscode_uri.path)
 
     @property
     def is_file(self) -> bool:

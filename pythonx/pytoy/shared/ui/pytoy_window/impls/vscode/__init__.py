@@ -181,7 +181,8 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         source = source if isinstance(source, BufferSource) else BufferSource.from_any(source)
         param = param if isinstance(param, WindowCreationParam) else WindowCreationParam.from_literal(param)
 
-        uri = self._to_uri(source.name, type=source.type)
+        uri = self._to_uri(source)
+        #print("uri", uri, WindowURISolver.from_uri(uri))
         if param.try_reuse:
             if (winid := WindowURISolver.from_uri(uri)):
                 window =  PytoyWindowVSCode(winid)
@@ -190,7 +191,6 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
                 return window
 
         current =  self.get_current()
-        #current_editor = current.editor
         editor = self._create_editor(source, param)
         if not current.focus():
             print(f"{current} cannot be focused.")
@@ -210,7 +210,7 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         anchor = cast(PytoyWindowVSCode, anchor)
 
         anchor.focus()
-        uri = self._to_uri(source.name, type=source.type)
+        uri = self._to_uri(source)
 
         if param.target == "in-place":
             editor = anchor.editor.show(uri)
@@ -237,13 +237,13 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
 
         raise RuntimeError("Implementation Error") 
 
-    def _to_uri(self, bufname: str, *, type: Literal["file", "nofile"] = "nofile",) -> VSCodeUri:
-        match type: 
+    def _to_uri(self, source: BufferSource) -> VSCodeUri:
+        match source.type: 
             case "file":
-                query_uri = VSCodeUri.from_filepath(bufname)
+                query_uri = VSCodeUri.from_filepath(source.name)
             case "nofile":
-                query_uri = VSCodeUri.from_untitled_name(bufname)
+                query_uri = VSCodeUri.from_untitled_name(source.name)
             case _:
-                assert_never(type)
+                assert_never(source.type)
         return query_uri
 

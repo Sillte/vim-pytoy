@@ -38,7 +38,7 @@ class ConsoleController:
         executions = cls.get_execution_manager().get_running(name=driver_name)
         if not executions:
             buffer_name = buffer_name or "__CMD__"
-            buffer_req = BufferRequest(stdout=buffer_name)
+            buffer_req = BufferRequest.from_no_file(buffer_name)
             driver = cls.get_driver_manager().create(driver_name=driver_name, name=driver_name)  # [TODO] Thsi is one of weakpoint unless to clarify the existence of `name` parameter.
             execution_req = ExecutionRequest(driver=driver, command_wrapper="system", cwd=cwd)
             executor = TerminalExecutor(buffer_req)
@@ -158,7 +158,7 @@ def hide_temporary():
     provider = PytoyBufferProvider()
     buffers = provider.query(BufferQuery(buffer_sources=[source1, source2]))
 
-    print("buffers", buffers)
+    #print("buffers", buffers)
     for buffer in buffers:
         buffer.hide()
 

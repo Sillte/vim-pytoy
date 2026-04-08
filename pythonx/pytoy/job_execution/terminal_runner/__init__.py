@@ -6,15 +6,10 @@ from typing import Callable, Mapping, Any, TYPE_CHECKING
 from pytoy.job_execution.terminal_runner.models import TerminalJobProtocol, TerminalJobRequest, SpawnOption, JobEvents, Snapshot, JobID
 from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 from pytoy.shared.ui import PytoyBuffer
-from pytoy.shared.ui.pytoy_buffer import make_buffer, make_duo_buffers
+from pytoy.shared.ui.pytoy_buffer import make_buffer, make_duo_buffers, BufferSource
 if TYPE_CHECKING:
     from pytoy.contexts.pytoy import GlobalPytoyContext
 
-
-def _solve_buffer(buffer: PytoyBuffer | str):
-    if isinstance(buffer, str):
-        return make_buffer(buffer)
-    return buffer
 
 def make_terminal_job(job_request: TerminalJobRequest, spawn_option: SpawnOption) -> TerminalJobProtocol:
     backend_enum = get_backend_enum()
@@ -35,8 +30,12 @@ def make_terminal_job(job_request: TerminalJobRequest, spawn_option: SpawnOption
 class TerminalJobRunner:
     
     @classmethod
-    def solve_buffer(cls, buffer: PytoyBuffer | str) -> PytoyBuffer:
-        return _solve_buffer(buffer)
+    def solve_buffer(cls, arg: str | Path | BufferSource | PytoyBuffer) -> PytoyBuffer:
+        if isinstance(arg, (str, Path, BufferSource)):
+            return make_buffer(BufferSource.from_any(arg))
+        else:
+            return arg
+    
 
     def __init__(self, 
                  buffer: PytoyBuffer | str,
@@ -46,7 +45,7 @@ class TerminalJobRunner:
                  ctx: GlobalPytoyContext | None = None) -> None:
         
         # Terminal behaves on a single buffer
-        self._buffer = _solve_buffer(buffer)
+        self._buffer = self.solve_buffer(buffer)
         
         if init_buffer:
             self._buffer.init_buffer()

@@ -46,12 +46,14 @@ class BufferSource:
         return cls(type=type, name=name)
 
     @classmethod
-    def from_any(cls, arg: Path | str) -> Self:
+    def from_any(cls, arg: Path | str | Self) -> Self:
 
         if isinstance(arg, Path):
             return cls.from_path(arg)
         elif isinstance(arg, str):
             return cls.from_str(arg)
+        elif isinstance(arg, cls):
+             return arg
         raise ValueError("Type is invalid in `BufferSource`")
 
 
