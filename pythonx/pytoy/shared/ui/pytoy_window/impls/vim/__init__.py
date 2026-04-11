@@ -4,7 +4,7 @@ from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.ui.pytoy_buffer.models import BufferSource
 from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
 import vim
-from typing import Sequence, assert_never, cast, Literal, Self, TYPE_CHECKING
+from typing import Sequence, assert_never, cast, Literal, Self, TYPE_CHECKING, cast
 from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer.impls.vim import PytoyBufferVim
@@ -114,6 +114,36 @@ class PytoyWindowVim(PytoyWindowProtocol):
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
         provider = PytoyWindowProviderVim()
         provider.retain_unique_window(self, within_tabs=within_tabs, within_windows=within_windows)
+
+    def deduplicate(self, scope: Literal["buffer"] = "buffer") -> None: 
+        if not self.valid:
+            return
+        if not (vim_window := self.window):
+            return
+
+        current_winid = int(vim.eval("win_getid()"))
+
+        provider = PytoyWindowProviderVim()
+        windows = provider.get_windows(only_normal_buffers=False)
+        target_bufnr = vim_window.buffer.number
+
+        to_close: list[PytoyWindowVim] = list()
+        for window in windows:
+            if window == self:
+                continue
+            if not window.valid:
+                continue
+
+            other = cast(PytoyWindowVim, window)
+            if other.window and other.window.buffer.number == target_bufnr:
+                to_close.append(other)
+
+        focus_will_be_lost = any(w.winid == current_winid for w in to_close)
+        for w in to_close:
+            w.close()
+
+        if focus_will_be_lost:
+            self.focus()
 
     @property
     def cursor(self) -> CursorPosition:

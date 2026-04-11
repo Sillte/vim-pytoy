@@ -43,7 +43,7 @@ class PythonExecutor():
         def _append_command(execution: CommandExecution) -> None:
             execution.runner.stdout.append(str(execution.command))
 
-        buffer_request = BufferRequest(stdout=stdout, stderr=stderr)
+        buffer_request = BufferRequest(stdout=stdout.source, stderr=stderr.source)
         executor = CommandExecutor(buffer_request)
         execution_req = ExecutionRequest(command, cwd=cwd, command_wrapper="uv" if force_uv else "auto")
         hooks = ExecutionHooks(on_finish=lambda res: self.on_closed(res, stderr=stderr, cwd=cwd),

@@ -39,6 +39,9 @@ class PytoyWindow(PytoyWindowProtocol):
         this cannot be realiazed with `close` and `__eq__`.
         """
         return self.impl.unique(within_tabs, within_windows=within_windows)
+    
+    def deduplicate(self, scope: Literal["buffer"] = "buffer") -> None:
+        return self.impl.deduplicate(scope=scope)
 
     def focus(self) -> bool:
         return self.impl.focus()

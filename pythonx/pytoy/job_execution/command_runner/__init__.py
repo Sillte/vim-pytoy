@@ -6,23 +6,23 @@ from typing import Callable, Mapping, Any, TYPE_CHECKING
 from pytoy.job_execution.command_runner.models import OutputJobProtocol, OutputJobRequest, SpawnOption, JobEvents, JobID
 from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 from pytoy.shared.ui import PytoyBuffer
-from pytoy.shared.ui.pytoy_buffer import make_buffer, make_duo_buffers
+from pytoy.shared.ui.pytoy_buffer import make_buffer, make_duo_buffers, BufferSource
 
 if TYPE_CHECKING:
     from pytoy.contexts.pytoy import GlobalPytoyContext
 
 
-def _solve_buffers(stdout: PytoyBuffer | str, stderr: PytoyBuffer | str | None):
-    if isinstance(stdout, str):
+def _solve_buffers(stdout: PytoyBuffer | str | BufferSource, stderr: PytoyBuffer | str |  BufferSource | None):
+    if isinstance(stdout, (str, BufferSource)):
         if isinstance(stderr, PytoyBuffer):
-            msg = "Combination of (`str, `PytoyBuffer`) is unacceptable. "
+            msg = "When `stdout` is `Buffer`, the error must also be `Buffer` or None."
             raise ValueError(msg)
-        if isinstance(stderr, str):
+        if isinstance(stderr, (str, BufferSource)):
             stdout, stderr = make_duo_buffers(stdout, stderr)
         else:
             stdout = make_buffer(stdout)
     else:
-        if isinstance(stderr, str):
+        if isinstance(stderr, (str, BufferSource)):
             stderr = make_buffer(stderr)
     return stdout, stderr
 
@@ -46,7 +46,7 @@ def make_output_job(job_request: OutputJobRequest, spawn_option: SpawnOption) ->
 class CommandRunner:
     @classmethod
     def solve_buffers(
-        cls, stdout: PytoyBuffer | str, stderr: PytoyBuffer | str | None = None
+        cls, stdout: PytoyBuffer | str | BufferSource, stderr: PytoyBuffer | str | BufferSource | None = None
     ) -> tuple[PytoyBuffer, PytoyBuffer | None]:
         return _solve_buffers(stdout, stderr)
 

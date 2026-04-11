@@ -1,5 +1,5 @@
 from pytoy.shared.ui.vscode.document import Api, VSCodeUri
-from typing import Sequence, Self
+from typing import Sequence
 
 from pytoy.shared.ui.vscode.editor import Editor
 
@@ -185,3 +185,105 @@ class EditorCleaner:
             msg = "`viewColumn` must not be None in `unique`."
             raise ValueError(msg)
         return api.eval_with_return(jscode, with_await=True, opts=args)
+
+    def deduplicate(self, only_visible: bool = False) -> None:
+        """This function may have problems, but it seems to work in minimum level.
+        `only_visible` is for the case that you want to close only visible ones or close all the `editors` inside hidden `tabs`.
+        """
+        jscode = """
+        (async (args) => {
+
+            function sameUri(a, b) {
+                return a.path === b.path &&
+                       a.scheme === b.scheme &&
+                       (a.authority || "") === (b.authority || "");
+            }
+
+            function findVisibleEditorByUriAndColumn(uri, column) {
+                return vscode.window.visibleTextEditors.find(
+                    ed =>
+                        ed.viewColumn === column &&
+                        sameUri(ed.document.uri, uri)
+                );
+            }
+
+            function findKeysByUri(uri) {
+                const result = [];
+                for (const group of vscode.window.tabGroups.all) {
+                    for (const tab of group.tabs) {
+                        const input = tab.input;
+                        if (!input || !input.uri) continue;
+
+                        if (sameUri(input.uri, uri)) {
+                            result.push({
+                                uri: input.uri,
+                                column: tab.group.viewColumn
+                            });
+                        }
+                    }
+                }
+                return result;
+            }
+            
+            function calibrateSelfEditor(uri, fallbackColumn){
+                const currentEditor = vscode.window.activeTextEditor;
+                if (currentEditor && sameUri(currentEditor.document.uri, uri)) {
+                    return currentEditor;
+                }
+                return findVisibleEditorByUriAndColumn(uri, fallbackColumn);
+            }
+            
+            const currentEditor = vscode.window.activeTextEditor;
+            const targetUri = vscode.Uri.parse(args.uriKey);
+            const selfEditor = calibrateSelfEditor(targetUri, args.viewColumn);
+            if (!selfEditor) return;
+            const onlyVisible = args.onlyVisible;
+
+            // --- dedupe loop ---
+            while (true) {
+
+                let targets = findKeysByUri(targetUri);
+                if (targets.length <= 1) break;
+
+                const others = targets
+                    .filter(t => (t.column !== selfEditor.viewColumn))
+                    .sort((a, b) => b.column - a.column);
+
+                if (!others) break;
+
+                const victim = others[0];
+                const editor = findVisibleEditorByUriAndColumn(victim.uri, victim.column);
+
+                if (!editor && onlyVisible){
+                    break;
+                }
+                
+                const doc = await vscode.workspace.openTextDocument(victim.uri);
+                await vscode.window.showTextDocument(doc, {
+                    viewColumn: victim.column,
+                    preserveFocus: false
+                });
+
+                await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+            }
+
+            // --- restore ---
+            if (currentEditor && !currentEditor.document.isClosed) {
+                await vscode.window.showTextDocument(currentEditor.document, {
+                    viewColumn: currentEditor.viewColumn,
+                    preview: false
+                });
+            }
+
+        })(args)
+        """
+
+        api = Api()
+        args = {
+            "args": {
+                "uriKey": self.editor.uri.to_key_str(),
+                "viewColumn": self.editor.viewColumn,
+                "onlyVisible": only_visible,
+            }
+        }
+        api.eval_with_return(jscode, with_await=True, opts=args)

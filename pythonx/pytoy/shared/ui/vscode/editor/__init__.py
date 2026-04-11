@@ -30,22 +30,35 @@ class Editor(BaseModel):
             data_list = api.eval_with_return(
                 "vscode.window.visibleTextEditors", with_await=False
             )
+            return [Editor.model_validate(data) for data in data_list]
         else:
             # Get all open editors across all tab groups (visible and hidden)
             data_list = api.eval_with_return(
                 """
-                vscode.window.tabGroups.all
-                    .flatMap(group => group.tabs)
-                    .filter(tab => tab.input && tab.input.uri)
-                    .map(tab => ({
-                        uri: tab.input.uri,
-                        document: tab.input,
-                        viewColumn: tab.group.viewColumn
-                    }))
+                (async () => {
+                    return vscode.window.tabGroups.all
+                        .flatMap(group => group.tabs)
+                        .map(tab => {
+                            const input = tab.input;
+                            if (!input) return null;
+
+                            if (input.uri) {
+                                return {
+                                    uri: input.uri,
+                                    viewColumn: tab.group.viewColumn
+                                };
+                            }
+
+                            return null;
+                        })
+                        .filter(x => x !== null);
+                })()
                 """,
-                with_await=False
+                with_await=True
             )
-        return [Editor.model_validate(data) for data in data_list]
+            documents = [Document.model_validate(data) for data in data_list]
+            view_columns = [data["viewColumn"] for data in data_list]
+            return [Editor(document=doc, viewColumn=view_column) for doc, view_column in zip(documents, view_columns)]
 
     @property
     def uri(self) -> VSCodeUri:
@@ -255,6 +268,11 @@ class Editor(BaseModel):
         from pytoy.shared.ui.vscode.editor.clearners import EditorCleaner
         return EditorCleaner(self).unique(within_tabs=within_tabs,
                                           within_windows=within_windows)
+        
+    def deduplicate(self):
+        from pytoy.shared.ui.vscode.editor.clearners import EditorCleaner
+        return EditorCleaner(self).deduplicate()
+                                              
 
     @property
     def cursor_position(self) -> tuple[int, int] | None:
