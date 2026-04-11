@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Literal
 from pathlib import Path
 from pytoy.shared.ui.pytoy_buffer.models import BufferSource
 from pytoy.shared.ui.pytoy_window.models import WindowCreationParam
@@ -32,6 +32,8 @@ class PytoyWindowDummy(PytoyWindowProtocol):
         return True
 
     def close(self) -> bool:
+        provider = PytoyWindowProviderDummy()
+        provider._windows = [w for w in provider._windows if w != self]
         return True
 
     def focus(self) -> bool:
@@ -42,6 +44,14 @@ class PytoyWindowDummy(PytoyWindowProtocol):
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
         pass
+
+    def deduplicate(self, scope: Literal["buffer"] = "buffer") -> None: 
+        windows = PytoyWindowProviderDummy().get_windows()
+        for window in windows:
+            if window != self:
+                if window.buffer == self.buffer:
+                    window.close()
+
 
     @property
     def cursor(self) -> CursorPosition:

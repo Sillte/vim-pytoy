@@ -31,3 +31,11 @@ def unique_command(arg: Annotated[Literal["buffer", "editor", "window", "tab"] |
 
     current = PytoyWindow.get_current()
     current.unique(within_tabs=within_tabs, within_windows=within_windows)
+
+
+app = App()
+
+@app.command("Deduplicate")
+def deduplicate_command(arg: Annotated[Literal["buffer"], Argument()] = "buffer"):
+    current = PytoyWindow.get_current()
+    current.deduplicate(scope=arg)

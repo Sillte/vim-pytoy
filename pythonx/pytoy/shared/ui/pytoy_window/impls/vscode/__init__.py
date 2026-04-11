@@ -101,6 +101,17 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         for buffer in buffers:
             buffer.init_buffer(content="")
         self.editor.unique(within_tabs=within_tabs, within_windows=within_windows)
+        
+    def deduplicate(self, scope: Literal["buffer"] = "buffer") -> None:
+        if not self.valid:
+            return
+        
+        if scope == "buffer":
+            self.editor.deduplicate()
+        else:
+            raise ValueError(f"Invalid scope: {scope}")
+
+
 
     @property
     def cursor(self) -> CursorPosition:

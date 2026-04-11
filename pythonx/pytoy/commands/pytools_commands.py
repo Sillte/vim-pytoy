@@ -47,7 +47,7 @@ def pytest_command(command_type: Annotated[Literal["func", "file", "all"], Argum
         rows = PytestDecipher(content).records
         return [QuickfixRecord.from_dict(row, cwd) for row in rows]
 
-    executor = QuickfixCommandExecutor(BufferRequest(stdout=pytoy_buffer))
+    executor = QuickfixCommandExecutor(BufferRequest.from_buffer(pytoy_buffer))
     execution = ExecutionRequest(command=command, cwd=cwd)
     request = QuickfixCommandRequest(execution=execution, creator=make_qf_records)
     executor.execute(request)
@@ -72,7 +72,7 @@ def mypy_command(target: Annotated[Literal["workspace", "current"] | str | None,
 
     pytoy_buffer = make_buffer(TERM_STDOUT, "vertical")
     command = f'mypy --show-traceback --show-column-numbers "{path}"'
-    executor = QuickfixCommandExecutor(buffer_request=BufferRequest(stdout=pytoy_buffer))
+    executor = QuickfixCommandExecutor(buffer_request=BufferRequest.from_buffer(pytoy_buffer))
     execution = ExecutionRequest(command=command, cwd=current_path.parent)
 
     quickfix_regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<_type>(.+)):(?P<text>(.+))"
@@ -156,7 +156,7 @@ def ruff_check(
     if format:
         _format(path)
 
-    buffer_request = BufferRequest(stdout=pytoy_buffer)
+    buffer_request = BufferRequest.from_buffer(pytoy_buffer)
     pytoy_buffer.init_buffer()
     executor = QuickfixCommandExecutor(buffer_request)
     option_str = ""

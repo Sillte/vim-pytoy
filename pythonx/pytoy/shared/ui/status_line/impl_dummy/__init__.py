@@ -2,7 +2,7 @@ from pytoy.shared.ui.status_line.protocol import StatusLineManagerProtocol, Stat
 from typing import List, Sequence
 
 class StatusLineManagerDummy(StatusLineManagerProtocol):
-    _instance: "StatusLineManagerDummy" | None = None
+    _instance: "StatusLineManagerDummy | None" = None
 
     def __init__(self):
         if StatusLineManagerDummy._instance is not None:

@@ -3,7 +3,7 @@ from dataclasses import dataclass, field, replace
 from typing import Callable, Mapping, Self
 from pytoy.job_execution.command_runner import CommandRunner
 from pytoy.job_execution.command_runner.models import Snapshot, OutputJobRequest, JobResult, SpawnOption, JobID, Event, JobEvents
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, BufferSource
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.job_execution.environment_manager import ExecutionPreference, CommandWrapperType, ExecutionWrapperType  
 
@@ -17,21 +17,17 @@ type ExecutionKind = str
 
 @dataclass(frozen=True)
 class BufferRequest:
-    stdout: str | PytoyBuffer
-    stderr: str | PytoyBuffer | None = None
+    stdout: BufferSource
+    stderr: BufferSource | None = None
     
     @classmethod
     def from_str(cls, stdout: str) -> Self:
-        return cls(stdout=stdout)
+        return cls(stdout=BufferSource.from_str(stdout))
 
-    def to_str_request(self) -> "BufferRequest":
-        def _to_name(buffer: PytoyBuffer | str) -> str:
-            if isinstance(buffer, PytoyBuffer):
-                return buffer.source.name
-            return buffer
-        stdout = _to_name(self.stdout)
-        stderr = _to_name(self.stderr) if self.stderr else None
-        return BufferRequest(stdout=stdout, stderr=stderr)
+    @classmethod
+    def from_buffer(cls, buffer: PytoyBuffer) -> Self:
+        return cls(stdout=buffer.source)
+
 
 @dataclass(frozen=True)
 class ExecutionRequest:
@@ -198,7 +194,7 @@ class CommandExecutor:
         runner.run(job_request, spawn_option)
         
         
-        context = ExecutionContext(buffer=self._buffer_request.to_str_request(),
+        context = ExecutionContext(buffer=self._buffer_request,
                                    execution_request=replace(request, cwd=cwd, env=env),
                                    hooks=hooks, kind=kind)
         execution = CommandExecution(runner=runner, command=command, cwd=cwd, id=runner.job_id)
