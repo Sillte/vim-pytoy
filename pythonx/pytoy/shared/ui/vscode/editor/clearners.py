@@ -130,54 +130,120 @@ class EditorCleaner:
     def unique(self, within_tabs: bool = False, within_windows: bool = True):
         """Make it an unique editor."""
         jscode = """
-    (async (args) => {
+        (async (args) => {
 
-        function findEditorByUriAndColumn(uri, viewColumn) {
-            return vscode.window.visibleTextEditors.find(
-                editor => editor.document.uri.path == uri.path &&
-                          editor.document.uri.scheme == uri.scheme && 
-                          (editor.document.uri.authority || "") == (uri.authority  || "") && 
-                          editor.viewColumn == viewColumn
+            // -----------------------------
+            // util
+            // -----------------------------
+            function sameUri(a, b) {
+                return a.path === b.path &&
+                       a.scheme === b.scheme &&
+                       (a.authority || "") === (b.authority || "");
+            }
+
+            function findEditorByUriAndColumn(uri, viewColumn) {
+                return vscode.window.visibleTextEditors.find(
+                    editor =>
+                        sameUri(editor.document.uri, uri) &&
+                        editor.viewColumn === viewColumn
+                );
+            }
+
+            async function activateEditor(doc, column) {
+                return vscode.window.showTextDocument(doc, {
+                    viewColumn: column,
+                    preserveFocus: false,
+                    preview: false, 
+                });
+            }
+
+            // -----------------------------
+            // ① clean untitled
+            // -----------------------------
+            async function cleanUntitledUris(uris) {
+
+                for (const uri of uris) {
+                    const doc = await vscode.workspace.openTextDocument(uri);
+
+                    if (doc.isDirty) {
+                        const tab = vscode.window.tabGroups.all
+                          .flatMap(g => g.tabs)
+                          .find(t => sameUri(t.input?.uri, uri));
+                        const column = tab?.group?.viewColumn ?? null;
+
+                        await vscode.window.showTextDocument(doc, {
+                            preserveFocus: false, 
+                            preview: true, 
+                            viewColumn: column
+                        });
+                        await vscode.commands.executeCommand(
+                            "workbench.action.revertAndCloseActiveEditor"
+                        );
+                    }
+                }
+            }
+
+            // -----------------------------
+            // main
+            // -----------------------------
+            const targetUri = vscode.Uri.parse(args.uriKey);
+            const cleanTargets = args.cleanTargets.map(elem => vscode.Uri.parse(elem));
+
+            const targetEditor = findEditorByUriAndColumn(
+                targetUri,
+                args.viewColumn
             );
-        }
 
-        // --- メイン処理 ---
-        
-        // args.uri は Lua 側から渡されたディクショナリ形式（または文字列）を想定
-        const targetUri = vscode.Uri.parse(args.uriKey);
-        
-        // ターゲットエディタを見つける
-        const editor = findEditorByUriAndColumn(targetUri, args.viewColumn)
-        if (!editor) return; // ターゲットエディタが見つからなければ終了
+            if (!targetEditor) return;
 
-        // ターゲットエディタを再度アクティブにしてフォーカスを維持
-        await vscode.window.showTextDocument(editor.document, {
-            viewColumn: args.viewColumn,
-            preserveFocus: true
-        });
+            const savedCursor = {
+                line: targetEditor.selection.active.line,
+                col: targetEditor.selection.active.character
+            };
 
-        // withinTabがtrueの場合、同じグループ内の他のエディタを閉じる
-        if (args.withinTab) {
-            await vscode.commands.executeCommand(
-                "workbench.action.closeOtherEditors"
+            // --- ① 先にuntitled掃除 ---
+            if (cleanTargets && cleanTargets.length > 0) {
+                await cleanUntitledUris(cleanTargets);
+            }
+
+            // --- ② targetを安定化 ---
+            const editor = await activateEditor(
+                targetEditor.document,
+                args.viewColumn,
             );
-        }
 
-        // withinWindowsがtrueの場合、他のグループのエディタを閉じる
-        if (args.withinWindows) {
-            await vscode.commands.executeCommand(
-                "workbench.action.closeEditorsInOtherGroups"
-            );
-        }
-    })(args);
+            // --- ③ close処理 ---
+            if (args.withinTab) {
+                await vscode.commands.executeCommand(
+                    "workbench.action.closeOtherEditors"
+                );
+            }
+
+            if (args.withinWindows) {
+                await vscode.commands.executeCommand(
+                    "workbench.action.closeEditorsInOtherGroups"
+                );
+            }
+            
+
+            const finalDoc = await vscode.workspace.openTextDocument(targetUri);
+            await vscode.window.showTextDocument(finalDoc, {
+                preserveFocus: false,
+                preview: false
+            });
+            
+
+        })(args);
     """
         editor = self.editor
+        clean_targets = self.get_clean_target_uris_for_unique(within_tabs=within_tabs, within_windows=within_windows)
         args = {
             "args": {
                 "uriKey": editor.uri.to_key_str(), 
                 "viewColumn": editor.viewColumn,
                 "withinTab": within_tabs,
                 "withinWindows": within_windows,
+                "cleanTargets": [vscode_uri.to_key_str() for vscode_uri in clean_targets],
             }
         }
         api = Api()
