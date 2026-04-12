@@ -20,7 +20,7 @@ class ConsoleController:
         cls, driver_name: str | None) -> TerminalExecution | None:
         # [TODO]:
         #  Maybe, mupliple executions exist, due to the other systems (Very Edge Case)
-        driver_name = driver_name or cls._select_preferrable_name()
+        driver_name = driver_name or cls.select_preferrable_name(path=None)
         executions = cls.get_execution_manager().get_running(name=driver_name)
         if executions:
             return executions[0]
@@ -34,7 +34,7 @@ class ConsoleController:
     ) -> TerminalExecution:
         # NOTE: In this Command, `name` and `driver_name` as the same one. 
 
-        driver_name = driver_name or cls._select_preferrable_name()
+        driver_name = driver_name or cls.select_preferrable_name(path=None)
         executions = cls.get_execution_manager().get_running(name=driver_name)
         if not executions:
             buffer_name = buffer_name or "__CMD__"
@@ -49,12 +49,21 @@ class ConsoleController:
 
     # [TODO]: This logic is too specific, the target of refactor.
     @classmethod
-    def _select_preferrable_name(cls) -> str:
-        buffer = PytoyBuffer.get_current()
-        if buffer.is_file:
-            path = buffer.file_path
-        else:
-            path = None
+    def select_preferrable_name(cls, path: str | Path | PytoyBuffer | None = None) -> Literal["ipython", "shell"]:
+        def _to_path(buffer: PytoyBuffer) -> Path | None:
+            buffer = buffer or PytoyBuffer.get_current()
+            if buffer.is_file:
+                path = buffer.file_path
+            else:
+                path = None
+            return path
+        if path is None:
+            path = _to_path(PytoyBuffer.get_current())
+        elif isinstance(path, str):
+            path = Path(path)
+        elif isinstance(path, PytoyBuffer):
+            path = _to_path(path)
+
         if path and path.suffix == ".py":
             driver_manager = cls.get_driver_manager()
             if driver_manager._is_registered("ipython"):
@@ -103,13 +112,39 @@ def console(kind: Annotated[Literal["run", "stop", "terminate"] | None,  Argumen
             if not executions:
                 print("Target Executor is not existent.")
         case None:
-            execution = ConsoleController.get_or_create_execution(driver, buffer, cwd=cwd)
+            from pytoy.shared.ui.pytoy_window import PytoyWindow
+            current_window = PytoyWindow.get_current()
+            current_buffer = current_window.buffer
+            ext = current_buffer.file_path.suffix if current_buffer.is_file else None
+
             if range_param is None:
                 raise ValueError("`range_param` is None")
             line_range = LineRange(start=range_param.start, end= range_param.end)
             lines = PytoyBuffer.get_current().get_lines(line_range)
-            content = "\n".join(lines)
-            execution.runner.send(content)
+
+            if ext  == ".md":
+                from pytoy.tools.markdown import MarkdownExtractor
+                text = current_buffer.content
+                structure = MarkdownExtractor(text).structure
+                cursor = current_window.cursor
+                block = structure.get_current_code_block(cursor.line)
+                if not block:
+                    raise ValueError("For `markdown`, the `code block` with the filetype is required at the cursor position.")
+                if block.type == "python":
+                    driver = driver or "ipython"
+                else:
+                    driver = driver or "shell"
+                execution = ConsoleController.get_or_create_execution(driver, buffer, cwd=cwd)
+                lines = block.lines
+                content = "\n".join(lines)
+                execution.runner.send(content)
+            else:
+                execution = ConsoleController.get_or_create_execution(driver, buffer, cwd=cwd)
+                content = "\n".join(lines)
+                execution.runner.send(content)
+
+
+
         case _:
             raise ValueError(f"Unknown command. {kind}")
 
