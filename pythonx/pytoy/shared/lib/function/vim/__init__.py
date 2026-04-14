@@ -15,7 +15,7 @@ def wrap_str_callable(func: Callable) -> StrCallable:
 
 
 class FunctionRegistryVim(FunctionRegistryProtocol):
-    instances: dict[int, Self] = dict()  # type: dict[str, Self]
+    instances: dict[int, Self] = dict()
 
     @classmethod
     def get_instance(cls, id: int) -> Self:

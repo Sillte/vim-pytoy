@@ -20,7 +20,7 @@ def wait_until_true(
         if condition_func():
             return True
         # It is required to procced functions in other loops.
-        vim.command(f'sleep 1m') # Mpve events.
+        vim.command('sleep 1m') # Mpve events.
         vim.command('redraw')  # ←  RPC チャネルを処理
         time.sleep(interval)
 

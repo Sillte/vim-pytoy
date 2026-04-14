@@ -1,6 +1,6 @@
 from pathlib import Path
 from dataclasses import dataclass, field, replace
-from typing import Callable, Mapping, Self
+from typing import Callable, Mapping, Self, Sequence
 from pytoy.job_execution.command_runner import CommandRunner
 from pytoy.job_execution.command_runner.models import Snapshot, OutputJobRequest, JobResult, SpawnOption, JobID, Event, JobEvents
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, BufferSource
@@ -91,6 +91,10 @@ class ExecutionPolicy:
     kind: ExecutionKind | None = None
     allow_parallel: bool = False
     
+@dataclass(frozen=True)
+class ExecutionQuery:
+    kind: ExecutionKind | None  = None
+    stdout: BufferSource | None = None
 
 
 
@@ -101,9 +105,12 @@ class CommandExecutionManager:
         self._last_context_by_kind: dict[ExecutionKind, ExecutionContext] = {}
         self._last_context = None
 
+
     def register(self, execution: CommandExecution, context: ExecutionContext):
         self._executions[execution.id] = execution
         self._contexts[execution.id] = context
+        
+        # Only contexts are preserved. 
         self._last_context = context
         self._last_context_by_kind[context.kind] = context
         def _deregister(_):
@@ -111,6 +118,19 @@ class CommandExecutionManager:
             self._contexts.pop(execution.id, None)
         execution.events.on_job_exit.subscribe(_deregister)
         
+    def select(self, query: ExecutionQuery | None = None) -> Sequence[CommandExecution]:
+        target_ids = list(self._executions.keys())
+        query = query or ExecutionQuery()
+        if query.kind is not None:
+            target_ids = [id_ for id_ in target_ids if self._contexts[id_].kind == query.kind] 
+        if query.stdout is not None:
+            target_ids = [id_ for id_ in target_ids if self._executions[id_].runner.stdout.source == query.stdout] 
+        return [self._executions[id_] for id_ in target_ids]
+
+    def get_running(self, kind: ExecutionKind | None = None, stdout: BufferSource | None = None) -> Sequence[CommandExecution]: 
+        query = ExecutionQuery(kind=kind, stdout=stdout)
+        return self.select(query)
+
     @property
     def last_context(self) -> ExecutionContext | None:
         return self._last_context
@@ -118,14 +138,6 @@ class CommandExecutionManager:
     def get_last_context_by_kind(self, kind: ExecutionKind) -> ExecutionContext | None:
         return self._last_context_by_kind.get(kind)
     
-    def get_running(self, kind: ExecutionKind | None = None) -> list[CommandExecution]: 
-        if not kind:
-            return list(self._executions.values())
-        else:
-            return [self._executions[id_] for id_ in self._executions if self._contexts[id_].kind == kind]
-
-    def running(self) -> list[CommandExecution]:
-        return list(self._executions.values())
 
     def can_execute(self, policy: ExecutionPolicy) -> bool:
         if policy.allow_parallel:

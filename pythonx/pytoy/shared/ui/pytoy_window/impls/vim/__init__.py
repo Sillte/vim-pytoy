@@ -4,7 +4,7 @@ from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.ui.pytoy_buffer.models import BufferSource
 from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
 import vim
-from typing import Sequence, assert_never, cast, Literal, Self, TYPE_CHECKING, cast
+from typing import Sequence, assert_never, Literal, Self, TYPE_CHECKING, cast
 from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer.impls.vim import PytoyBufferVim

@@ -153,14 +153,14 @@ class CommandRunner:
     def _update_stdout(self, line: str):
         try:
             self._stdout.append(line)
-        except Exception as e:
+        except Exception:
             pass
 
     def _update_stderr(self, line: str):
         try:
             assert self._stderr
             self._stderr.append(line)
-        except Exception as e:
+        except Exception:
             pass
 
 

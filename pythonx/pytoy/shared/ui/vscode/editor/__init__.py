@@ -104,6 +104,9 @@ class Editor(BaseModel):
             if (!args.splitMode.startsWith("v")){
                 await vscode.commands.executeCommand("workbench.action.splitEditorDown");
                 editor = await vscode.window.showTextDocument(doc, options);
+                // ここでcloseOtherEditorsをするべきかは要検討
+                // タブを作らないようにするには良いが、もっと良い戦略があれば、切り替える
+                await vscode.commands.executeCommand("workbench.action.closeOtherEditors");
             }
             else {
                 options.viewColumn = vscode.ViewColumn.Beside;

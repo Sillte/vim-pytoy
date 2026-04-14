@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Literal, assert_never
 from pytoy.job_execution.command_executor import ExecutionRequest, ExecutionHooks, ExecutionResult,  BufferRequest 
 from pytoy.job_execution.command_executor import CommandExecutor, CommandExecution
 from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix
@@ -12,6 +12,7 @@ from pathlib import Path
 class QuickfixCommandRequest:
     execution: ExecutionRequest
     creator: QuickfixCreator| QuickfixRecordRegex
+    quickfix_source: Literal["stdout", "stderr", "both", "auto"] = "auto"
 
 
 def handle_records(
@@ -53,9 +54,24 @@ class QuickfixCommandExecutor:
             command: str = str(execution.command)
             self._executor.stdout.append(command)
             
+        def _decide_quickfix_source(result: ExecutionResult) -> str:
+            match command_request.quickfix_source:
+                case "stdout":
+                    return result.stdout
+                case "stderr":
+                    return result.stderr
+                case "both":
+                    return result.stdout + "\n\n" + result.stderr
+                case "auto":
+                    return result.stderr if result.stderr else result.stdout
+                case _:
+                    assert_never(command_request.quickfix_source)
+            
+        # Note: `execution` is determined as the result of `execute`.
         def _on_finish(result: ExecutionResult) -> None:
             creator = to_quickfix_creator(command_request.creator, execution.cwd)
-            records = creator(result.stdout)
+            quickfix_source = _decide_quickfix_source(result)
+            records = creator(quickfix_source)
             handle_records(PytoyQuickfix(), records)
         
         q_hooks = ExecutionHooks(on_start=_on_start, on_finish=_on_finish)

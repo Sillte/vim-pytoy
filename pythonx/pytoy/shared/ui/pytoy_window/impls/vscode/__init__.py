@@ -192,29 +192,35 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         source = source if isinstance(source, BufferSource) else BufferSource.from_any(source)
         param = param if isinstance(param, WindowCreationParam) else WindowCreationParam.from_literal(param)
 
-        uri = self._to_uri(source)
-        #print("uri", uri, WindowURISolver.from_uri(uri))
+        vscode_uri = self._to_uri(source)
+        #print("vscode_uri", vscode_uri, WindowURISolver.from_uri(vscode_uri))
         if param.try_reuse:
-            if (winid := WindowURISolver.from_uri(uri)):
+            if (winid := WindowURISolver.from_uri(vscode_uri)):
                 window =  PytoyWindowVSCode(winid)
                 if param.cursor:
                     window.move_cursor(param.cursor)
                 return window
+
 
         current =  self.get_current()
         editor = self._create_editor(source, param)
         if not current.focus():
             print(f"{current} cannot be focused.")
         flag = wait_until_true(lambda: WindowURISolver.from_uri(editor.uri) is not None, timeout=1.0)
-        winid = WindowURISolver.from_uri(uri)
+        winid = WindowURISolver.from_uri(vscode_uri)
         if not winid:
-            raise RuntimeError(f"Synchronization of `{uri=}` and `winid` failed. ", flag) 
+            raise RuntimeError(f"Synchronization of `{vscode_uri=}` and `winid` failed. ", flag) 
         return PytoyWindowVSCode(winid)
-
 
     def _create_editor(self,
                        source: BufferSource, 
                        param: WindowCreationParam) -> Editor:
+        if param.try_reuse:
+            vscode_uri = self._to_uri(source)
+            for editor in Editor.get_editors(only_visible=True):
+                if editor.uri == vscode_uri:
+                    return editor 
+
         anchor = param.anchor
         if anchor is None:
             anchor = PytoyWindowProviderVSCode().get_current()
@@ -257,4 +263,3 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
             case _:
                 assert_never(source.type)
         return query_uri
-

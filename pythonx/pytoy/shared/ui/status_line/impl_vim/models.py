@@ -104,7 +104,7 @@ class Conditional(ControlStatusNode):
 class Align(ControlStatusNode):
 
     def to_str(self):
-        return f"%="
+        return "%="
 
     @classmethod
     def get_prefix(cls) -> str:

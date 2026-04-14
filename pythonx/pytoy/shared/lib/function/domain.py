@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Protocol, Literal, Any, Self, ParamSpec, TypeVar, Any
+from typing import Callable, Protocol, Literal, Self, ParamSpec, TypeVar, Any
 import re
 from textwrap import dedent
 

@@ -43,19 +43,19 @@ class PytoyQuickfixService:
         elif arg is None:
             state = self.state
             if state is None:
-                raise ValueError(f"This Quickfix is invalid state.")
+                raise ValueError("This Quickfix is invalid state.")
         elif isinstance(arg, int):
             state = self._index_to_state(arg)
         else:
-            raise TypeError(f"Invaild argments for `QuickfixState`.")
+            raise TypeError("Invaild argments for `QuickfixState`.")
         return state
 
     def _index_to_state(self, index: int) -> QuickfixState:
         state = self.state
         if state is None:
-            raise ValueError(f"This Quickfix is invalid state.")
+            raise ValueError("This Quickfix is invalid state.")
         if state.size == 0:
-            raise ValueError(f"The size of Quickfix is 0")
+            raise ValueError("The size of Quickfix is 0")
         return self.state_resolver.fix_index(state, index)
 
     @property

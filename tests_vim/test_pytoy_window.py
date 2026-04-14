@@ -27,7 +27,6 @@ def test_cursor():
     window.move_cursor(cursor=target, viewport_mode=ViewportMoveMode.TOP)
     assert window.cursor == target
 
-from pytoy.shared.ui.pytoy_window import PytoyWindow
 #test_function()
 #test_unique()
 #test_cursor()
@@ -38,7 +37,5 @@ from pytoy.shared.ui.pytoy_window import PytoyWindow
 #param2 = WindowCreationParam.for_split(split_direction="horizontal", anchor=window)
 #PytoyWindowProvider().open_window(target + "2", param=param2)
 
-from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
-from pytoy.shared.ui.pytoy_window.models import WindowCreationParam
 
 

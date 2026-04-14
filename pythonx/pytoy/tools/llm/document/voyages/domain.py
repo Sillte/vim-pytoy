@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal, Self, Mapping, Any, Self
+from typing import Literal, Mapping, Any, Self
 from typing_extensions import Annotated
 from textwrap import dedent
 

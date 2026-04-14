@@ -79,7 +79,7 @@ class PytoyWindowDummy(PytoyWindowProtocol):
 
 
 class PytoyWindowProviderDummy(PytoyWindowProviderProtocol):
-    _instance: "PytoyWindowProviderDummy" | None = None
+    _instance: "PytoyWindowProviderDummy | None" = None
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:

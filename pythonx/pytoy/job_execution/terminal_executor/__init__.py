@@ -95,11 +95,19 @@ class ExecutionPolicy:
     buffer_request: BufferRequest
     name: ExecutionName | None = None
 
+    
+@dataclass(frozen=True)
+class ExecutionQuery:
+    buffer: BufferSource | None = None
+    name: ExecutionName | None = None
+
 
 class TerminalExecutionManager:
     def __init__(self):
         self._executions: dict[ExecutionID, TerminalExecution] = {}
         self._contexts: dict[ExecutionID, ExecutionContext] = {}
+        
+        # Last_context remains even if the execution ends. 
         self._last_context_by_name: dict[ExecutionName, ExecutionContext] = {}
         self._last_context = None
 
@@ -113,6 +121,17 @@ class TerminalExecutionManager:
             self._contexts.pop(execution.id, None)
         execution.events.on_job_exit.subscribe(_deregister)
         
+        
+    def select(self, query: ExecutionQuery | None = None) -> Sequence[TerminalExecution]:
+        query = query or ExecutionQuery()
+        target_ids = list(self._executions.keys())
+        if query.buffer is not None:
+            target_ids = [elem for elem in target_ids if self._executions[elem].runner.buffer.source == query.buffer]
+        if query.name is not None:
+            target_ids = [elem for elem in target_ids if self._contexts[elem].name == query.name]
+        return [self._executions[elem] for elem in target_ids]
+    
+        
     @property
     def last_context(self) -> ExecutionContext | None:
         return self._last_context
@@ -120,17 +139,17 @@ class TerminalExecutionManager:
     def get_last_context_by_name(self, name: ExecutionName) -> ExecutionContext | None:
         return self._last_context_by_name.get(name)
     
-    def get_running(self, name: ExecutionName | None = None) -> list[TerminalExecution]: 
-        if not name:
-            return list(self._executions.values())
-        else:
-            return [self._executions[id_] for id_ in self._executions if self._contexts[id_].name == name]
-
-    def running(self) -> list[TerminalExecution]:
-        return list(self._executions.values())
+    def get_running(self, name: ExecutionName | None = None, buffer: BufferSource | None = None) -> Sequence[TerminalExecution]: 
+        query = ExecutionQuery(name=name, buffer=buffer)
+        return self.select(query)
 
     def can_execute(self, policy: ExecutionPolicy) -> bool:
-        # Currently, only one `Exceution` is allowed
+        source = policy.buffer_request.source
+        if self.select(ExecutionQuery(buffer=source)):
+            return False
+        return True
+
+        # Currently, only one `Execution` is allowed
         # After `Buffer` management syste is introduced, this restriction will become a littel loose.
         # [TODO]: 
         return (not self._executions)

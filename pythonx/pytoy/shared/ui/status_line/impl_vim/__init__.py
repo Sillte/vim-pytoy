@@ -141,7 +141,6 @@ def test_func():
     from pytoy.shared.ui.status_line.models import FunctionStatusLineItem
     item = FunctionStatusLineItem(value = lambda : "AHA")
 #item = TextStatusLineItem(value="TEXTTEXT", side="right")
-    import vim
     winid = VimWinIDConverter.from_vim_window(vim.current.window)
     events = WindowEvents.from_winid(winid)
 
