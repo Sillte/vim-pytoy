@@ -1,32 +1,63 @@
-"""Exectuor for `Python`."""
+" ""Exectuor for `Python`."""
 import re
-from shlex import quote
+
 from pathlib import  Path
-from dataclasses import dataclass
 
-from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.job_execution.command_executor import CommandExecutor, BufferRequest, ExecutionRequest, ExecutionHooks, ExecutionResult
-from pytoy.job_execution.command_executor import CommandExecutionManager, CommandExecution
-
-# `set_default_execution_mode` is carried out only in `__init__.py`
-from pytoy.job_execution.utils import get_current_directory
+from pytoy.job_execution.command_executor.launcher import LaunchProfile
+from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
 
 
-from pytoy.shared.ui import PytoyBuffer, PytoyQuickfix, handle_records, QuickfixRecord
+from pytoy.shared.ui import PytoyBuffer, QuickfixRecord
+
+from pytoy.job_execution.command_executor.launcher import CommandLauncher
+from typing import Sequence
 
 
 
+class PythonExecutor:
+    def __init__(self, *, force_uv: bool = False):
 
+        command_wrapper="uv" if force_uv else "auto"
 
-class PythonExecutor():
-    command_kind = "PythonExecutor"
+        def quickfix_creator(text: str, cwd: Path) -> Sequence[QuickfixRecord]:
+            _pattern = re.compile(r'\s+File "(.+)", line (\d+)')
+            result = list()
+            lines = text.split("\n")
+            index = 0
+            while index < len(lines):
+                infos = _pattern.findall(lines[index])
+                if infos:
+                    filename, lnum = infos[0]
+                    row = dict()
+                    row["filename"] = filename
+                    row["lnum"] = lnum
+                    index += 1
+                    text = lines[index].strip()
+                    row["text"] = text
+                    record = QuickfixRecord.from_dict(row, cwd)
+                    result.append(record)
+                index += 1
+            result = list(reversed(result))
+            return result
+        quickfix_profile = QuickfixProfile(quickfix_creator=quickfix_creator)
+        hooks = make_quickfix_hooks(quickfix_profile)
+
+        command_profile = LaunchProfile(kind="PythonExecutor",
+                                         command_wrapper=command_wrapper,
+                                         execution_hooks=hooks)
+
+        self.script_runner = CommandLauncher(launch_profile=command_profile)
+        
+    @property
+    def buffers(self) -> tuple[PytoyBuffer, PytoyBuffer]:
+        ...
     
-    def __init__(self, *, execution_manager:  CommandExecutionManager | None = None):
-        if not execution_manager:
-            execution_manager = GlobalPytoyContext.get().command_execution_manager
-        self.execution_manager = execution_manager
+        
+    def _make_command(self, path: str | Path) -> str:
+        command = " ".join(["python", "-u", "-X", "utf8", Path(path).as_posix()])
+        return command
 
-
+        
     def runfile(
         self,
         path: str | Path,
@@ -36,73 +67,20 @@ class PythonExecutor():
         cwd: Path | None=None,
         force_uv: bool = False,
     ):
-
-        if cwd is None:
-            cwd = get_current_directory()
-        else:
-            cwd = Path(cwd)
-        command = " ".join(["python", "-u", "-X", "utf8", Path(path).as_posix()])
-        def _append_command(execution: CommandExecution) -> None:
-            execution.runner.stdout.append(str(execution.command))
-
-        buffer_request = BufferRequest(stdout=stdout.source, stderr=stderr.source)
-        executor = CommandExecutor(buffer_request)
-        execution_req = ExecutionRequest(command, cwd=cwd, command_wrapper="uv" if force_uv else "auto")
-        hooks = ExecutionHooks(on_finish=lambda res: self.on_closed(res, stderr=stderr, cwd=cwd),
-                               on_start=_append_command)
-        executor.execute(execution_req, hooks=hooks, kind=self.command_kind)
-
-
-    def rerun(self, stdout, stderr, force_uv=None):
-        """Execute the previous `path`."""
-        last_context = self.execution_manager.get_last_context_by_kind(self.command_kind)
-        if not last_context: 
-            raise RuntimeError("Previous executions are not existent.")
-        
-        execution_req = last_context.execution_request
-        cwd = execution_req.cwd
-        if cwd is None:
-            raise RuntimeError("Violation of `last_context`, `cwd` is None.")
-        buffer_request = BufferRequest(stdout=stdout, stderr=stderr)
-        executor = CommandExecutor(buffer_request)
-
-        hooks = ExecutionHooks(on_finish=lambda res: self.on_closed(res, stderr=stderr, cwd=Path(cwd)))
-        executor.execute(execution_req, hooks=hooks)
-        
+        command = self._make_command(path)
+        self.script_runner.run(command, stdout, stderr, cwd=cwd, init_buffer=True)
+    
+    def rerun(self, stdout: PytoyBuffer, stderr: PytoyBuffer):
+        self.script_runner.rerun(stdout, stderr)
 
     def stop(self):
-        for execution in self.execution_manager.get_running(kind=self.command_kind):
-            execution.runner.terminate()
+        self.script_runner.stop()
         
-    @property 
+    @property
     def is_running(self) -> bool:
-        return bool(self.execution_manager.get_running(kind=self.command_kind))
-        
-        
-    def on_closed(self, result: ExecutionResult, stderr: PytoyBuffer, cwd: Path) -> None: 
-        error_msg = result.snapshot.stderr
-        qflist = self._make_qflist(error_msg, cwd)
-        handle_records(PytoyQuickfix(), records=qflist, is_open=False)
-        if not error_msg:
-            stderr.hide()
+        return self.script_runner.is_running
 
-    def _make_qflist(self, string: str, cwd: Path) -> list[QuickfixRecord]:
-        _pattern = re.compile(r'\s+File "(.+)", line (\d+)')
-        result = list()
-        lines = string.split("\n")
-        index = 0
-        while index < len(lines):
-            infos = _pattern.findall(lines[index])
-            if infos:
-                filename, lnum = infos[0]
-                row = dict()
-                row["filename"] = filename
-                row["lnum"] = lnum
-                index += 1
-                text = lines[index].strip()
-                row["text"] = text
-                record = QuickfixRecord.from_dict(row, cwd)
-                result.append(record)
-            index += 1
-        result = list(reversed(result))
-        return result
+
+
+
+

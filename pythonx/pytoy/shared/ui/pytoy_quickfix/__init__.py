@@ -30,6 +30,16 @@ class PytoyQuickfix:
     @property
     def impl(self) -> PytoyQuickfixProtocol:
         return self._impl
+    
+    def handle_records(self, records: Sequence[QuickfixRecord], is_open: bool = False) -> QuickfixState | None:
+        if records:
+            state = self.set_records(records)
+            if is_open:
+                PytoyQuickfix().open()
+            return state
+        else:
+            PytoyQuickfix().close()
+        return None
 
     def set_records(self, records:  Sequence[QuickfixRecord]) -> QuickfixState:
         return self.impl.set_records(records)
@@ -99,15 +109,15 @@ def handle_records(
 
 
 type QuickfixRecordRegex = str  # Regarded as 
-type QuickfixCreator =  Callable[[str], Sequence[QuickfixRecord]]
+type QuickfixCreator =  Callable[[str, Path], Sequence[QuickfixRecord]]
 
-def to_quickfix_creator(regex: QuickfixRecordRegex | QuickfixCreator, cwd: str | Path) -> QuickfixCreator:
+def to_quickfix_creator(regex: QuickfixRecordRegex | QuickfixCreator) -> QuickfixCreator:
     if callable(regex):
         return regex
 
     import re
     pattern = re.compile(regex)
-    def creator(content: str) -> Sequence[QuickfixRecord]:
+    def creator(content: str, cwd: Path) -> Sequence[QuickfixRecord]:
         records = []
         lines = content.split("\n")
         for line in lines:

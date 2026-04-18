@@ -75,7 +75,7 @@ class CommandRunner:
 
     @property
     def stderr(self) -> PytoyBuffer | None:
-        return self._stdout
+        return self._stderr
 
     def _wire_events(self, request: OutputJobRequest, job_events: JobEvents):
         disposables = []

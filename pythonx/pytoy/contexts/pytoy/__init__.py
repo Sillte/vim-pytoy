@@ -9,7 +9,7 @@ from pytoy.contexts.core import GlobalCoreContext
 # Only for lazy loading to speed up. 
 if TYPE_CHECKING:
     ...
-    from pytoy.job_execution.command_executor import CommandExecutionManager 
+    from pytoy.job_execution.command_executor.manager import CommandExecutionManager 
     from pytoy.job_execution.terminal_executor import TerminalExecutionManager 
     from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager 
     from pytoy.tools.llm.kernel import FairyKernelManager
@@ -28,7 +28,7 @@ class GlobalPytoyContext:
     
     @cached_property
     def command_execution_manager(self) -> CommandExecutionManager:
-        from pytoy.job_execution.command_executor import CommandExecutionManager 
+        from pytoy.job_execution.command_executor.manager import CommandExecutionManager 
         return CommandExecutionManager()
 
     @cached_property
