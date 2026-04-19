@@ -53,6 +53,11 @@ class CommandExecution:
     def events(self) -> ExecutionEvents:
         return self.runner.events
 
+    @property
+    def stdout(self) -> PytoyBuffer:
+        return self.runner.stdout
+    
+
 
 @dataclass(frozen=True)
 class PostProcessContext:

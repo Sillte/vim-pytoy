@@ -13,25 +13,24 @@ class TerminalDriverManager:
     def __init__(self):
         self._drivers: dict[str, type[TerminalDriverProtocol]] = {}
 
-    def register(self, driver_name: str):
+    def register(self, driver_kind: str):
         def _wrap(driver_class: type[TerminalDriverProtocol]):
-            self._drivers[driver_name] = driver_class
+            self._drivers[driver_kind] = driver_class
             return driver_class
         return _wrap
     
-    def _is_registered(self, driver_name: str) -> bool:
-        return driver_name in self._drivers
+    def _is_registered(self, driver_kind: str) -> bool:
+        return driver_kind in self._drivers
     
     @property
-    def driver_names(self) -> list[str]:
+    def kinds(self) -> list[str]:
         return list(self._drivers.keys())
 
-    def create(self, driver_name: str, **kwargs) -> TerminalDriverProtocol:
-        cls = self._drivers.get(driver_name)
+    def create(self, driver_kind: str, **kwargs) -> TerminalDriverProtocol:
+        cls = self._drivers.get(driver_kind)
         if not cls:
-            raise ValueError(f"Driver {driver_name} not found")
+            raise ValueError(f"Driver {driver_kind} not found")
         return cls(**kwargs)
-
 
 
 def _shell_make_operations(input_str: str) -> Sequence[str]:
@@ -59,13 +58,13 @@ driver_manager = GlobalPytoyContext().get().terminal_driver_manager
 
 @driver_manager.register("windows_cmd")
 class CmdExeDriver:
-    def __init__(self, name: str = "cmd") -> None:
+    def __init__(self, kind: str = "cmd") -> None:
         self._command = "cmd.exe"
-        self._name = name
+        self._kind = kind
 
     @property
-    def name(self) -> str:
-        return self._name
+    def kind(self) -> str:
+        return self._kind
         
     @property
     def command(self):
@@ -92,13 +91,14 @@ class CmdExeDriver:
 
 @driver_manager.register("bash")
 class BashDriver:
-    def __init__(self, name: str = "bash") -> None:
+    def __init__(self, kind: str = "bash") -> None:
+        self._kind = kind
         self._command = "bash"
-        self._name = name
 
     @property
-    def name(self) -> str:
-        return self._name
+    def kind(self) -> str:
+        return self._kind
+
         
     @property
     def command(self):
@@ -129,8 +129,8 @@ class ShellDriver(TerminalDriverProtocol):
         self._impl = CmdExeDriver(name) if os.name == "nt" else BashDriver(name)  # type: ignore
 
     @property
-    def name(self) -> str:
-        return self._impl.name
+    def kind(self) -> str:
+        return self._impl.kind
 
     @property
     def command(self) -> str:
@@ -164,7 +164,7 @@ class IPythonDriver(TerminalDriverProtocol):
         self._is_first = True
         
     @property
-    def name(self) -> str:
+    def kind(self) -> str:
         return self._name
 
     @property

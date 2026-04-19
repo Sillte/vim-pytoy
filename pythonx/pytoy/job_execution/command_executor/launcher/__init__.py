@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol, Mapping, Any, Self
+from typing import Mapping, Any, Self
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.job_execution.command_executor.executor import CommandExecutor
-from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile
-from pytoy.job_execution.command_executor.launcher.quickfix import make_quickfix_hooks
+from pytoy.job_execution.command_executor.executor import CommandExecutor, CommandExecution
+from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile  # NOQA
+from pytoy.job_execution.command_executor.launcher.quickfix import make_quickfix_hooks  #noqa
 from pytoy.job_execution.command_executor.manager import CommandExecutionManager
 from pytoy.job_execution.command_executor.models import BufferRequest, ExecutionHooks, ExecutionKind, ExecutionQuery, ExecutionRequest, PostProcessContext, ExecutionWrapperType, ExecutionContext
 from pytoy.job_execution.utils import get_current_directory
@@ -22,15 +22,21 @@ class LaunchProfile:
     def from_str(cls, arg: Any) -> Self:
         return cls(kind=arg)
 
-    
 
-def _hide_empty_error_buffer(post_process_context: PostProcessContext) -> None:
+def hide_empty_error_buffer(post_process_context: PostProcessContext) -> None:
     stderr = post_process_context.stderr
     if stderr:
         if not stderr.content.strip():
             stderr.hide()
+            
+def append_command_hook(command_execution: CommandExecution) -> None:
+    command = command_execution.command
+    if not isinstance(command, str):
+        command = " ".join(command)
+    command_execution.runner.stdout.append(command)
 
-DefaultHooks = ExecutionHooks(on_post_process=_hide_empty_error_buffer)
+def get_default_hooks() -> ExecutionHooks:
+    return ExecutionHooks(on_start=append_command_hook,on_post_process=hide_empty_error_buffer)
 
 
 class CommandLauncher:
@@ -56,7 +62,7 @@ class CommandLauncher:
         return self.execution_manager.get_last_context_by_kind(self.launch_profile.kind)
 
     def run(self,
-            command: str | list[str],
+            command: str| list[str],
             stdout: PytoyBuffer | BufferSource | str | Path,
             stderr: PytoyBuffer | BufferSource | str | Path | None = None,
             *,
@@ -82,7 +88,7 @@ class CommandLauncher:
 
     @property
     def default_execution_hooks(self) -> ExecutionHooks:
-        return DefaultHooks
+        return get_default_hooks()
 
     def rerun(self, stdout: PytoyBuffer | BufferSource | str | Path,
                     stderr: PytoyBuffer | BufferSource | str | Path | None = None, *,

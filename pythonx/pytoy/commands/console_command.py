@@ -1,85 +1,8 @@
-from pytoy.job_execution.utils import get_current_directory
-
-from pytoy.job_execution.terminal_executor import TerminalExecutor, TerminalExecution, BufferRequest, ExecutionRequest
-from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager, TerminalDriverProtocol, DEFAULT_SHELL_DRIVER_NAME
-from pytoy.contexts.pytoy import GlobalPytoyContext
-
 from pathlib import Path 
 
 from pytoy.shared.command import Argument, App, Option, RangeParam, Group
-from pytoy.shared.lib.text import LineRange
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from typing import Literal, Annotated
 from pytoy import TERM_STDERR, TERM_STDOUT
-
-
-class ConsoleController:
-
-    @classmethod
-    def get_execution(
-        cls, driver_name: str | None) -> TerminalExecution | None:
-        # [TODO]:
-        #  Maybe, mupliple executions exist, due to the other systems (Very Edge Case)
-        driver_name = driver_name or cls.select_preferrable_name(path=None)
-        executions = cls.get_execution_manager().get_running(name=driver_name)
-        if executions:
-            return executions[0]
-        return None
-
-
-    @classmethod
-    def get_or_create_execution(
-        cls, driver_name: str | None, buffer_name: str | None = None, 
-        cwd: str | Path | None = None,
-    ) -> TerminalExecution:
-        # NOTE: In this Command, `name` and `driver_name` as the same one. 
-
-        driver_name = driver_name or cls.select_preferrable_name(path=None)
-        executions = cls.get_execution_manager().get_running(name=driver_name)
-        if not executions:
-            buffer_name = buffer_name or "__CMD__"
-            buffer_req = BufferRequest.from_no_file(buffer_name)
-            driver = cls.get_driver_manager().create(driver_name=driver_name, name=driver_name)  # [TODO] Thsi is one of weakpoint unless to clarify the existence of `name` parameter.
-            execution_req = ExecutionRequest(driver=driver, command_wrapper="system", cwd=cwd)
-            executor = TerminalExecutor(buffer_req)
-            execution = executor.execute(execution_req)
-        else:
-            execution = executions[0]
-        return execution
-
-    # [TODO]: This logic is too specific, the target of refactor.
-    @classmethod
-    def select_preferrable_name(cls, path: str | Path | PytoyBuffer | None = None) -> Literal["ipython", "shell"]:
-        def _to_path(buffer: PytoyBuffer) -> Path | None:
-            buffer = buffer or PytoyBuffer.get_current()
-            if buffer.is_file:
-                path = buffer.file_path
-            else:
-                path = None
-            return path
-        if path is None:
-            path = _to_path(PytoyBuffer.get_current())
-        elif isinstance(path, str):
-            path = Path(path)
-        elif isinstance(path, PytoyBuffer):
-            path = _to_path(path)
-
-        if path and path.suffix == ".py":
-            driver_manager = cls.get_driver_manager()
-            if driver_manager._is_registered("ipython"):
-                return "ipython"
-        return DEFAULT_SHELL_DRIVER_NAME
-    
-    @classmethod
-    def get_driver_manager(cls):
-        ctx = GlobalPytoyContext.get()
-        return ctx.terminal_driver_manager
-
-
-    @classmethod
-    def get_execution_manager(cls):
-        ctx = GlobalPytoyContext.get()
-        return ctx.terminal_execution_manager
 
 
 app = App()
@@ -92,62 +15,25 @@ def console(kind: Annotated[Literal["run", "stop", "terminate"] | None,  Argumen
             cmd: Annotated[str | None, Argument()] = None,
             range_param: RangeParam | None = None, 
             ):
-
-    cwd = Path(cwd) if cwd else Path(get_current_directory())
+    from pytoy.shared.lib.text import LineRange
+    from pytoy.tools.console import ConsoleRunner
     cmd = cmd or ""
+    runner = ConsoleRunner()
 
     match kind:
         case "run":
-            execution = ConsoleController.get_or_create_execution(driver, buffer, cwd=cwd)
-            execution.runner.send(cmd)
+            runner.run(cmd, buffer, driver, cwd=cwd)
         case "stop":
-            if (execution := ConsoleController.get_execution(driver)):
-                execution.runner.interrupt()
-            else:
-                print("Target Executor is not existent.")
+            runner.stop(buffer, driver, cwd=cwd)
         case "terminate":
-            executions = ConsoleController.get_execution_manager().get_running()
-            for execution in executions:
-                execution.runner.terminate()
-            if not executions:
-                print("Target Executor is not existent.")
+            runner.terminate(buffer, driver)
         case None:
-            from pytoy.shared.ui.pytoy_window import PytoyWindow
-            current_window = PytoyWindow.get_current()
-            current_buffer = current_window.buffer
-            ext = current_buffer.file_path.suffix if current_buffer.is_file else None
-
             if range_param is None:
                 raise ValueError("`range_param` is None")
-            line_range = LineRange(start=range_param.start, end= range_param.end)
-            lines = PytoyBuffer.get_current().get_lines(line_range)
-
-            if ext  == ".md":
-                from pytoy.tools.markdown import MarkdownExtractor
-                text = current_buffer.content
-                structure = MarkdownExtractor(text).structure
-                cursor = current_window.cursor
-                block = structure.get_current_code_block(cursor.line)
-                if not block:
-                    raise ValueError("For `markdown`, the `code block` with the filetype is required at the cursor position.")
-                if block.type == "python":
-                    driver = driver or "ipython"
-                else:
-                    driver = driver or "shell"
-                execution = ConsoleController.get_or_create_execution(driver, buffer, cwd=cwd)
-                lines = block.lines
-                content = "\n".join(lines)
-                execution.runner.send(content)
-            else:
-                execution = ConsoleController.get_or_create_execution(driver, buffer, cwd=cwd)
-                content = "\n".join(lines)
-                execution.runner.send(content)
-
-
-
+            line_range = LineRange(start=range_param.start, end=range_param.end)
+            runner.send(buffer, driver, line_range, cwd=cwd)
         case _:
             raise ValueError(f"Unknown command. {kind}")
-
 
 
 group = Group("Script") 
@@ -196,5 +82,4 @@ def hide_temporary():
     #print("buffers", buffers)
     for buffer in buffers:
         buffer.hide()
-
 

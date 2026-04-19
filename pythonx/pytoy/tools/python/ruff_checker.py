@@ -3,7 +3,7 @@ from pathlib import Path
 
 from pytoy import TERM_STDOUT
 from pytoy.contexts.core import GlobalCoreContext
-from pytoy.job_execution.command_executor.launcher import CommandLauncher, LaunchProfile
+from pytoy.job_execution.command_executor.launcher import CommandLauncher, LaunchProfile, ExecutionHooks, get_default_hooks
 from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
 from pytoy.job_execution.environment_manager import EnvironmentManager
 from pytoy.shared.ui import PytoyBuffer
@@ -58,9 +58,11 @@ class RuffChecker:
             meta = {}
 
         qf_creator = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<text>(.+))"
-
         quickfix_profile = QuickfixProfile(quickfix_creator=qf_creator, quickfix_source="stdout")
-        hooks = make_quickfix_hooks(quickfix_profile)
+        quickfix_hooks = make_quickfix_hooks(quickfix_profile)
+
+        default_hooks = get_default_hooks()
+        hooks = ExecutionHooks.merge(default_hooks, quickfix_hooks)
 
         profile = LaunchProfile(kind=self.kind, execution_hooks=hooks)
         launcher = CommandLauncher(profile)

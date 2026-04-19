@@ -8,7 +8,7 @@ from pytoy.shared.ui.pytoy_buffer.impls.vscode.range_operator import RangeOperat
 from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.models import URI as PytoyURI
 from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, PytoyBufferProviderProtocol, BufferID
-from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver, VSCodeUri
+from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.shared.ui.vscode.document import Document
 from pytoy.shared.ui.utils import to_filepath
 from typing import Sequence, TYPE_CHECKING, Self
@@ -128,7 +128,8 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         if not content:
             return
         content = normalize_lf_code(content)
-        content = "\n" + content  # correspondence to `vim`.
+        if self.document.content:
+            content = "\n" + content  # correspondence to `vim`.
         self.document.append(content)
 
 

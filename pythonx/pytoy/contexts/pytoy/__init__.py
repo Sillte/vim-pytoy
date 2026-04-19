@@ -10,7 +10,7 @@ from pytoy.contexts.core import GlobalCoreContext
 if TYPE_CHECKING:
     ...
     from pytoy.job_execution.command_executor.manager import CommandExecutionManager 
-    from pytoy.job_execution.terminal_executor import TerminalExecutionManager 
+    from pytoy.job_execution.terminal_executor.manager import TerminalExecutionManager 
     from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager 
     from pytoy.tools.llm.kernel import FairyKernelManager
     #from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
@@ -33,7 +33,7 @@ class GlobalPytoyContext:
 
     @cached_property
     def terminal_execution_manager(self) -> TerminalExecutionManager:
-        from pytoy.job_execution.terminal_executor import TerminalExecutionManager 
+        from pytoy.job_execution.terminal_executor.manager import TerminalExecutionManager 
         return TerminalExecutionManager()
 
     @cached_property

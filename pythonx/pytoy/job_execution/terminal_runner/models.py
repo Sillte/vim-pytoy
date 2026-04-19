@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from pytoy.shared.lib.text import CursorPosition
 from pytoy.shared.lib.event.domain import Event
 
-from typing import Callable, Literal, Sequence, Protocol,  Hashable, Any, Self
+from typing import Callable, Literal, Sequence, Protocol,  Hashable, Any, Self, runtime_checkable
 from pytoy.job_execution.environment_manager import CommandWrapperType, ExecutionWrapperType  #noqa
   
 
@@ -82,9 +82,10 @@ type Pid = int
 type ChildrenPids = list[int]
 type InputStr = str
 
+@runtime_checkable
 class TerminalDriverProtocol(Protocol):
     @property
-    def name(self) -> str: ...
+    def kind(self) -> str: ...
     @property
     def command(self) -> str: ...
     @property
@@ -97,7 +98,7 @@ class TerminalDriverProtocol(Protocol):
         
 @dataclass(frozen=True)
 class TerminalDriver:
-    name: CommandStr
+    kind: CommandStr
     command: str
     make_operations: Callable[[str], Sequence[InputOperation]] 
     eol: str | None  = None
@@ -120,7 +121,7 @@ class TerminalDriver:
         new_command = command_wrapper(impl.command)
         new_command = new_command if isinstance(new_command, str) else " ".join(new_command)
         return cls(command=new_command,
-                   name=impl.name, 
+                   kind=impl.kind, 
                    make_operations=impl.make_operations,
                    eol=impl.eol, 
                    impl_is_busy=impl.is_busy,

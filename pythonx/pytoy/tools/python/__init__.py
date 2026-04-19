@@ -3,9 +3,8 @@ import re
 
 from pathlib import  Path
 
-from pytoy.job_execution.command_executor.launcher import LaunchProfile
+from pytoy.job_execution.command_executor.launcher import LaunchProfile, get_default_hooks, ExecutionHooks
 from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
-
 
 from pytoy.shared.ui import PytoyBuffer, QuickfixRecord
 
@@ -40,18 +39,15 @@ class PythonExecutor:
             result = list(reversed(result))
             return result
         quickfix_profile = QuickfixProfile(quickfix_creator=quickfix_creator)
-        hooks = make_quickfix_hooks(quickfix_profile)
-
+        quickfix_hooks = make_quickfix_hooks(quickfix_profile)
+        default_hooks = get_default_hooks()
+        hooks = ExecutionHooks.merge(quickfix_hooks, default_hooks)
         command_profile = LaunchProfile(kind="PythonExecutor",
                                          command_wrapper=command_wrapper,
                                          execution_hooks=hooks)
 
-        self.script_runner = CommandLauncher(launch_profile=command_profile)
+        self.command_launcher = CommandLauncher(launch_profile=command_profile)
         
-    @property
-    def buffers(self) -> tuple[PytoyBuffer, PytoyBuffer]:
-        ...
-    
         
     def _make_command(self, path: str | Path) -> str:
         command = " ".join(["python", "-u", "-X", "utf8", Path(path).as_posix()])
@@ -65,20 +61,19 @@ class PythonExecutor:
         stderr: PytoyBuffer,
         *,
         cwd: Path | None=None,
-        force_uv: bool = False,
     ):
         command = self._make_command(path)
-        self.script_runner.run(command, stdout, stderr, cwd=cwd, init_buffer=True)
+        self.command_launcher.run(command, stdout, stderr, cwd=cwd, init_buffer=True)
     
     def rerun(self, stdout: PytoyBuffer, stderr: PytoyBuffer):
-        self.script_runner.rerun(stdout, stderr)
+        self.command_launcher.rerun(stdout, stderr)
 
     def stop(self):
-        self.script_runner.stop()
+        self.command_launcher.stop()
         
     @property
     def is_running(self) -> bool:
-        return self.script_runner.is_running
+        return self.command_launcher.is_running
 
 
 
