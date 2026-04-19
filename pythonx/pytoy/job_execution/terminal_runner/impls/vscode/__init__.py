@@ -34,7 +34,7 @@ class TerminalJobVSCode(TerminalJobProtocol):
             self._core.exit_emitter.fire(0)
             self.dispose()
 
-        TimerTask.execute_oneshot(lambda: _inner(), interval=0)
+        TimerTask.execute_oneshot(lambda: _inner())
 
     def _schedule_update(self):
         if self._update_scheduled:
@@ -49,7 +49,7 @@ class TerminalJobVSCode(TerminalJobProtocol):
         if hasattr(vim, "session"):
             vim.session.threadsafe_call(_fire)  # type: ignore
         else:
-            TimerTask.execute_oneshot(lambda: _fire())
+            TimerTask.execute_oneshot(lambda: _fire(), interval=0)
 
     def __init__(self, request: TerminalJobRequest, spawn_option: SpawnOption | None = None):
         self._request = request

@@ -36,7 +36,6 @@ class TerminalSelector:
                     return "ipython"
                 case "shell":
                     return "shell"
-
         if isinstance(input, (Path, str)):
             path = Path(input)
             if path.suffix == ".py":
@@ -46,18 +45,24 @@ class TerminalSelector:
         elif isinstance(input, PytoyWindow):
             window = input
             buffer = window.buffer
-            text = buffer.content
-            structure = MarkdownExtractor(text).structure
-            cursor = window.cursor
-            block = structure.get_current_code_block(cursor.line)
-            if not block:
-                raise ValueError("For `markdown`, the outside of `code block` is not determined.")
-            if block.type == "python":
-                return "ipython"
-            else:
+            if not buffer.is_file:
                 return "shell"
-        else:
-            return "shell"
+            path = buffer.file_path
+            if path.suffix == ".py":
+                if self.driver_manager._is_registered("ipython"):
+                    return "ipython"
+            elif path.suffix == ".md":
+                text = buffer.content
+                structure = MarkdownExtractor(text).structure
+                cursor = window.cursor
+                block = structure.get_current_code_block(cursor.line)
+                if not block:
+                    raise ValueError("For `markdown`, the outside of `code block` is not determined.")
+                if block.type == "python":
+                    return "ipython"
+                else:
+                    return "shell"
+        return "shell"
 
 
     def get_preferrable_buffer(self, input: str | Path | PytoyWindow | TerminalDriverProtocol | None, line_range: LineRange | None = None, cwd: Path | None = None) -> str:
