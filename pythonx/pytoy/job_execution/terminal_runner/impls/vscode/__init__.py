@@ -46,9 +46,6 @@ class TerminalJobVSCode(TerminalJobProtocol):
             self._update_scheduled = False
             self._core.update_emitter.fire(self.pid)
 
-        #if hasattr(vim, "session"):
-        #    vim.session.threadsafe_call(_fire)  # type: ignore
-        #else:
         TimerTask.execute_oneshot(lambda: _fire(), interval=500)
 
     def __init__(self, request: TerminalJobRequest, spawn_option: SpawnOption | None = None):
