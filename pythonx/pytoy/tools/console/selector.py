@@ -57,7 +57,8 @@ class TerminalSelector:
                 cursor = window.cursor
                 block = structure.get_current_code_block(cursor.line)
                 if not block:
-                    raise ValueError("For `markdown`, the outside of `code block` is not determined.")
+                    print("For `markdown`, the outside of `code block` is not determined.")
+                    return "shell"
                 if block.type == "python":
                     return "ipython"
                 else:

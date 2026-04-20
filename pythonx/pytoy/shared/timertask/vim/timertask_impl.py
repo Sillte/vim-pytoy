@@ -1,12 +1,14 @@
 import vim
 
-
 from pytoy.shared.timertask.domain import TaskStatus, FunctionName, OnTaskCallback, RegisteredTask, TaskName, TimerStopException, TimerTaskImplProtocol
 from pytoy.shared.timertask.domain import NormalStopReason, OnFinishCallback, OnErrorCallback
+
+from pytoy.shared.lib.backend import get_backend_enum, BackendEnum 
 
 
 from textwrap import dedent
 from typing import Callable, Self
+import threading
 
 
 class TimerTaskImplVim(TimerTaskImplProtocol):
@@ -23,6 +25,7 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
         if TimerTaskImplVim.instance is not None:
             raise RuntimeError("TimerTaskImplVim already instantiated")
         TimerTaskImplVim.instance = self
+        self._lock = threading.Lock()
 
     def register(
         self,
@@ -49,20 +52,26 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
 
         # Vimコードの生成と実行
         vim_code = self._create_vim_code(taskname, vim_funcname)
-        vim.command(vim_code)
-
-        # Vim側の repeat オプションは常に -1 (無限) に設定し、管理は Python 側で行う
-        vim_repeat_opt = -1
-        timer_id = int(vim.eval(f"timer_start({interval}, '{vim_funcname}', {{'repeat': {vim_repeat_opt}}})"))
-        self.tasks[taskname] = task
-        self.statuses[taskname] = TaskStatus(repeat=repeat)
-        self._timer_map[taskname] = timer_id
+        def _impl_function():
+            with self._lock:
+                vim.command(vim_code)
+                # Vim側の repeat オプションは常に -1 (無限) に設定し、管理は Python 側で行う
+                vim_repeat_opt = -1
+                timer_id = int(vim.eval(f"timer_start({interval}, '{vim_funcname}', {{'repeat': {vim_repeat_opt}}})"))
+                self.tasks[taskname] = task
+                self.statuses[taskname] = TaskStatus(repeat=repeat)
+                self._timer_map[taskname] = timer_id
+        if get_backend_enum() == BackendEnum.VIM:
+            _impl_function()
+        else:
+            vim.session.threadsafe_call(lambda *args: _impl_function())  # type:ignore
 
         return taskname
 
     def _execute_task(self, name: TaskName):
-        task = self.tasks.get(name)
-        status = self.statuses.get(name)
+        with self._lock:
+            task = self.tasks.get(name)
+            status = self.statuses.get(name)
         if task is None or status is None:
             return
 
@@ -88,12 +97,17 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
                 on_error(e)
             raise e
 
-        if status.repeat > 0:
-            status.repeat -= 1
-            if status.repeat == 0:
-                self._schedule_deregister(name)
-                if on_finish:
-                    on_finish("finished")
+        is_finished = False
+        with self._lock:
+            if status.repeat > 0:
+                status.repeat -= 1
+                if status.repeat == 0:
+                    is_finished = True
+
+        if is_finished:
+            self._schedule_deregister(name)
+            if on_finish:
+                on_finish("finished")
 
     def _create_vim_code(self, taskname: TaskName, impl_function_name: FunctionName) -> str:
         """Helper to generate the complex VimL function block with error/repeat logic."""
@@ -133,26 +147,34 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
     def _schedule_deregister(self, name: TaskName):
         """Deregisters the task from the timer thread asynchronously."""
 
-        timer_id = self._timer_map.get(name)
-        task = self.tasks.get(name)
+        with self._lock:
+            timer_id = self._timer_map.get(name)
+            task = self.tasks.get(name)
         if timer_id is None or task is None:
             return
         vim_funcname = task.impl_function_name
-        vim.command(
-            dedent(f"""
-            call timer_start(1, {{ -> VimPytoyTimerTaskDeleteFunction_private('{vim_funcname}', {timer_id}) }} )
-        """).strip()
-        )
-        self.tasks.pop(name)
-        self.statuses.pop(name)
-        self._timer_map.pop(name)
+        def _impl_function():
+            with self._lock:
+                vim.command(
+                    dedent(f"""
+                    call timer_start(1, {{ -> VimPytoyTimerTaskDeleteFunction_private('{vim_funcname}', {timer_id}) }} )
+                """).strip()
+                )
+                self.tasks.pop(name)
+                self.statuses.pop(name)
+                self._timer_map.pop(name)
+
+        if get_backend_enum() == BackendEnum.VIM:
+            _impl_function()
+        else:
+            vim.session.threadsafe_call(lambda *args: _impl_function())  # type:ignore
 
     def deregister(self, name: TaskName, *, strict: bool = False):
-        if name not in self.tasks:
-            if strict:
+        if strict:
+            if not self.is_registered(name):
                 raise ValueError(f"No timer task registered with name: '{name}'")
-            return
         self._schedule_deregister(name)
 
     def is_registered(self, name: str):
-        return name in self._timer_map
+        with self._lock:
+            return name in self._timer_map
