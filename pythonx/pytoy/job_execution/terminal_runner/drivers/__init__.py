@@ -155,9 +155,9 @@ class ShellDriver(TerminalDriverProtocol):
 
 @driver_manager.register("ipython")
 class IPythonDriver(TerminalDriverProtocol):
-    def __init__(self, command: str = "ipython", name: str = "ipython"):
+    def __init__(self, command: str = "ipython --colors=NoColor", kind: str = "ipython"):
         self._command = command
-        self._name = name
+        self._kind = kind
         import re
         self._in_pattern = re.compile(r"In \[(\d+)\]:")
 
@@ -165,7 +165,7 @@ class IPythonDriver(TerminalDriverProtocol):
         
     @property
     def kind(self) -> str:
-        return self._name
+        return self._kind
 
     @property
     def command(self) -> str:
