@@ -25,7 +25,7 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
         if TimerTaskImplVim.instance is not None:
             raise RuntimeError("TimerTaskImplVim already instantiated")
         TimerTaskImplVim.instance = self
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
     def register(
         self,
@@ -178,3 +178,5 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
     def is_registered(self, name: str):
         with self._lock:
             return name in self._timer_map
+
+

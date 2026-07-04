@@ -139,7 +139,6 @@ Vim command definitions that compose tools and infrastructure:
 This project is primarily a personal exploration,
 but it aims to experiment with structured plugin design.
 
-
 ## TODO 
 
 * Explanation and usage of `VimReboot`. 
