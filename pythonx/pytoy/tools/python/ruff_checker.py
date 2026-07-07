@@ -67,7 +67,7 @@ class RuffChecker:
         profile = LaunchProfile(kind=self.kind, execution_hooks=hooks)
         launcher = CommandLauncher(profile)
         command = self.make_command(path, fix, unsafe)
-        launcher.run(command, stdout=pytoy_buffer, cwd=cwd, meta=meta)
+        launcher.run(command, stdout=pytoy_buffer, stderr=pytoy_buffer, cwd=cwd, meta=meta)
 
     def rerun(self) -> None:
         profile = LaunchProfile(kind=self.kind)

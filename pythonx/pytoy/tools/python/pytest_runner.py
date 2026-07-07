@@ -53,7 +53,7 @@ class PytestRunner:
         hooks = get_default_hooks()
         hooks = ExecutionHooks.merge(hooks, QuickfixProfile(quickfix_creator=make_qf_records).execution_hooks)
         launch_profile = LaunchProfile(kind=self.kind, execution_hooks=hooks)
-        CommandLauncher(launch_profile).run(command, stdout=self.stdout)
+        CommandLauncher(launch_profile).run(command, stdout=self.stdout, stderr=self.stdout)
 
     def rerun(self) -> None:
         launcher = CommandLauncher(self.kind)
