@@ -93,21 +93,27 @@ class EnvironmentManager:
         strategy = ToolRunnerStrategy.from_kind("system")
         return ResolvedExecutionEnvironment(strategy, workspace=None, base_path=path)
 
-    def get_workspace(self, start_path: str | Path, preference: None | EnvironmentKind | Literal["auto"] = "system") -> None | Path:
+    def find_workspace(self, start_path: str | Path, preference: None | EnvironmentKind | Literal["auto"] = "system") -> None | Path:
         start_path = Path(start_path).resolve()
         _, workspace = self._get_appropriate_solver(start_path, preference)
         return workspace
 
+    def find_project(self, start_path: str | Path, preference: None | EnvironmentKind | Literal["auto"] = "system") -> None | Path:
+        start_path = Path(start_path).resolve()
+        solver, _ = self._get_appropriate_solver(start_path, preference)
+        if solver:
+            return solver.find_project(start_path)
+        return None
 
         
     def _get_appropriate_solver(self, path: str | Path, preference: None | EnvironmentKind | Literal["auto"]) -> tuple[None | EnvironmentSolverProtocol, None | Path]:
         if preference is None or preference == "auto":
             for solver in self._solvers.values():
-                if solver.installed and (workspace:= solver.get_workspace(path)):
+                if solver.installed and (workspace:= solver.find_workspace(path)):
                     return solver, workspace
         elif preference in self._solvers:
             solver = self._solvers[preference]
-            return solver, solver.get_workspace(path)
+            return solver, solver.find_workspace(path)
         return None, None
 
 

@@ -203,7 +203,7 @@ def pytoy_log(location: Annotated[Literal["local", "global"] | None, Argument()]
     else:
         pivot_folder = Path(".")
         raise ValueError("Current folder should be `file`. ")
-    workspace = GlobalCoreContext().get().environment_manager.get_workspace(pivot_folder)
+    workspace = GlobalCoreContext().get().environment_manager.find_workspace(pivot_folder)
     workspace = workspace if workspace else pivot_folder
     config = PytoyConfiguration(workspace, local_config_type=None)
 

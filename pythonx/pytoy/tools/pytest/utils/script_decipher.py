@@ -25,7 +25,6 @@ class ScriptDecipher:
 
     def pick(self, line_number: int):
         """Return the most appropriate `TestTarget`."""
-        range_to_target = dict()
         for target in self.targets:
             if target.start_line <= line_number <= target.end_line:
                 return target

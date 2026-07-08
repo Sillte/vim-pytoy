@@ -1,4 +1,5 @@
-from pytoy.job_execution.environment_manager.models import ToolRunnerStrategyProtocol
+from functools import cache 
+from pytoy.job_execution.environment_manager.models import ToolRunnerStrategyProtocol, EnvironmentSolverProtocol
 from pytoy.job_execution.environment_manager.models import EnvironmentKind
 
 from dataclasses import dataclass
@@ -21,7 +22,7 @@ class UvStrategy(ToolRunnerStrategyProtocol):
         return prefix + list(arg)
 
 
-class UVEnvironmentSolver:
+class UVEnvironmentSolver(EnvironmentSolverProtocol):
     def __init__(self):
         self._installed = None
         
@@ -41,9 +42,28 @@ class UVEnvironmentSolver:
             _add_uv_path_fallback()
             self._installed = bool(shutil.which("uv"))
         return self._installed
-
-    def get_workspace(self, path: Path | str) -> Path | None:
-        """If the path is wihtin the python project, then it returns 
+    
+    @cache
+    def find_workspace(self, path: Path | str) -> Path | None:
+        """If the path is within the python project, then it returns 
+        the root of workspace.  
+        """
+        if not self.installed:
+            return None
+        candidate = None
+        path = Path(path).resolve()
+        for parent in [path] + list(path.parents):
+            pyproject = parent / "pyproject.toml"
+            if not pyproject.exists():
+                continue
+            candidate = parent
+            if self._is_uv_workspace(pyproject):
+                return candidate
+        return candidate
+    
+    @cache
+    def find_project(self, path: Path | str) -> Path | None:
+        """If the path is within the python project, then it returns 
         the root of workspace.  
         Note: This does not consider `workspace` fucntion of `uv`. 
         """
@@ -52,12 +72,28 @@ class UVEnvironmentSolver:
 
         path = Path(path).resolve()
         for parent in [path] + list(path.parents):
-            if (parent / "pyproject.toml").exists() or (parent / ".venv").is_dir():
+            if (parent / "pyproject.toml").exists():
                 return parent
         return None
 
+    def _is_uv_workspace(self, pyproject: Path) -> bool:
+        data = self._load_pyproject(pyproject)
+        workspace = (
+            data.get("tool", {})
+                .get("uv", {})
+                .get("workspace")
+        )
+        return isinstance(workspace, dict)
 
-    def get_venv_path(self, path) -> Path | None:
+    @staticmethod
+    @cache
+    def _load_pyproject(path: Path) -> dict:
+        import tomllib
+        with path.open("rb") as f:
+            data = tomllib.load(f)
+        return data
+
+    def find_venv_path(self, path: str | Path | None) -> Path | None:
         if path is None:
             path = get_current_directory()
 

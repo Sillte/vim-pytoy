@@ -25,7 +25,7 @@ class PathResolver:
             target = "current"
         current_directory = self._solve_current_directory(current_path)
         if target == "workspace":
-            path = self.environment_manager.get_workspace(current_directory, "auto")
+            path = self.environment_manager.find_workspace(current_directory, "auto")
             if path is None:
                 raise ValueError(f"`{current_directory=}` is NOT workspace.")
             return path
@@ -48,5 +48,5 @@ class PathResolver:
 
     def to_workspace(self, current_path: Path | None) -> Path | None:
         current_directory = self._solve_current_directory(current_path)
-        workspace = self.environment_manager.get_workspace(current_directory, preference="auto")
+        workspace = self.environment_manager.find_workspace(current_directory, preference="auto")
         return workspace

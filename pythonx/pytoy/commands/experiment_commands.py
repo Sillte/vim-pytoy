@@ -16,7 +16,7 @@ def gather_text_files():
     if not buffer.is_file:
         raise ValueError("Target buffer is not file.")
     path = buffer.file_path
-    workspace = EnvironmentManager().get_workspace(path, preference="system")
+    workspace = EnvironmentManager().find_workspace(path, preference="system")
     workspace = workspace or path.parent
     collector = TextFilesCollector(path, workspace=workspace)
     bundle = collector.bundle
@@ -39,7 +39,7 @@ def gather_git_diffs():
     if not buffer.is_file:
         raise ValueError("Target buffer is not file.")
     path = buffer.file_path if buffer.is_file else Path().cwd()
-    workspace = EnvironmentManager().get_workspace(path, preference="system")
+    workspace = EnvironmentManager().find_workspace(path, preference="system")
     workspace = workspace or path.parent
 
     collector = GitDiffCollector(path)

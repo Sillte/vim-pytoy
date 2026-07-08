@@ -33,15 +33,21 @@ class ToolRunnerStrategyProtocol(Protocol):
 
 
 class EnvironmentSolverProtocol(Protocol):
+    """
+    Here, the termiology of `uv` is borrowed. 
+    * Project: it is also called as a package. It relates to one module.   
+    * Workspace: The root folder of multiple projects.
+    """
     @property
     def kind(self) -> EnvironmentKind: ...
     @property
     def installed(self) -> bool: ...
-    def get_workspace(self, path: str | Path, /) -> Path | None : ...
+    def find_workspace(self, path: str | Path, /) -> Path | None : ...
+    def find_project(self, path: str | Path, / ) -> Path | None : ...
+
     
 
 class SystemEnvironmentSolver(EnvironmentSolverProtocol):
-    
     @property
     def kind(self) -> EnvironmentKind:
         return "system"
@@ -49,12 +55,16 @@ class SystemEnvironmentSolver(EnvironmentSolverProtocol):
     def installed(self) -> bool:
         return True 
 
-    def get_workspace(self, path: str | Path, /) -> Path | None :
+    def find_workspace(self, path: str | Path, /) -> Path | None :
         path = Path(path)
         for parent in [path] + list(path.parents):
             if (parent / ".git").exists():
                 return parent
         return None
+    
+    def find_project(self, path: str | Path, /) -> Path | None: 
+        return self.find_workspace(path)
+
 
 
 @dataclass(frozen=True)
