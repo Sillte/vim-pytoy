@@ -10,8 +10,7 @@ app = App()
 @app.command("Pytest")
 def pytest_command(scope: Annotated[Literal["func", "file", "folder", "workspace"], Argument()] = "func"):
     from pytoy.tools.python.pytest_runner import PytestRunner
-
-    PytestRunner().run(scope=scope)
+    PytestRunner().run(scope=scope, cwd=None)
 
 
 @app.command(name="Mypy")

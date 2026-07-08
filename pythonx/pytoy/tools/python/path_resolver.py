@@ -50,3 +50,8 @@ class PathResolver:
         current_directory = self._solve_current_directory(current_path)
         workspace = self.environment_manager.find_workspace(current_directory, preference="auto")
         return workspace
+
+    def to_project(self, current_path: Path | None) -> Path | None:
+        current_directory = self._solve_current_directory(current_path)
+        project = self.environment_manager.find_project(current_directory, preference="auto")
+        return project
