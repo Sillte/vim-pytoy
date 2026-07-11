@@ -61,4 +61,5 @@ def send_ctrl_c(pid: int):
         return ret.returncode == 0
     else:
         import signal
+
         os.kill(pid, signal.SIGINT)

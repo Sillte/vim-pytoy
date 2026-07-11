@@ -7,24 +7,26 @@ from dataclasses import dataclass
 
 type BufferID = Hashable
 
+
 @dataclass
 class BufferEvents:
     on_wiped: Event[BufferID]
     on_pre_buf: Event[BufferID]
-    
+
+
 @dataclass(frozen=True)
-class URI:  
-    """Represents what the buffer represent.  
-    """
+class URI:
+    """Represents what the buffer represent."""
+
     scheme: str
     path: str = ""  # Some `scheme` may not have the path.
-    authority: str | None = None # Typically, `authority` is None.
+    authority: str | None = None  # Typically, `authority` is None.
 
 
 @dataclass(frozen=True)
 class BufferSource:
-    """Source of buffer.
-    """
+    """Source of buffer."""
+
     type: Literal["file", "nofile"]
     name: str
 
@@ -53,17 +55,17 @@ class BufferSource:
         elif isinstance(arg, str):
             return cls.from_str(arg)
         elif isinstance(arg, cls):
-             return arg
+            return arg
         raise ValueError("Type is invalid in `BufferSource`")
 
 
 @dataclass(frozen=True)
 class BufferQuery:
-    """Source of buffer.
-    """
+    """Source of buffer."""
+
     buffer_sources: Sequence[BufferSource] | None = None
     is_normal_type: bool = True
-    
+
     @classmethod
     def from_source(cls, source: BufferSource, is_normal_type: bool = True) -> Self:
         return cls(buffer_sources=[source], is_normal_type=is_normal_type)

@@ -5,9 +5,18 @@ from typing import Mapping, Any, Self
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.job_execution.command_executor.executor import CommandExecutor, CommandExecution
 from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile  # NOQA
-from pytoy.job_execution.command_executor.launcher.quickfix import make_quickfix_hooks  #noqa
+from pytoy.job_execution.command_executor.launcher.quickfix import make_quickfix_hooks  # noqa
 from pytoy.job_execution.command_executor.manager import CommandExecutionManager
-from pytoy.job_execution.command_executor.models import BufferRequest, ExecutionHooks, ExecutionKind, ExecutionQuery, ExecutionRequest, PostProcessContext, ExecutionWrapperType, ExecutionContext
+from pytoy.job_execution.command_executor.models import (
+    BufferRequest,
+    ExecutionHooks,
+    ExecutionKind,
+    ExecutionQuery,
+    ExecutionRequest,
+    PostProcessContext,
+    ExecutionWrapperType,
+    ExecutionContext,
+)
 from pytoy.job_execution.utils import get_current_directory
 from pytoy.shared.ui import BufferSource, PytoyBuffer
 
@@ -17,7 +26,7 @@ class LaunchProfile:
     kind: ExecutionKind = "$default"
     command_wrapper: ExecutionWrapperType | None = "auto"
     execution_hooks: ExecutionHooks | None = None
-    
+
     @classmethod
     def from_str(cls, arg: Any) -> Self:
         return cls(kind=arg)
@@ -28,19 +37,23 @@ def hide_empty_error_buffer(post_process_context: PostProcessContext) -> None:
     if stderr:
         if not stderr.content.strip():
             stderr.hide()
-            
+
+
 def append_command_hook(command_execution: CommandExecution) -> None:
     command = command_execution.command
     if not isinstance(command, str):
         command = " ".join(command)
     command_execution.runner.stdout.append(command)
 
+
 def get_default_hooks() -> ExecutionHooks:
-    return ExecutionHooks(on_start=append_command_hook,on_post_process=hide_empty_error_buffer)
+    return ExecutionHooks(on_start=append_command_hook, on_post_process=hide_empty_error_buffer)
 
 
 class CommandLauncher:
-    def __init__(self, launch_profile: LaunchProfile | ExecutionKind, *, execution_manager: CommandExecutionManager | None = None):
+    def __init__(
+        self, launch_profile: LaunchProfile | ExecutionKind, *, execution_manager: CommandExecutionManager | None = None
+    ):
         if not execution_manager:
             execution_manager = GlobalPytoyContext.get().command_execution_manager
         if isinstance(launch_profile, str):
@@ -56,20 +69,21 @@ class CommandLauncher:
     @property
     def launch_profile(self) -> LaunchProfile:
         return self._launch_profile
-    
+
     @property
     def last_context(self) -> ExecutionContext | None:
         return self.execution_manager.get_last_context_by_kind(self.launch_profile.kind)
 
-    def run(self,
-            command: str| list[str],
-            stdout: PytoyBuffer | BufferSource | str | Path,
-            stderr: PytoyBuffer | BufferSource | str | Path | None = None,
-            *,
-            cwd: str | Path | None = None,
-            meta: Mapping[str, Any] | None = None,
-            init_buffer: bool = True
-            ):
+    def run(
+        self,
+        command: str | list[str],
+        stdout: PytoyBuffer | BufferSource | str | Path,
+        stderr: PytoyBuffer | BufferSource | str | Path | None = None,
+        *,
+        cwd: str | Path | None = None,
+        meta: Mapping[str, Any] | None = None,
+        init_buffer: bool = True,
+    ):
         meta = meta or {}
         kind = self.launch_profile.kind
         if self.is_running:
@@ -82,7 +96,9 @@ class CommandLauncher:
             stderr = stderr.source if isinstance(stderr, PytoyBuffer) else BufferSource.from_any(stderr)
 
         buffer_request = BufferRequest(stdout=stdout, stderr=stderr)
-        execution_request = ExecutionRequest(command=command, cwd=cwd, command_wrapper=self.launch_profile.command_wrapper, kind=kind, meta=meta)
+        execution_request = ExecutionRequest(
+            command=command, cwd=cwd, command_wrapper=self.launch_profile.command_wrapper, kind=kind, meta=meta
+        )
         execution_hooks = profile.execution_hooks or self.default_execution_hooks
         self._send_request(buffer_request, execution_request, execution_hooks, init_buffer=init_buffer)
 
@@ -90,9 +106,13 @@ class CommandLauncher:
     def default_execution_hooks(self) -> ExecutionHooks:
         return get_default_hooks()
 
-    def rerun(self, stdout: PytoyBuffer | BufferSource | str | Path,
-                    stderr: PytoyBuffer | BufferSource | str | Path | None = None, *,
-                    init_buffer: bool = True):
+    def rerun(
+        self,
+        stdout: PytoyBuffer | BufferSource | str | Path,
+        stderr: PytoyBuffer | BufferSource | str | Path | None = None,
+        *,
+        init_buffer: bool = True,
+    ):
         command_kind = self.launch_profile.kind
 
         stdout = stdout.source if isinstance(stdout, PytoyBuffer) else BufferSource.from_any(stdout)
@@ -115,13 +135,18 @@ class CommandLauncher:
         for execution in self.execution_manager.select(query):
             execution.runner.terminate()
 
-
     @property
     def is_running(self) -> bool:
         query = ExecutionQuery(kind=self.launch_profile.kind)
         return bool(self.execution_manager.select(query=query))
 
-
-    def _send_request(self, buffer_request: BufferRequest, execution_request: ExecutionRequest, execution_hooks: ExecutionHooks, *, init_buffer: bool = True):
+    def _send_request(
+        self,
+        buffer_request: BufferRequest,
+        execution_request: ExecutionRequest,
+        execution_hooks: ExecutionHooks,
+        *,
+        init_buffer: bool = True,
+    ):
         command_executor = CommandExecutor(buffer_request)
         command_executor.execute(execution_request, init_buffer=init_buffer, hooks=execution_hooks)

@@ -55,5 +55,7 @@ class CommandGroup:
     def name(self) -> str:
         return self._name
 
-    def command(self, sub_command: str, *, invocation_spec: InvocationSpec | None = None, exists_ok: bool = True) -> Callable:
+    def command(
+        self, sub_command: str, *, invocation_spec: InvocationSpec | None = None, exists_ok: bool = True
+    ) -> Callable:
         return self.impl.command(sub_command, invocation_spec=invocation_spec, exists_ok=exists_ok)

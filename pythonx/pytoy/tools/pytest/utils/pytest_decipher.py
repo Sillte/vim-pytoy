@@ -51,9 +51,7 @@ class PytestDecipher:
                     current = key
             if current:
                 section_to_lines[current].append(line)
-        section_to_text = {
-            key: "\n".join(value) for key, value in section_to_lines.items()
-        }
+        section_to_text = {key: "\n".join(value) for key, value in section_to_lines.items()}
         return section_to_text
 
     def _to_items(self, section_text: str) -> Dict[str, str]:
@@ -83,12 +81,8 @@ class PytestDecipher:
         detail_specifier = re.compile(r"^E\s*(?P<reason>.+)$")
 
         # As for `filename`, 2 pattern exist.
-        summary_specifier = re.compile(
-            r"(?P<filename>.+?\.py):(?P<lnum>\d+):(?:\s*(?P<text>.*))?$"
-        )
-        summary_specifier2 = re.compile(
-            r'^E\s*File\s*"(?P<filename>.*)",\s*line\s*(?P<lnum>\d+)\s*$'
-        )
+        summary_specifier = re.compile(r"(?P<filename>.+?\.py):(?P<lnum>\d+):(?:\s*(?P<text>.*))?$")
+        summary_specifier2 = re.compile(r'^E\s*File\s*"(?P<filename>.*)",\s*line\s*(?P<lnum>\d+)\s*$')
 
         def _to_record(summary, details: list) -> dict:
             row = summary.groupdict()

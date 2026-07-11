@@ -3,10 +3,18 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Mapping, Any, TYPE_CHECKING
 
-from pytoy.job_execution.terminal_runner.models import TerminalJobProtocol, TerminalJobRequest, SpawnOption, JobEvents, Snapshot, JobID
+from pytoy.job_execution.terminal_runner.models import (
+    TerminalJobProtocol,
+    TerminalJobRequest,
+    SpawnOption,
+    JobEvents,
+    Snapshot,
+    JobID,
+)
 from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import make_buffer, make_duo_buffers, BufferSource
+
 if TYPE_CHECKING:
     from pytoy.contexts.pytoy import GlobalPytoyContext
 
@@ -15,49 +23,53 @@ def make_terminal_job(job_request: TerminalJobRequest, spawn_option: SpawnOption
     backend_enum = get_backend_enum()
     if backend_enum == BackendEnum.VIM:
         from pytoy.job_execution.terminal_runner.impls.vim import TerminalJobVim
+
         return TerminalJobVim(job_request, spawn_option)
     elif backend_enum == BackendEnum.NVIM:
         from pytoy.job_execution.terminal_runner.impls.nvim import TerminalJobNvim
+
         return TerminalJobNvim(job_request, spawn_option)
     elif backend_enum == BackendEnum.VSCODE:
         from pytoy.job_execution.terminal_runner.impls.vscode import TerminalJobVSCode
+
         return TerminalJobVSCode(job_request, spawn_option)
     else:
         from pytoy.job_execution.terminal_runner.impls.dummy import TerminalJobDummy
+
         return TerminalJobDummy(job_request, spawn_option)
-    
+
 
 class TerminalJobRunner:
-    
     @classmethod
     def solve_buffer(cls, arg: str | Path | BufferSource | PytoyBuffer) -> PytoyBuffer:
         if isinstance(arg, (str, Path, BufferSource)):
             return make_buffer(BufferSource.from_any(arg))
         else:
             return arg
-    
 
-    def __init__(self, 
-                 buffer: PytoyBuffer | str,
-                 *,
-                 init_buffer: bool = True,
-                 terminal_job_factory: Callable[..., TerminalJobProtocol] = make_terminal_job,
-                 ctx: GlobalPytoyContext | None = None) -> None:
-        
+    def __init__(
+        self,
+        buffer: PytoyBuffer | str,
+        *,
+        init_buffer: bool = True,
+        terminal_job_factory: Callable[..., TerminalJobProtocol] = make_terminal_job,
+        ctx: GlobalPytoyContext | None = None,
+    ) -> None:
+
         # Terminal behaves on a single buffer
         self._buffer = self.solve_buffer(buffer)
-        
+
         if init_buffer:
             self._buffer.init_buffer()
-            
+
         self._terminal_job_factory = terminal_job_factory
         self._terminal_job: TerminalJobProtocol | None = None
         self._job_disposables: list[Any] = []
-        
+
     @property
     def buffer(self) -> PytoyBuffer:
         return self._buffer
-    
+
     @property
     def job_id(self) -> JobID:
         if self._terminal_job:
@@ -66,38 +78,34 @@ class TerminalJobRunner:
 
     def _wire_events(self, request: TerminalJobRequest, job_events: JobEvents):
         disposables = []
-        
+
         # 1. Update event: Triggered when terminal content changes
         # Terminal content is usually managed by the Vim/Nvim terminal buffer itself,
         # but we can hook this to update UI components or sidebars.
         d_upd = job_events.on_update.subscribe(self._on_terminal_update)
-        
+
         # 2. Sync lifecycle with PytoyBuffer
         buffer_events = self._buffer.events
         d_buf_wiped = buffer_events.on_wiped.subscribe(lambda _: self.dispose())
-        
+
         disposables += [d_upd, d_buf_wiped]
-        
+
         # 3. Job Exit logic
-        disposables.append(
-            job_events.on_job_exit.subscribe(lambda _: self._dispose_job())
-        )
-        
+        disposables.append(job_events.on_job_exit.subscribe(lambda _: self._dispose_job()))
+
         if request.on_exit:
             disposables.append(job_events.on_job_exit.subscribe(request.on_exit))
-            
+
         return disposables
 
-    def run(self, 
-            request: TerminalJobRequest, 
-            spawn_option: SpawnOption | None = None) -> None:
+    def run(self, request: TerminalJobRequest, spawn_option: SpawnOption | None = None) -> None:
         if self._terminal_job:
             raise RuntimeError("TerminalRunner is already running.")
 
         spawn_option = spawn_option or SpawnOption()
-        
+
         self._terminal_job = self._terminal_job_factory(request, spawn_option)
-        
+
         self._job_disposables = []
         self._job_disposables += self._wire_events(request, self._terminal_job.events)
 
@@ -112,14 +120,14 @@ class TerminalJobRunner:
 
     def _on_terminal_update(self, bufnr: int):
         if not self._terminal_job:
-            return 
+            return
         snapshot = self._terminal_job.snapshot
         cr = self.buffer.range_operator.entire_character_range
         self.buffer.replace_text(cr, snapshot.content)
-        if (window := self.buffer.window):
+        if window := self.buffer.window:
             window.move_cursor(snapshot.cursor)
 
-        # Here we could perform logic like auto-scrolling 
+        # Here we could perform logic like auto-scrolling
         # or notifying the GlobalContext about state changes.
         pass
 
@@ -144,6 +152,7 @@ class TerminalJobRunner:
         if self._terminal_job:
             return self._terminal_job.snapshot
         return None
+
     @property
     def events(self) -> JobEvents:
         if not self._terminal_job:
@@ -154,23 +163,23 @@ class TerminalJobRunner:
         if not self._terminal_job:
             return
         self._terminal_job.terminate()
-        
+
+
 if __name__ == "__main__":
     # Simple Tests.
     from pytoy.shared.ui.pytoy_window.facade import PytoyWindowProvider
     from pytoy.job_execution.terminal_runner.drivers import ShellDriver
     from pytoy.job_execution.terminal_runner.drivers import IPythonDriver
     from pytoy.shared.timertask import TimerTask
-    #driver = ShellDriver("cmd.exe")
+    # driver = ShellDriver("cmd.exe")
 
     driver = IPythonDriver()
     window = PytoyWindowProvider().open_window("MOCK", "vertical")
 
-    
     request = TerminalJobRequest(driver=driver, on_exit=lambda _: print("END"))
     runner = TerminalJobRunner(window.buffer)
     runner.run(request)
 
-    TimerTask.execute_oneshot(lambda :runner.send("dir"), interval=500)
-    TimerTask.execute_oneshot(lambda :runner.send("echo BAfAFAF"), interval=1200)
-    TimerTask.execute_oneshot(lambda : print(runner.snapshot.content), interval=3000)  # type: ignore
+    TimerTask.execute_oneshot(lambda: runner.send("dir"), interval=500)
+    TimerTask.execute_oneshot(lambda: runner.send("echo BAfAFAF"), interval=1200)
+    TimerTask.execute_oneshot(lambda: print(runner.snapshot.content), interval=3000)  # type: ignore

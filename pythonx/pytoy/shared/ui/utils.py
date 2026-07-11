@@ -25,7 +25,5 @@ def to_filepath(path: str | Path) -> Path:
     return Path(path_str)
 
 
-
 if __name__ == "__main__":
     pass
-

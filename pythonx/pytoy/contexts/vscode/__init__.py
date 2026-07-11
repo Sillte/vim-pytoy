@@ -5,11 +5,12 @@ from pytoy.shared.lib.entity import EntityRegistry
 from pytoy.contexts.vim import GlobalVimContext
 
 
-# Only for lazy loading to speed up. 
+# Only for lazy loading to speed up.
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel
     from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
-    from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
+    from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager
+    from pytoy.shared.lib.keymap.keymap_manager import KeymapManager
 
 
 class GlobalVSCodeContext:
@@ -24,21 +25,32 @@ class GlobalVSCodeContext:
     @cached_property
     def buffer_kernel_registry(self) -> EntityRegistry[int, VSCodeBufferKernel]:
         from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel
+
         def factory(bufnr: int) -> VSCodeBufferKernel:
             return VSCodeBufferKernel(bufnr, ctx=self)
+
         return EntityRegistry(VSCodeBufferKernel, factory=factory)
 
     @cached_property
     def window_kernel_registry(self) -> EntityRegistry[int, VSCodeWindowKernel]:
         from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
+
         def factory(winid: int) -> VSCodeWindowKernel:
             return VSCodeWindowKernel(winid, ctx=self)
+
         return EntityRegistry(VSCodeWindowKernel, factory=factory)
 
     @cached_property
     def autocmd_manager(self) -> AutoCmdManager:
-        from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
+        from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager
+
         return AutoCmdManager()
+
+    @cached_property
+    def keymap_manager(self) -> KeymapManager:
+        from pytoy.shared.lib.keymap.keymap_manager import KeymapManager
+
+        return KeymapManager()
 
     @property
     def vim_context(self) -> GlobalVimContext:

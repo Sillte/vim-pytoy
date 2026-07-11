@@ -21,7 +21,7 @@ class RangeOperatorVim(RangeOperatorProtocol):
 
     @property
     def vim_buffer(self) -> "vim.Buffer":
-        vim_buffer =  self._kernel.buffer
+        vim_buffer = self._kernel.buffer
         if vim_buffer is None:
             raise RuntimeError(f"Invalid `buffer`, {self._kernel.bufnr}")
         return vim_buffer
@@ -37,7 +37,7 @@ class RangeOperatorVim(RangeOperatorProtocol):
         """`line` and `pos` are number acquried by `getpos`."""
         # Note that `start.line` and `end.line` is 0-based.
         # Note that `start.col` and `end.col` is 0-based.
-        # Note that `end` of selection is exclusive. 
+        # Note that `end` of selection is exclusive.
         handler = VimBufferRangeHandler(self.vim_buffer)
         return handler.get_text(character_range)
 
@@ -48,7 +48,6 @@ class RangeOperatorVim(RangeOperatorProtocol):
     def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> LineRange:
         handler = VimBufferRangeHandler(self.vim_buffer)
         return handler.replace_lines(line_range, self.vim_buffer[:])
-
 
     def _create_text_searcher(self, target_range: CharacterRange | None = None):
         # TODO: In order to enhance efficiency, please consider `partial` handling of `lines`.

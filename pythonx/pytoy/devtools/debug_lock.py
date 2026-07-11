@@ -7,7 +7,6 @@ from contextlib import contextmanager
 
 
 class DebugLock:
-
     def __init__(
         self,
         lock: threading.Lock | threading.RLock,
@@ -49,35 +48,23 @@ class DebugLock:
             self._owner = threading.get_ident()
             self._owner_name = threading.current_thread().name
 
-        elapsed = (
-            time.perf_counter() - start
-        ) * 1000
+        elapsed = (time.perf_counter() - start) * 1000
 
         self._set_depth(depth + 1)
 
         self._logger.log(
-            f"ACQUIRE {self._name} "
-            f"depth={depth + 1} "
-            f"({elapsed:.3f} ms)"
-            f"owner={self._owner_name}({self._owner})"
+            f"ACQUIRE {self._name} depth={depth + 1} ({elapsed:.3f} ms)owner={self._owner_name}({self._owner})"
         )
 
-        if (
-            self._dump_after_ms is not None
-            and elapsed >= self._dump_after_ms
-        ):
-            self._logger.log(
-                f"LOCK WAIT WARNING: {self._name}"
-            )
+        if self._dump_after_ms is not None and elapsed >= self._dump_after_ms:
+            self._logger.log(f"LOCK WAIT WARNING: {self._name}")
             self._logger.dump_threads()
 
         return acquired
 
     def release(self) -> None:
         depth = self._get_depth()
-        self._logger.log(
-            f"RELEASE {self._name} depth={depth} owner={self._owner_name}({self._owner})"
-        )
+        self._logger.log(f"RELEASE {self._name} depth={depth} owner={self._owner_name}({self._owner})")
 
         self._set_depth(max(0, depth - 1))
         if self._get_depth() == 0:

@@ -5,16 +5,20 @@ from pytoy.contexts.core import GlobalCoreContext
 global MY_NUMBER
 MY_NUMBER = 100
 
+
 # --- TimerTask側テスト ---
 def func():
     global MY_NUMBER
     MY_NUMBER += 1
 
+
 def on_finish_timer(reason: str):
     print("Timer finished:", reason)
 
+
 def on_error_timer(e: Exception):
     print("Timer error:", e, MY_NUMBER)
+
 
 TimerTask.register(
     func,
@@ -24,18 +28,23 @@ TimerTask.register(
     repeat=20,
 )
 
+
 # --- ThreadExecutor側テスト ---
 def main_func(cancel_token):
     import time
+
     time.sleep(1)
     return "from_main_func"
+
 
 def on_finish_thread(result):
     print(f"{MY_NUMBER=} on_finish with result={result}")
     assert 100 < MY_NUMBER
 
+
 def on_error_thread(e: Exception):
     print("Thread error:", e)
+
 
 # Context取得
 ctx = GlobalCoreContext.get()

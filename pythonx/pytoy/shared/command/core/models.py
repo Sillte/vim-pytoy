@@ -161,9 +161,10 @@ class DefaultGetter:
         if self.default_factory is not None:
             return self.default_factory()
         return MISSING_DEFAULT
-    
+
 
 type CompletionFunction = Callable[[], Sequence[str]]
+
 
 @dataclass(frozen=True)
 class CompleterModel:
@@ -172,12 +173,11 @@ class CompleterModel:
     @classmethod
     def from_any(cls, arg: Any) -> Self:
         if callable(arg):
-            return cls(impl=arg)  #type: ignore
+            return cls(impl=arg)  # type: ignore
         elif isinstance(arg, Sequence):
             return cls(impl=lambda: arg)
         raise TypeError(f"Cannot convert `{arg}` to `CompleterModel`")
-        
-    
+
     def __call__(self) -> Sequence[str]:
         return self.impl()
 
@@ -200,7 +200,7 @@ class ArgumentModel:
         if self.default_getter is None:
             return MISSING_DEFAULT
         return self.default_getter.get_default()
-    
+
     def get_candidate_values(self) -> Sequence[str]:
         result = []
         if self.literal_values:

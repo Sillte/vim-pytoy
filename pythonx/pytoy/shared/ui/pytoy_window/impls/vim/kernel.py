@@ -10,13 +10,14 @@ from typing import Sequence, assert_never, cast, Literal, Self, TYPE_CHECKING
 
 from pytoy.shared.ui.pytoy_window.vim_window_utils import VimWinIDConverter
 
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext
 
 
 class VimWindowKernel(MortalEntityProtocol):
     def __init__(self, winid: int, *, ctx: GlobalVimContext | None = None):
         from pytoy.contexts.vim import GlobalVimContext
+
         if ctx is None:
             ctx = GlobalVimContext.get()
         self._winid = winid
@@ -36,7 +37,6 @@ class VimWindowKernel(MortalEntityProtocol):
             return False
         return other.winid == self.winid
 
-
     @property
     def winid(self) -> int:
         return self._winid
@@ -47,7 +47,7 @@ class VimWindowKernel(MortalEntityProtocol):
 
     @property
     def buffer(self) -> "vim.Buffer | None":
-        if (vim_window:= self.window) is None:
+        if (vim_window := self.window) is None:
             raise RuntimeError("Already `Window` is deleted.")
         return vim_window.buffer
 
@@ -57,7 +57,6 @@ class VimWindowKernel(MortalEntityProtocol):
         if vim_window:
             return bool(vim_window.valid)
         return False
-
 
     @property
     def on_closed(self) -> Event[PytoyWindowID]:

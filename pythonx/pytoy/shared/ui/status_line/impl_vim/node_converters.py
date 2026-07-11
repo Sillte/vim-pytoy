@@ -2,7 +2,12 @@ from typing import Sequence
 
 from pytoy.shared.ui.status_line.impl_vim.expr_registry import RegistryView
 from pytoy.shared.ui.status_line.impl_vim.models import Highlight, Text, VimExpr, StatusNode
-from pytoy.shared.ui.status_line.models import FunctionStatusLineItem, TextStatusLineItem, UnknownStatusLineItem, StatusLineItem
+from pytoy.shared.ui.status_line.models import (
+    FunctionStatusLineItem,
+    TextStatusLineItem,
+    UnknownStatusLineItem,
+    StatusLineItem,
+)
 
 
 class VimStatusNodeConverter[T: StatusLineItem]:
@@ -11,18 +16,16 @@ class VimStatusNodeConverter[T: StatusLineItem]:
     """
 
     def to_item(self, nodes: Sequence[StatusNode]) -> None | tuple[T, Sequence[StatusNode]]:
-        """Return `None` if the start of nodes cannot be converted, 
+        """Return `None` if the start of nodes cannot be converted,
         if conversion is possible, tuple of Item and remaining StatusNode` is returned.
         """
         ...
 
-    def from_item(self, item:T) -> list[StatusNode]:
-        ...
+    def from_item(self, item: T) -> list[StatusNode]: ...
 
 
 class UnknownNodeConverter(VimStatusNodeConverter):
-    """Fallback Converter.
-    """
+    """Fallback Converter."""
 
     def to_item(self, nodes: Sequence[StatusNode]) -> tuple[UnknownStatusLineItem, Sequence[StatusNode]]:
         item = UnknownStatusLineItem(value=nodes[0])
@@ -33,11 +36,12 @@ class UnknownNodeConverter(VimStatusNodeConverter):
 
 
 class VimExprNodeConverter(VimStatusNodeConverter):
-
     def __init__(self, expr_reader: RegistryView):
         self.expr_reader = expr_reader
 
-    def to_item(self, nodes: Sequence[StatusNode]) -> None | tuple[FunctionStatusLineItem | UnknownStatusLineItem, Sequence[StatusNode]]:
+    def to_item(
+        self, nodes: Sequence[StatusNode]
+    ) -> None | tuple[FunctionStatusLineItem | UnknownStatusLineItem, Sequence[StatusNode]]:
         if isinstance(nodes[0], Highlight) and 2 <= len(nodes) and isinstance(nodes[1], VimExpr):
             h_node, v_node = nodes[0], nodes[1]
             consume = 2
@@ -48,7 +52,7 @@ class VimExprNodeConverter(VimStatusNodeConverter):
             return None
         if v_node.expr in self.expr_reader.expr_to_function:
             value = self.expr_reader.expr_to_function[v_node.expr]
-            highlight= h_node.name if h_node else None
+            highlight = h_node.name if h_node else None
             item = FunctionStatusLineItem(value=value, highlight=highlight)
             return item, nodes[consume:]
         else:
@@ -65,8 +69,7 @@ class VimExprNodeConverter(VimStatusNodeConverter):
 
 
 class VimTextNodeConverter(VimStatusNodeConverter):
-
-    def to_item(self, nodes: Sequence[StatusNode]) ->  None | tuple[TextStatusLineItem, Sequence[StatusNode]]:
+    def to_item(self, nodes: Sequence[StatusNode]) -> None | tuple[TextStatusLineItem, Sequence[StatusNode]]:
         if isinstance(nodes[0], Highlight) and 2 <= len(nodes) and isinstance(nodes[1], Text):
             h_node, t_node = nodes[0], nodes[1]
             consume = 2
@@ -75,12 +78,12 @@ class VimTextNodeConverter(VimStatusNodeConverter):
             consume = 1
         else:
             return None
-        highlight= h_node.name if h_node else None
+        highlight = h_node.name if h_node else None
         item = TextStatusLineItem(value=t_node.value, highlight=highlight)
         return item, nodes[consume:]
 
     def from_item(self, item: TextStatusLineItem) -> list[StatusNode]:
         if item.highlight:
-            return [Highlight(item.highlight),  Text(value=item.value)]
+            return [Highlight(item.highlight), Text(value=item.value)]
         else:
             return [Text(value=item.value)]

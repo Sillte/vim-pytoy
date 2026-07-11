@@ -5,15 +5,13 @@ from pytoy.shared.lib.event.domain import Event
 
 
 class MortalEntityProtocol[T](Protocol):
-
     @property
     def on_end(self) -> Event[T]:
-        """Event when this entity is destroyed.
-        """
+        """Event when this entity is destroyed."""
         ...
+
     @property
-    def entity_id(self) -> T:
-        ...
+    def entity_id(self) -> T: ...
 
 
 class EntityRegistry[ID: Hashable, E: MortalEntityProtocol]:

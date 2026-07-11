@@ -5,13 +5,14 @@ from dataclasses import dataclass
 class CursorPosition:
     """This represents the position of cursor.
     Here, both of `line` and `col` are 0-based.
-    Note that `line` and `col` in vim start from 1, while 
+    Note that `line` and `col` in vim start from 1, while
     thoese start from 0 in vscode.
     Hence, you have to take it into account to implement
     the concrete classs for vim/vscode.
     """
+
     line: int  # 0-based.
-    col: int   # 0-based, Unicode codepoint index (Python str index)
+    col: int  # 0-based, Unicode codepoint index (Python str index)
 
 
 @dataclass(frozen=True)
@@ -22,6 +23,7 @@ class CharacterRange:
     - start: inclusive
     - end: exclusive
     """
+
     start: CursorPosition
     end: CursorPosition
 
@@ -33,14 +35,14 @@ class CharacterRange:
     @property
     def is_empty(self) -> bool:
         return self.start == self.end
-    
+
     def as_line_range(self, cut_first_line: bool = False, cut_last_line: bool = False) -> "LineRange":
         if cut_first_line and self.start.col != 0:
             start = self.start.line + 1
         else:
             start = self.start.line
 
-        if self.end.col == 0: 
+        if self.end.col == 0:
             end = self.end.line
         elif cut_last_line:
             end = self.end.line
@@ -57,13 +59,10 @@ class LineRange:
         LineRange(0, 1) -> Only 0.
         LineRange(0, 0) -> Just before the 0 (Insertion Point)
     """
+
     start: int
     end: int
 
     @property
     def count(self) -> int:
         return self.end - self.start
-
-
-
-

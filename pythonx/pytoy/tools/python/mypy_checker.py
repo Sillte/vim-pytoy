@@ -1,5 +1,10 @@
 from pytoy import TERM_STDOUT
-from pytoy.job_execution.command_executor.launcher import CommandLauncher, LaunchProfile, get_default_hooks, ExecutionHooks
+from pytoy.job_execution.command_executor.launcher import (
+    CommandLauncher,
+    LaunchProfile,
+    get_default_hooks,
+    ExecutionHooks,
+)
 from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import make_buffer

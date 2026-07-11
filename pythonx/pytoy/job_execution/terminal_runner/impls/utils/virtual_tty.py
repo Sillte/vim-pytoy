@@ -36,7 +36,7 @@ class VirtualTTY:
         self._screen: Screen = Screen(cols, lines)
         self._stream: Stream = Stream(self._screen)
         self._decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
-        
+
         if isinstance(cwd, Path):
             cwd = cwd.as_posix()
 
@@ -101,13 +101,13 @@ class VirtualTTY:
         # display は pyte の内部状態なので、念のためコピーを取るかリストの内包表記で処理
         display_lines = self._screen.display
         processed_lines = [line.rstrip() for line in display_lines]
-        
+
         # 2. 末尾の空行を削除
         while processed_lines and not processed_lines[-1]:
             processed_lines.pop()
-            
+
         content = "\n".join(processed_lines)
-        
+
         # 3. カーソル位置の補正
         # pyte の cursor.y/x は 0-indexed
         orig_y = self._screen.cursor.y
@@ -120,17 +120,12 @@ class VirtualTTY:
 
         # 4. オブジェクトの構築
         # ConsoleSnapshot には「現在の表示領域のサイズ」を渡す
-        console = ConsoleSnapshot(
-            lines=self._lines,
-            cols=self._cols,
-            content=content
-        )
-        
+        console = ConsoleSnapshot(lines=self._lines, cols=self._cols, content=content)
+
         # CursorPosition の引数名は、クラスの定義（line, col）に合わせる
         cursor = CursorPosition(line=safe_line, col=safe_col)
-        
+
         return Snapshot(timestamp=time.time(), cursor=cursor, console=console)
-        
 
     # -------------------------
     # Internal

@@ -3,18 +3,19 @@ from pytoy.shared.ui.pytoy_buffer.models import BufferSource
 import vim
 from typing import Sequence
 
-from pytoy.shared.ui.pytoy_quickfix.protocol import  PytoyQuickfixUIProtocol
+from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixUIProtocol
 from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
 from pytoy.shared.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam
 
 
 class PytoyQuickfixVSCodeUI(PytoyQuickfixUIProtocol):
-
-    def __init__(self, ):
+    def __init__(
+        self,
+    ):
         self._records = []
         self._index = None
 
-    def set_records(self, records:  Sequence[QuickfixRecord]) -> QuickfixState:
+    def set_records(self, records: Sequence[QuickfixRecord]) -> QuickfixState:
         self._records = records
         self._index = self._index if self._index else 0
         return QuickfixState(index=self._index, size=len(self._records))
@@ -40,7 +41,6 @@ class PytoyQuickfixVSCodeUI(PytoyQuickfixUIProtocol):
         param = WindowCreationParam.for_in_place(try_reuse=True, anchor=None, cursor=cursor)
         PytoyWindowProvider().open_window(BufferSource.from_path(path), param)
         return record
-
 
     @property
     def records(self) -> Sequence[QuickfixRecord]:

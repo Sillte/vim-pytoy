@@ -12,4 +12,3 @@ from pytoy.shared.lib.event.domain import Event
 from typing import Sequence, Literal
 
 from pytoy.shared.ui.pytoy_window.facade import PytoyWindowProvider, PytoyWindow
-

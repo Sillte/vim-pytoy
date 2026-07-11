@@ -1,6 +1,6 @@
 from pytoy.shared.lib.event.domain import (  # noqa
-    Disposable, 
-    Event, 
+    Disposable,
+    Event,
     EventEmitter,
     EventProtocol,
 )

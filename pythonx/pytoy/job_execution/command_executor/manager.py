@@ -1,4 +1,11 @@
-from pytoy.job_execution.command_executor.models import CommandExecution, ExecutionContext, ExecutionID, ExecutionKind, ExecutionPolicy, ExecutionQuery
+from pytoy.job_execution.command_executor.models import (
+    CommandExecution,
+    ExecutionContext,
+    ExecutionID,
+    ExecutionKind,
+    ExecutionPolicy,
+    ExecutionQuery,
+)
 from pytoy.shared.ui.pytoy_buffer import BufferSource
 
 
@@ -12,17 +19,18 @@ class CommandExecutionManager:
         self._last_context_by_kind: dict[ExecutionKind, ExecutionContext] = {}
         self._last_context = None
 
-
     def register(self, execution: CommandExecution, context: ExecutionContext):
         self._executions[execution.id] = execution
         self._contexts[execution.id] = context
 
-        # Only contexts are preserved. 
+        # Only contexts are preserved.
         self._last_context = context
         self._last_context_by_kind[context.kind] = context
+
         def _deregister(_):
             self._executions.pop(execution.id, None)
             self._contexts.pop(execution.id, None)
+
         execution.events.on_job_exit.subscribe(_deregister)
 
     def select(self, query: ExecutionQuery | None = None) -> Sequence[CommandExecution]:
@@ -34,7 +42,9 @@ class CommandExecutionManager:
             target_ids = [id_ for id_ in target_ids if self._executions[id_].runner.stdout.source == query.stdout]
         return [self._executions[id_] for id_ in target_ids]
 
-    def get_running(self, kind: ExecutionKind | None = None, stdout: BufferSource | None = None) -> Sequence[CommandExecution]:
+    def get_running(
+        self, kind: ExecutionKind | None = None, stdout: BufferSource | None = None
+    ) -> Sequence[CommandExecution]:
         query = ExecutionQuery(kind=kind, stdout=stdout)
         return self.select(query)
 
@@ -49,5 +59,5 @@ class CommandExecutionManager:
         if policy.allow_parallel:
             return True
         if policy.kind is None:
-            return (not self._executions)
+            return not self._executions
         return not (any(self._contexts[id_].kind == policy.kind for id_ in self._executions))

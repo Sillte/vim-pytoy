@@ -80,16 +80,18 @@ class ExecutionResult:
     result_type: ResultType
     result: Any | None = None
     exception: Exception | None = None
-    
+
+
 def get_backend_thread_util() -> BackendThreadUtilProtocol:
     """Get the backend thread util implementation."""
     if can_use_vim():
         from pytoy.shared.timertask.vim.stdout_rescuer import VimThreadUtil
-        return VimThreadUtil()
-    else:  
-        from pytoy.shared.timertask.domain import FakeThreadUtil
-        return FakeThreadUtil()
 
+        return VimThreadUtil()
+    else:
+        from pytoy.shared.timertask.domain import FakeThreadUtil
+
+        return FakeThreadUtil()
 
 
 class ThreadExecutionManager:
@@ -99,7 +101,6 @@ class ThreadExecutionManager:
         self._started: bool = False
         self._timertask_name: None | str = None
         self._backend_thread_util = backend_thread_util or get_backend_thread_util()
-
 
     def assert_main_thread(self) -> None:
         if threading.current_thread() is not threading.main_thread():
@@ -117,7 +118,7 @@ class ThreadExecutionManager:
         if not self._started:
             self._timertask_name = TimerTask.register(self._polling, interval=200)
             self._started = True
-            self._backend_thread_util.prepare() 
+            self._backend_thread_util.prepare()
 
     def start_and_register(
         self, thread: Thread, cancel_token: Event, request: ThreadExecutionRequest
@@ -205,6 +206,7 @@ def add_log_message(message: str) -> None:
     # change the function.
     get_backend_thread_util().add_message(message)
 
+
 if __name__ == "__main__":
     import time
 
@@ -222,7 +224,7 @@ if __name__ == "__main__":
 
     ctx = DummyContext().get()
 
-    executor = ThreadExecutor(ctx=ctx)  #type: ignore
+    executor = ThreadExecutor(ctx=ctx)  # type: ignore
 
     # finish / error callback
     def on_finish(result):

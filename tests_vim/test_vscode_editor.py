@@ -1,11 +1,10 @@
-
 from pathlib import Path
 from pytoy.shared.ui.vscode.uri import Uri
 from pytoy.shared.ui.vscode.document import Document
 from pytoy.shared.ui.vscode.editor import Editor
 
 current = Editor.get_current()
-doc = current.document #  `document` is fixed, here. not dynamic.
+doc = current.document  #  `document` is fixed, here. not dynamic.
 
 assert current.valid
 current.focus()
@@ -20,4 +19,3 @@ assert editor.valid
 doc.show()
 
 print("Test Complete")
-

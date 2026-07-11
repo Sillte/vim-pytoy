@@ -11,10 +11,13 @@ from pytoy.shared.command.app.protocol import RangeSpec, CountSpec, NoneSpec, In
 import re
 
 _pattern = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+
+
 def normalize_vim_command_name(name: str) -> str:
     if not _pattern.match(name):
         raise ValueError(f"Invalid command name `{name}`. ")
     return name[0].upper() + name[1:]
+
 
 def normalize_sub_command(sub_command: str) -> str:
     if not _pattern.match(sub_command):
@@ -38,9 +41,11 @@ class GroupApplicationVim(GroupApplicationProtocol):
         sub_command = normalize_sub_command(sub_command)
         if (not exists_ok) and VimCommandAdapter.is_registered_subcommand(self.name, sub_command):
             raise ValueError(f"Subcommand:`{sub_command}` of `{self.name}`is already registered.")
+
         def decorator(fn: Callable):
             VimCommandAdapter.register_group(group_name=self.name, sub_command=sub_command, fn=fn)
             return fn
+
         return decorator
 
 
@@ -53,6 +58,7 @@ class CommandApplicationVim(CommandApplicationProtocol):
         def decorator(fn: Callable):
             VimCommandAdapter.register_command(name=name, fn=fn)
             return fn
+
         return decorator
 
 
@@ -116,11 +122,10 @@ class VimCommandAdapter:
             raise ValueError(f"Specified sub-command must belong to `{group.keys()}`")
         command_model = group[sub_command]
         return execute_command(command_model, line1, line2, count, rest)
-    
+
     @classmethod
     def _get_strip_offset(cls, cmd_line: str, target: str) -> int:
-        """Return the stripped `offset`.
-        """
+        """Return the stripped `offset`."""
         stripped = cmd_line.lstrip()
         if not stripped.startswith(target):
             return 0
@@ -155,14 +160,14 @@ class VimCommandAdapter:
                 return candidates
             else:
                 return list(group.keys())
-            
+
     @classmethod
     def is_registered(cls, name: str) -> bool:
         return (name in cls.COMMAND_MAPS) or (name in cls.GROUP_MAPS)
 
     @classmethod
     def is_registered_subcommand(cls, group_name: str, sub_command: str) -> bool:
-        return (sub_command in cls.GROUP_MAPS.get(group_name, {}))
+        return sub_command in cls.GROUP_MAPS.get(group_name, {})
 
     @classmethod
     def register_command(cls, name: str, fn: Callable):
@@ -239,15 +244,18 @@ EOF
         """.strip()
         )
 
+
 if __name__ == "__main__":
     from pytoy.shared.command import App, Group
 
     group = Group("SampleGroup")
+
     @group.command("run")
     def func(arg: Literal["hoafeafae", "afafafa"]):
         print(arg)
 
     app = App()
+
     @app.command("SampleApp")
     def func2(arg: Literal["hoafeafae", "afafafa"]):
         print(arg)

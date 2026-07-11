@@ -1,9 +1,11 @@
 """git_commands"""
+
 from pytoy.shared.command import App, RangeParam
 from pytoy.tools.git import get_remote_link
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
 app = App()
+
 
 @app.command(name="GitAddress")
 def get_gitaddress(line_range: RangeParam):

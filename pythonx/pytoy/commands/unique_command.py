@@ -2,11 +2,13 @@ from pytoy.shared.ui.pytoy_window import PytoyWindow
 
 from typing import Annotated, Literal, assert_never
 from pytoy.shared.command import App, Argument, Option
+
 app = App()
+
 
 @app.command("Unique")
 def unique_command(arg: Annotated[Literal["buffer", "editor", "window", "tab"] | None, Argument()] = None):
-    match arg: 
+    match arg:
         case "buffer":
             within_tabs = True
             within_windows = True
@@ -34,6 +36,7 @@ def unique_command(arg: Annotated[Literal["buffer", "editor", "window", "tab"] |
 
 
 app = App()
+
 
 @app.command("Deduplicate")
 def deduplicate_command(arg: Annotated[Literal["buffer"], Argument()] = "buffer"):

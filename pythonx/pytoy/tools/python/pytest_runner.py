@@ -25,8 +25,12 @@ class PytestRunner:
     def stdout(self) -> PytoyBuffer:
         return make_buffer(TERM_STDOUT, "vertical")
 
-
-    def run(self, scope: Literal["func", "file", "folder", "workspace"], current_window: PytoyWindow | None = None, cwd: str | Path | None = None):
+    def run(
+        self,
+        scope: Literal["func", "file", "folder", "workspace"],
+        current_window: PytoyWindow | None = None,
+        cwd: str | Path | None = None,
+    ):
         current_window = current_window or PytoyWindow.get_current()
         current_buffer = current_window.buffer
 
@@ -63,9 +67,8 @@ class PytestRunner:
     def rerun(self) -> None:
         launcher = CommandLauncher(self.kind)
         launcher.rerun(stdout=self.stdout)
-        
 
-    def _decide_pytest_cwd(self, target_path: Path, *,  cwd: Path | str | None) -> Path:
+    def _decide_pytest_cwd(self, target_path: Path, *, cwd: Path | str | None) -> Path:
         if cwd is not None:
             return Path(cwd).resolve()
 
@@ -78,7 +81,6 @@ class PytestRunner:
             return project
         return target_path if target_path.is_dir() else target_path.parent
 
-            
 
 def _has_pytest_config(folder: Path) -> bool:
     for name in ["pytest.toml", "pytest.ini"]:
@@ -97,6 +99,7 @@ def _has_pytest_config(folder: Path) -> bool:
 
     return False
 
+
 def _has_ini_section(path: Path, section: str) -> bool:
     parser = ConfigParser()
     try:
@@ -108,6 +111,7 @@ def _has_ini_section(path: Path, section: str) -> bool:
 
 def _has_pyproject_pytest(pyproject: Path) -> bool:
     import tomllib
+
     try:
         with pyproject.open("rb") as f:
             data = tomllib.load(f)

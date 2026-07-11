@@ -4,11 +4,12 @@ from functools import cached_property
 from pytoy.shared.lib.entity import EntityRegistry
 
 
-# Only for lazy loading to speed up. 
+# Only for lazy loading to speed up.
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
     from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
-    from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
+    from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager
+    from pytoy.shared.lib.keymap.keymap_manager import KeymapManager
 
 
 class GlobalVimContext:
@@ -23,18 +24,29 @@ class GlobalVimContext:
     @cached_property
     def buffer_kernel_registry(self) -> EntityRegistry[int, VimBufferKernel]:
         from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
+
         def factory(bufnr: int) -> VimBufferKernel:
             return VimBufferKernel(bufnr, ctx=self)
+
         return EntityRegistry(VimBufferKernel, factory=factory)
 
     @cached_property
     def window_kernel_registry(self) -> EntityRegistry[int, VimWindowKernel]:
         from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
+
         def factory(winid: int) -> VimWindowKernel:
             return VimWindowKernel(winid, ctx=self)
+
         return EntityRegistry(VimWindowKernel, factory=factory)
 
     @cached_property
     def autocmd_manager(self) -> AutoCmdManager:
-        from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager 
+        from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager
+
         return AutoCmdManager()
+
+    @cached_property
+    def keymap_manager(self) -> KeymapManager:
+        from pytoy.shared.lib.keymap.keymap_manager import KeymapManager
+
+        return KeymapManager()

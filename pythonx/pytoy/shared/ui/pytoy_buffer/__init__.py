@@ -8,9 +8,16 @@ This module is intended to provide the common interface for bufffer.
 """
 
 from pathlib import Path
-from typing import Literal, TYPE_CHECKING, Sequence, Self
+from typing import Literal, TYPE_CHECKING, Sequence
 from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, URI, BufferSource, BufferQuery
-from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, PytoyBufferProviderProtocol, Event, BufferID
+from pytoy.shared.lib.events.action_events import KeyActionEvents
+from pytoy.shared.ui.pytoy_buffer.protocol import (
+    PytoyBufferProtocol,
+    RangeOperatorProtocol,
+    PytoyBufferProviderProtocol,
+    Event,
+    BufferID,
+)
 from pytoy.shared.lib.text import CharacterRange, LineRange
 
 if TYPE_CHECKING:
@@ -33,6 +40,10 @@ class PytoyBuffer(PytoyBufferProtocol):
     def events(self) -> BufferEvents:
         return self._impl.events
 
+    @property
+    def actions(self) -> KeyActionEvents:
+        return self._impl.actions
+
     @classmethod
     def get_current(cls) -> "PytoyBuffer":
         return PytoyBufferProvider().get_current()
@@ -53,12 +64,12 @@ class PytoyBuffer(PytoyBufferProtocol):
             return Path(source.name)
         else:
             return None
-    
+
     @property
     def source(self) -> BufferSource:
         """Return the source of buffer."""
         return self.impl.source
-    
+
     @property
     def uri(self) -> URI:
         return self.impl.uri
@@ -67,7 +78,7 @@ class PytoyBuffer(PytoyBufferProtocol):
     def is_file(self) -> bool:
         """Return whether this buffer corresponds to the file or not."""
         return self.impl.is_file
-    
+
     @property
     def file_path(self) -> Path:
         """Return the path of buffer.
@@ -78,7 +89,6 @@ class PytoyBuffer(PytoyBufferProtocol):
             return Path(source.name)
         else:
             raise ValueError("Buffer does not correspond to the file.")
-
 
     @property
     def is_normal_type(self) -> bool:
@@ -123,26 +133,27 @@ class PytoyBuffer(PytoyBufferProtocol):
     @property
     def range_operator(self) -> RangeOperatorProtocol:
         return self.impl.range_operator
-    
+
     def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindow"]:
         from pytoy.shared.ui.pytoy_window import PytoyWindow
+
         return [PytoyWindow(item) for item in self.impl.get_windows(only_visible=only_visible)]
-        
+
     @property
     def window(self) -> "PytoyWindow | None":
         windows = self.get_windows()
         if windows:
             return windows[0]
-        windows  = self.get_windows(only_visible=False)
+        windows = self.get_windows(only_visible=False)
         if windows:
             return windows[0]
         return None
-    
+
 
 class PytoyBufferProvider(PytoyBufferProviderProtocol):
     def __init__(self, impl: PytoyBufferProviderProtocol | None = None):
         self._impl = impl or _get_provider_impl()
-        
+
     @property
     def impl(self) -> PytoyBufferProviderProtocol:
         return self._impl
@@ -163,8 +174,8 @@ class PytoyBufferProvider(PytoyBufferProviderProtocol):
         else:
             result = []
             for source in buffer_sources:
-                #print("buffers-sources", [elem.source for elem in buffers])
-                #print("source", source)
+                # print("buffers-sources", [elem.source for elem in buffers])
+                # print("source", source)
                 result += [elem for elem in buffers if elem.source == source]
             return result
 
@@ -172,6 +183,7 @@ class PytoyBufferProvider(PytoyBufferProviderProtocol):
 def make_buffer(source: str | Path | BufferSource, mode: Literal["vertical", "horizontal"] = "vertical") -> PytoyBuffer:
     from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
     from pytoy.shared.ui.pytoy_window.models import WindowCreationParam
+
     source = BufferSource.from_any(source)
     param = WindowCreationParam.for_split("vertical", try_reuse=True, anchor=None)
     stdout_window = PytoyWindowProvider().open_window(source, param)
@@ -187,28 +199,32 @@ def make_duo_buffers(
 
     from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
     from pytoy.shared.ui.pytoy_window.models import WindowCreationParam
-    
+
     provider = PytoyWindowProvider()
     param = WindowCreationParam.for_split("vertical", try_reuse=True, anchor=None)
     stdout_window = provider.open_window(source1, param)
 
     param = WindowCreationParam.for_split("horizontal", try_reuse=True, anchor=stdout_window)
     stderr_window = provider.open_window(source2, param)
-    
+
     return (stdout_window.buffer, stderr_window.buffer)
 
 
 def _get_provider_impl() -> PytoyBufferProviderProtocol:
     from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
+
     backend_enum = get_backend_enum()
     if backend_enum == BackendEnum.VSCODE:
         from pytoy.shared.ui.pytoy_buffer.impls.vscode import PytoyBufferProviderVSCode
+
         impl = PytoyBufferProviderVSCode()
     elif backend_enum in (BackendEnum.VIM, BackendEnum.NVIM):
         from pytoy.shared.ui.pytoy_buffer.impls.vim import PytoyBufferProviderVim
+
         impl = PytoyBufferProviderVim()
     else:
         from pytoy.shared.ui.pytoy_buffer.impls.dummy import PytoyBufferProviderDummy
+
         impl = PytoyBufferProviderDummy()
     return impl
 

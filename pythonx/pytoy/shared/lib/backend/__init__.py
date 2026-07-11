@@ -4,7 +4,7 @@ from enum import StrEnum
 class BackendEnum(StrEnum):
     VIM = "vim"
     NVIM = "nvim"
-    VSCODE = "vscode" # This is neovim-vscode.
+    VSCODE = "vscode"  # This is neovim-vscode.
     DUMMY = "dummy"
 
 
@@ -17,6 +17,7 @@ def get_backend_enum() -> BackendEnum:
         return __backend_enum
     __backend_enum = _resolve_backend_enum()
     return __backend_enum
+
 
 def can_use_vim() -> bool:
     # VSCODE means `neovim-vscode`, which is the plugin for vscode that provides neovim integration.

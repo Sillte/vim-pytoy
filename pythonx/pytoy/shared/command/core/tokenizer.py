@@ -19,6 +19,7 @@ class OptionValueMissingError(Exception):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(option_key={self.option_key!r})"
 
+
 class BooleanOptionTakesNoValue(Exception):
     def __init__(self, key: str):
         self.key = key
@@ -29,7 +30,7 @@ class BooleanOptionTakesNoValue(Exception):
 class InterpretedInput:
     arguments: Sequence[str]
     options: Mapping[str, list[str | bool]]
-    exceptions: Sequence[Exception] =  field(default_factory=list)
+    exceptions: Sequence[Exception] = field(default_factory=list)
 
     @classmethod
     def from_tokens(cls, tokens: Sequence[Token], boolean_options: CommandModel | BooleanOptions) -> Self:
@@ -76,17 +77,15 @@ class InterpretedInput:
                 arguments.append(token.value)
             i += 1
         return cls(arguments=arguments, options=options, exceptions=exceptions)
-    
+
     @classmethod
     def convert_key(cls, key: str) -> str:
-        """`-` in option is normalize to `_`.
-        """
+        """`-` in option is normalize to `_`."""
         return key.replace("-", "_")
 
     @classmethod
     def revert_key(cls, key: str) -> str:
-        """`-` in option is normalize to `_`.
-        """
+        """`-` in option is normalize to `_`."""
         return key.replace("_", "-")
 
 
@@ -97,7 +96,11 @@ class ResolvedInput:
 
     @classmethod
     def _convert_element(
-        cls, val: Any, element_types: Sequence[type] | set[type], literal_values: Sequence[Any] | None, only_literal: bool = False
+        cls,
+        val: Any,
+        element_types: Sequence[type] | set[type],
+        literal_values: Sequence[Any] | None,
+        only_literal: bool = False,
     ):
         if literal_values is not None:
             for elem in literal_values:
@@ -129,18 +132,20 @@ class ResolvedInput:
             raise interpreted_input.exceptions[0]
 
         kwargs = {}
-        
+
         arg_kwargs = {}
 
         if len(interpreted_input.arguments) > len(command_model.arguments):
             raise ValueError("Too many arguments")
         required_arguments = [elem for elem in command_model.arguments if elem.required]
-        non_required_arguments =  [elem for elem in command_model.arguments if not elem.required]
+        non_required_arguments = [elem for elem in command_model.arguments if not elem.required]
 
         if len(interpreted_input.arguments) < len(required_arguments):
             raise ValueError("Too little arguments")
-        given_arguments = required_arguments + non_required_arguments[:len(interpreted_input.arguments) - len(required_arguments)]
-        non_given_arguments =  non_required_arguments[len(interpreted_input.arguments) - len(required_arguments):]
+        given_arguments = (
+            required_arguments + non_required_arguments[: len(interpreted_input.arguments) - len(required_arguments)]
+        )
+        non_given_arguments = non_required_arguments[len(interpreted_input.arguments) - len(required_arguments) :]
         for i, arg_def in enumerate(given_arguments):
             val_str = interpreted_input.arguments[i]
             converted = cls._convert_element(val_str, arg_def.types, arg_def.literal_values, arg_def.only_literal)
@@ -153,7 +158,6 @@ class ResolvedInput:
             if value is MISSING_DEFAULT:
                 raise TypeError(f"Cannot convert argument '{arg_def.name}' does not have the default.")
             arg_kwargs[arg_def.name] = value
-
 
         for opt_def in command_model.options:
             name = opt_def.name

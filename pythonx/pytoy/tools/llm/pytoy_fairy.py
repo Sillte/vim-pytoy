@@ -8,8 +8,7 @@ from pathlib import Path
 
 
 class PytoyFairy:
-    def __init__(self, buffer: PytoyBuffer, workspace: str | Path | None = None,
-                  ctx: GlobalPytoyContext | None = None):
+    def __init__(self, buffer: PytoyBuffer, workspace: str | Path | None = None, ctx: GlobalPytoyContext | None = None):
         if not buffer.is_file:
             raise ValueError("Only file is accepted.")
         if ctx is None:

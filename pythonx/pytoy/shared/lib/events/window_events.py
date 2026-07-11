@@ -11,19 +11,22 @@ if TYPE_CHECKING:
 
 
 def _to_winid(args) -> int:
-    return int(args[0]) 
+    return int(args[0])
+
 
 class GlobalWindowEventProvider:
     """
-    NOTE: Since the `transform` of PayaloadMapper is regardes as the value  
-    for checking the equivalentness, so `DO NOT lambda function here` 
+    NOTE: Since the `transform` of PayaloadMapper is regardes as the value
+    for checking the equivalentness, so `DO NOT lambda function here`
     """
-    def __init__(self,  ctx: GlobalVimContext | None=None) -> None:
+
+    def __init__(self, ctx: GlobalVimContext | None = None) -> None:
         if ctx is None:
             from pytoy.contexts.vim import GlobalVimContext
+
             ctx = GlobalVimContext.get()
         self._manager: AutoCmdManager = ctx.autocmd_manager
-        
+
     @cached_property
     def winclosed(self) -> GlobalEvent[int]:
         group = f"PytoyAnyWinClosedGroup_{id(self._manager)}"

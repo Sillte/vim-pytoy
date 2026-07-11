@@ -26,7 +26,7 @@ class DebugLogger:
 
     def __init__(
         self,
-        logfile: Path | str |None = None,
+        logfile: Path | str | None = None,
     ):
         if self._initialized:
             if logfile and logfile != Path(self._logfile):
@@ -96,12 +96,7 @@ class DebugLogger:
             fp = self._fp
             if fp is None:
                 return
-            fp.write(
-                f"{now} "
-                f"[P:{pid}] "
-                f"[{tname}:{tid}] "
-                f"{line}\n"
-            )
+            fp.write(f"{now} [P:{pid}] [{tname}:{tid}] {line}\n")
             fp.flush()
 
     @contextmanager
@@ -128,28 +123,19 @@ class DebugLogger:
         try:
             yield
         except Exception as e:
-            self.log(
-                f"{prefix}!!! {type(e).__name__}: {e}"
-            )
+            self.log(f"{prefix}!!! {type(e).__name__}: {e}")
             self.log(traceback.format_exc())
             raise
 
         finally:
-            elapsed = (
-                time.perf_counter() - start
-            ) * 1000
+            elapsed = (time.perf_counter() - start) * 1000
 
             self._set_depth(depth)
 
-            self.log(
-                f"{prefix}<<< {line} ({elapsed:.3f} ms)"
-            )
+            self.log(f"{prefix}<<< {line} ({elapsed:.3f} ms)")
 
             if warn_ms is not None and elapsed >= warn_ms:
-                self.log(
-                    f"WARNING: '{line}' took "
-                    f"{elapsed:.3f} ms"
-                )
+                self.log(f"WARNING: '{line}' took {elapsed:.3f} ms")
                 self.dump_threads()
 
     def stack(self):
@@ -163,10 +149,7 @@ class DebugLogger:
 
     def dump_threads(self):
         self.log("========== THREAD DUMP ==========")
-        threads = {
-            t.ident: t.name
-            for t in threading.enumerate()
-        }
+        threads = {t.ident: t.name for t in threading.enumerate()}
         with self._lock:
             for tid, frame in sys._current_frames().items():
                 name = threads.get(tid, "<unknown>")

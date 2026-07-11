@@ -4,7 +4,6 @@ from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixUIProtocol
 
 
 class PytoyQuickfixDummyUI(PytoyQuickfixUIProtocol):
-
     def __init__(self) -> None:
         self._records: list[QuickfixRecord] = []
         self._index: int | None = None
@@ -38,4 +37,3 @@ class PytoyQuickfixDummyUI(PytoyQuickfixUIProtocol):
     @property
     def state(self) -> QuickfixState:
         return QuickfixState(index=self._index, size=len(self._records))
-

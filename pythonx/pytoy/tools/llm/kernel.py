@@ -9,8 +9,9 @@ from pathlib import Path
 
 
 class PytoyLLMContext:
-    LLM_ROOT_KEY: Final[str] =  "vim_pytoy_llm"
+    LLM_ROOT_KEY: Final[str] = "vim_pytoy_llm"
     REFERENCE_FOLDER_KEY: Final[str] = "references"
+
     def __init__(self, workspace: Path | str, *, ctx: GlobalPytoyContext | None = None):
         if ctx is None:
             ctx = GlobalPytoyContext.get()
@@ -23,17 +24,16 @@ class PytoyLLMContext:
     @property
     def workspace(self) -> Path:
         return self._workspace
-    
+
     @property
-    def configuration(self) -> PytoyConfiguration: 
+    def configuration(self) -> PytoyConfiguration:
         return self._configuration
 
     @property
     def root_folder(self) -> Path:
-        """Return the root folder for data related to `PytoyLLM`.
-        """
+        """Return the root folder for data related to `PytoyLLM`."""
         return self._configuration.get_folder(self.LLM_ROOT_KEY, location="local")
-    
+
     @property
     def logger(self) -> logging.Logger:
         logger = self._configuration.get_logger(location="global")
@@ -61,11 +61,11 @@ class FairyKernel:
         self._llm_context = PytoyLLMContext(workspace)
         self.interactions: dict[str, LLMInteraction] = {}
         self.disposables = []
-        
+
     @property
     def llm_context(self) -> PytoyLLMContext:
         return self._llm_context
-        
+
     @property
     def workspace(self) -> Path:
         return self.llm_context.workspace
@@ -74,7 +74,7 @@ class FairyKernel:
         id_ = interaction.id
         self.interactions[id_] = interaction
         interaction.on_exit.subscribe(lambda _: self.interactions.pop(id_, None))
-        
+
     def add_disposable(self, disposable: Callable[[], Any]) -> None:
         self.disposables.append(disposable)
 
@@ -83,6 +83,7 @@ class FairyKernel:
         self.interactions.clear()
         for item in self.disposables:
             item.dispose()
+
 
 class FairyKernelManager:
     def __init__(self):

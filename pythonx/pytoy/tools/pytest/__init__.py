@@ -1,1 +1,1 @@
-from pytoy.tools.pytest.utils import PytestDecipher, ScriptDecipher #NOQA
+from pytoy.tools.pytest.utils import PytestDecipher, ScriptDecipher  # NOQA

@@ -4,7 +4,6 @@ from pytoy.tools.llm.document.core import DocumentKind
 from pytoy.tools.llm.document.core import LanguageKind
 
 
-
 class LanguageRuleSet(BaseModel, frozen=True):
     """Rules related to `language`"""
 
@@ -35,7 +34,7 @@ class LanguageRuleSet(BaseModel, frozen=True):
 
 
 class ConceptCoherenceRuleSet(BaseModel, frozen=True):
-    """Rules ensuring conceptual and logical coherence of document content, 
+    """Rules ensuring conceptual and logical coherence of document content,
     excluding formatting or style concerns."""
 
     consistent_terms: bool = True
@@ -70,9 +69,9 @@ class ConceptCoherenceRuleSet(BaseModel, frozen=True):
             paragraph_flow=paragraph_flow,
             avoid_conflicts=avoid_conflicts,
             cross_check=cross_check,
-            rules=rules
+            rules=rules,
         )
-        
+
 
 type CompletionMode = Literal["conservative", "clarifying", "expansive"]
 
@@ -90,7 +89,6 @@ class CompletionRuleSet(BaseModel, frozen=True):
         ]
 
         match completion_mode:
-
             case "conservative":
                 rules = base_rules + [
                     "Perform only the minimal necessary reconstruction required to achieve coherence.",
@@ -107,7 +105,7 @@ class CompletionRuleSet(BaseModel, frozen=True):
                     "Resolve fragmented expressions into logically clear sentences.",
                     "Preserve original intent and structure unless clarity requires adjustment.",
                     "Avoid introducing ideas that are not reasonably inferable from context.",
-                    "Expansion is permitted only to the extent necessary for clarity.", 
+                    "Expansion is permitted only to the extent necessary for clarity.",
                     "Do not significantly increase the length unless required for understanding.",
                 ]
                 return cls(rules=rules, mode=completion_mode)
@@ -129,7 +127,7 @@ class CompletionRuleSet(BaseModel, frozen=True):
 type UniformityMode = Literal[
     "document",
     "structure",
-    "identity", 
+    "identity",
 ]
 
 
@@ -172,9 +170,10 @@ class StyleRuleSet(BaseModel, frozen=True):
                     "Within the same `component`, maintain not only stylistic attributes but also a consistent narrative distance and formality level.",
                 ]
             case "identity":
-                rules += ["Classify `roles` of the texts based on who speaks.",  
-                          "Select one dominant `style` for each `role`",
-                          "Using multiple `styles` within the same `component` is considered a violation, unless the speaker intentionally change `style`.",
+                rules += [
+                    "Classify `roles` of the texts based on who speaks.",
+                    "Select one dominant `style` for each `role`",
+                    "Using multiple `styles` within the same `component` is considered a violation, unless the speaker intentionally change `style`.",
                 ]
         return cls(
             language_kind=language_kind,

@@ -6,17 +6,14 @@ from pytoy.shared.ui.status_line.models import StatusLineItem
 
 
 class StatusLineManagerProtocol(Protocol):
-    """ It depends on the backend.
-    * `StatusLineItem` is regarded as `ValueObject`. 
-    * This must be called in the main thread,  
+    """It depends on the backend.
+    * `StatusLineItem` is regarded as `ValueObject`.
+    * This must be called in the main thread,
     """
 
-    def register(self, item: StatusLineItem) -> StatusLineItem:
-        ...
+    def register(self, item: StatusLineItem) -> StatusLineItem: ...
 
-    def deregister(self, item: StatusLineItem, strict_error=False) -> bool:
-        ...
+    def deregister(self, item: StatusLineItem, strict_error=False) -> bool: ...
 
     @property
-    def items(self) -> Sequence[StatusLineItem]:
-        ...
+    def items(self) -> Sequence[StatusLineItem]: ...

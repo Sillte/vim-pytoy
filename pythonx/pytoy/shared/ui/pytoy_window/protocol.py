@@ -12,7 +12,7 @@ from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode
 from pytoy.shared.ui.pytoy_window.models import WindowCreationParam
 from pytoy.shared.ui.status_line.protocol import StatusLineManagerProtocol
 
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext
 
 PytoyWindowID = Any
@@ -38,44 +38,38 @@ class PytoyWindowProtocol(Protocol):
     def __eq__(self, other: object) -> bool: ...
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None: ...
-    
+
     def deduplicate(self, scope: Literal["buffer"] = "buffer") -> None: ...
 
     @property
-    def cursor(self) -> CursorPosition:
-        ...
+    def cursor(self) -> CursorPosition: ...
 
-    def move_cursor(self, cursor: CursorPosition,
-                    viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None:
-        ...
+    def move_cursor(self, cursor: CursorPosition, viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None: ...
 
     @property
-    def selection(self) -> CharacterRange:
-        ...
+    def selection(self) -> CharacterRange: ...
 
     @property
-    def selected_line_range(self) -> LineRange:
-        ...
-        
-    @property
-    def status_line_manager(self) -> StatusLineManagerProtocol:
-        ...
+    def selected_line_range(self) -> LineRange: ...
 
     @property
-    def on_closed(self) -> Event[PytoyWindowID]:
-        ...
+    def status_line_manager(self) -> StatusLineManagerProtocol: ...
+
+    @property
+    def on_closed(self) -> Event[PytoyWindowID]: ...
 
 
 class PytoyWindowProviderProtocol(Protocol):
     def get_current(self) -> PytoyWindowProtocol: ...
 
-    def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
-        ...
-        
-    def open_window(self,
-                    source: str | Path | BufferSource,
-                    param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place") -> PytoyWindowProtocol:
-        ...
+    def get_windows(self, only_normal_buffers: bool = True) -> Sequence[PytoyWindowProtocol]: ...
+
+    def open_window(
+        self,
+        source: str | Path | BufferSource,
+        param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place",
+    ) -> PytoyWindowProtocol: ...
+
 
 @dataclass
 class WindowEvents:
@@ -85,9 +79,8 @@ class WindowEvents:
     @classmethod
     def from_winid(cls, winid: PytoyWindowID, *, ctx: GlobalVimContext | None = None) -> Self:
         from pytoy.contexts.vim import GlobalVimContext
+
         if ctx is None:
             ctx = GlobalVimContext.get()
         provider = ScopedWindowEventProvider.from_ctx(ctx=ctx)
-        return cls(entity_id = winid,
-            on_closed = provider.get_winclosed_event(winid)
-            )
+        return cls(entity_id=winid, on_closed=provider.get_winclosed_event(winid))

@@ -5,16 +5,20 @@ from pytoy.shared.ui.status_line.impl_vim.node_converters import VimStatusNodeCo
 from pytoy.shared.ui.status_line.impl_vim.node_converters import UnknownNodeConverter
 from pytoy.shared.ui.status_line.impl_vim.node_converters import VimExprNodeConverter
 from pytoy.shared.ui.status_line.impl_vim.node_converters import VimTextNodeConverter
-from pytoy.shared.ui.status_line.models import StatusLineItem, UnknownStatusLineItem, TextStatusLineItem, FunctionStatusLineItem
+from pytoy.shared.ui.status_line.models import (
+    StatusLineItem,
+    UnknownStatusLineItem,
+    TextStatusLineItem,
+    FunctionStatusLineItem,
+)
 from pytoy.shared.ui.status_line.protocol import StatusLineManagerProtocol
-from pytoy.shared.ui.pytoy_window.protocol import WindowEvents 
-from pytoy.shared.ui.pytoy_window.impls.vim import VimWinIDConverter 
+from pytoy.shared.ui.pytoy_window.protocol import WindowEvents
+from pytoy.shared.ui.pytoy_window.impls.vim import VimWinIDConverter
 from typing import Mapping, Sequence, cast
 import vim
 
 
 class StatusLineManagerVim(StatusLineManagerProtocol):
-
     def __init__(self, win_events: WindowEvents) -> None:
         # NOTE: UnknownNodeConverter is a fallback, hence the order is important.
         vim_window = VimWinIDConverter.to_vim_window(win_events.entity_id)
@@ -22,45 +26,46 @@ class StatusLineManagerVim(StatusLineManagerProtocol):
             raise RuntimeError(f"Factory of StatusLineManager is starnage: {win_events.entity_id=}")
         self.vim_window = vim_window
         self.expr_registry = VimExprRegistry(win_events.entity_id)
-        self.reverters: Mapping[type[StatusLineItem], VimStatusNodeConverter] = {FunctionStatusLineItem:VimExprNodeConverter(self.expr_registry.view),
-                                                                                 TextStatusLineItem: VimTextNodeConverter(),
-                                                                                 UnknownStatusLineItem: UnknownNodeConverter() }
+        self.reverters: Mapping[type[StatusLineItem], VimStatusNodeConverter] = {
+            FunctionStatusLineItem: VimExprNodeConverter(self.expr_registry.view),
+            TextStatusLineItem: VimTextNodeConverter(),
+            UnknownStatusLineItem: UnknownNodeConverter(),
+        }
         self.converters: Sequence[VimStatusNodeConverter] = list(self.reverters.values())
         assert isinstance(self.converters[-1], UnknownNodeConverter), "Important"
-                                                               
+
     def _resolve_priority(self, priority: int | None) -> int:
         return priority if priority else 0
 
-    def register(self, item: StatusLineItem) -> StatusLineItem: 
+    def register(self, item: StatusLineItem) -> StatusLineItem:
         """
-        Note: 
-        As a specification, the identity of `StatusLine` is regarded as the set of `node`, 
-        not the sequence of `node`. 
-        This restriction is unavoidable since the values of `StatusLineItem` is (value, and highlight). 
-        So, when users perform `register` -> `unregister` sequentially, the position of status line may change. 
-        Nevertheless, the contents of `status` line is assured to be same.  
+        Note:
+        As a specification, the identity of `StatusLine` is regarded as the set of `node`,
+        not the sequence of `node`.
+        This restriction is unavoidable since the values of `StatusLineItem` is (value, and highlight).
+        So, when users perform `register` -> `unregister` sequentially, the position of status line may change.
+        Nevertheless, the contents of `status` line is assured to be same.
         """
         # Update the states
         if isinstance(item, FunctionStatusLineItem):
             self.expr_registry.register(item.value)
-        
+
         current_items = self.nodes_to_items(self.current_nodes)
         # Update the states
-
 
         items = current_items + [item]
         # 現在は挿入位置を考えない.
 
         # The large proprity correspond to the edge.
-        #left_items = sorted([item for item in current_items if item.side == "left"], key=lambda item: self._resolve_priority(item.priority), 
+        # left_items = sorted([item for item in current_items if item.side == "left"], key=lambda item: self._resolve_priority(item.priority),
         #                    reverse=True)
 
-        #right_items = sorted([item for item in current_items if item.side == "right"], key=lambda item: self._resolve_priority(item.priority), 
+        # right_items = sorted([item for item in current_items if item.side == "right"], key=lambda item: self._resolve_priority(item.priority),
         #                    reverse=False)
-        #def _to_key(priority: int | None) -> float:
+        # def _to_key(priority: int | None) -> float:
         #    return self._resolve_priority(priority)
 
-        #if item.side == "left":
+        # if item.side == "left":
         #    priority = self._resolve_priority(item.priority)
         #    if (not left_items) or priority >= _to_key(left_items[0].priority):
         #        left_items = [item, *left_items]
@@ -70,12 +75,12 @@ class StatusLineManagerVim(StatusLineManagerProtocol):
         #            break
         #    else:
         #        left_items = [*left_items, item]
-        #else:
+        # else:
         #    # TODO left.side == "right" の時の処理もどうように..
         #    # 今は雑な実装をしておく
         #    right_items = [item, *right_items]
 
-        #new_nodes = self.items_to_nodes(left_items + right_items)
+        # new_nodes = self.items_to_nodes(left_items + right_items)
         new_nodes = self.items_to_nodes(items)
         self.set_statusline(new_nodes)
 
@@ -83,14 +88,14 @@ class StatusLineManagerVim(StatusLineManagerProtocol):
 
     @property
     def current_nodes(self) -> Sequence[StatusNode]:
-        status_line = self.vim_window.options['statusline']
+        status_line = self.vim_window.options["statusline"]
         if isinstance(status_line, bytes):
-            status_line = status_line.decode('utf-8', errors='replace')
+            status_line = status_line.decode("utf-8", errors="replace")
         return parse_statusline(status_line)
 
     def set_statusline(self, nodes: Sequence[StatusNode]):
         status_line = to_statusline(nodes)
-        self.vim_window.options['statusline'] = status_line
+        self.vim_window.options["statusline"] = status_line
 
     def deregister(self, item: StatusLineItem, strict_error=False) -> bool:
 
@@ -103,22 +108,20 @@ class StatusLineManagerVim(StatusLineManagerProtocol):
         current_nodes = self.current_nodes
         for i, start_node in enumerate(current_nodes):
             if start_node == nodes[0]:
-                if current_nodes[i:i + len(nodes)] == nodes:
+                if current_nodes[i : i + len(nodes)] == nodes:
                     target_index = i
                     break
         if target_index is None:
             print("Deletion of `deregister fails...`")
             return False
-        new_nodes = [*current_nodes[:target_index], *current_nodes[target_index + len(nodes):]]
+        new_nodes = [*current_nodes[:target_index], *current_nodes[target_index + len(nodes) :]]
         self.set_statusline(new_nodes)
         return True
-
 
     @property
     def items(self) -> Sequence[StatusLineItem]:
         nodes = self.current_nodes
         return self.nodes_to_items(nodes)
-
 
     def nodes_to_items(self, nodes: Sequence[StatusNode]) -> list[StatusLineItem]:
         items = []
@@ -137,10 +140,12 @@ class StatusLineManagerVim(StatusLineManagerProtocol):
     def items_to_nodes(self, items: Sequence[StatusLineItem]) -> list[StatusNode]:
         return sum((self._item_to_nodes(item) for item in items), [])
 
+
 def test_func():
     from pytoy.shared.ui.status_line.models import FunctionStatusLineItem
-    item = FunctionStatusLineItem(value = lambda : "AHA")
-#item = TextStatusLineItem(value="TEXTTEXT", side="right")
+
+    item = FunctionStatusLineItem(value=lambda: "AHA")
+    # item = TextStatusLineItem(value="TEXTTEXT", side="right")
     winid = VimWinIDConverter.from_vim_window(vim.current.window)
     events = WindowEvents.from_winid(winid)
 

@@ -9,6 +9,7 @@ from pathlib import Path
 class CSpellRunner:
     def __init__(self):
         pass
+
     def run(self) -> None:
         from pytoy import TERM_STDOUT
         from pytoy.shared.ui import PytoyBuffer

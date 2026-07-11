@@ -6,12 +6,13 @@ from pytoy.shared.timertask.timer import TimerTask
 from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
 from typing import Any, Literal
 
+
 # If you would like to Thread,
 # `sys.stdout`, `sys.stderr` must be protected.
 # so that these functions should be executed.
 class _DummyPipe:
-    """This class is used instead of `sys.stdout` /`sys.stderr`.
-    """
+    """This class is used instead of `sys.stdout` /`sys.stderr`."""
+
     def __init__(self, queue: Queue):
         self._queue = queue
 
@@ -29,33 +30,32 @@ class _DummyPipe:
 
 class StdoutProxy:
     """Fallback for `print` is called while using the `stdout` / `stderr`
-    in the other thread in neovim / vim. 
-    To address this need, we patch `sys.stdout` / `sys.stderr`. 
+    in the other thread in neovim / vim.
+    To address this need, we patch `sys.stdout` / `sys.stderr`.
     """
-    _timer_taskname: None | str  = None
+
+    _timer_taskname: None | str = None
     _stdout_queue: None | Queue = None
     _stderr_queue: None | Queue = None
-    _original_stdout : None | Any = None
-    _original_stderr : None | Any = None
+    _original_stdout: None | Any = None
+    _original_stderr: None | Any = None
     _started: bool = False
 
     @classmethod
     def ensure_activate(cls) -> None:
-        """This must be called in the main thread.
-        """
+        """This must be called in the main thread."""
         if cls._started:
             return
         cls._activate()
 
-
     @classmethod
     def deactivate(cls):
         """
-        NOTE: that this function is not intended to be called in normal cases. 
+        NOTE: that this function is not intended to be called in normal cases.
         The belwo are the creator's role
 
         * Not to use the `queue`
-        * Not to use the addtional 
+        * Not to use the addtional
         """
         cls._started = False
         assert cls._timer_taskname is not None
@@ -69,8 +69,8 @@ class StdoutProxy:
         cls._original_stdout = sys.stdout
         cls._original_stderr = sys.stderr
 
-        cls._stdout_queue = cls._stdout_queue if cls._stdout_queue else Queue(maxsize=2 ** 20)
-        cls._stderr_queue = cls._stderr_queue if cls._stderr_queue else Queue(maxsize=2 ** 20)
+        cls._stdout_queue = cls._stdout_queue if cls._stdout_queue else Queue(maxsize=2**20)
+        cls._stderr_queue = cls._stderr_queue if cls._stderr_queue else Queue(maxsize=2**20)
         cls._assure_empty_queue(cls._stdout_queue)
         cls._assure_empty_queue(cls._stderr_queue)
 
@@ -111,19 +111,18 @@ class StdoutProxy:
             text += "Crucial implementaiont Error in StdoutProxy. (original_stdout)\n"
         if cls._stdout_queue:
             text += cls._fetch_text(cls._stdout_queue)
-        # If empty, it should not be called. 
-        # It breaks! 
+        # If empty, it should not be called.
+        # It breaks!
 
         cls._vim_message(text, level="ErrorMsg", with_echo=True)
 
-
-        #if text:
+        # if text:
         #    print(text, file=cls._original_stdout)
         # The below is not appropriate because other library may patch `sys.stdout`.
         # print(text, file=sys.__stdout__),
         # for the case where other library patch `sys.stdout`
-        # Unfortunately, this way of thinking does not solve the problem, 
-        # so `_vim_message` is introduced. 
+        # Unfortunately, this way of thinking does not solve the problem,
+        # so `_vim_message` is introduced.
 
     @classmethod
     def _output_stderr(cls):
@@ -139,12 +138,12 @@ class StdoutProxy:
             text += cls._fetch_text(cls._stderr_queue)
         # If empty, the below should not be called. It raises Exception!
         cls._vim_message(text, level=None, with_echo=True)
-        #print(text, file=cls._original_stderr)
+        # print(text, file=cls._original_stderr)
         # The below is not appropriate because other library may patch `sys.stdout`.
         # print(text, sys.__stdout__) For the case where other library patch `sys.stdout`
         # Especially, in vim case, `vim` seems to patch `sys.__original__stderr`.
-        # [ADD]: (2026/01/02): `print` does not seem to work in (VSCode+neovim) well, 
-        # # So, I introduced `_vim_message`.  
+        # [ADD]: (2026/01/02): `print` does not seem to work in (VSCode+neovim) well,
+        # # So, I introduced `_vim_message`.
 
     @classmethod
     def _vim_message(cls, text: str, level: Literal["ErrorMsg"] | None = None, with_echo: bool = True) -> None:

@@ -2,7 +2,7 @@ from pytoy.job_execution.terminal_runner import TerminalJobRunner
 from pytoy.job_execution.terminal_runner.models import TerminalDriverProtocol
 from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
 
-from pytoy.job_execution.terminal_runner.models import TerminalJobRequest,  SpawnOption, JobID, Event, JobEvents
+from pytoy.job_execution.terminal_runner.models import TerminalJobRequest, SpawnOption, JobID, Event, JobEvents
 from pytoy.job_execution.terminal_runner.models import TerminalDriver
 from pytoy.job_execution.terminal_runner.models import ExecutionWrapperType
 
@@ -50,7 +50,7 @@ class ExecutionRequest:
 @dataclass(frozen=True)
 class TerminalExecution:
     runner: TerminalJobRunner
-    driver : TerminalDriverProtocol
+    driver: TerminalDriverProtocol
     cwd: Path
     id: ExecutionID
 
@@ -73,21 +73,23 @@ class ExecutionHooks:
             f1 = getattr(hook1, item.name)
             f2 = getattr(hook2, item.name)
 
-            if not f1: #(f1= None, f2=None), (f1=None, f2=Callable)
+            if not f1:  # (f1= None, f2=None), (f1=None, f2=Callable)
                 merged_kwargs[item.name] = f2
-            elif not f2: #(f1=Callable, f2=None)
+            elif not f2:  # (f1=Callable, f2=None)
                 merged_kwargs[item.name] = f1
             else:
+
                 def _merged(f1=f1, f2=f2):
                     return lambda *a, **k: (f1(*a, **k), f2(*a, **k))
+
                 merged_kwargs[item.name] = _merged()
         return ExecutionHooks(**merged_kwargs)
 
 
 @dataclass(frozen=True)
 class ExecutionContext:
-    """ This should be used for repeating the same `Application` again.
-    """
+    """This should be used for repeating the same `Application` again."""
+
     buffer_source: BufferSource
     execution_request: ExecutionRequest
     hooks: ExecutionHooks

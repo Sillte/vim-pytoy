@@ -21,7 +21,7 @@ from pytoy.shared.ui.pytoy_window.protocol import (
     PytoyWindowProviderProtocol,
     PytoyWindowID,
     StatusLineManagerProtocol,
-    WindowEvents
+    WindowEvents,
 )
 from pytoy.shared.ui.vscode.document import Api, Document
 from pytoy.shared.ui.vscode.editor import Editor
@@ -32,22 +32,23 @@ from pytoy.shared.ui.pytoy_window.vim_window_utils import get_last_selection
 from ...vim_window_utils import VimWinIDConverter
 
 
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from pytoy.contexts.vscode import GlobalVSCodeContext
 
 
 class PytoyWindowVSCode(PytoyWindowProtocol):
-    def __init__(self, winid: int,  *, ctx: GlobalVSCodeContext | None = None):
+    def __init__(self, winid: int, *, ctx: GlobalVSCodeContext | None = None):
         from pytoy.contexts.vscode import GlobalVSCodeContext
+
         if ctx is None:
             ctx = GlobalVSCodeContext.get()
         kernel_registry = ctx.window_kernel_registry
         self._kernel = kernel_registry.get(winid)
-        
+
     @property
     def winid(self) -> PytoyWindowID:
         return self._kernel.winid
-        
+
     @property
     def editor(self) -> Editor:
         editor = self._kernel.editor
@@ -66,7 +67,6 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
             raise ValueError(f"Uri does not exist, {self._kernel}")
         return uri
 
-
     @property
     def buffer(self) -> PytoyBuffer:
         impl = PytoyBufferVSCode.from_document(self.editor.document)
@@ -84,8 +84,8 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
 
     def focus(self) -> bool:
         if self.kernel.editor:
-           self.kernel.editor.focus()
-           return True
+            self.kernel.editor.focus()
+            return True
         return False
 
     def __eq__(self, other: object) -> bool:
@@ -96,26 +96,24 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
         uris = self.editor.get_clean_target_uris_for_unique(within_tabs=within_tabs, within_windows=within_windows)
         uri_to_bufnr = BufferURISolver.get_uri_to_bufnr()
-        bufnrs = set(bufnr for uri in uris if (bufnr:=uri_to_bufnr.get(uri)))
+        bufnrs = set(bufnr for uri in uris if (bufnr := uri_to_bufnr.get(uri)))
         buffers = [PytoyBufferVSCode(bufnr) for bufnr in bufnrs]
         for buffer in buffers:
             buffer.init_buffer(content="")
         self.editor.unique(within_tabs=within_tabs, within_windows=within_windows)
-        
+
     def deduplicate(self, scope: Literal["buffer"] = "buffer") -> None:
         if not self.valid:
             return
-        
+
         if scope == "buffer":
             self.editor.deduplicate()
         else:
             raise ValueError(f"Invalid scope: {scope}")
 
-
-
     @property
     def cursor(self) -> CursorPosition:
-        position  = self.editor.cursor_position
+        position = self.editor.cursor_position
         if position:
             line, col = position
         else:
@@ -129,8 +127,7 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         ViewportMoveMode.TOP: TextEditorRevealType.AtTop,
     }
 
-    def move_cursor(self, cursor: CursorPosition,
-                    viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None:
+    def move_cursor(self, cursor: CursorPosition, viewport_mode: ViewportMoveMode = ViewportMoveMode.NONE) -> None:
         editor = self.editor
         line, col = cursor.line, cursor.col
         reveal_type = self._REVEAL_TYPE_MAP[viewport_mode]
@@ -145,21 +142,19 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
             return selection
         return CharacterRange(self.cursor, self.cursor)
 
-
     @property
     def selected_line_range(self) -> LineRange:
         return self.selection.as_line_range()
-    
 
     @property
-    def status_line_manager(self) ->  StatusLineManagerProtocol:
+    def status_line_manager(self) -> StatusLineManagerProtocol:
         from pytoy.shared.ui.status_line import StatusLineManager
+
         return StatusLineManager(self.events)
 
     @property
     def events(self) -> WindowEvents:
         return self._kernel.events
-
 
     @property
     def on_closed(self) -> Event[PytoyWindowID]:
@@ -174,10 +169,10 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
             raise RuntimeError(f"Current Window does not exist. {uri=}")
         return PytoyWindowVSCode(winid)
 
-    def get_windows(self, only_normal_buffers: bool=True) -> Sequence[PytoyWindowProtocol]:
+    def get_windows(self, only_normal_buffers: bool = True) -> Sequence[PytoyWindowProtocol]:
         winids = [VimWinIDConverter.from_vim_window(window) for window in vim.windows]
         windows = [PytoyWindowVSCode(winid) for winid in winids]
-        if only_normal_buffers: 
+        if only_normal_buffers:
             windows = [win for win in windows if win.kernel.editor and win.buffer.is_normal_type]
         return windows
 
@@ -186,40 +181,39 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         uris = set(BufferURISolver.get_uri_to_bufnr())
         return [elem for elem in editors if elem.uri in uris]
 
-    def open_window(self,
-                    source: str | Path | BufferSource,
-                    param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place") -> PytoyWindowProtocol:
+    def open_window(
+        self,
+        source: str | Path | BufferSource,
+        param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place",
+    ) -> PytoyWindowProtocol:
         source = source if isinstance(source, BufferSource) else BufferSource.from_any(source)
         param = param if isinstance(param, WindowCreationParam) else WindowCreationParam.from_literal(param)
 
         vscode_uri = self._to_uri(source)
-        #print("vscode_uri", vscode_uri, WindowURISolver.from_uri(vscode_uri))
+        # print("vscode_uri", vscode_uri, WindowURISolver.from_uri(vscode_uri))
         if param.try_reuse:
-            if (winid := WindowURISolver.from_uri(vscode_uri)):
-                window =  PytoyWindowVSCode(winid)
+            if winid := WindowURISolver.from_uri(vscode_uri):
+                window = PytoyWindowVSCode(winid)
                 if param.cursor:
                     window.move_cursor(param.cursor)
                 return window
 
-
-        current =  self.get_current()
+        current = self.get_current()
         editor = self._create_editor(source, param)
         if not current.focus():
             print(f"{current} cannot be focused.")
         flag = wait_until_true(lambda: WindowURISolver.from_uri(editor.uri) is not None, timeout=1.0)
         winid = WindowURISolver.from_uri(vscode_uri)
         if not winid:
-            raise RuntimeError(f"Synchronization of `{vscode_uri=}` and `winid` failed. ", flag) 
+            raise RuntimeError(f"Synchronization of `{vscode_uri=}` and `winid` failed. ", flag)
         return PytoyWindowVSCode(winid)
 
-    def _create_editor(self,
-                       source: BufferSource, 
-                       param: WindowCreationParam) -> Editor:
+    def _create_editor(self, source: BufferSource, param: WindowCreationParam) -> Editor:
         if param.try_reuse:
             vscode_uri = self._to_uri(source)
             for editor in Editor.get_editors(only_visible=True):
                 if editor.uri == vscode_uri:
-                    return editor 
+                    return editor
 
         anchor = param.anchor
         if anchor is None:
@@ -252,10 +246,10 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
                 pos = None
             return Editor.create(uri, direction, cursor=pos)
 
-        raise RuntimeError("Implementation Error") 
+        raise RuntimeError("Implementation Error")
 
     def _to_uri(self, source: BufferSource) -> VSCodeUri:
-        match source.type: 
+        match source.type:
             case "file":
                 query_uri = VSCodeUri.from_filepath(source.name)
             case "nofile":

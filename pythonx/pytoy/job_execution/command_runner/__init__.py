@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from pytoy.contexts.pytoy import GlobalPytoyContext
 
 
-def _solve_buffers(stdout: PytoyBuffer | str | BufferSource, stderr: PytoyBuffer | str |  BufferSource | None):
+def _solve_buffers(stdout: PytoyBuffer | str | BufferSource, stderr: PytoyBuffer | str | BufferSource | None):
     if isinstance(stdout, (str, BufferSource)):
         if isinstance(stderr, PytoyBuffer):
             msg = "When `stdout` is `Buffer`, the error must also be `Buffer` or None."

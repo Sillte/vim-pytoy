@@ -16,7 +16,7 @@ class TerminalSelector:
         self._driver_manager = driver_manager or ctx.terminal_driver_manager
 
     def _to_driver_kind(self, driver: DriverKind | TerminalDriverProtocol) -> DriverKind:
-        return  driver if isinstance(driver, str) else driver.kind
+        return driver if isinstance(driver, str) else driver.kind
 
     @property
     def driver_manager(self) -> TerminalDriverManager:
@@ -26,7 +26,12 @@ class TerminalSelector:
     def default_buffer(self) -> str:
         return "__TERMINAL__"
 
-    def get_preferrable_driver(self, input: str | Path | PytoyWindow | TerminalDriverProtocol | None = None, line_range: LineRange | None = None, cwd: Path | None = None) -> Literal["ipython", "shell"] | TerminalDriverProtocol:
+    def get_preferrable_driver(
+        self,
+        input: str | Path | PytoyWindow | TerminalDriverProtocol | None = None,
+        line_range: LineRange | None = None,
+        cwd: Path | None = None,
+    ) -> Literal["ipython", "shell"] | TerminalDriverProtocol:
         if isinstance(input, TerminalDriverProtocol):
             return input
 
@@ -65,8 +70,12 @@ class TerminalSelector:
                     return "shell"
         return "shell"
 
-
-    def get_preferrable_buffer(self, input: str | Path | PytoyWindow | TerminalDriverProtocol | None, line_range: LineRange | None = None, cwd: Path | None = None) -> str:
+    def get_preferrable_buffer(
+        self,
+        input: str | Path | PytoyWindow | TerminalDriverProtocol | None,
+        line_range: LineRange | None = None,
+        cwd: Path | None = None,
+    ) -> str:
         if input is None:
             return self.default_buffer
         driver = self.get_preferrable_driver(input, line_range=line_range, cwd=cwd)

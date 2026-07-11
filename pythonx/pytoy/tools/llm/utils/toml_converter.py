@@ -1,19 +1,18 @@
-from typing import Mapping,  get_args, Any
+from typing import Mapping, get_args, Any
 from pydantic import BaseModel
 import toml
 import re
 
 
 def _generate_literal_comments(model: type[BaseModel]) -> dict[str, str]:
-    """Literal 型のフィールドに対して options コメントを作る
-    """
+    """Literal 型のフィールドに対して options コメントを作る"""
     comments = {}
     for name, field_info in model.model_fields.items():
         ann = field_info.annotation
         origin = getattr(ann, "__origin__", None)
         if origin is None:
             origin = ann
-        if origin.__class__.__name__ == 'LiteralMeta' or str(origin).startswith('typing.Literal'):
+        if origin.__class__.__name__ == "LiteralMeta" or str(origin).startswith("typing.Literal"):
             options = get_args(ann)
             options_str = " / ".join(str(opt) for opt in options)
             comments[name] = f"{name} options: {options_str}"
@@ -53,8 +52,8 @@ def _convert_multiline_strings(toml_text: str) -> str:
     pattern = r'^(?P<indent>\s*[^#\s].*?=)(?P<space>\s*)"(?P<content>(?:[^"\\]|\\.)*\\n(?:[^"\\]|\\.)*)"'
 
     def repl(m):
-        indent = m.group("indent")   # = まで含めた左側（インデント含む）
-        space = m.group("space")     # = の後の空白
+        indent = m.group("indent")  # = まで含めた左側（インデント含む）
+        space = m.group("space")  # = の後の空白
         content = m.group("content")
         # \n を実際の改行に置換
         content_real = content.replace(r"\n", "\n")
@@ -66,8 +65,8 @@ def _convert_multiline_strings(toml_text: str) -> str:
 
 
 class TomlConverter:
-    """Convert TOML string into `basemodels` back and force.
-    """
+    """Convert TOML string into `basemodels` back and force."""
+
     def __init__(self):
         pass
 
@@ -81,9 +80,9 @@ class TomlConverter:
         # TOML 文字列化
         toml_text = toml.dumps(data)
         # コメント差し込み
-        toml_text =  _insert_comments_in_toml(toml_text, {k: type(v) for k, v in models.items()})
+        toml_text = _insert_comments_in_toml(toml_text, {k: type(v) for k, v in models.items()})
         # Conver to `multiline_strings`.
-        toml_text =  _convert_multiline_strings(toml_text)
+        toml_text = _convert_multiline_strings(toml_text)
         return toml_text
 
     def to_basemodels(self, toml_text: str, class_map: Mapping[str, type[BaseModel]]) -> Mapping[str, Any]:
@@ -101,6 +100,7 @@ class TomlConverter:
             cls = class_map[table_name]
             result[table_name] = cls(**table_data)
         return result
+
 
 if __name__ == "__main__":
     # -------------------------------
@@ -121,17 +121,13 @@ if __name__ == "__main__":
         progress: str
         objective: str
 
-
     models = {
         "evolve_policy": EvolvePolicy(
             degree="medium",
             comment="中くらいに設定",
-            sub_policy=SubPolicy(option="on", description="サブポリシー説明\n複数行")
+            sub_policy=SubPolicy(option="on", description="サブポリシー説明\n複数行"),
         ),
-        "compass": Compass(
-            progress="shaping",
-            objective="物語を形成する\n複数行テキスト"
-        )
+        "compass": Compass(progress="shaping", objective="物語を形成する\n複数行テキスト"),
     }
 
     converter = TomlConverter()
@@ -140,15 +136,11 @@ if __name__ == "__main__":
     print(toml_text)
 
     # 復元
-    class_map = {
-        "evolve_policy": EvolvePolicy,
-        "compass": Compass
-    }
+    class_map = {"evolve_policy": EvolvePolicy, "compass": Compass}
     restored = converter.to_basemodels(toml_text, class_map)
     print("\n=== Restored ===")
     for k, v in restored.items():
         print(k, v)
-
 
     from typing import Literal
     from pydantic import BaseModel
@@ -177,26 +169,23 @@ if __name__ == "__main__":
             "evolve_policy": EvolvePolicyNested(
                 degree="medium",
                 comment="中くらいに設定",
-                sub_policy=SubPolicy(option="on", description="サブポリシー説明\n複数行")
+                sub_policy=SubPolicy(option="on", description="サブポリシー説明\n複数行"),
             ),
-            "compass": CompassNested(
-                progress="shaping",
-                objective="物語を形成する\n複数行テキスト"
-            )
+            "compass": CompassNested(progress="shaping", objective="物語を形成する\n複数行テキスト"),
         }
 
         converter = TomlConverter()
-        
+
         # 1. BaseModel -> TOML 変換
         toml_text = converter.from_basemodels(models)
         print("=== ネスト TOML 出力 ===")
         print(toml_text)
-        
+
         # 確認
         assert "degree" in toml_text
         assert "sub_policy" in toml_text
         assert "options" in toml_text  # Literal コメントがあること
-        assert '"""' in toml_text      # 複数行文字列が """ """ で囲まれる
+        assert '"""' in toml_text  # 複数行文字列が """ """ で囲まれる
 
         # 2. TOML -> BaseModel 復元
         class_map = {"evolve_policy": EvolvePolicyNested, "compass": CompassNested}
@@ -205,11 +194,13 @@ if __name__ == "__main__":
         # 型チェック
         assert isinstance(restored_models["evolve_policy"], EvolvePolicyNested)
         assert isinstance(restored_models["evolve_policy"].sub_policy, SubPolicy)
-        
+
         # 値チェック
         assert restored_models["evolve_policy"].degree == "medium"
         assert restored_models["evolve_policy"].sub_policy.option == "on"
-        assert restored_models["evolve_policy"].sub_policy.description.strip("\n") == "サブポリシー説明\n複数行".strip("\n")
+        assert restored_models["evolve_policy"].sub_policy.description.strip("\n") == "サブポリシー説明\n複数行".strip(
+            "\n"
+        )
         assert restored_models["compass"].objective.strip("\n") == "物語を形成する\n複数行テキスト".strip("\n")
 
         # 出力確認

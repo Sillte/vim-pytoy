@@ -7,19 +7,23 @@ from typing import Mapping
 
 
 class RegistryView:
-    def __init__(self,
-                 expr_to_function: Mapping[str, StatusLineItemFunction],
-                 function_to_expr: Mapping[StatusLineItemFunction, str],
-                 expr_to_registered: Mapping[str, RegisteredFunction],
-                 prefix: str):
+    def __init__(
+        self,
+        expr_to_function: Mapping[str, StatusLineItemFunction],
+        function_to_expr: Mapping[StatusLineItemFunction, str],
+        expr_to_registered: Mapping[str, RegisteredFunction],
+        prefix: str,
+    ):
         self._expr_to_function = expr_to_function
         self._function_to_expr = function_to_expr
         self._expr_to_registered = expr_to_registered
         self.prefix = prefix
 
     def from_function_to_expr(self, function: StatusLineItemFunction) -> str | None:
-        if not (expr:= self._function_to_expr.get(function)):
-            raise RuntimeError("`Expr` is not registered.", expr, function, self._function_to_expr, "rere", self._expr_to_function)
+        if not (expr := self._function_to_expr.get(function)):
+            raise RuntimeError(
+                "`Expr` is not registered.", expr, function, self._function_to_expr, "rere", self._expr_to_function
+            )
         return expr
 
     def to_expr(self, funcname: FunctionName | RegisteredFunction) -> str:
@@ -39,10 +43,12 @@ class VimExprRegistry:
     If without operations given by others, this class handles the lifetime of
     Vim functions.
     """
-    def __init__(self, winid: int) -> None:  #noqa
+
+    def __init__(self, winid: int) -> None:  # noqa
         import vim
+
         self._winid = winid
-        # NOTE: `prefix` is crucial for assuring the uniqueness among different windows. 
+        # NOTE: `prefix` is crucial for assuring the uniqueness among different windows.
         self.prefix = f"W{self._winid}_PytoyFunction"
         self._expr_to_item: dict[str, StatusLineItemFunction] = {}
         self._function_to_expr: dict[StatusLineItemFunction, str] = {}
@@ -53,10 +59,8 @@ class VimExprRegistry:
     def view(self) -> RegistryView:
         return RegistryView(self._expr_to_item, self._function_to_expr, self._expr_to_registered, self.prefix)
 
-
     def register(self, function: StatusLineItemFunction) -> str:
-        """Return `VimExpr.value`.
-        """
+        """Return `VimExpr.value`."""
         registered_func = FunctionRegistry.register(function, prefix=self.prefix)
 
         expr = self.view.to_expr(registered_func)

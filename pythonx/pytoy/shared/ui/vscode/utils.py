@@ -6,10 +6,7 @@ from pytoy.shared.lib.text import CursorPosition
 from pytoy.shared.ui.pytoy_window import PytoyWindow
 
 
-
-def wait_until_true(
-    condition_func, timeout: float = 3.0, n_trials: int = 10, initial_wait=None
-) -> bool:
+def wait_until_true(condition_func, timeout: float = 3.0, n_trials: int = 10, initial_wait=None) -> bool:
     """Wait the `condition_func` returns true.
     If `timeout` passes and this func returns False.
     """
@@ -20,8 +17,8 @@ def wait_until_true(
         if condition_func():
             return True
         # It is required to procced functions in other loops.
-        vim.command('sleep 1m') # Mpve events.
-        vim.command('redraw')  # ←  RPC チャネルを処理
+        vim.command("sleep 1m")  # Mpve events.
+        vim.command("redraw")  # ←  RPC チャネルを処理
         time.sleep(interval)
 
     return False
@@ -29,6 +26,7 @@ def wait_until_true(
 
 def open_file(path: str | Path, position: CursorPosition | None = None) -> None:
     from pytoy.shared.ui.vscode.document import Document
+
     path = Path(path)
 
     uri = VSCodeUri.from_filepath(path)

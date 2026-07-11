@@ -50,9 +50,7 @@ class ScriptDecipher:
             name = node.name.value
             start_line = node.start_pos[0]
             end_line = node.end_pos[0]
-            target = _TestTarget(
-                path=path, start_line=start_line, end_line=end_line, funcname=name
-            )
+            target = _TestTarget(path=path, start_line=start_line, end_line=end_line, funcname=name)
             return target
 
         targets = []

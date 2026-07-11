@@ -1,4 +1,10 @@
-from pytoy.job_execution.terminal_runner.models import TerminalDriverProtocol, Snapshot, InputOperation, WaitOperation, WaitUntilOperation
+from pytoy.job_execution.terminal_runner.models import (
+    TerminalDriverProtocol,
+    Snapshot,
+    InputOperation,
+    WaitOperation,
+    WaitUntilOperation,
+)
 from pytoy.job_execution.terminal_runner.models import LineStr, RawStr, InterruptionCode
 
 from pytoy.job_execution.process_utils import force_kill
@@ -9,6 +15,7 @@ from typing import Sequence
 
 DEFAULT_SHELL_DRIVER_NAME = "shell"
 
+
 class TerminalDriverManager:
     def __init__(self):
         self._drivers: dict[str, type[TerminalDriverProtocol]] = {}
@@ -17,11 +24,12 @@ class TerminalDriverManager:
         def _wrap(driver_class: type[TerminalDriverProtocol]):
             self._drivers[driver_kind] = driver_class
             return driver_class
+
         return _wrap
-    
+
     def _is_registered(self, driver_kind: str) -> bool:
         return driver_kind in self._drivers
-    
+
     @property
     def kinds(self) -> list[str]:
         return list(self._drivers.keys())
@@ -34,8 +42,8 @@ class TerminalDriverManager:
 
 
 def _shell_make_operations(input_str: str) -> Sequence[str]:
-    """Considering the `continuation` chars, making the 
-    `commands` of shell.  
+    """Considering the `continuation` chars, making the
+    `commands` of shell.
     """
     raw_lines = [line.rstrip("\r") for line in input_str.split("\n")]
     joined_lines: list[str] = []
@@ -54,7 +62,9 @@ def _shell_make_operations(input_str: str) -> Sequence[str]:
         joined_lines.append(buffer)
     return joined_lines
 
+
 driver_manager = GlobalPytoyContext().get().terminal_driver_manager
+
 
 @driver_manager.register("windows_cmd")
 class CmdExeDriver:
@@ -65,15 +75,15 @@ class CmdExeDriver:
     @property
     def kind(self) -> str:
         return self._kind
-        
+
     @property
     def command(self):
         return self._command
-    
+
     @property
     def eol(self) -> str:
         # [NOTE]: This is hack. Note that the space is appended.
-        # `empty` space may be necessary to 
+        # `empty` space may be necessary to
         # supprsess the peculiar `cmd.exe` behavior.
         return " \r"
 
@@ -88,7 +98,6 @@ class CmdExeDriver:
         return InterruptionCode(preference="kill_tree")
 
 
-
 @driver_manager.register("bash")
 class BashDriver:
     def __init__(self, kind: str = "bash") -> None:
@@ -99,11 +108,10 @@ class BashDriver:
     def kind(self) -> str:
         return self._kind
 
-        
     @property
     def command(self):
         return self._command
-    
+
     @property
     def eol(self) -> str:
         return "\n"
@@ -125,7 +133,8 @@ class ShellDriver(TerminalDriverProtocol):
     LINUX_DEFAULT_SHELL_COMMAND = "bash"
 
     def __init__(self, name: str = "shell"):
-        import os 
+        import os
+
         self._impl = CmdExeDriver(name) if os.name == "nt" else BashDriver(name)  # type: ignore
 
     @property
@@ -159,10 +168,11 @@ class IPythonDriver(TerminalDriverProtocol):
         self._command = command
         self._kind = kind
         import re
+
         self._in_pattern = re.compile(r"In \[(\d+)\]:")
 
         self._is_first = True
-        
+
     @property
     def kind(self) -> str:
         return self._kind
@@ -186,8 +196,9 @@ class IPythonDriver(TerminalDriverProtocol):
 
     def make_operations(self, input_str: str) -> Sequence[InputOperation]:
         result: list[InputOperation] = []
+
         def _is_prepared(snapshot: Snapshot) -> bool:
-            content = snapshot.content 
+            content = snapshot.content
             lines = [line.strip("\r ") for line in content.split("\n") if line]
             lines = [line for line in lines if line]
             if not lines:
@@ -204,7 +215,9 @@ class IPythonDriver(TerminalDriverProtocol):
         body = input_str.replace("\r\n", "\n").replace("\n", "\r").strip("\r")
 
         result += [
-            RawStr("%cpaste -q\n"), #LineStr("%cpaste -q") # This is not good, since `\r` seems to be recognized as the other meaning. 
+            RawStr(
+                "%cpaste -q\n"
+            ),  # LineStr("%cpaste -q") # This is not good, since `\r` seems to be recognized as the other meaning.
             WaitOperation(0.5),
             RawStr(body),
             WaitOperation(0.5),

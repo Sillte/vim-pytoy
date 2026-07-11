@@ -10,7 +10,7 @@ from typing import Literal, assert_never
 class QuickfixProfile:
     quickfix_creator: QuickfixCreator | QuickfixRecordRegex
     quickfix_source: Literal["stdout", "stderr", "both", "auto"] = "auto"
-    
+
     @property
     def execution_hooks(self) -> ExecutionHooks:
         return make_quickfix_hooks(self)
@@ -18,6 +18,7 @@ class QuickfixProfile:
 
 def make_quickfix_hooks(quickfix_profile: QuickfixProfile) -> ExecutionHooks:
     from pytoy.shared.ui.pytoy_quickfix import to_quickfix_creator
+
     quickfix_creator = to_quickfix_creator(quickfix_profile.quickfix_creator)
 
     def _decide_quickfix_source(result: ExecutionResult, quickfix_profile: QuickfixProfile):
@@ -41,6 +42,5 @@ def make_quickfix_hooks(quickfix_profile: QuickfixProfile) -> ExecutionHooks:
         PytoyQuickfix().handle_records(records, is_open=True)
 
     quickfix_hooks = ExecutionHooks(on_post_process=on_post_process)
-
 
     return quickfix_hooks

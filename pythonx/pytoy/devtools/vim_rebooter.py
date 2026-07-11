@@ -10,10 +10,12 @@ class VimRebooter:
     def __call__(self):
         import vim
         from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
+
         backend_enum = get_backend_enum()
 
         if backend_enum == BackendEnum.VSCODE:
             from pytoy.shared.ui.vscode.api import Api
+
             api = Api()
             api.action("vscode-neovim.restart")
             return

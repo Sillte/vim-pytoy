@@ -1,4 +1,4 @@
-from pytoy.shared.lib.autocmd.vim_autocmd import Group, EmitSpec, VimAutocmd,  PayloadMapper
+from pytoy.shared.lib.autocmd.vim_autocmd import Group, EmitSpec, VimAutocmd, PayloadMapper
 from pytoy.shared.lib.function import FunctionRegistry, RegisteredFunction
 from typing import Any, Callable
 
@@ -17,23 +17,29 @@ class AutoCmdManager:
             return
         func(args)
 
-    def register(self, group: Group, emitter_spec: EmitSpec, payload_mapper: PayloadMapper, owner: object | None = None) -> VimAutocmd:
-        """Note that `PayloaderMappger.transform` (callable) is also regarded as the value for identity check.  
+    def register(
+        self, group: Group, emitter_spec: EmitSpec, payload_mapper: PayloadMapper, owner: object | None = None
+    ) -> VimAutocmd:
+        """Note that `PayloaderMappger.transform` (callable) is also regarded as the value for identity check.
         In typical case, usage of lambda function should be avoided.
         """
         if group in self._autocmds:
             autocmd = self._autocmds[group]
-            if autocmd.event_spec != emitter_spec or  autocmd.payload_mapper != payload_mapper:
-                raise ValueError(f"Already `group` is registered, but `emitter_spec` or `argument_specs` are diffrent, {group=}, {emitter_spec=}, {autocmd.event_spec=}")
+            if autocmd.event_spec != emitter_spec or autocmd.payload_mapper != payload_mapper:
+                raise ValueError(
+                    f"Already `group` is registered, but `emitter_spec` or `argument_specs` are diffrent, {group=}, {emitter_spec=}, {autocmd.event_spec=}"
+                )
             if owner != self._owners[group]:
                 raise ValueError("The owner of group is different. ")
             return autocmd
         cmd = self._create_autocmd(group, emitter_spec, payload_mapper, owner)
         return cmd
-        
-        
-    def _create_autocmd(self, group: Group, emitter_spec: EmitSpec, payload_mapper: PayloadMapper, owner: object | None) -> VimAutocmd:
+
+    def _create_autocmd(
+        self, group: Group, emitter_spec: EmitSpec, payload_mapper: PayloadMapper, owner: object | None
+    ) -> VimAutocmd:
         import vim
+
         cmd = VimAutocmd(group, emitter_spec, payload_mapper)
         command = cmd.make_command(self._dispatcher_vimfunc.impl_name)
         vim.command(command)
@@ -41,14 +47,14 @@ class AutoCmdManager:
         self._owners[cmd.group] = owner
         self._dispatched_functions[cmd.group] = cmd.emitter.fire
         return cmd
-        
-    def deregister(self, group: Group) -> None: 
+
+    def deregister(self, group: Group) -> None:
         import vim
+
         self._owners.pop(group)
         self._autocmds.pop(group)
         self._dispatched_functions.pop(group)
         vim.command(f"augroup {group} | autocmd! | augroup END")
-
 
     def deregister_all(self):
         for group in list(self._autocmds):
@@ -58,6 +64,7 @@ class AutoCmdManager:
         groups = [k for k, o in self._owners.items() if o is owner]
         for group in groups:
             self.deregister(group)
+
 
 class AutocmdManagerProvider:
     def __init__(self):
@@ -72,9 +79,10 @@ class AutocmdManagerProvider:
         if self._manager:
             self._manager.deregister_all()
             self._manager = None
+
+
 _provider = AutocmdManagerProvider()
 
-def get_autocmd_manager() -> AutoCmdManager: 
+
+def get_autocmd_manager() -> AutoCmdManager:
     return _provider.get()
-
-

@@ -9,7 +9,6 @@ class RangeOperator(RangeOperatorProtocol):
     def __init__(self, impl: RangeOperatorProtocol):
         self._impl = impl
 
-
     def get_lines(self, line_range: LineRange) -> list[str]:
         return self._impl.get_lines(line_range)
 
@@ -38,4 +37,3 @@ class RangeOperator(RangeOperatorProtocol):
     @property
     def entire_character_range(self) -> CharacterRange:
         return self._impl.entire_character_range
-

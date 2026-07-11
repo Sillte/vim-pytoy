@@ -10,19 +10,20 @@ from pytoy.shared.ui.pytoy_buffer.protocol import Event
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver, VSCodeUri
 from pytoy.shared.ui.vscode.document import Document
 
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from pytoy.contexts.vscode import GlobalVSCodeContext
 
 
 class VSCodeBufferKernel(MortalEntityProtocol):
     def __init__(self, bufnr: int, *, ctx: GlobalVSCodeContext | None = None):
         from pytoy.contexts.vscode import GlobalVSCodeContext
+
         if ctx is None:
             ctx = GlobalVSCodeContext.get()
         self._bufnr = bufnr
         self._vim_kernel = VimBufferKernel(bufnr, ctx=ctx.vim_context)
         self.on_wipeout = self._vim_kernel.on_end
-        
+
     @property
     def entity_id(self) -> int:
         return self._bufnr

@@ -2,14 +2,22 @@ from pathlib import Path
 from typing import Final, Sequence
 
 from pytoy.tools.llm.references.converters import ReferenceConverterManager
-from pytoy.tools.llm.references.models import DatasetMeta, ReferenceDataset, ReferenceInfo, ReferencePathPair, ResourceUri
-from pytoy_llm.materials.utils import FileGatherer 
+from pytoy.tools.llm.references.models import (
+    DatasetMeta,
+    ReferenceDataset,
+    ReferenceInfo,
+    ReferencePathPair,
+    ResourceUri,
+)
+from pytoy_llm.materials.utils import FileGatherer
 
 
 class ReferenceCollector:
     info_suffix: Final[str] = ".json"
 
-    def __init__(self, stored_folder: Path | str, reference_coverter_manager: ReferenceConverterManager | None = None) -> None:
+    def __init__(
+        self, stored_folder: Path | str, reference_coverter_manager: ReferenceConverterManager | None = None
+    ) -> None:
         reference_coverter_manager = reference_coverter_manager or ReferenceConverterManager()
         self._converter_manager = reference_coverter_manager
 
@@ -23,7 +31,7 @@ class ReferenceCollector:
         filepaths = FileGatherer(self._exclude_predicators, [self._stored_folder]).gather(root_folder)
         path_pairs = self._dump_reference(root_folder, filepaths)
         meta = DatasetMeta(root_folder=root_folder)
-        dataset = ReferenceDataset(meta=meta,path_pairs=path_pairs)
+        dataset = ReferenceDataset(meta=meta, path_pairs=path_pairs)
         dataset.dump(self._stored_folder)
         return dataset
 
@@ -43,6 +51,7 @@ class ReferenceCollector:
                 markdown_path.write_text(markdown, encoding="utf8")
                 ref_paths.append(ReferencePathPair(markdown_path=markdown_path, info_path=info_path))
         return ref_paths
+
 
 if __name__ == "__main__":
     collector = ReferenceCollector(r"C:\Users\zaube\Desktop\Storing")

@@ -10,19 +10,17 @@ class Disposable:
 
     def dispose(self) -> None:
         self._dispose()
+
+
 type Subscribe[T] = Callable[[Listener[T]], "Disposable"]
 
 
 class EventProtocol[T]:
-    def subscribe(self, listener: Listener[T]) -> Disposable:
-        ...
+    def subscribe(self, listener: Listener[T]) -> Disposable: ...
 
-    def map(self, transform: Callable[[T], Any]) -> "EventProtocol":
-        ...
+    def map(self, transform: Callable[[T], Any]) -> "EventProtocol": ...
 
-    def filter(self, predicate: Callable[[T], bool]) -> "EventProtocol":
-        ...
-
+    def filter(self, predicate: Callable[[T], bool]) -> "EventProtocol": ...
 
 
 class Event[T](EventProtocol):
@@ -33,19 +31,22 @@ class Event[T](EventProtocol):
         return self._subscribe(listener)
 
     def __call__(self, listener: Listener[T]) -> Disposable:
-        # For decorator. 
+        # For decorator.
         return self.subscribe(listener)
 
     def once(self) -> "Event":
         from pytoy.shared.lib.event import utils
+
         return utils.once(self)
 
     def map(self, transform: Callable[[T], Any]) -> "Event":
         from pytoy.shared.lib.event import utils
+
         return utils.map_event(self, transform)
 
     def filter(self, predicate: Callable[[T], bool]) -> "Event":
         from pytoy.shared.lib.event import utils
+
         return utils.filter(self, predicate)
 
 
@@ -58,7 +59,7 @@ class EventEmitter[T]:
         self._listeners.append(listener)
 
         def dispose():
-            # For idempotency, 
+            # For idempotency,
             try:
                 self._listeners.remove(listener)
             except (ValueError, RuntimeError):

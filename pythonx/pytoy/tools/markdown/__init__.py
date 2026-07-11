@@ -5,7 +5,7 @@ from typing import Sequence, Literal
 @dataclass(frozen=True)
 class CodeBlock:
     type: Literal["python", "bash"] | str
-    start: int   # 0-index lineno of `markdown`. "```" is not included.
+    start: int  # 0-index lineno of `markdown`. "```" is not included.
     end: int  # 0-index lineno of `markdown`. exclusive. "```" is not included.
     lines: Sequence[str]
 
@@ -22,8 +22,7 @@ class MarkdownStructure:
 
 
 class MarkdownExtractor:
-    """Extract information of markdown
-    """
+    """Extract information of markdown"""
 
     def __init__(self, markdown: str):
         self._markdown = markdown
@@ -52,8 +51,7 @@ class MarkdownExtractor:
                 while index < len(lines):
                     line = lines[index]
                     if line.startswith("```"):
-                        blocks.append(
-                            CodeBlock(type=type, start=start, end=index, lines=block_lines))
+                        blocks.append(CodeBlock(type=type, start=start, end=index, lines=block_lines))
                         break
                     else:
                         block_lines.append(lines[index])
@@ -62,8 +60,7 @@ class MarkdownExtractor:
         return blocks
 
     def _normalize_type(self, type: str) -> str:
-        maps = {"py": "python",
-                "sh": "bash"}
+        maps = {"py": "python", "sh": "bash"}
         return maps.get(type, type)
 
 

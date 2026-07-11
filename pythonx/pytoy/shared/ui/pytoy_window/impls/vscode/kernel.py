@@ -12,7 +12,6 @@ from pytoy.shared.ui.vscode.uri import VSCodeUri
 
 
 class WindowURISolver:
-
     @classmethod
     def to_uri(cls, winid: int) -> VSCodeUri | None:
         bufnr = int(vim.eval(f"winbufnr({winid})"))
@@ -23,21 +22,23 @@ class WindowURISolver:
         bufnr = BufferURISolver.get_bufnr(uri)
         if not bufnr:
             return None
-        ret =  int(vim.eval(f"bufwinid({bufnr})"))
+        ret = int(vim.eval(f"bufwinid({bufnr})"))
         if ret == -1:
             return None
         return ret
 
 
-if TYPE_CHECKING: 
+if TYPE_CHECKING:
     from pytoy.contexts.vscode import GlobalVSCodeContext
+
 
 class VSCodeWindowKernel[MortalEntityProtocol]:
     def __repr__(self):
         return f"WindowKernel({self._winid=})"
-    
+
     def __init__(self, winid: int, *, ctx: GlobalVSCodeContext | None = None):
         from pytoy.contexts.vscode import GlobalVSCodeContext
+
         if ctx is None:
             ctx = GlobalVSCodeContext.get()
 
@@ -50,9 +51,7 @@ class VSCodeWindowKernel[MortalEntityProtocol]:
         uri = self.uri
         if uri is None:
             raise RuntimeError(f"Given `{winid=}` is invalid.")
-        self._snapped_uri: VSCodeUri | None = uri # This is for debug purpose.
-
-
+        self._snapped_uri: VSCodeUri | None = uri  # This is for debug purpose.
 
     @property
     def entity_id(self) -> int:
@@ -75,11 +74,9 @@ class VSCodeWindowKernel[MortalEntityProtocol]:
     def uri(self) -> VSCodeUri | None:
         return WindowURISolver.to_uri(self.winid)
 
-
     @property
     def editor(self) -> Editor | None:
-        """It returns one of `Editor` which can correspond to `self._winid`. 
-        """
+        """It returns one of `Editor` which can correspond to `self._winid`."""
         editors = self.editors
         if not editors:
             return None

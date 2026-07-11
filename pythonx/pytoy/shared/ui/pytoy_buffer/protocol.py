@@ -3,6 +3,7 @@ from typing import Protocol, Sequence, TYPE_CHECKING, Hashable
 from pathlib import Path
 from pytoy.shared.lib.text import CharacterRange, LineRange
 from pytoy.shared.lib.event.domain import Event
+from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferID, BufferQuery, URI, BufferSource
 
 if TYPE_CHECKING:
@@ -24,12 +25,11 @@ class PytoyBufferProtocol(Protocol):
         """Whether the buffer is alive or not."""
         ...
 
-
     @property
     def uri(self) -> URI:
         """Return the file path."""
         ...
-        
+
     @property
     def source(self) -> BufferSource:
         """Return the source of buffer."""
@@ -80,12 +80,14 @@ class PytoyBufferProtocol(Protocol):
     @property
     def events(self) -> BufferEvents: ...
 
+    @property
+    def actions(self) -> KeyActionEvents: ...
+
 
 class PytoyBufferProviderProtocol(Protocol):
     def get_buffers(self, is_normal_type: bool = True) -> Sequence[PytoyBufferProtocol]: ...
 
     def get_current(self) -> PytoyBufferProtocol: ...
-    
 
 
 class RangeOperatorProtocol(Protocol):

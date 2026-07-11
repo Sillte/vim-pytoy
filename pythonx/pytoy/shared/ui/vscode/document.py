@@ -14,9 +14,7 @@ class Document(BaseModel):
     @classmethod
     def get_current(cls) -> Self:
         api = Api()
-        doc = api.eval_with_return(
-            "vscode.window.activeTextEditor.document", with_await=False
-        )
+        doc = api.eval_with_return("vscode.window.activeTextEditor.document", with_await=False)
         return cls.model_validate(doc)
 
     @classmethod
@@ -54,14 +52,14 @@ class Document(BaseModel):
         args = {"args": {"uriKey": uri.to_key_str()}}
         ret = api.eval_with_return(js_code, with_await=True, opts=args)
         return cls.model_validate(ret)
-      
+
     @classmethod
     def open(cls, uri: VSCodeUri, position: tuple[int, int] | None = None) -> Self:
-      """posistion=(lnum, lcol)
-      lnum: 0-based. 
-      lcol: 0-based, characters.
-      """ 
-      jscode = """
+        """posistion=(lnum, lcol)
+        lnum: 0-based.
+        lcol: 0-based, characters.
+        """
+        jscode = """
       (async (uriKey, position) => {
           const uri = vscode.Uri.parse(uriKey);
           const doc = await vscode.workspace.openTextDocument(uri);
@@ -83,13 +81,13 @@ class Document(BaseModel):
 
       })(args.uriKey, args.position)
       """
-      api = Api()
-      result = api.eval_with_return(
-          jscode,
-          with_await=True,
+        api = Api()
+        result = api.eval_with_return(
+            jscode,
+            with_await=True,
             opts={"args": {"uriKey": uri.to_key_str(), "position": position}},
         )
-      return cls.model_validate(result)
+        return cls.model_validate(result)
 
     def append(self, text: str) -> bool:
         """Append text at the end of the document."""
@@ -120,14 +118,13 @@ class Document(BaseModel):
             return await vscode.workspace.applyEdit(edit);
         })(args)
         """
-      
+
         result = api.eval_with_return(
             js_code,
             with_await=True,
             opts={"args": {"uriKey": self.uri.to_key_str(), "text": text}},
         )
         return result
-
 
     @property
     def content(self) -> str:
@@ -145,7 +142,7 @@ class Document(BaseModel):
             with_await=True,
             opts={
                 "args": {
-                    "uriKey": self.uri.to_key_str(), 
+                    "uriKey": self.uri.to_key_str(),
                 }
             },
         )
@@ -178,13 +175,12 @@ class Document(BaseModel):
 
         })(args)
         """
-   
+
         api.eval_with_return(
             js_code,
             with_await=True,
             opts={"args": {"uriKey": self.uri.to_key_str(), "content": value}},
         )
-
 
     def show(self, with_focus: bool = False):
         api = Api()
@@ -314,11 +310,12 @@ class Document(BaseModel):
                     "sc": start_col,
                     "el": end_line,
                     "ec": end_col,
-                    "text": text
+                    "text": text,
                 }
             },
         )
         return result
+
     def get_lines(self, start_line: int, end_line: int) -> list[str]:
         api = Api()
         js_code = """

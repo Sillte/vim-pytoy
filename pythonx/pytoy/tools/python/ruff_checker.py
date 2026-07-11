@@ -3,7 +3,12 @@ from pathlib import Path
 
 from pytoy import TERM_STDOUT
 from pytoy.contexts.core import GlobalCoreContext
-from pytoy.job_execution.command_executor.launcher import CommandLauncher, LaunchProfile, ExecutionHooks, get_default_hooks
+from pytoy.job_execution.command_executor.launcher import (
+    CommandLauncher,
+    LaunchProfile,
+    ExecutionHooks,
+    get_default_hooks,
+)
 from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
 from pytoy.job_execution.environment_manager import EnvironmentManager
 from pytoy.shared.ui import PytoyBuffer
@@ -42,7 +47,9 @@ class RuffChecker:
     def buffer(self) -> PytoyBuffer:
         return make_buffer(TERM_STDOUT, "vertical")
 
-    def check(self, target: Literal["workspace", "current"] | str | None, fix: bool, format: bool, unsafe: bool) -> None:
+    def check(
+        self, target: Literal["workspace", "current"] | str | None, fix: bool, format: bool, unsafe: bool
+    ) -> None:
         current_path = PytoyBuffer.get_current().file_path
         cwd = current_path.parent
 
@@ -72,8 +79,8 @@ class RuffChecker:
     def rerun(self) -> None:
         profile = LaunchProfile(kind=self.kind)
         launcher = CommandLauncher(profile)
-        if (last_context := launcher.last_context):
-            if (format:=last_context.meta.get("format")):
+        if last_context := launcher.last_context:
+            if format := last_context.meta.get("format"):
                 self._format(format.path, format.cwd, self.buffer)
         launcher.rerun(self.buffer)
 
@@ -83,6 +90,7 @@ class RuffChecker:
 
     def _format(self, path: Path, cwd: Path, buffer: PytoyBuffer):
         import subprocess
+
         execution_env = self.environment_manager.solve_preference(cwd, preference=None)
 
         command = f'ruff format "{path}"'

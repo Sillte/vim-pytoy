@@ -15,11 +15,11 @@ from pytoy.job_execution.terminal_runner.models import (
     ConsoleSnapshot,
     Snapshot,
     WaitOperation,
-    RawStr, 
-    LineStr, 
+    RawStr,
+    LineStr,
     InputOperation,
     JobEvents,
-    JobID
+    JobID,
 )
 from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
 from pytoy.shared.lib.text import CursorPosition
@@ -53,14 +53,14 @@ class _InputSolverTask:
             except Empty:
                 continue
 
-            if op is None: # Exit signal
+            if op is None:  # Exit signal
                 break
 
             try:
                 payload = TerminalJobCore.deal_operation(op, self.enter_eol, self.snapshot_getter)
                 if payload is not None:
-                    vim.session.threadsafe_call(  #type: ignore
-                        lambda: vim.call('chansend', self.job_id, str(payload))
+                    vim.session.threadsafe_call(  # type: ignore
+                        lambda: vim.call("chansend", self.job_id, str(payload))
                     )
             except Exception:
                 pass
@@ -82,7 +82,7 @@ class TerminalJobNvim(TerminalJobProtocol):
 
         # Emitters
 
-        self._core = TerminalJobCore(self._request, self._spawn_option)   
+        self._core = TerminalJobCore(self._request, self._spawn_option)
 
         self._start()
 
@@ -93,13 +93,13 @@ class TerminalJobNvim(TerminalJobProtocol):
 
         # 2. Options for jobstart
         options = {
-            'pty': True,
-            'width': self._screen.columns,
-            'height': self._screen.lines,
-            'on_stdout': self._on_out.impl_name,
-            'on_stderr': self._on_out.impl_name,
-            'on_exit': self._on_exit.impl_name,
-            'stdout_buffered': False
+            "pty": True,
+            "width": self._screen.columns,
+            "height": self._screen.lines,
+            "on_stdout": self._on_out.impl_name,
+            "on_stderr": self._on_out.impl_name,
+            "on_exit": self._on_exit.impl_name,
+            "stdout_buffered": False,
         }
 
         if self._spawn_option.cwd:
@@ -108,20 +108,20 @@ class TerminalJobNvim(TerminalJobProtocol):
             options["env"] = self._spawn_option.env
 
         # 3. Launch
-        self._job_id = int(vim.call('jobstart', self._driver.command, options))
+        self._job_id = int(vim.call("jobstart", self._driver.command, options))
         if self._job_id <= 0:
             raise RuntimeError(f"Neovim jobstart failed: {self._job_id}")
 
         # 4. Input Thread
-        snapshot_getter = lambda _: self.snapshot  #noqa 
+        snapshot_getter = lambda _: self.snapshot  # noqa
         self._input_task = _InputSolverTask(self._job_id, self._driver, snapshot_getter)
         self._input_thread = Thread(target=self._input_task.loop, daemon=True)
         self._input_thread.start()
 
     def _on_vim_output(self, job_id: int, data: list[str], event: str) -> None:
         # Neovim provides data as a list of lines. Join them with LF for the emulator.
-        # Pyte accepts only the stream. 
-        #print("data", data)
+        # Pyte accepts only the stream.
+        # print("data", data)
         n_lines = len(data)
         for i, line in enumerate(data):
             if i + 1 == n_lines:
@@ -135,59 +135,53 @@ class TerminalJobNvim(TerminalJobProtocol):
         self._core.exit_emitter.fire(exit_code)
         self.dispose()
 
-
     def send(self, input: str) -> None:
         if self.alive:
             self._input_task.send(input)
 
     def interrupt(self) -> None:
         if not self.alive:
-            return 
+            return
         i_code = self._driver.interrupt(self.pid, self.children_pids)
         if not i_code:
-            return 
+            return
         match i_code.preference:
-            case  "sigint":
+            case "sigint":
                 vim.session.threadsafe_call(  # type: ignore
-                    lambda: vim.call('chansend', self.job_id, str("\x03\x03"))
+                    lambda: vim.call("chansend", self.job_id, str("\x03\x03"))
                 )
-            case  "kill_tree":
+            case "kill_tree":
                 TerminalJobCore.kill_processes(self.children_pids)
 
     def terminate(self) -> None:
         if self._job_id is not None:
-            vim.call('jobstop', self._job_id)
+            vim.call("jobstop", self._job_id)
             self._job_id = None
 
     def dispose(self) -> None:
         self.terminate()
         # Cleanup input thread
         self._input_task.alive = False
-        self._input_task.queue.put(None) 
+        self._input_task.queue.put(None)
         self._core.dispose()
 
         from pytoy.shared.timertask import TimerTask
+
         def _inner():
             FunctionRegistry.deregister(self._on_out)
             FunctionRegistry.deregister(self._on_exit)
+
         TimerTask.execute_oneshot(_inner, interval=0)
 
     @property
     def snapshot(self) -> Snapshot:
         # pyte.screen.display returns a list of visible lines
         content = "\n".join(self._screen.display)
-        
+
         return Snapshot(
             timestamp=time.time(),
-            console=ConsoleSnapshot(
-                lines=self._screen.lines,
-                cols=self._screen.columns,
-                content=content
-            ),
-            cursor=CursorPosition(
-                line=self._screen.cursor.y,
-                col=self._screen.cursor.x
-            )
+            console=ConsoleSnapshot(lines=self._screen.lines, cols=self._screen.columns, content=content),
+            cursor=CursorPosition(line=self._screen.cursor.y, col=self._screen.cursor.x),
         )
 
     @property
@@ -195,14 +189,14 @@ class TerminalJobNvim(TerminalJobProtocol):
         if self._job_id is None:
             return False
         # In Neovim, jobwait with timeout 0 returns -1 if still running
-        return vim.call('jobwait', [self._job_id], 0)[0] == -1
+        return vim.call("jobwait", [self._job_id], 0)[0] == -1
 
     @property
     def pid(self) -> int:
         if self._job_id is None:
             return -1
         try:
-            return int(vim.call('jobpid', self._job_id))
+            return int(vim.call("jobpid", self._job_id))
         except Exception:
             return -1
 

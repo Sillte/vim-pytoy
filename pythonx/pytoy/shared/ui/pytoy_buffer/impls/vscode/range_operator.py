@@ -15,7 +15,7 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         self._kernel = kernel
 
     @property
-    def kernel(self) ->  VSCodeBufferKernel:
+    def kernel(self) -> VSCodeBufferKernel:
         return self._kernel
 
     @property
@@ -28,7 +28,7 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         if uri is None:
             raise ValueError(f"`{uri=}` is a invalid buffer.")
         return uri
-    
+
     @property
     def uri(self) -> URI:
         return self._kernel.uri
@@ -52,7 +52,7 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         # NOTE: it is illegal to include `\n` in itemes of `lines`.
         # But, currently, it is not checked.
 
-        #  TODO: Currently, this is used to 
+        #  TODO: Currently, this is used to
         lr = VimBufferRangeHandler(self.bufnr).replace_lines(line_range, lines)
 
         def _get_doc_lines(lr: LineRange):
@@ -64,6 +64,7 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         def _is_document_changed():
             doc_lines = _get_doc_lines(lr)
             return lines == doc_lines
+
         flag = wait_until_true(_is_document_changed, timeout=0.5)
         if not flag:
             doc_lines = _get_doc_lines(lr)
@@ -71,13 +72,12 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
             print("text", lines, flush=True)
             print("doc_lines", doc_lines, flush=True)
 
-
         return lr
 
     def replace_text(self, character_range: CharacterRange, text: str) -> CharacterRange:
         # TODO: Documentを直接扱った方がよいことが判明したら、変える
-        #start, end = selection.start, selection.end
-        #self.buffer.document.replace_range(text,
+        # start, end = selection.start, selection.end
+        # self.buffer.document.replace_range(text,
         #                                   start.line,
         #                                   start.col,
         #                                   end.line,
@@ -89,7 +89,7 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         def _get_doc_text(cr: CharacterRange):
             start, end = cr.start, cr.end
             doc_text = self.document.get_range(start.line, start.col, end.line, end.col)
-            return  normalize_lf_code(doc_text)
+            return normalize_lf_code(doc_text)
 
         def _is_document_changed():
             doc_text = _get_doc_text(cr)
@@ -121,7 +121,6 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         """return the all matched selections of `text`"""
         searcher = self._create_text_searcher(target_range=target_range)
         return searcher.find_all(text)
-
 
     @property
     def entire_character_range(self) -> CharacterRange:

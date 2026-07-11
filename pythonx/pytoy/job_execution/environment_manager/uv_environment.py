@@ -1,4 +1,4 @@
-from functools import cache 
+from functools import cache
 from pytoy.job_execution.environment_manager.models import ToolRunnerStrategyProtocol, EnvironmentSolverProtocol
 from pytoy.job_execution.environment_manager.models import EnvironmentKind
 
@@ -25,7 +25,7 @@ class UvStrategy(ToolRunnerStrategyProtocol):
 class UVEnvironmentSolver(EnvironmentSolverProtocol):
     def __init__(self):
         self._installed = None
-        
+
     @property
     def kind(self) -> EnvironmentKind:
         return "uv"
@@ -33,20 +33,21 @@ class UVEnvironmentSolver(EnvironmentSolverProtocol):
     @property
     def installed(self) -> bool:
         import shutil
+
         if self._installed is not None:
             return self._installed
-        ret =  bool(shutil.which("uv"))
+        ret = bool(shutil.which("uv"))
         if ret:
             self._installed = True
         else:
             _add_uv_path_fallback()
             self._installed = bool(shutil.which("uv"))
         return self._installed
-    
+
     @cache
     def find_workspace(self, path: Path | str) -> Path | None:
-        """If the path is within the python project, then it returns 
-        the root of workspace.  
+        """If the path is within the python project, then it returns
+        the root of workspace.
         """
         if not self.installed:
             return None
@@ -60,12 +61,12 @@ class UVEnvironmentSolver(EnvironmentSolverProtocol):
             if self._is_uv_workspace(pyproject):
                 return candidate
         return candidate
-    
+
     @cache
     def find_project(self, path: Path | str) -> Path | None:
-        """If the path is within the python project, then it returns 
-        the root of workspace.  
-        Note: This does not consider `workspace` fucntion of `uv`. 
+        """If the path is within the python project, then it returns
+        the root of workspace.
+        Note: This does not consider `workspace` fucntion of `uv`.
         """
         if not self.installed:
             return None
@@ -78,17 +79,14 @@ class UVEnvironmentSolver(EnvironmentSolverProtocol):
 
     def _is_uv_workspace(self, pyproject: Path) -> bool:
         data = self._load_pyproject(pyproject)
-        workspace = (
-            data.get("tool", {})
-                .get("uv", {})
-                .get("workspace")
-        )
+        workspace = data.get("tool", {}).get("uv", {}).get("workspace")
         return isinstance(workspace, dict)
 
     @staticmethod
     @cache
     def _load_pyproject(path: Path) -> dict:
         import tomllib
+
         with path.open("rb") as f:
             data = tomllib.load(f)
         return data
@@ -118,10 +116,7 @@ class UVEnvironmentSolver(EnvironmentSolverProtocol):
         if not python_path:
             return None
 
-        if all(
-            (python_path.parent / name).exists()
-            for name in ["activate", "activate.bat"]
-        ):
+        if all((python_path.parent / name).exists() for name in ["activate", "activate.bat"]):
             # It should be virtual environment.
             return python_path.parent.parent
         else:
@@ -130,6 +125,8 @@ class UVEnvironmentSolver(EnvironmentSolverProtocol):
 
 
 __add_uv_path_fallback_tried = False
+
+
 def _add_uv_path_fallback() -> bool:
     """
     side-effects: updating of `os.envioron['PATH']
@@ -139,15 +136,16 @@ def _add_uv_path_fallback() -> bool:
         return False
     __add_uv_path_fallback_tried = True
     try:
-        ret = subprocess.run(["bash", "-lic",  'which uv'], text=True, timeout=2.0, capture_output=True)
+        ret = subprocess.run(["bash", "-lic", "which uv"], text=True, timeout=2.0, capture_output=True)
         if ret.returncode != 0:
             return False
         folder = Path(ret.stdout.strip()).parent.as_posix()
-        current_path = os.environ.get('PATH', '')
+        current_path = os.environ.get("PATH", "")
         new_path = f"{folder}{os.pathsep}{current_path}"
-        os.environ['PATH'] = new_path
+        os.environ["PATH"] = new_path
         try:
             import vim
+
             vim.command(f'let $PATH="{new_path}"')
         except ImportError:
             pass

@@ -6,9 +6,11 @@ from textwrap import dedent
 
 type FunctionName = str
 
+
 class StrCallable(Protocol):
     def __call__(self, *args: str) -> str: ...
-    
+
+
 @dataclass(frozen=True)
 class RegisteredFunction:
     name: str

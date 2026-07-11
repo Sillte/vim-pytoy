@@ -5,7 +5,7 @@ from typing import Protocol, overload, Literal, Sequence
 DefaultEnvironment = Literal["system"]
 type EnvironmentKind = Literal["uv"] | DefaultEnvironment
 # `naive` use `command` as is, `auto`, solves the apt evnrionment from `cwd`.
-type ExecutionPreference =  Literal["auto"]  | EnvironmentKind 
+type ExecutionPreference = Literal["auto"] | EnvironmentKind
 
 
 class CommandWrapperProtocol(Protocol):
@@ -25,7 +25,7 @@ class ToolRunnerStrategyProtocol(Protocol):
 
     @overload
     def wrap(self, arg: str) -> str: ...
-    
+
     @overload
     def wrap(self, arg: Sequence[str]) -> list[str]: ...
 
@@ -34,18 +34,18 @@ class ToolRunnerStrategyProtocol(Protocol):
 
 class EnvironmentSolverProtocol(Protocol):
     """
-    Here, the termiology of `uv` is borrowed. 
-    * Project: it is also called as a package. It relates to one module.   
+    Here, the termiology of `uv` is borrowed.
+    * Project: it is also called as a package. It relates to one module.
     * Workspace: The root folder of multiple projects.
     """
+
     @property
     def kind(self) -> EnvironmentKind: ...
     @property
     def installed(self) -> bool: ...
-    def find_workspace(self, path: str | Path, /) -> Path | None : ...
-    def find_project(self, path: str | Path, / ) -> Path | None : ...
+    def find_workspace(self, path: str | Path, /) -> Path | None: ...
+    def find_project(self, path: str | Path, /) -> Path | None: ...
 
-    
 
 class SystemEnvironmentSolver(EnvironmentSolverProtocol):
     @property
@@ -53,18 +53,17 @@ class SystemEnvironmentSolver(EnvironmentSolverProtocol):
         return "system"
 
     def installed(self) -> bool:
-        return True 
+        return True
 
-    def find_workspace(self, path: str | Path, /) -> Path | None :
+    def find_workspace(self, path: str | Path, /) -> Path | None:
         path = Path(path)
         for parent in [path] + list(path.parents):
             if (parent / ".git").exists():
                 return parent
         return None
-    
-    def find_project(self, path: str | Path, /) -> Path | None: 
-        return self.find_workspace(path)
 
+    def find_project(self, path: str | Path, /) -> Path | None:
+        return self.find_workspace(path)
 
 
 @dataclass(frozen=True)

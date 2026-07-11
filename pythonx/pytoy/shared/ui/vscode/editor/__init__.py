@@ -27,9 +27,7 @@ class Editor(BaseModel):
 
         if only_visible:
             # As of 2025/11, there is no API to get non-visible editors in vscode.
-            data_list = api.eval_with_return(
-                "vscode.window.visibleTextEditors", with_await=False
-            )
+            data_list = api.eval_with_return("vscode.window.visibleTextEditors", with_await=False)
             return [Editor.model_validate(data) for data in data_list]
         else:
             # Get all open editors across all tab groups (visible and hidden)
@@ -54,7 +52,7 @@ class Editor(BaseModel):
                         .filter(x => x !== null);
                 })()
                 """,
-                with_await=True
+                with_await=True,
             )
             documents = [Document.model_validate(data) for data in data_list]
             view_columns = [data["viewColumn"] for data in data_list]
@@ -87,7 +85,12 @@ class Editor(BaseModel):
         return uri_to_views.get(self.uri, -1) == self.viewColumn
 
     @classmethod
-    def create(cls, uri: VSCodeUri, split_mode: Literal["vertical", "horizontal"] = "vertical", cursor: tuple[int, int] | None = None) -> Self:
+    def create(
+        cls,
+        uri: VSCodeUri,
+        split_mode: Literal["vertical", "horizontal"] = "vertical",
+        cursor: tuple[int, int] | None = None,
+    ) -> Self:
         jscode = """
         (async (args) => {
             const uri = vscode.Uri.parse(args.uriKey);
@@ -126,14 +129,9 @@ class Editor(BaseModel):
         api = Api()
         opts = {"args": {"uriKey": uri.to_key_str(), "splitMode": split_mode, "cursor": cursor}}
         doc_dict, view_column = api.eval_with_return(jscode, opts)
-        return cls.model_validate({"document":doc_dict, "viewColumn":view_column})
+        return cls.model_validate({"document": doc_dict, "viewColumn": view_column})
 
-    def show(
-        self,
-        uri: VSCodeUri,
-        position: tuple[int , int] | None = None,
-        preview: bool = False
-    ) -> "Editor":
+    def show(self, uri: VSCodeUri, position: tuple[int, int] | None = None, preview: bool = False) -> "Editor":
         """Open the document specified by `uri`."""
 
         jscode = """
@@ -257,30 +255,30 @@ class Editor(BaseModel):
             return NotImplemented
         # [NOTE]: We have to be careful since viewColumn corresponds to the one
         # when this class is created.
-        return (self.document == other.document) and (
-            self.viewColumn == other.viewColumn
-        )
+        return (self.document == other.document) and (self.viewColumn == other.viewColumn)
 
-    def get_clean_target_uris_for_unique(self, within_tabs: bool = False, within_windows: bool = True) -> Sequence[VSCodeUri]:
+    def get_clean_target_uris_for_unique(
+        self, within_tabs: bool = False, within_windows: bool = True
+    ) -> Sequence[VSCodeUri]:
         from pytoy.shared.ui.vscode.editor.clearners import EditorCleaner
-        return EditorCleaner(self).get_clean_target_uris_for_unique(within_tabs=within_tabs,
-                                                                     within_windows=within_windows)
 
+        return EditorCleaner(self).get_clean_target_uris_for_unique(
+            within_tabs=within_tabs, within_windows=within_windows
+        )
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True):
         from pytoy.shared.ui.vscode.editor.clearners import EditorCleaner
-        return EditorCleaner(self).unique(within_tabs=within_tabs,
-                                          within_windows=within_windows)
-        
+
+        return EditorCleaner(self).unique(within_tabs=within_tabs, within_windows=within_windows)
+
     def deduplicate(self):
         from pytoy.shared.ui.vscode.editor.clearners import EditorCleaner
+
         return EditorCleaner(self).deduplicate()
-                                              
 
     @property
     def cursor_position(self) -> tuple[int, int] | None:
-        """Return the (lnum, lcol) of the editor.
-        """
+        """Return the (lnum, lcol) of the editor."""
         jscode = """
         (async (args) => {
             function findEditorByUriAndColumn(uri, viewColumn) {
@@ -311,9 +309,10 @@ class Editor(BaseModel):
             return None
         return (ret[0], ret[1])
 
-    def set_cursor_position(self, line: int , col: int, reveal_type: TextEditorRevealType = TextEditorRevealType.Default) -> bool:
-        """Move the cursor to the position.
-        """
+    def set_cursor_position(
+        self, line: int, col: int, reveal_type: TextEditorRevealType = TextEditorRevealType.Default
+    ) -> bool:
+        """Move the cursor to the position."""
         jscode = """
         (async (args) => {
             function findEditorByUriAndColumn(uri, viewColumn) {
@@ -347,7 +346,7 @@ class Editor(BaseModel):
                 "viewColumn": self.viewColumn,
                 "line": line,
                 "col": col,
-                "revealType": int(reveal_type)
+                "revealType": int(reveal_type),
             }
         }
         api = Api()

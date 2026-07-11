@@ -4,7 +4,7 @@ from typing import Sequence
 
 
 def get_last_selection(winid: int) -> CharacterRange | None:
-    """Return the last selection of `CharacterRange`, if exist.  
+    """Return the last selection of `CharacterRange`, if exist.
     Otherwise, return None.
 
     Args:
@@ -17,11 +17,11 @@ def get_last_selection(winid: int) -> CharacterRange | None:
         return None
     target_buffer = vim.buffers[bufnr]
 
-    def _get_pos(winid: int, mark: str="'<") -> tuple[int, int, int, int]:
+    def _get_pos(winid: int, mark: str = "'<") -> tuple[int, int, int, int]:
         vim.command(f"""let g:_pytoy_get_pos_tempory_arg="{mark}" """)
         cmd = "let g:_pytoy_get_pos_temporary_return = getpos(g:_pytoy_get_pos_tempory_arg)"
         vim.command(f"""call win_execute({winid}, "{cmd}")""")
-        return tuple(vim.vars['_pytoy_get_pos_temporary_return'])
+        return tuple(vim.vars["_pytoy_get_pos_temporary_return"])
 
     def _from_vim_coords(vim_line: int, vim_col: int) -> CursorPosition:
         """Solves
@@ -30,10 +30,11 @@ def get_last_selection(winid: int) -> CharacterRange | None:
         """
         n_line = max(0, vim_line - 1)
         line_content = target_buffer[n_line]
-        line_bytes = line_content.encode('utf-8')
+        line_bytes = line_content.encode("utf-8")
         byte_offset = min(vim_col - 1, len(line_bytes))  # 0-based and to be safe.
-        res_col = len(line_bytes[:byte_offset].decode('utf-8', errors='ignore'))
+        res_col = len(line_bytes[:byte_offset].decode("utf-8", errors="ignore"))
         return CursorPosition(n_line, res_col)
+
     s_pos = _get_pos(winid, "'<")
     e_pos = _get_pos(winid, "'>")
     mode = vim.eval(f"""win_execute({winid}, "echo visualmode()")""").strip()
@@ -49,18 +50,18 @@ def get_last_selection(winid: int) -> CharacterRange | None:
         case "V" | "\x16":
             # Line Visual Mode or Block Visual Mode
             p1 = CursorPosition(s_pos[1] - 1, 0)
-            p2 = CursorPosition(e_pos[1], 0) # 0-based, and next line's start.
+            p2 = CursorPosition(e_pos[1], 0)  # 0-based, and next line's start.
             return CharacterRange(p1, p2)
     return None
 
 
 class VimWinIDConverter:
-
     @classmethod
     def to_vim_window(cls, winid: int) -> "vim.Window | None":
         tabwin = vim.eval(f"win_id2tabwin({winid})")
         if isinstance(tabwin, str):
             import ast
+
             tabwin = ast.literal_eval(tabwin)
         tabnr, winnr = map(int, tabwin)
         if tabnr > 0 and winnr > 0:

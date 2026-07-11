@@ -1,12 +1,13 @@
-from pytoy.shared.ui.notifications.models import LEVEL, NotificationParam 
-from pytoy.shared.ui.notifications.protocol import EphemeralNotificationProtocol      
+from pytoy.shared.ui.notifications.models import LEVEL, NotificationParam
+from pytoy.shared.ui.notifications.protocol import EphemeralNotificationProtocol
+
 
 class EphemeralNotificationNVim(EphemeralNotificationProtocol):
     def notify(
         self,
         message: str,
-        param: NotificationParam | LEVEL = "info",  
+        param: NotificationParam | LEVEL = "info",
     ) -> None:
-        if not isinstance(param, NotificationParam):  
-            param = NotificationParam.from_level(param) 
+        if not isinstance(param, NotificationParam):
+            param = NotificationParam.from_level(param)
         print(message)

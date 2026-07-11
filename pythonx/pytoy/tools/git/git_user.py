@@ -74,19 +74,13 @@ def get_git_info(local_filepath) -> GitInfo:
     cwd = str(local_filepath.parent)
 
     def _run_git(args):
-        ret = (
-            subprocess.check_output(' '.join(["git"] + args), cwd=cwd, shell=True)
-            .decode()
-            .strip()
-        )
+        ret = subprocess.check_output(" ".join(["git"] + args), cwd=cwd, shell=True).decode().strip()
         return ret
 
     result = dict()
     result["rootpath"] = _run_git(["rev-parse", "--show-toplevel"])
     result["filepath"] = str(local_filepath)
-    result["relpath"] = str(
-        local_filepath.resolve().relative_to(Path(result["rootpath"])).as_posix()
-    )
+    result["relpath"] = str(local_filepath.resolve().relative_to(Path(result["rootpath"])).as_posix())
     result["branch"] = _run_git(["rev-parse", "--abbrev-ref", "HEAD"])
     result["commit"] = _run_git(["rev-parse", "HEAD"])
     result["remote"] = _run_git(["remote", "get-url", "origin"])
@@ -106,9 +100,7 @@ def _to_github_address(info: GitInfo, option: LinkOption):
     remote = info.remote
     branch = info.branch
     relpath = info.relpath
-    remote = remote.replace(".git", "").replace(
-        "git@github.com:", "https://github.com/"
-    )
+    remote = remote.replace(".git", "").replace("git@github.com:", "https://github.com/")
     path = f"{remote}/blob/{parse.quote(branch)}/{parse.quote(relpath)}"
     if option.line_start:
         path += f"#L{option.line_start}"
@@ -123,9 +115,7 @@ def _to_azure_address(info: GitInfo, option: LinkOption):
     branch = info.branch
     relpath = info.relpath.strip("/")
     if remote.find("https:") != -1:
-        m = re.match(
-            r"https://([^/]*)@dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)", remote
-        )
+        m = re.match(r"https://([^/]*)@dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)", remote)
         if not m:
             raise ValueError(f"Invalid Azure Address {remote=}")
         _, org, project, repo = m.groups()
@@ -180,8 +170,7 @@ def get_remote_link(
         if key in info.remote:
             return func(info, option)
     raise ValueError(
-        "Cannot resolve remote adress{info['remote']=}\n"
-        "For workaround, please consider to add `REMOTE_TO_MAKER`.",
+        "Cannot resolve remote adress{info['remote']=}\nFor workaround, please consider to add `REMOTE_TO_MAKER`.",
     )
 
 

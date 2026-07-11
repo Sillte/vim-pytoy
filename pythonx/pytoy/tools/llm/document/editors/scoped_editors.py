@@ -12,7 +12,14 @@ from pytoy_llm.materials.composers import InvocationPromptComposer
 from pytoy_llm.materials.composers.models import SectionUsage, SystemPromptTemplate
 from pytoy_llm.materials.core import ModelSectionData, SectionData
 from pytoy_llm.models import InputMessage, SyncOutput
-from pytoy_llm.task import InvocationSpecMeta, LLMInvocationSpec, LLMTaskRequest, LLMTaskSpec, LLMTaskSpecMeta, FunctionInvocationSpec
+from pytoy_llm.task import (
+    InvocationSpecMeta,
+    LLMInvocationSpec,
+    LLMTaskRequest,
+    LLMTaskSpec,
+    LLMTaskSpecMeta,
+    FunctionInvocationSpec,
+)
 
 from pytoy.shared.timertask import add_log_message
 from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec, LanguageKind
@@ -72,15 +79,15 @@ class ScopedReconstructionContract:
     @property
     def rules(self) -> Sequence[str]:
         return [
-        f"The model's modification authority is strictly limited to the text between `{self.query_start}` and `{self.query_end}`.",
-        "The model MUST NOT modify, summarize, or reproduce any text outside this region.",
-        f"The output MUST NOT include the markers `{self.query_start}` or `{self.query_end}`.",
-        "The output MUST consist solely of the reconstructed content for the scoped region.",
-        "When the markers are removed, the resulting document must read as a coherent whole.",
-        "The scoped text may be a fragment of a larger document.",
-        "If surrounding context exists, stylistic and structural conventions implied by it must be preserved."
-    ]
-        
+            f"The model's modification authority is strictly limited to the text between `{self.query_start}` and `{self.query_end}`.",
+            "The model MUST NOT modify, summarize, or reproduce any text outside this region.",
+            f"The output MUST NOT include the markers `{self.query_start}` or `{self.query_end}`.",
+            "The output MUST consist solely of the reconstructed content for the scoped region.",
+            "When the markers are removed, the resulting document must read as a coherent whole.",
+            "The scoped text may be a fragment of a larger document.",
+            "If surrounding context exists, stylistic and structural conventions implied by it must be preserved.",
+        ]
+
     @property
     def override_directive_rules(self) -> Sequence[str]:
         return [
@@ -91,9 +98,8 @@ class ScopedReconstructionContract:
             "    - @@, @@@, @@@@ or more: absolute directive (redefines the reconstruction objective and strategy within the scoped boundary).",
             "- Directives may redefine task intent, tone, or structural goals, but they MUST NOT violate the scoped boundary contract.",
             "- Directives cannot authorize modification of text outside the markers.",
-            "- The directive line MUST be completely removed before reconstruction begins."
+            "- The directive line MUST be completely removed before reconstruction begins.",
         ]
-
 
     def insert_markers(self, buffer: PytoyBuffer, selection: CharacterRange) -> None:
         text = buffer.get_text(selection)
@@ -135,7 +141,7 @@ class ScopedReconstructionContract:
                 e_index = i
                 break
         if s_index is not None and e_index is not None and s_index < e_index:
-            output_in_concern = "\n".join(lines[s_index + 1: e_index])
+            output_in_concern = "\n".join(lines[s_index + 1 : e_index])
         else:
             output_in_concern = content
         return output_in_concern
@@ -149,8 +155,14 @@ class ScopedReconstructionContract:
         return self._query_end
 
 
-def make_scoped_edit_spec(document: str, scoped_edit_contract: ScopedReconstructionContract, reference_handler: ReferenceHandler, logger: logging.Logger) -> LLMInvocationSpec:
+def make_scoped_edit_spec(
+    document: str,
+    scoped_edit_contract: ScopedReconstructionContract,
+    reference_handler: ReferenceHandler,
+    logger: logging.Logger,
+) -> LLMInvocationSpec:
     """Based on the `DocumentAnalysis`. provide the edit."""
+
     def _make_user_prompt(document: str) -> InputMessage:
         return InputMessage(role="user", content=document)
 
@@ -162,11 +174,10 @@ def make_scoped_edit_spec(document: str, scoped_edit_contract: ScopedReconstruct
         language = language_kind
         role = "An expert writer and editor"
         intent = "Recontruction of the part of the document while preserving intent, structure, and coherence."
-        language_ruleset= LanguageRuleSet.from_document_kind(language)
-        style_ruleset= StyleRuleSet.from_language_and_uniformity_mode(language, "structure")
+        language_ruleset = LanguageRuleSet.from_document_kind(language)
+        style_ruleset = StyleRuleSet.from_language_and_uniformity_mode(language, "structure")
         completion_ruleset = CompletionRuleSet.from_completion_mode(completion_mode="conservative")
-        
-    
+
         rules = [
             *language_ruleset.rules,
             *scoped_edit_contract.rules,
@@ -186,7 +197,9 @@ def make_scoped_edit_spec(document: str, scoped_edit_contract: ScopedReconstruct
         if reference_handler.exist_reference:
             section_usage = reference_handler.section_writer.make_section_usage()
             section_data = reference_handler.section_writer.make_section_data()
-            composer = InvocationPromptComposer(prompt_template=system_prompt, section_usages=[section_usage], section_data_list=[section_data])
+            composer = InvocationPromptComposer(
+                prompt_template=system_prompt, section_usages=[section_usage], section_data_list=[section_data]
+            )
         else:
             composer = InvocationPromptComposer(prompt_template=system_prompt)
         system_message = InputMessage(role="system", content=composer.compose_prompt())
@@ -244,7 +257,9 @@ class ScopedEditDocumentRequester:
 
     def _make_task_request(self, document: str, kernel: FairyKernel) -> LLMTaskRequest:
         select_language_spec = FunctionInvocationSpec.from_any(select_language_kind)
-        edit_spec = make_scoped_edit_spec(document, self.scoped_edit_contract, kernel.llm_context.reference_handler, kernel.llm_context.logger)
+        edit_spec = make_scoped_edit_spec(
+            document, self.scoped_edit_contract, kernel.llm_context.reference_handler, kernel.llm_context.logger
+        )
         meta = LLMTaskSpecMeta(name="ScopedEditDocument")
         task_spec = LLMTaskSpec(invocation_specs=[select_language_spec, edit_spec], meta=meta)
         return LLMTaskRequest(task_spec=task_spec, task_input=document)

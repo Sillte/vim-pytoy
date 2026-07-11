@@ -1,4 +1,5 @@
 from __future__ import annotations
+from unittest import mock
 from pathlib import Path
 from typing import Sequence, TYPE_CHECKING, ClassVar
 
@@ -9,6 +10,7 @@ from pytoy.shared.ui.pytoy_buffer.protocol import (
     RangeOperatorProtocol,
     BufferID,
 )
+from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.lib.entity import EntityRegistry
 from pytoy.shared.lib.event.domain import Event, EventEmitter
 from pytoy.shared.lib.text import LineRange, CharacterRange, CursorPosition
@@ -95,6 +97,8 @@ class PytoyBufferDummy(PytoyBufferProtocol):
         self._buffer_id = id(buffer_source)
         self.on_wiped_emitter = EventEmitter[BufferID]()
         self.on_pre_buf_emitter = EventEmitter[BufferID]()
+        manager = mock.MagicMock()
+        self._actions = KeyActionEvents(manager, self._buffer_id)
         self._events = BufferEvents(on_wiped=self.on_wiped_emitter.event, on_pre_buf=self.on_pre_buf_emitter.event)
         self._range_operator = RangeOperatorDummy(self._lines)
         self._is_file = bool(buffer_source.type == "file")
@@ -112,6 +116,10 @@ class PytoyBufferDummy(PytoyBufferProtocol):
         return self._events
 
     @property
+    def actions(self) -> KeyActionEvents:
+        return self._actions
+
+    @property
     def on_wiped(self) -> Event[BufferID]:
         return self.on_wiped_emitter.event
 
@@ -122,14 +130,12 @@ class PytoyBufferDummy(PytoyBufferProtocol):
     def init_buffer(self, content: str = ""):
         self._lines = content.splitlines()
 
-    
     @property
     def uri(self) -> URI:
         return URI(scheme=self._buffer_source.type, path=self._buffer_source.name)
-    
+
     def source(self) -> BufferSource:
         return self._buffer_source
-        
 
     @property
     def is_file(self) -> bool:

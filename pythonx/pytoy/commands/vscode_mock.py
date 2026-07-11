@@ -4,10 +4,10 @@ from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 app = App()
 
 
-
 @app.command(name="MyWindow")
 def mywindow_func2():
     from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
+
     # window = PytoyWindow.get_current()
     # PytoyWindowProvider().create_window("hgoehoge", "s")
     # print(window.buffer)
@@ -15,13 +15,14 @@ def mywindow_func2():
     # window.focus()
     from pytoy.job_execution.utils import get_current_directory
 
-    Api().eval_with_return("vscode.env.remoteName") 
+    Api().eval_with_return("vscode.env.remoteName")
     print("GETCURRENT", get_current_directory())
     return
 
     from pytoy.shared.ui.pytoy_window.impl_vscode import (
         PytoyBufferVSCode,
     )
+
     PytoyBufferVSCode
 
     windows = PytoyWindowProvider().get_windows()
@@ -47,15 +48,14 @@ def mywindow_func():
 
     windows = PytoyWindowProvider().get_windows()
     for elem in windows:
-        print(elem.buffer._impl.uri)  #type: ignore
+        print(elem.buffer._impl.uri)  # type: ignore
     for elem in PytoyWindowProvider().get_windows():
-        print(elem.buffer._impl.uri.path) #type: ignore
+        print(elem.buffer._impl.uri.path)  # type: ignore
 
     # windows[0].impl.editor.focus()
     # print(window.valid, window.impl.editor.document.uri)
     # window.buffer
     # window.unique()
-
 
 
 if get_backend_enum() == BackendEnum.VSCODE:

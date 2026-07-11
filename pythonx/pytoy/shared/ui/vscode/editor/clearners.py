@@ -3,6 +3,7 @@ from typing import Sequence
 
 from pytoy.shared.ui.vscode.editor import Editor
 
+
 class EditorCleaner:
     def __init__(self, editor: Editor):
         self._editor = editor
@@ -11,9 +12,10 @@ class EditorCleaner:
     def editor(self) -> Editor:
         return self._editor
 
-    def get_clean_target_uris_for_unique(self, within_tabs: bool = False, within_windows: bool = True) -> Sequence[VSCodeUri]:
-        """Return the `dirty` uris which should be empty for the smooth `unique`.
-        """
+    def get_clean_target_uris_for_unique(
+        self, within_tabs: bool = False, within_windows: bool = True
+    ) -> Sequence[VSCodeUri]:
+        """Return the `dirty` uris which should be empty for the smooth `unique`."""
         jscode = """
         (async (args) => {
             /**
@@ -239,7 +241,7 @@ class EditorCleaner:
         clean_targets = self.get_clean_target_uris_for_unique(within_tabs=within_tabs, within_windows=within_windows)
         args = {
             "args": {
-                "uriKey": editor.uri.to_key_str(), 
+                "uriKey": editor.uri.to_key_str(),
                 "viewColumn": editor.viewColumn,
                 "withinTab": within_tabs,
                 "withinWindows": within_windows,

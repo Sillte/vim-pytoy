@@ -6,6 +6,5 @@ class EphemeralNotificationProtocol(Protocol):
     def notify(
         self,
         message: str,
-        param: NotificationParam | LEVEL = "info",  
-    ) -> None:
-        ...
+        param: NotificationParam | LEVEL = "info",
+    ) -> None: ...

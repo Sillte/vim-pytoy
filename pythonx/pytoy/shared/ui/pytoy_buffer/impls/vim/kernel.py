@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from pytoy.shared.lib.entity import MortalEntityProtocol
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.buffer_events import ScopedBufferEventProvider
+from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.ui.pytoy_buffer.models import BufferEvents
 
 if TYPE_CHECKING:
@@ -15,15 +16,18 @@ if TYPE_CHECKING:
 class VimBufferKernel(MortalEntityProtocol):
     def __init__(self, bufnr: int, *, ctx: GlobalVimContext | None = None) -> None:
         self._bufnr = bufnr
-        
+
         if ctx is None:
             from pytoy.contexts.vim import GlobalVimContext
+
             ctx = GlobalVimContext.get()
         scoped_buffer_event_provider = ScopedBufferEventProvider.from_ctx(ctx)
         self._wipeout_event = scoped_buffer_event_provider.get_wipeout_event(bufnr)
-        self._write_pre_event  = scoped_buffer_event_provider.get_write_pre(bufnr)
-
+        self._write_pre_event = scoped_buffer_event_provider.get_write_pre(bufnr)
+        self._key_action_events = KeyActionEvents(ctx.keymap_manager, bufnr)
         self.on_wipeout = self.on_end
+
+        self.on_wipeout.subscribe(lambda _: self._key_action_events.clear())
 
     @property
     def entity_id(self) -> int:
@@ -32,12 +36,15 @@ class VimBufferKernel(MortalEntityProtocol):
     @property
     def on_end(self) -> Event[int]:
         return self._wipeout_event
-    
+
     @property
     def events(self) -> BufferEvents:
-        return BufferEvents(on_wiped=self._wipeout_event, 
-                            on_pre_buf=self._write_pre_event)
-                            
+        return BufferEvents(on_wiped=self._wipeout_event, on_pre_buf=self._write_pre_event)
+
+    @property
+    def actions(self) -> KeyActionEvents:
+        return self._key_action_events
+
     @property
     def bufnr(self) -> int:
         return self._bufnr
@@ -46,7 +53,6 @@ class VimBufferKernel(MortalEntityProtocol):
     def bufname(self) -> str | None:
         buffer = self.buffer
         return buffer.name if buffer else None
-
 
     @property
     def buffer(self) -> "vim.Buffer | None":
@@ -67,4 +73,3 @@ class VimBufferKernel(MortalEntityProtocol):
     def lines(self) -> list[str]:
         buffer = self.buffer
         return buffer[:] if buffer else []
-

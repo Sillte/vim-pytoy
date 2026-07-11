@@ -5,7 +5,6 @@ from pytoy.shared.timertask.domain import TaskName, OnTaskCallback, OnFinishCall
 from pytoy.shared.timertask.domain import TimerTaskImplProtocol
 
 
-
 def _wrap_to_one_argument_func(
     func: Callable[[], Any] | Callable[[Any], Any],
 ) -> Callable[[Any], Any]:
@@ -29,9 +28,11 @@ def get_timer_task_impl() -> TimerTaskImplProtocol:
     """Get the timer task implementation."""
     if can_use_vim():
         from pytoy.shared.timertask.vim.timertask_impl import TimerTaskImplVim
+
         return TimerTaskImplVim()
     else:
         from pytoy.shared.timertask.domain import TimerTaskImplDummy
+
         return TimerTaskImplDummy()
 
 

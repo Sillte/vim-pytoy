@@ -12,9 +12,7 @@ from pytoy_llm.task import InvocationSpecMeta, LLMInvocationSpec
 class DocumentProfile(BaseModel):
     """Analysis result of the document."""
 
-    language: Annotated[
-        LanguageKind, Field(description="The dominant language of the document.")
-    ]
+    language: Annotated[LanguageKind, Field(description="The dominant language of the document.")]
     required_role: Annotated[
         str, Field(description="The appropriate role to edit this document, which is easily interpretable by LLM.")
     ]
@@ -32,7 +30,9 @@ class DocumentProfile(BaseModel):
 
 
 def make_profile_spec() -> LLMInvocationSpec:
-    intent = "Identify the dominant language of the document (such as English, Japanese, or Python), purpose and style .\n"
+    intent = (
+        "Identify the dominant language of the document (such as English, Japanese, or Python), purpose and style .\n"
+    )
     template = SystemPromptTemplate(
         name="DocumentProfile",
         output_spec=DocumentProfile,

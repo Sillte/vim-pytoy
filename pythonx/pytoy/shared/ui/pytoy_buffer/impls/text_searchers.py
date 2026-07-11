@@ -6,25 +6,26 @@ class TextSearcher:
     """Find the target `text` from the lines.
     Note that `col_offset` is meaningful only when the first line is the target.
     """
-    def __init__(self, lines: Sequence[str], line_offset:  int, col_offset: int):
+
+    def __init__(self, lines: Sequence[str], line_offset: int, col_offset: int):
         self.lines = lines
         self._content, self._line_offsets = self._build_text_and_offsets(lines)
         self.line_offset = line_offset
         self.col_offset = col_offset
 
-
     @classmethod
-    def create(cls,
-                      lines: Sequence[str],
-                      target_range: CharacterRange | None = None,
-                      ) -> Self:
+    def create(
+        cls,
+        lines: Sequence[str],
+        target_range: CharacterRange | None = None,
+    ) -> Self:
         """
         Create a TextSearcher whose internal text is restricted to the given range.
 
         - The search is performed only within the sliced text.
         - Returned CharacterRange is always mapped back to the original coordinates.
 
-        `line_offset` is propagated the final CharacterRange. 
+        `line_offset` is propagated the final CharacterRange.
         In all the lines, it assumes that `lines` starts from `line_offset`.
         """
 
@@ -36,11 +37,11 @@ class TextSearcher:
 
         if start.line == end.line:
             target_line = lines[start.line]
-            return cls(lines=[target_line[start.col:end.col]], line_offset=start.line, col_offset=start.col)
+            return cls(lines=[target_line[start.col : end.col]], line_offset=start.line, col_offset=start.col)
         else:
-            first_line = lines[start.line][start.col:]
+            first_line = lines[start.line][start.col :]
             final_line = lines[end.line][: target_range.end.col]
-            target = [first_line,  *lines[start.line + 1: end.line], final_line]
+            target = [first_line, *lines[start.line + 1 : end.line], final_line]
             return cls(lines=target, line_offset=start.line, col_offset=start.col)
 
     def _build_text_and_offsets(self, lines: Sequence[str]) -> tuple[str, list[int]]:
@@ -65,7 +66,6 @@ class TextSearcher:
             line = i
         col = index - self._line_offsets[line]
         return CursorPosition(line=line, col=col)
- 
 
     def find_first(
         self,
@@ -112,6 +112,7 @@ class TextSearcher:
             else:
                 col = cursor.col
             return CursorPosition(line, col)
+
         start = _solve(start_cursor)
         end = _solve(end_cursor)
         return CharacterRange(start=start, end=end)

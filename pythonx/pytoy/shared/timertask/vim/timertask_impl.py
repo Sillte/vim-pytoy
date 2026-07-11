@@ -1,9 +1,17 @@
 import vim
 
-from pytoy.shared.timertask.domain import TaskStatus, FunctionName, OnTaskCallback, RegisteredTask, TaskName, TimerStopException, TimerTaskImplProtocol
+from pytoy.shared.timertask.domain import (
+    TaskStatus,
+    FunctionName,
+    OnTaskCallback,
+    RegisteredTask,
+    TaskName,
+    TimerStopException,
+    TimerTaskImplProtocol,
+)
 from pytoy.shared.timertask.domain import NormalStopReason, OnFinishCallback, OnErrorCallback
 
-from pytoy.shared.lib.backend import get_backend_enum, BackendEnum 
+from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 
 
 from textwrap import dedent
@@ -12,7 +20,6 @@ import threading
 
 
 class TimerTaskImplVim(TimerTaskImplProtocol):
-
     instance: Self | None = None
 
     def __init__(
@@ -52,6 +59,7 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
 
         # Vimコードの生成と実行
         vim_code = self._create_vim_code(taskname, vim_funcname)
+
         def _impl_function():
             with self._lock:
                 vim.command(vim_code)
@@ -61,6 +69,7 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
                 self.tasks[taskname] = task
                 self.statuses[taskname] = TaskStatus(repeat=repeat)
                 self._timer_map[taskname] = timer_id
+
         if get_backend_enum() == BackendEnum.VIM:
             _impl_function()
         else:
@@ -85,9 +94,9 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
             self._schedule_deregister(name)
             cause = tse.__cause__
             if on_finish and (not cause):
-                on_finish('stopped')
+                on_finish("stopped")
             elif on_error and cause:
-                on_error(cause)  #type: ignore
+                on_error(cause)  # type: ignore
             elif cause:
                 raise cause
             return
@@ -153,6 +162,7 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
         if timer_id is None or task is None:
             return
         vim_funcname = task.impl_function_name
+
         def _impl_function():
             with self._lock:
                 vim.command(
@@ -178,5 +188,3 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
     def is_registered(self, name: str):
         with self._lock:
             return name in self._timer_map
-
-

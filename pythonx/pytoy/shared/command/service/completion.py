@@ -26,7 +26,7 @@ class CursorTokenPosition:
     current_token: Token | None = None
     next_token: Token | None = None
     end_of_current_token: bool = False
- 
+
     @property
     def beginning(self) -> bool:
         if self.current_token is None and self.prev_token is None:
@@ -112,6 +112,7 @@ class ArgumentAppeal:
     argument: ArgumentModel
     type: Literal["Argument"] = "Argument"
 
+
 @dataclass(frozen=True)
 class OptionAppeal:
     options: Mapping[str, OptionModel]
@@ -126,27 +127,25 @@ class OptionValueAppeal:
 
 type Appeal = ArgumentAppeal | OptionAppeal | OptionValueAppeal
 
+
 class NextTokenResolver:
-    
     def _resolve_exceptions(self, interp: InterpretedInput, command_model: CommandModel) -> Sequence[Appeal]:
         appeals = []
         option_map = {opt.name: opt for opt in command_model.options}
 
-        # When the solvable exception exists, the highest priorty is to resove them. 
+        # When the solvable exception exists, the highest priorty is to resove them.
         missing_keys = [elem.option_key for elem in interp.exceptions if isinstance(elem, OptionValueMissingError)]
         for key in missing_keys:
             if key in option_map:
                 appeals.append(OptionValueAppeal(option=option_map[key]))
         return appeals
 
-
     def resolve_appeals(self, tokens: Sequence[Token], command_model: CommandModel) -> Sequence[Appeal]:
         interp = InterpretedInput.from_tokens(tokens, BooleanOptions.from_command_model(command_model))
-        # When the solvable exception exists, the highest priorty is to resove them. 
+        # When the solvable exception exists, the highest priorty is to resove them.
         appeals = self._resolve_exceptions(interp, command_model)
         if appeals:
             return appeals
-
 
         # Below, both of options and arguments are available.
         appeals = []
@@ -154,21 +153,23 @@ class NextTokenResolver:
         n_used_arguments = len(interp.arguments)
         if n_used_arguments < len(command_model.arguments):
             appeals.append(ArgumentAppeal(argument=command_model.arguments[n_used_arguments]))
-            
+
         option_map = {opt.name: opt for opt in command_model.options}
         unused_keys = option_map.keys() - interp.options.keys()
         appeals.append(OptionAppeal(options={key: option_map[key] for key in unused_keys}))
 
         return appeals
-         
+
 
 # Output to the outside of the domain.
+
 
 @dataclass(frozen=True)
 class CompletionCandidate:
     """Replace [start, end) position's with `value`.
-    Note that `start` is inclusive, but `end` is exclusive. 
+    Note that `start` is inclusive, but `end` is exclusive.
     """
+
     start: int
     end: int
     value: str
@@ -223,12 +224,12 @@ class CandidateFactory:
                         return []
                 elif leading_key and value is None:
                     token_values = [
-                        f"--{InterpretedInput.revert_key(key)}" for key in appeal.options.keys()
+                        f"--{InterpretedInput.revert_key(key)}"
+                        for key in appeal.options.keys()
                         if key.startswith(InterpretedInput.convert_key(leading_key))
                     ]
                     return [
-                        CompletionCandidate(start=start, end=end, value=token_value)
-                        for token_value in token_values
+                        CompletionCandidate(start=start, end=end, value=token_value) for token_value in token_values
                     ]
                 else:
                     token_values = [f"--{InterpretedInput.revert_key(key)}" for key in appeal.options.keys()]
@@ -263,7 +264,7 @@ class CandidateFactory:
             candidates.extend(self._appeal_to_candidates(appeal, leading, start, end))
 
         return self._to_unique(candidates)
-    
+
     def _to_unique(self, candidates: Sequence[CompletionCandidate]) -> Sequence[CompletionCandidate]:
         return list({cand.value: cand for cand in candidates}.values())
 
@@ -276,7 +277,7 @@ class CompletionService:
         cmd_line = completion_param.cmd_line
         cursor_pos = completion_param.cursor_pos
         offset = completion_param.offset
-        
+
         tokens = tokenize(cmd_line)
         status = CmdlineStatus(
             cmd_line=cmd_line,
@@ -289,17 +290,14 @@ class CompletionService:
         resolver = NextTokenResolver()
 
         if current_position.current_token:
-            prev_tokens = [
-                t for t in tokens
-                if t.end < current_position.cursor_pos
-            ]
+            prev_tokens = [t for t in tokens if t.end < current_position.cursor_pos]
         else:
             prev_tokens = tokens
         appeals = resolver.resolve_appeals(prev_tokens, command_model)
 
         factory = CandidateFactory()
         candidates = factory.create(current_position, appeals, command_model)
-        
+
         # Resolve offsets.
         if offset != 0:
             candidates = [replace(cand, start=cand.start + offset, end=cand.end + offset) for cand in candidates]

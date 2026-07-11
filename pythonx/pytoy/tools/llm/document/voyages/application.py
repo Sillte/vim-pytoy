@@ -21,24 +21,30 @@ from pytoy.tools.llm.interaction_provider import InteractionProvider, Interactio
 
 
 class EvolveRequest(BaseModel, frozen=True):
-    compass: Annotated[
-        Compass, Field(description="The direction at which the document should pursue.")
-    ]
+    compass: Annotated[Compass, Field(description="The direction at which the document should pursue.")]
     manuscript: Annotated[str, Field(description="The current manuscript.")]
-    evolve_policy: Annotated[EvolvePolicy, Field(description="The policy for editing of the document.")] = EvolvePolicy(degree="auto")
+    evolve_policy: Annotated[EvolvePolicy, Field(description="The policy for editing of the document.")] = EvolvePolicy(
+        degree="auto"
+    )
 
 
 class EvolveResponse(BaseModel, frozen=True):
-    manuscript: Annotated[str, Field(description=("The fully rewritten manuscript.\n"
-                                        "It is the entire document from beginning to end.\n"
-                                        "Note that output must be self-contained.\n"
-                                        "A reader must be able to read the `manuscript` field alone \n"
-                                     ))]
-    reason: Annotated[str, Field(description="The reason and policy regarding the generation or revision of the manuscript.")]
-    compass: Annotated[
-        Compass, Field(description="The direction at which the document should pursue.")
+    manuscript: Annotated[
+        str,
+        Field(
+            description=(
+                "The fully rewritten manuscript.\n"
+                "It is the entire document from beginning to end.\n"
+                "Note that output must be self-contained.\n"
+                "A reader must be able to read the `manuscript` field alone \n"
+            )
+        ),
     ]
-    
+    reason: Annotated[
+        str, Field(description="The reason and policy regarding the generation or revision of the manuscript.")
+    ]
+    compass: Annotated[Compass, Field(description="The direction at which the document should pursue.")]
+
 
 def wrap_logger(function: Callable, logger: logging.Logger) -> Callable:
     @functools.wraps(function)
@@ -59,18 +65,21 @@ def wrap_logger(function: Callable, logger: logging.Logger) -> Callable:
 
     return wrapped
 
+
 def _evolve_create_messages(evolve_request: EvolveRequest) -> list[InputMessage]:
     user_message = InputMessage(role="user", content=evolve_request.manuscript)
-    
+
     compass = evolve_request.compass
-    compass_fragment = dedent(f"""
+    compass_fragment = dedent(
+        f"""
     ```json
     {Compass.model_json_schema()}
     ```
     ```json
     {compass.model_dump_json()}
     ```
-    """.strip())
+    """.strip()
+    )
 
     evolve_policy = evolve_request.evolve_policy
     evolve_policy_fragment = dedent(f"""
@@ -84,8 +93,9 @@ def _evolve_create_messages(evolve_request: EvolveRequest) -> list[InputMessage]
     - EvolvePolicy overrides conservative behavior.
       When degree is high or extreme, avoid minimal edits.
     """)
-    
-    system_prompt = dedent(f"""
+
+    system_prompt = dedent(
+        f"""
     # Task: Manuscript Evolution
 
     You are operating in a structured writing system.
@@ -123,30 +133,36 @@ def _evolve_create_messages(evolve_request: EvolveRequest) -> list[InputMessage]
     Return a valid `EvolveResponse` JSON object.
     Do not output anything else.
 
-    """.strip())
+    """.strip()
+    )
     system_message = InputMessage(role="system", content=system_prompt)
     return [user_message, system_message]
 
 
 def evolve(evolve_request: EvolveRequest) -> EvolveResponse:
-    """Update the manuscript based on  `EvolveRequest`.
-    """
+    """Update the manuscript based on  `EvolveRequest`."""
     messages = _evolve_create_messages(evolve_request)
     result = completion(messages, output_format=EvolveResponse)
     return cast(EvolveResponse, result)
 
 
-def build_evolve_task_request(request: EvolveRequest, llm_config: LLMConfig | None = None, connection_name: str | None = None, logger: logging.Logger | None = None) -> LLMTaskRequest:
+def build_evolve_task_request(
+    request: EvolveRequest,
+    llm_config: LLMConfig | None = None,
+    connection_name: str | None = None,
+    logger: logging.Logger | None = None,
+) -> LLMTaskRequest:
     create_messages = wrap_logger(_evolve_create_messages, logger) if logger else _evolve_create_messages
     meta = InvocationSpecMeta(name="EvolveInvocation", intent="Evolve the manuscript")
-    invocation_spec = LLMInvocationSpec(meta=meta,
-                                        output_spec=EvolveResponse,
-                                        create_messages=create_messages,
-                                        llm_config=llm_config,
-                                        connection_name=connection_name)
+    invocation_spec = LLMInvocationSpec(
+        meta=meta,
+        output_spec=EvolveResponse,
+        create_messages=create_messages,
+        llm_config=llm_config,
+        connection_name=connection_name,
+    )
     task_spec = LLMTaskSpec.from_single_spec(meta="VoyageEvolveTask", invocation_spec=invocation_spec)
     return LLMTaskRequest(task_spec=task_spec, task_input=request)
-
 
 
 class ReflectRequest(BaseModel, frozen=True):
@@ -170,7 +186,8 @@ def _reflect_create_messages(reflect_request: ReflectRequest) -> list[InputMessa
 
     compass_json = reflect_request.compass.model_dump_json()
 
-    system_prompt = dedent(f"""
+    system_prompt = dedent(
+        f"""
     # Task: Reflect and Update State
 
     You are evaluating a manuscript within a structured writing system.
@@ -188,7 +205,8 @@ def _reflect_create_messages(reflect_request: ReflectRequest) -> list[InputMessa
 
     Return a valid `ReflectResponse` JSON object.
     Do not output anything else.
-    """.strip())
+    """.strip()
+    )
 
     system_message = InputMessage(role="system", content=system_prompt)
     return [user_message, system_message]
@@ -205,7 +223,6 @@ def build_reflect_task_request(
     llm_config: LLMConfig | None = None,
     connection_name: str | None = None,
     logger: logging.Logger | None = None,
-    
 ) -> LLMTaskRequest:
     """Construct an LLMTaskRequest for the Reflect task."""
     create_messages = wrap_logger(_reflect_create_messages, logger) if logger else _reflect_create_messages
@@ -222,31 +239,47 @@ def build_reflect_task_request(
 
 
 class VoyageInteractionCreator:
-    """Create the interaction.
-    """
+    """Create the interaction."""
+
     def __init__(self, kernel: FairyKernel):
         self.kernel = kernel
 
-    def create_evolve_interaction(self,
-                                evolve_request: EvolveRequest,
-                                on_success: Callable[[EvolveResponse], None],
-                                on_failure: Callable[[Exception], None],
-                                llm_config: LLMConfig | None = None,
-                                connection_name: str | None = None) -> LLMInteraction:
-        """Create `evolve` interaction (asynchronous procedure call of `evolve`)
-        """
-        task_request = build_evolve_task_request(evolve_request, llm_config=llm_config, connection_name=connection_name, logger=self.kernel.llm_context.logger)
-        interaction_request = InteractionRequest(self.kernel, task_request=task_request, on_success=on_success, on_failure=on_failure)
+    def create_evolve_interaction(
+        self,
+        evolve_request: EvolveRequest,
+        on_success: Callable[[EvolveResponse], None],
+        on_failure: Callable[[Exception], None],
+        llm_config: LLMConfig | None = None,
+        connection_name: str | None = None,
+    ) -> LLMInteraction:
+        """Create `evolve` interaction (asynchronous procedure call of `evolve`)"""
+        task_request = build_evolve_task_request(
+            evolve_request,
+            llm_config=llm_config,
+            connection_name=connection_name,
+            logger=self.kernel.llm_context.logger,
+        )
+        interaction_request = InteractionRequest(
+            self.kernel, task_request=task_request, on_success=on_success, on_failure=on_failure
+        )
         return InteractionProvider().create(interaction_request)
 
-    def create_reflect_interaction(self,
-                                   reflect_request: ReflectRequest,
-                                on_success: Callable[[ReflectResponse], None],
-                                on_failure: Callable[[Exception], None],
-                                llm_config: LLMConfig | None = None,
-                                connection_name: str | None = None) -> LLMInteraction:
-        """Create `evolve` interaction (asynchronous procedure call of `evolve`)
-        """
-        task_request = build_reflect_task_request(reflect_request, llm_config=llm_config, connection_name=connection_name, logger=self.kernel.llm_context.logger)
-        interaction_request = InteractionRequest(self.kernel, task_request=task_request, on_success=on_success, on_failure=on_failure)
+    def create_reflect_interaction(
+        self,
+        reflect_request: ReflectRequest,
+        on_success: Callable[[ReflectResponse], None],
+        on_failure: Callable[[Exception], None],
+        llm_config: LLMConfig | None = None,
+        connection_name: str | None = None,
+    ) -> LLMInteraction:
+        """Create `evolve` interaction (asynchronous procedure call of `evolve`)"""
+        task_request = build_reflect_task_request(
+            reflect_request,
+            llm_config=llm_config,
+            connection_name=connection_name,
+            logger=self.kernel.llm_context.logger,
+        )
+        interaction_request = InteractionRequest(
+            self.kernel, task_request=task_request, on_success=on_success, on_failure=on_failure
+        )
         return InteractionProvider().create(interaction_request)

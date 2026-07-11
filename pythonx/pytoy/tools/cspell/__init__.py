@@ -106,9 +106,7 @@ class CSpellOneFileChecker:
                 if line.startswith(UUID):
                     _, orig_tuple = line.split(":")
                     orig_tuple = ast.literal_eval(orig_tuple)
-                    orders.append(
-                        _Order(line=int(line_no) + offset, orig_tuple=orig_tuple)
-                    )
+                    orders.append(_Order(line=int(line_no) + offset, orig_tuple=orig_tuple))
 
             ret = subprocess.run(
                 "cspell stdin://dummy.py",

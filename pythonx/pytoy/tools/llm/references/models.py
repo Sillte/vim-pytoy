@@ -134,12 +134,17 @@ class ReferenceDataset(BaseModel):
         folder = Path(folder)
         folder.mkdir(exist_ok=True, parents=True)
         data_dict = self.model_dump(mode="json")
-        (folder / "meta.json").write_text(json.dumps(data_dict["meta"], indent=4, ensure_ascii=False), encoding="utf8", )
-        (folder / "path_pairs.json").write_text(json.dumps(data_dict["path_pairs"], indent=4, ensure_ascii=False), encoding="utf8")
+        (folder / "meta.json").write_text(
+            json.dumps(data_dict["meta"], indent=4, ensure_ascii=False),
+            encoding="utf8",
+        )
+        (folder / "path_pairs.json").write_text(
+            json.dumps(data_dict["path_pairs"], indent=4, ensure_ascii=False), encoding="utf8"
+        )
 
     @classmethod
     def load(cls, folder: str | Path) -> Self:
         folder = Path(folder)
-        meta = json.loads( (folder / "meta.json").read_text(encoding="utf8"))
-        path_pairs = json.loads( (folder / "path_pairs.json").read_text(encoding="utf8" ))
+        meta = json.loads((folder / "meta.json").read_text(encoding="utf8"))
+        path_pairs = json.loads((folder / "path_pairs.json").read_text(encoding="utf8"))
         return cls.model_validate({"meta": meta, "path_pairs": path_pairs})

@@ -3,14 +3,15 @@ from typing import Any, Self, Mapping
 from pathlib import Path
 from pytoy.shared.lib.text import CursorPosition
 
+
 @dataclass
 class QuickfixRecord:
-    """Record of Quickfix.
-    """
+    """Record of Quickfix."""
+
     # Required parameters
     filename: str  # This must be the absolute path
     lnum: int  # 1-based, from the defintion of `Quickfix in Vim`.
-    col: int = 1 # 1-based, from the defintion of `Quickfix in Vim`.
+    col: int = 1  # 1-based, from the defintion of `Quickfix in Vim`.
     text: str = ""
 
     valid: bool = True
@@ -21,11 +22,9 @@ class QuickfixRecord:
     # if not used, erase them...
     # optional parameters
     vcol: bool = False
-    type: str | None = None     # "E", "W", "I", "N" など
-    nr: int | None  = None       # エラー番号
+    type: str | None = None  # "E", "W", "I", "N" など
+    nr: int | None = None  # エラー番号
     pattern: str | None = None  # 正規表現パターン
-
-
 
     def to_dict(self) -> dict[str, Any]:
         d = {
@@ -84,11 +83,12 @@ class QuickfixRecord:
     def cursor(self) -> CursorPosition:
         return CursorPosition(self.lnum - 1, self.col - 1)
 
+
 @dataclass
 class QuickfixState:
-    """Represents the selection state of quickfix.
-    """
-    index: int | None # 0-based. if `size` == 0, then index is None
+    """Represents the selection state of quickfix."""
+
+    index: int | None  # 0-based. if `size` == 0, then index is None
     size: int
 
     def __post_init__(self):
@@ -99,6 +99,5 @@ class QuickfixState:
         if 0 < self.size:
             if self.index is None:
                 self.index = 0
-        if self.index: 
+        if self.index:
             self.index = self.index % self.size
-

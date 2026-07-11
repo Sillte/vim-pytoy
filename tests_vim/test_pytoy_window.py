@@ -11,6 +11,7 @@ def test_function():
     paths = [window.buffer.path for window in PytoyWindow.get_windows()]
     assert any(path.name == target for path in paths)
 
+
 def test_unique():
     current = PytoyWindow.get_current()
     current.unique(within_tabs=True, within_windows=False)
@@ -27,15 +28,13 @@ def test_cursor():
     window.move_cursor(cursor=target, viewport_mode=ViewportMoveMode.TOP)
     assert window.cursor == target
 
-#test_function()
-#test_unique()
-#test_cursor()
-#print("OK")
 
-#target = "test_window"
-#window = PytoyWindowProvider().open_window(target, param="vertical")
-#param2 = WindowCreationParam.for_split(split_direction="horizontal", anchor=window)
-#PytoyWindowProvider().open_window(target + "2", param=param2)
+# test_function()
+# test_unique()
+# test_cursor()
+# print("OK")
 
-
-
+# target = "test_window"
+# window = PytoyWindowProvider().open_window(target, param="vertical")
+# param2 = WindowCreationParam.for_split(split_direction="horizontal", anchor=window)
+# PytoyWindowProvider().open_window(target + "2", param=param2)

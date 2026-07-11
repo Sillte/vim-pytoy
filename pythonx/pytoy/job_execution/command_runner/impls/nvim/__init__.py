@@ -1,8 +1,15 @@
-from __future__ import annotations 
+from __future__ import annotations
 import vim
-from pytoy.job_execution.command_runner.models import OutputJobRequest, SpawnOption, JobID, JobEvents, Snapshot, OutputJobProtocol
+from pytoy.job_execution.command_runner.models import (
+    OutputJobRequest,
+    SpawnOption,
+    JobID,
+    JobEvents,
+    Snapshot,
+    OutputJobProtocol,
+)
 from pytoy.job_execution.command_runner.impls.core import OutputJobCore
-from pytoy.job_execution.process_utils import  find_children_pids
+from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.shared.timertask import TimerTask
@@ -11,6 +18,7 @@ from pathlib import Path
 
 if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext
+
 
 class OutputJobNvim(OutputJobProtocol):
     def __init__(self, job_request: OutputJobRequest, spawn_option: SpawnOption, *, ctx: Any = None):
@@ -23,22 +31,23 @@ class OutputJobNvim(OutputJobProtocol):
         # Neovimのコールバック: (job_id, data, event)
         # dataは必ず文字列のリストで届く
         def _on_event(job_id: int, data: list[str], event: str):
-            def _emit(func: Callable, data: list[str]): 
+            def _emit(func: Callable, data: list[str]):
                 n_lines = len(data)
                 for i, line in enumerate(data):
-                    if i ==  n_lines -1 and (not line):
+                    if i == n_lines - 1 and (not line):
                         pass
                     else:
                         func(line)
-            if event == 'stdout':
+
+            if event == "stdout":
                 _emit(self._core.emit_stdout, data)
-            elif event == 'stderr':
+            elif event == "stderr":
                 _emit(self._core.emit_stderr, data)
 
-            elif event == 'exit':
+            elif event == "exit":
                 # 第2引数の data に終了コード（int）が入る
                 exit_code = data if isinstance(data, int) else 0
-                self._core.emit_exit(self, exit_code) 
+                self._core.emit_exit(self, exit_code)
 
         # イベントハンドラの登録
         on_event_vimfunc = FunctionRegistry.register(_on_event, prefix="OutputJobNvim")
@@ -67,7 +76,7 @@ class OutputJobNvim(OutputJobProtocol):
 
         # 実行
         try:
-            self._job_id_int = vim.call('jobstart', cmd, option)
+            self._job_id_int = vim.call("jobstart", cmd, option)
         except Exception as e:
             raise ValueError(f"Failed to start Neovim job: {e}")
 
@@ -80,14 +89,14 @@ class OutputJobNvim(OutputJobProtocol):
         try:
             # jobwait に 0ms 指定することで、現在のステータスを非ブロックで取得
             # 返り値が -1 なら「まだ動いている」
-            return vim.call('jobwait', [self._job_id_int], 0)[0] == -1
+            return vim.call("jobwait", [self._job_id_int], 0)[0] == -1
         except Exception:
             return False
 
     def terminate(self) -> None:
         if self.alive:
             try:
-                vim.call('jobstop', self._job_id_int)
+                vim.call("jobstop", self._job_id_int)
             except Exception:
                 pass
 
@@ -103,22 +112,26 @@ class OutputJobNvim(OutputJobProtocol):
     @property
     def events(self) -> JobEvents:
         return self._core.events
+
     @property
     def snapshot(self) -> Snapshot:
         return self._core.snapshot
+
     @property
     def name(self) -> str:
         return self._name
+
     @property
     def job_id(self) -> JobID:
         return self._job_id_int
-    
+
     @property
     def pid(self) -> int:
         try:
-            return int(vim.call('jobpid', self._job_id_int))
+            return int(vim.call("jobpid", self._job_id_int))
         except Exception:
             return -1
+
     @property
     def children_pids(self) -> list[int]:
         return find_children_pids(self.pid)

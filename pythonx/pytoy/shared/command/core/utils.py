@@ -32,10 +32,12 @@ def is_union(tp: TypeLike):
 def is_literal(tp: TypeLike):
     return get_origin(tp) is Literal
 
+
 def literal_values(tp: LiteralType) -> set[Any]:
     if get_origin(tp) is not Literal:
         raise TypeError(f"`{tp}` is not Literal.")
     return set(get_args(tp))
+
 
 def unwrap_annotated(tp: TypeLike) -> tuple[type, Sequence[Any]]:
     if get_origin(tp) is Annotated:
@@ -58,4 +60,3 @@ def flatten_union(tp: TypeLike) -> set[FlattenType]:
         return result
 
     return _inner(tp)
-

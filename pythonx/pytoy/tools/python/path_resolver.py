@@ -20,7 +20,9 @@ class PathResolver:
     def cwd(self) -> Path | None:
         return self._cwd
 
-    def resolve(self, target: Literal["workspace", "current"] | str | Path | None, current_path: Path | None = None) -> Path:
+    def resolve(
+        self, target: Literal["workspace", "current"] | str | Path | None, current_path: Path | None = None
+    ) -> Path:
         if target is None:
             target = "current"
         current_directory = self._solve_current_directory(current_path)

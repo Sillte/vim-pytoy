@@ -1,4 +1,3 @@
-
 def force_kill(pid: int, timeout: float = 1.0):
     import psutil
 

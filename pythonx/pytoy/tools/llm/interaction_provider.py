@@ -16,8 +16,8 @@ from pytoy.tools.llm.models import HooksForInteraction, LLMInteraction
 from pytoy.tools.llm.kernel import FairyKernel
 from pytoy_llm import completion
 from pytoy_llm.task import LLMTaskRequest, LLMTaskExecutor
-from pytoy_llm.models import InputMessage 
-from pytoy_llm.models import SyncOutput 
+from pytoy_llm.models import InputMessage
+from pytoy_llm.models import SyncOutput
 
 
 @dataclass
@@ -60,20 +60,13 @@ class InteractionProvider:
             return task_response.output
 
         # スレッド実行リクエスト作成
-        execution_request = ThreadExecutionRequest(
-            main_func=_main,
-            on_finish=_on_finish,
-            on_error=_on_error
-        )
+        execution_request = ThreadExecutionRequest(main_func=_main, on_finish=_on_finish, on_error=_on_error)
         execution = ThreadExecutor().execute(execution_request)
 
         # Interaction生成
         id_ = str(uuid.uuid1())
         interaction = LLMInteraction(
-            id=id_,
-            thread_execution=execution,
-            on_exit=interaction_end_emitter.event,
-            hooks=request.hooks
+            id=id_, thread_execution=execution, on_exit=interaction_end_emitter.event, hooks=request.hooks
         )
         # kernelに登録
         request.kernel.register_interaction(interaction)

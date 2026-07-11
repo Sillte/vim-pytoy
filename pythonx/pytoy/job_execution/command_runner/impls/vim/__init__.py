@@ -1,8 +1,15 @@
-from __future__ import annotations 
+from __future__ import annotations
 import vim
-from pytoy.job_execution.command_runner.models import OutputJobRequest, SpawnOption, JobID, JobEvents, Snapshot, OutputJobProtocol
+from pytoy.job_execution.command_runner.models import (
+    OutputJobRequest,
+    SpawnOption,
+    JobID,
+    JobEvents,
+    Snapshot,
+    OutputJobProtocol,
+)
 from pytoy.job_execution.command_runner.impls.core import OutputJobCore
-from pytoy.job_execution.process_utils import  find_children_pids
+from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.shared.timertask import TimerTask
 from typing import TYPE_CHECKING, Any
@@ -13,18 +20,22 @@ if TYPE_CHECKING:
 
 
 class OutputJobVim(OutputJobProtocol):
-    def __init__(self, job_request: OutputJobRequest, spawn_option: SpawnOption, *, ctx: GlobalVimContext | None = None):
+    def __init__(
+        self, job_request: OutputJobRequest, spawn_option: SpawnOption, *, ctx: GlobalVimContext | None = None
+    ):
         self._name = job_request.name
         self._core = OutputJobCore(self._name)
 
         self._stdout_lines = []
         self._stderr_lines = []
         self._start(job_request, spawn_option)
-        
+
     def _start(self, job_request: OutputJobRequest, spawn_option: SpawnOption):
         on_out = FunctionRegistry.register(lambda _, line: self._core.emit_stdout(line), prefix="OutputJobOut")
         on_err = FunctionRegistry.register(lambda _, line: self._core.emit_stderr(line), prefix="OutputJobErr")
-        on_exit = FunctionRegistry.register(lambda _, status: self._core.emit_exit(self, status), prefix="OutputJobExit")
+        on_exit = FunctionRegistry.register(
+            lambda _, status: self._core.emit_exit(self, status), prefix="OutputJobExit"
+        )
         vim_funcs = [on_out, on_err, on_exit]
 
         def _cleanup():
@@ -32,15 +43,16 @@ class OutputJobVim(OutputJobProtocol):
                 FunctionRegistry.deregister(f)
             vim.command(f"silent! unlet g:{self._jobid}")
             self.dispose()
-        
+
         self._disposables = []
-        self._disposables.append(self.events.on_job_exit.subscribe(lambda _ : TimerTask.execute_oneshot(_cleanup, interval=0)))
-        
+        self._disposables.append(
+            self.events.on_job_exit.subscribe(lambda _: TimerTask.execute_oneshot(_cleanup, interval=0))
+        )
 
         output_requests = set(job_request.outputs)
 
         option = {
-            "exit_cb": on_exit.impl_name, 
+            "exit_cb": on_exit.impl_name,
             "mode": "nl",  # 行単位
         }
 
@@ -55,25 +67,29 @@ class OutputJobVim(OutputJobProtocol):
 
         self._cwd = Path(cwd)
         option["cwd"] = self._cwd.absolute().as_posix()
-        
-        if (env := spawn_option.env):
-            option["env"] = env # type: ignore
+
+        if env := spawn_option.env:
+            option["env"] = env  # type: ignore
 
         import json
+
         self._jobid = f"{self._name}_{id(self)}"
 
         vim.command(f"let g:{self._jobid} = job_start({json.dumps(job_request.command)}, {json.dumps(option)})")
-        self._disposables.append(self.events.on_job_exit.subscribe(lambda _: vim.command(f"silent! unlet g:{self._jobid}")))
+        self._disposables.append(
+            self.events.on_job_exit.subscribe(lambda _: vim.command(f"silent! unlet g:{self._jobid}"))
+        )
 
         debug_status = vim.eval(f"job_status(g:{self._jobid})")
         if debug_status == "fail":
-            raise ValueError(f"Failed to execute the command, `{job_request.command=}`, {option=}", )
+            raise ValueError(
+                f"Failed to execute the command, `{job_request.command=}`, {option=}",
+            )
 
-    
     @property
     def cwd(self) -> Path:
         return Path(self._cwd)
-        
+
     @property
     def pid(self) -> int:
         # Retrieve PID from job info
@@ -124,4 +140,4 @@ class OutputJobVim(OutputJobProtocol):
     @property
     def snapshot(self) -> Snapshot:
         # Return current captured lines
-        return self._core.snapshot   
+        return self._core.snapshot

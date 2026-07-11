@@ -15,31 +15,27 @@ class CountSpec:
     default: int = 1
     type: Literal["Count"] = "Count"
 
+
 @dataclass(frozen=True)
 class NoneSpec:
-    """No additional specification regarding invocation.
-    """
+    """No additional specification regarding invocation."""
+
     type: Literal["None"] = "None"
+
 
 type InvocationSpec = RangeSpec | CountSpec | NoneSpec
 
 
 class CommandApplicationProtocol(Protocol):
-    def command(self,
-                name: str,
-                *,
-                invocation_spec: InvocationSpec | None = None,
-                exists_ok: bool = True) -> Callable: ...
+    def command(
+        self, name: str, *, invocation_spec: InvocationSpec | None = None, exists_ok: bool = True
+    ) -> Callable: ...
+
 
 class GroupApplicationProtocol(Protocol):
-
     @property
     def name(self) -> str: ...
 
-    def command(self,
-                sub_command: str,
-                *,
-                invocation_spec: InvocationSpec | None = None,
-                exists_ok: bool = True) -> Callable: ...
-
-
+    def command(
+        self, sub_command: str, *, invocation_spec: InvocationSpec | None = None, exists_ok: bool = True
+    ) -> Callable: ...

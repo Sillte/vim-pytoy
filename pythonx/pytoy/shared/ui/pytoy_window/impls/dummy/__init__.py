@@ -45,13 +45,12 @@ class PytoyWindowDummy(PytoyWindowProtocol):
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
         pass
 
-    def deduplicate(self, scope: Literal["buffer"] = "buffer") -> None: 
+    def deduplicate(self, scope: Literal["buffer"] = "buffer") -> None:
         windows = PytoyWindowProviderDummy().get_windows()
         for window in windows:
             if window != self:
                 if window.buffer == self.buffer:
                     window.close()
-
 
     @property
     def cursor(self) -> CursorPosition:

@@ -7,7 +7,12 @@ from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import normalize_lf_code
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.range_operator import RangeOperatorVSCode
 from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.models import URI as PytoyURI
-from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol, PytoyBufferProviderProtocol, BufferID
+from pytoy.shared.ui.pytoy_buffer.protocol import (
+    PytoyBufferProtocol,
+    RangeOperatorProtocol,
+    PytoyBufferProviderProtocol,
+    BufferID,
+)
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.shared.ui.vscode.document import Document
 from pytoy.shared.ui.utils import to_filepath
@@ -18,13 +23,14 @@ import vim
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol
     from pytoy.contexts.vscode import GlobalVSCodeContext
-    
+
 
 class PytoyBufferVSCode(PytoyBufferProtocol):
-    def __init__(self, bufnr: BufferID, *, ctx: GlobalVSCodeContext | None =None):
+    def __init__(self, bufnr: BufferID, *, ctx: GlobalVSCodeContext | None = None):
 
         if ctx is None:
             from pytoy.contexts.vscode import GlobalVSCodeContext  # ✅ 実装時のみインポート
+
             ctx = GlobalVSCodeContext.get()
         kernel_registry: EntityRegistry = ctx.buffer_kernel_registry
         self._kernel: VSCodeBufferKernel = kernel_registry.get(bufnr)
@@ -38,9 +44,10 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         return self._kernel
 
     @property
-    def bufnr(self, ) -> BufferID:
+    def bufnr(
+        self,
+    ) -> BufferID:
         return self._kernel.bufnr
-    
 
     @property
     def document(self) -> Document:
@@ -48,7 +55,7 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         if vscode_uri is None:
             raise RuntimeError(f"Correspoing URI is not existent, {self.bufnr=}")
         return Document(uri=vscode_uri)
-        
+
     @classmethod
     def from_document(cls, document: Document) -> Self:
         uri = document.uri
@@ -91,13 +98,12 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
             return BufferSource.from_path(path)
         else:
             return BufferSource.from_str(vscode_uri.path)
-        
 
     @property
     def is_file(self) -> bool:
         """Return True if the buffer corresponds to a file on disk."""
         return self.uri.scheme in {"file", "vscode-remote"}
-    
+
     @property
     def is_normal_type(self) -> bool:
         """Return whether this buffer is editable/usable by pytoy.
@@ -132,16 +138,14 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
             content = "\n" + content  # correspondence to `vim`.
         self.document.append(content)
 
-
     @property
     def content(self) -> str:
         return normalize_lf_code(self.document.content)
 
-
     @property
-    def lines(self) -> list[str]: 
+    def lines(self) -> list[str]:
         # TODO: consider the more efficient implemntation.
-        # For example, if you can get `bufnr`, 
+        # For example, if you can get `bufnr`,
         # it is possible to get the `vim.buffer[:] directly.
         return self.content.split("\n")
 
@@ -163,7 +167,8 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
 
     def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindowProtocol"]:
         from pytoy.shared.ui.pytoy_window.impls.vscode import PytoyWindowVSCode
-        #editors = [editor for editor in Editor.get_editors(only_visible=only_visible)
+
+        # editors = [editor for editor in Editor.get_editors(only_visible=only_visible)
         #            if editor.uri == self.document.uri]
         res = vim.eval(f"win_findbuf({self.bufnr})")
         winids = [int(wid) for wid in res] if res else []
@@ -171,7 +176,7 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
 
 
 class PytoyBufferProviderVSCode(PytoyBufferProviderProtocol):
-    def get_buffers(self, is_normal_type: bool = True) -> Sequence[PytoyBufferVSCode]: 
+    def get_buffers(self, is_normal_type: bool = True) -> Sequence[PytoyBufferVSCode]:
         buffers = [PytoyBufferVSCode(buffer.number) for buffer in vim.buffers if buffer.valid]
         if is_normal_type:
             buffers = [buffer for buffer in buffers if buffer.is_normal_type]
@@ -179,4 +184,3 @@ class PytoyBufferProviderVSCode(PytoyBufferProviderProtocol):
 
     def get_current(self) -> PytoyBufferProtocol:
         return PytoyBufferVSCode.from_document(Document.get_current())
-    

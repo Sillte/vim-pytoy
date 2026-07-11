@@ -8,11 +8,9 @@ class Api:
         import vim
 
         vim.exec_lua("_G.vscode_api_global = require('vscode')")  # type: ignore[attr-defined]
-        self._api = vim.lua.vscode_api_global # type: ignore[attr-defined]
+        self._api = vim.lua.vscode_api_global  # type: ignore[attr-defined]
 
-    def eval_with_return(
-        self, js_code: str, opts: None | Mapping[str, Any] = None, with_await: bool = True
-    ):
+    def eval_with_return(self, js_code: str, opts: None | Mapping[str, Any] = None, with_await: bool = True):
         """Evaluate `js_code` with `opts`.
         Example:
             api.eval_with_return("vscode.window.activeTextEditor.document.fileName", with_await=False)

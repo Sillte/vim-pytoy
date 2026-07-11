@@ -1,12 +1,9 @@
 from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
 from typing import Sequence
 
+
 class PytoyQuickfixStateResolver:
-    def resolve_record(
-        self, 
-        records: Sequence[QuickfixRecord],
-        state: QuickfixState
-    ) -> QuickfixRecord | None:
+    def resolve_record(self, records: Sequence[QuickfixRecord], state: QuickfixState) -> QuickfixRecord | None:
         """Resolve a record from the state index."""
         if state.index is None:
             return None

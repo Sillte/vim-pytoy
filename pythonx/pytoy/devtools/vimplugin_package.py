@@ -25,6 +25,7 @@ class VimPluginPackage:
         """
         if start_folder is None:
             import vim
+
             try:
                 start_folder = Path(vim.eval("expand('%:p:h')"))
             except Exception:
@@ -54,9 +55,7 @@ class VimPluginPackage:
             This is useful when reinitializing plugin state during development,
             especially when changes affect runtime behavior or require a clean environment.
         """
-        _VimRebooter(self.root_folder)(
-            with_vimrc=with_vimrc, kill_myprocess=kill_myprocess
-        )
+        _VimRebooter(self.root_folder)(with_vimrc=with_vimrc, kill_myprocess=kill_myprocess)
 
     def _find_plugin_root(self, start_folder: Path | None = None):
         """Search upward from the given folder to locate the plugin root.
@@ -82,9 +81,7 @@ class VimPluginPackage:
             return False
 
         def _is_root(folder: Path):
-            if any(
-                (folder / elem).exists() for elem in ["plugin", "autoload", "syntax"]
-            ):
+            if any((folder / elem).exists() for elem in ["plugin", "autoload", "syntax"]):
                 return True
             return False
 

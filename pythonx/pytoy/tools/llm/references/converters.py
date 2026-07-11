@@ -7,7 +7,6 @@ from pydantic import Field, BaseModel, field_validator
 from pytoy.tools.llm.references.models import ReferenceDataset, ResourceUri, ReferenceInfo, Extension
 
 
-
 class HTTPMarkItDownConverter:
     def __init__(self, impl: MarkItDown | None = None) -> None:
         if impl is None:
@@ -17,17 +16,16 @@ class HTTPMarkItDownConverter:
     @property
     def extension(self) -> str | list[str]:
         # NOT YET.
-        return [] 
+        return []
 
     def to_markdown(self, uri: str) -> str:
         return self._impl.convert(uri).text_content
 
 
 class ConverterProtocol(Protocol):
-    # In case of callable,  
+    # In case of callable,
     @property
     def extension(self) -> str | list[str]: ...
-
 
     @property
     def preference(self) -> float:
@@ -72,11 +70,12 @@ class MarkItDownConverter:
     def to_markdown(self, path: Path) -> str:
         return self._impl.convert(path).text_content
 
+
 class ReferenceConverterManager:
     _converters = [MarkdownConverter(), MarkItDownConverter()]
+
     def __init__(self):
         self._ext_to_converter = self._make_ext_to_converter(self._converters)
-
 
     @property
     def converters(self) -> list[ConverterProtocol]:
@@ -85,8 +84,7 @@ class ReferenceConverterManager:
     def pick(self, uri: ResourceUri) -> None | ConverterProtocol:
         key_extension = uri.extension
         return self._ext_to_converter.get(key_extension)
-        
-    
+
     def _make_ext_to_converter(self, converters: Sequence[ConverterProtocol]) -> dict[Extension, ConverterProtocol]:
         result = dict()
         for converter in sorted(converters, key=lambda con: con.preference, reverse=False):
@@ -95,4 +93,3 @@ class ReferenceConverterManager:
             for ex in exs:
                 result[ex] = converter
         return result
-
