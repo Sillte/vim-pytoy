@@ -19,48 +19,77 @@ class KeymapManager:
 
         key = re.sub(r"[^0-9a-zA-Z_]", "_", str(spec.key))
         if spec.buffer is not None:
-            name = f"KeymapManagerEventBuffer{spec.buffer}_{key}_{suffix}"
-        else:
-            name = f"KeymapManagerEventGlobal_{key}_{suffix}"
-        return name
+            return f"KeymapManagerEventBuffer{spec.buffer}_{key}_{suffix}"
+        return f"KeymapManagerEventGlobal_{key}_{suffix}"
 
     def register(self, spec: KeymapSpec) -> Keymap:
         if spec in self._keymaps:
             return self._keymaps[spec]
-        name = self._generate_name(spec)
+
         emitter = EventEmitter()
 
         def on_event():
             emitter.fire(spec.buffer)
 
-        registered_function = FunctionRegistry.register(on_event, name=name)
-        command = self._make_register_command(registered_function, spec=spec)
-        vim.command(command)
-        keymap = Keymap(event=emitter.event, spec=spec, function=registered_function)
+        registered_function = FunctionRegistry.register(
+            on_event,
+            name=self._generate_name(spec),
+        )
+
+        command = self._make_register_command(registered_function, spec)
+        self._execute_command(spec, command)
+
+        keymap = Keymap(
+            event=emitter.event,
+            spec=spec,
+            function=registered_function,
+        )
 
         self._keymaps[spec] = keymap
         self._emitters[spec] = emitter
-
         return keymap
 
     def deregister(self, spec: KeymapSpec) -> None:
         keymap = self._keymaps.pop(spec, None)
         if keymap is None:
             return
-        vim.command(self._make_deregister_command(spec))
+
+        self._execute_command(spec, self._make_deregister_command(spec))
+        self._emitters.pop(spec, None)
         FunctionRegistry.deregister(keymap.function)
 
-    def _make_register_command(self, function: RegisteredFunction, spec: KeymapSpec) -> str:
-        opts = []
+    def _execute_command(self, spec: KeymapSpec, command: str) -> None:
+        if spec.buffer is None:
+            vim.command(command)
+            return
 
-        opts.append("<silent>")
+        winid = int(vim.eval(f"bufwinid({spec.buffer})"))
+        if winid == -1:
+            raise ValueError(
+                f"Buffer {spec.buffer} is not displayed in any window."
+            )
+
+        escaped = command.replace("'", "''")
+        vim.command(f"call win_execute({winid}, '{escaped}')")
+
+    def _make_register_command(
+        self,
+        function: RegisteredFunction,
+        spec: KeymapSpec,
+    ) -> str:
+        opts = ["<silent>"]
 
         if spec.buffer is not None:
-            opts.append(f"<buffer={spec.buffer}>")
+            opts.append("<buffer>")
 
-        return f"nnoremap {' '.join(opts)} {spec.key} :call {function.impl_name}()<CR>"
+        return (
+            f"nnoremap {' '.join(opts)} "
+            f"{spec.key} "
+            f":call {function.impl_name}()<CR>"
+        )
 
     def _make_deregister_command(self, spec: KeymapSpec) -> str:
         if spec.buffer is None:
             return f"silent! nunmap {spec.key}"
-        return f"silent! nunmap <buffer={spec.buffer}> {spec.key}"
+
+        return f"silent! nunmap <buffer> {spec.key}"

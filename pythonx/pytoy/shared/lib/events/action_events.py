@@ -8,8 +8,8 @@ class KeyActionEvents:
         self._bufnr = bufnr
         self._events: dict[KeySequence, Event] = {}
 
-    def __getitem__(self, key: KeySequence) -> Event:
-        spec = KeymapSpec(key=key, buffer=self._bufnr)
+    def __getitem__(self, key: KeySequence | str) -> Event:
+        spec = KeymapSpec(key=KeySequence(key), buffer=self._bufnr)
         event = self._events.get(spec.key)
         if event is not None:
             return event

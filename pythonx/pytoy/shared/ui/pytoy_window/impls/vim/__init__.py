@@ -238,6 +238,13 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
 
         if param.try_reuse:
             if window := self._get_window_by_bufname(source.name, type=source.type):
+                if param.cursor:
+                    line = param.cursor.line
+                    col = param.cursor.col
+                    winid = window.winid
+                    vim.eval(
+                        f"win_execute({winid}, 'call cursor({line + 1}, {col + 1})')"
+                    )
                 return window
 
         stored_winid = int(vim.eval("win_getid()"))
@@ -249,9 +256,14 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
     def _create_window(self, source: BufferSource, param: WindowCreationParam) -> "vim.Window":
         target = source.name
         anchor = param.anchor
+        cursor = param.cursor
         is_file = source.type == "file"
         if anchor is None:
             anchor = self.get_current()
+        from pytoy.shared.ui.pytoy_window import PytoyWindow
+        # [TODO]: PytoyWindowProviderVim should not know its facade...
+        if isinstance(anchor, PytoyWindow):
+            anchor = anchor.impl
         anchor = cast(PytoyWindowVim, anchor)
 
         if not (anchor_vim_window := anchor.window):
@@ -281,6 +293,9 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
             if vim.current.buffer.number != bufno:
                 vim.command(f"buffer {bufno}")
             window = vim.current.window
+        if cursor:
+            line, col = cursor.line, cursor.col
+            window.cursor = (line + 1, col)
         return window
 
     def _get_window_by_bufname(

@@ -5,6 +5,7 @@ import vim
 from typing import TYPE_CHECKING
 
 from pytoy.shared.lib.entity import MortalEntityProtocol
+from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.shared.ui.pytoy_buffer.protocol import Event
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver, VSCodeUri
@@ -35,6 +36,10 @@ class VSCodeBufferKernel(MortalEntityProtocol):
     @property
     def events(self) -> BufferEvents:
         return self._vim_kernel.events
+
+    @property
+    def actions(self) -> KeyActionEvents:
+        return self._vim_kernel.actions
 
     @property
     def bufnr(self) -> int:

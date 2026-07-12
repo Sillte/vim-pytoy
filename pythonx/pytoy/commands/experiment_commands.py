@@ -50,3 +50,18 @@ def gather_git_diffs():
     buffer = make_buffer("__docs__", "vertical")
     buffer.init_buffer()
     buffer.append(section_text)
+    
+
+@app.command("QuickfixTest")
+def gather():
+    from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, QuickfixRecord
+    from pytoy.shared.ui.pytoy_quickfix.viewer import QuickfixViewer
+    from pathlib import Path
+    quickfix = PytoyQuickfix()
+    path = Path(r"c:\LocalLibrary\PublicLibrary\vim-pytoy\pythonx\pytoy\shared\command\service\executor.py")
+    record1 = QuickfixRecord(filename=str(path), lnum=1, text="Reason1")
+    record2 = QuickfixRecord(filename=str(path), lnum=10, text="Reason2")
+    records = [record1, record2]
+    viewer = QuickfixViewer(quickfix)
+    state = quickfix.set_records(records)
+    viewer.open_viewer()

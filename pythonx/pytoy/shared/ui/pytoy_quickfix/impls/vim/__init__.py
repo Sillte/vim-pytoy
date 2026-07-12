@@ -49,7 +49,7 @@ class PytoyQuickfixVimUI(PytoyQuickfixUIProtocol):
 
     @property
     def records(self) -> Sequence[QuickfixRecord]:
-        dict_list = vim.eval("call getqflist()")
+        dict_list = vim.eval("getqflist()")
         return [self._from_dict_to_record(elem) for elem in dict_list]
 
     @property

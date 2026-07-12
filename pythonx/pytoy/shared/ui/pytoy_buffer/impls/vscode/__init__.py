@@ -2,6 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from pytoy.shared.lib.entity import EntityRegistry
 from pytoy.shared.lib.event.domain import Event
+from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import normalize_lf_code
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.range_operator import RangeOperatorVSCode
@@ -71,6 +72,10 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     @property
     def events(self) -> BufferEvents:
         return self._kernel.events
+    
+    @property
+    def actions(self) -> KeyActionEvents:
+        return self._kernel.actions
 
     @classmethod
     def get_current(cls) -> PytoyBufferProtocol:

@@ -98,7 +98,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
             return buftype in {"", "nofile"}
         except VIM_ERROR:
             return False
-        except (AttributeError, TypeError):
+        except (AttributeError, TypeError, ValueError):
             return False
 
     @property

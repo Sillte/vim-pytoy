@@ -218,6 +218,13 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         anchor = param.anchor
         if anchor is None:
             anchor = PytoyWindowProviderVSCode().get_current()
+        else:
+            # [TODO]: This is not appropriate.
+            from pytoy.shared.ui.pytoy_window import PytoyWindow
+            if isinstance(anchor, PytoyWindow):
+                anchor = anchor.impl
+
+        # [TODO]: This is not appropriate.
         anchor = cast(PytoyWindowVSCode, anchor)
 
         anchor.focus()

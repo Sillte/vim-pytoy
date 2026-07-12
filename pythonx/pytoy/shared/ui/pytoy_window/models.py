@@ -40,14 +40,12 @@ class WindowCreationParam:
     try_reuse: bool = True
     target: Literal["in-place", "split"] = "split"
     anchor: PytoyWindowProtocol | None = None
-    split_direction: Literal["vertical", "horizontal", None] = "vertical"
+    split_direction: Literal["vertical", "horizontal", None] = None
     cursor: CursorPosition | None = None
 
     def __post_init__(self):
         if self.target == "split":
-            assert self.split_direction in {"vertical", "horizontal"}
-        else:
-            assert self.split_direction is None
+            self.split_direction = self.split_direction or "vertical"
 
     @classmethod
     def for_split(

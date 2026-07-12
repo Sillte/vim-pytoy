@@ -42,6 +42,14 @@ class PytoyQuickfix:
 
     def set_records(self, records: Sequence[QuickfixRecord]) -> QuickfixState:
         return self.impl.set_records(records)
+    
+    @property
+    def records(self) -> Sequence[QuickfixRecord]:
+        return self.impl.records
+
+    @property
+    def state(self) -> QuickfixState | None:
+        return self.impl.state
 
     def close(self) -> None:
         return self.impl.close()
