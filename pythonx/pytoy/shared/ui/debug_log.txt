@@ -1,0 +1,4 @@
+HANDER START:<function TimerTaskImplVim.register.<locals>.<lambda> at 0x000001DF0B7F60C0>
+HANDER END:<function TimerTaskImplVim.register.<locals>.<lambda> at 0x000001DF0B7F60C0>
+HANDER START:<function TimerTaskImplVim._schedule_deregister.<locals>.<lambda> at 0x000001DF0B7F62A0>
+HANDER END:<function TimerTaskImplVim._schedule_deregister.<locals>.<lambda> at 0x000001DF0B7F62A0>

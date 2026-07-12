@@ -164,6 +164,51 @@ class DebugLogger:
 
     def _set_depth(self, value):
         self._depth.value = value
+        
+
+def log_nvim_event(event: str):
+    import vim
+
+    logger = DebugLogger()
+
+    bufnr = vim.current.buffer.number
+    winid = vim.eval("win_getid()")
+    name = vim.current.buffer.name
+
+    logger.log(
+        f"[EVENT] {event} "
+        f"buf={bufnr} "
+        f"win={winid} "
+        f"name={name}"
+    )
+    
+__ON: bool = False
+    
+def start_event_log():
+    global __ON 
+    if __ON:
+        return 
+    __ON = True
+    import vim 
+    events = [
+        "BufAdd",
+        "BufRead",
+        "BufReadPost",
+        "BufEnter",
+        "BufWinEnter",
+        "WinEnter",
+        "WinNew",
+    ]
+
+    vim.command("augroup PytoyTrace")
+    vim.command("autocmd!")
+
+    for event in events:
+        vim.command(
+            rf'autocmd {event} * python3 from pytoy.devtools.debug_logger import log_nvim_event; log_nvim_event("{event}")'
+        )
+
+    vim.command("augroup END")
 
 
 if __name__ == "__main__":

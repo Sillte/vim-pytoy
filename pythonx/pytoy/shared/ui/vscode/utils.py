@@ -18,7 +18,7 @@ def wait_until_true(condition_func, timeout: float = 3.0, n_trials: int = 10, in
             return True
         # It is required to procced functions in other loops.
         vim.command("sleep 1m")  # Mpve events.
-        vim.command("redraw")  # ←  RPC チャネルを処理
+        # vim.command("redraw")  # (2026/07/18) It does not seem necessary.
         time.sleep(interval)
 
     return False
