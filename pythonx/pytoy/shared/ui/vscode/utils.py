@@ -6,7 +6,7 @@ from pytoy.shared.lib.text import CursorPosition
 from pytoy.shared.ui.pytoy_window import PytoyWindow
 
 
-def wait_until_true(condition_func, timeout: float = 3.0, n_trials: int = 10, initial_wait=None) -> bool:
+def wait_until_true(condition_func, timeout: float = 3.0, n_trials: int = 100, initial_wait=None) -> bool:
     """Wait the `condition_func` returns true.
     If `timeout` passes and this func returns False.
     """

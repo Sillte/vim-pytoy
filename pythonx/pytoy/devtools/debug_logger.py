@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime
 from contextlib import contextmanager
-from typing import TextIO
+from typing import TextIO, Sequence, Self
 import os
 import sys
 import threading
@@ -166,31 +166,8 @@ class DebugLogger:
         self._depth.value = value
         
 
-def log_nvim_event(event: str):
-    import vim
-
-    logger = DebugLogger()
-
-    bufnr = vim.current.buffer.number
-    winid = vim.eval("win_getid()")
-    name = vim.current.buffer.name
-
-    logger.log(
-        f"[EVENT] {event} "
-        f"buf={bufnr} "
-        f"win={winid} "
-        f"name={name}"
-    )
-    
-__ON: bool = False
-    
-def start_event_log():
-    global __ON 
-    if __ON:
-        return 
-    __ON = True
-    import vim 
-    events = [
+class VimEventTracer:
+    DEFAULT_EVENTS = [
         "BufAdd",
         "BufRead",
         "BufReadPost",
@@ -199,17 +176,93 @@ def start_event_log():
         "WinEnter",
         "WinNew",
     ]
+    
+    instances: dict[str, Self] = dict()
+    
+    @classmethod
+    def get(cls, name: str) -> Self | None:
+        return cls.instances.get(name)
 
-    vim.command("augroup PytoyTrace")
-    vim.command("autocmd!")
+    def __new__(cls, name:str = "default", events: Sequence[str] | None = None, *args, **kwargs):
+        if name in cls.instances:
+            instance = cls.instances[name]
+            if events and set(events) != instance._events:
+                raise ValueError(f"Failed to initiate `VimEventTracer`, {events}")
+            return instance
+        return super().__new__(cls, *args, **kwargs)
 
-    for event in events:
-        vim.command(
-            rf'autocmd {event} * python3 from pytoy.devtools.debug_logger import log_nvim_event; log_nvim_event("{event}")'
-        )
 
-    vim.command("augroup END")
+    def __init__(self, name:str = "default", events: Sequence[str] | None = None) -> None:
+        if getattr(self, "_initialized", False):
+            return
 
+        self._initialized = True
+        events = events or self.DEFAULT_EVENTS
+        self._initialized = True
+        self._logger = DebugLogger()
+        self._events = events
+        self._id = id(self)
+        self._enabled = False
+        self._name = name
+        self.instances[self._name] = self
+        
+    @property
+    def logger(self) -> DebugLogger:
+        return self._logger
+    
+    @property
+    def id(self) -> int:
+        return self._id
+
+    @property
+    def name(self):
+        return self._name
+        
+    def start(self) -> None:
+        import vim
+        if self._enabled:
+            return
+        self._enabled = True
+
+        vim.command(f"augroup PytoyTrace{self._id}")
+        vim.command("autocmd!")
+
+        for event in self._events:
+            vim.command(
+                rf'autocmd {event} * python3 from pytoy.devtools.debug_logger import log_nvim_event; log_nvim_event("{self._name}", "{event}")'
+            )
+        vim.command("augroup END")
+        
+    def stop(self) -> None:
+        if not self._enabled:
+            return 
+        import vim
+        vim.command(f"augroup PytoyTrace{self._id}")
+        vim.command("autocmd!")
+        vim.command("augroup END")
+        self._enabled = False
+        
+
+def log_nvim_event(name: str, event: str):
+    import vim
+
+    tracer = VimEventTracer.get(name)
+    if not tracer:
+        raise ValueError("Tracer cannot be retrieved.")
+    logger = tracer.logger
+
+    bufnr = vim.current.buffer.number
+    winid = vim.eval("win_getid()")
+    buffer_name = vim.current.buffer.name
+
+
+    logger.log(
+        f"[EVENT] {event} "
+        f"buf={bufnr} "
+        f"win={winid} "
+        f"name={buffer_name}"
+    )
+    
 
 if __name__ == "__main__":
     ...
