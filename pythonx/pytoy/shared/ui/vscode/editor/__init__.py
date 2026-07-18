@@ -145,7 +145,7 @@ class Editor(BaseModel):
                 preserveFocus: false
             });
 
-            if (line !== undefined && col !== undefined) {
+            if (line !== null && col !== null) {
                 const pos = new vscode.Position(line, col);
                 editor.selection = new vscode.Selection(pos, pos);
                 editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
