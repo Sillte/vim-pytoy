@@ -39,7 +39,7 @@ def make_quickfix_hooks(quickfix_profile: QuickfixProfile) -> ExecutionHooks:
         execution = post_process_context.execution
         quickfix_source = _decide_quickfix_source(result, quickfix_profile)
         records = quickfix_creator(quickfix_source, execution.cwd)
-        PytoyQuickfix().handle_records(records, is_open=True)
+        PytoyQuickfix().handle_records(records, is_open=False)
 
     quickfix_hooks = ExecutionHooks(on_post_process=on_post_process)
 

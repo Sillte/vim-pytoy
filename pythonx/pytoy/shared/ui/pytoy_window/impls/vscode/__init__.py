@@ -198,10 +198,7 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
                     window.move_cursor(param.cursor)
                 return window
 
-        current = self.get_current()
         editor = self._create_editor(source, param)
-        if not current.focus():
-            print(f"{current} cannot be focused.")
         flag = wait_until_true(lambda: WindowURISolver.from_uri(editor.uri) is not None, timeout=1.0)
         winid = WindowURISolver.from_uri(vscode_uri)
         if not winid:
