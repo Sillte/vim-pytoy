@@ -92,8 +92,8 @@ class QuickfixPresenter:
         q_buffer.actions["<SPACE>"].subscribe(lambda _: self.jump(with_focus=False))
 
     def jump(self, with_focus: bool = True):
-        q_buffer = self._quickfix_buffer_provider.provide()
         current_window = PytoyWindow.get_current()
+        q_buffer = self._quickfix_buffer_provider.provide()
         if current_window.buffer.source != q_buffer.source:
             raise ValueError("Current window does not handle `QuickfixBuffer`.")
         cursor = current_window.cursor
