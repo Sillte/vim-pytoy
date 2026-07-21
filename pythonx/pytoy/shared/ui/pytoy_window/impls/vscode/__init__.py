@@ -91,7 +91,10 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PytoyWindowVSCode):
             return NotImplemented
-        return self.editor == other.editor
+        try:
+            return self.editor == other.editor
+        except ValueError:
+            return False
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
         uris = self.editor.get_clean_target_uris_for_unique(within_tabs=within_tabs, within_windows=within_windows)
@@ -198,42 +201,40 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
                     window.move_cursor(param.cursor)
                 return window
 
-        editor = self._create_editor(source, param)
+        current = PytoyWindowProviderVSCode().get_current()
+        anchor = param.anchor or current
+        # [TODO]: This is not appropriate.
+        from pytoy.shared.ui.pytoy_window import PytoyWindow
+        if isinstance(anchor, PytoyWindow):
+            anchor = anchor.impl
+        if current != anchor:
+            anchor.focus()
+        anchor = cast(PytoyWindowVSCode, anchor)
+        editor = self._create_editor(source, param, anchor)
         flag = wait_until_true(lambda: WindowURISolver.from_uri(editor.uri) is not None, timeout=1.0)
+        if current != anchor:
+            current.focus()
         winid = WindowURISolver.from_uri(vscode_uri)
         if not winid:
             raise RuntimeError(f"Synchronization of `{vscode_uri=}` and `winid` failed. ", flag)
         return PytoyWindowVSCode(winid)
 
-    def _create_editor(self, source: BufferSource, param: WindowCreationParam) -> Editor:
+    def _create_editor(self, source: BufferSource, param: WindowCreationParam, anchor: PytoyWindowVSCode) -> Editor:
         if param.try_reuse:
             vscode_uri = self._to_uri(source)
             for editor in Editor.get_editors(only_visible=True):
                 if editor.uri == vscode_uri:
                     return editor
-
-        anchor = param.anchor
-        if anchor is None:
-            anchor = PytoyWindowProviderVSCode().get_current()
-        else:
-            # [TODO]: This is not appropriate.
-            from pytoy.shared.ui.pytoy_window import PytoyWindow
-            if isinstance(anchor, PytoyWindow):
-                anchor = anchor.impl
-
-        # [TODO]: This is not appropriate.
-        anchor = cast(PytoyWindowVSCode, anchor)
-
-        anchor.focus()
+        
         uri = self._to_uri(source)
+        anchor.focus()
 
         if param.target == "in-place":
             editor = anchor.editor.show(uri)
             if param.cursor:
                 line, col = param.cursor.line, param.cursor.col
                 editor.set_cursor_position(line, col, TextEditorRevealType.InCenterIfOutsideViewport)
-            return editor
-        if param.target == "split":
+        elif param.target == "split":
             match param.split_direction:
                 case "horizontal":
                     direction = "horizontal"
@@ -248,9 +249,8 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
                 pos = param.cursor.line, param.cursor.col
             else:
                 pos = None
-            return Editor.create(uri, direction, cursor=pos)
-
-        raise RuntimeError("Implementation Error")
+            editor = Editor.create(uri, direction, cursor=pos)
+        return editor
 
     def _to_uri(self, source: BufferSource) -> VSCodeUri:
         match source.type:

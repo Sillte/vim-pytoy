@@ -38,7 +38,7 @@ class PytoyQuickfixVSCodeUI(PytoyQuickfixUIProtocol):
 
         path = Path(record.filename)
         cursor = record.cursor
-        param = WindowCreationParam.for_in_place(try_reuse=True, anchor=None, cursor=cursor)
+        param = WindowCreationParam.for_in_place(try_reuse=False, anchor=None, cursor=cursor)
         PytoyWindowProvider().open_window(BufferSource.from_path(path), param)
         return record
 
