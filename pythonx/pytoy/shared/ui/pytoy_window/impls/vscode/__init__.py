@@ -193,7 +193,6 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         param = param if isinstance(param, WindowCreationParam) else WindowCreationParam.from_literal(param)
 
         vscode_uri = self._to_uri(source)
-        # print("vscode_uri", vscode_uri, WindowURISolver.from_uri(vscode_uri))
         if param.try_reuse:
             if winid := WindowURISolver.from_uri(vscode_uri):
                 window = PytoyWindowVSCode(winid)
@@ -207,13 +206,11 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         from pytoy.shared.ui.pytoy_window import PytoyWindow
         if isinstance(anchor, PytoyWindow):
             anchor = anchor.impl
-        if current != anchor:
-            anchor.focus()
+
         anchor = cast(PytoyWindowVSCode, anchor)
         editor = self._create_editor(source, param, anchor)
         flag = wait_until_true(lambda: WindowURISolver.from_uri(editor.uri) is not None, timeout=1.0)
-        if current != anchor:
-            current.focus()
+        current.focus()
         winid = WindowURISolver.from_uri(vscode_uri)
         if not winid:
             raise RuntimeError(f"Synchronization of `{vscode_uri=}` and `winid` failed. ", flag)
@@ -227,14 +224,14 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
                     return editor
         
         uri = self._to_uri(source)
-        anchor.focus()
 
         if param.target == "in-place":
-            editor = anchor.editor.show(uri)
+            editor = anchor.editor.show(uri, preview=True)
             if param.cursor:
                 line, col = param.cursor.line, param.cursor.col
                 editor.set_cursor_position(line, col, TextEditorRevealType.InCenterIfOutsideViewport)
         elif param.target == "split":
+            anchor.focus()
             match param.split_direction:
                 case "horizontal":
                     direction = "horizontal"
