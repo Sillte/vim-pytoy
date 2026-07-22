@@ -19,10 +19,13 @@ def to_filepath(path: str | Path) -> Path:
     and it is understandable in the domain of vim/nvim.
     * https://code.visualstudio.com/api/references/vscode-api#TextDocument
     """
-    path_str = str(path)
     if get_backend_enum() == BackendEnum.VSCODE:
+        path_str = str(path)
         path_str = _pattern.sub("", path_str)
-    return Path(path_str)
+        return Path(path_str)
+    else:
+        return Path(path)
+    
 
 
 if __name__ == "__main__":
