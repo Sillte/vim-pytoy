@@ -106,11 +106,15 @@ def get_remote_authority() -> str:
     if not is_remote_vscode():
         return ""
 
+    # vscode-remote WSL authority can differ only by case
+    # (e.g. wsl+Ubuntu vs wsl+ubuntu)
+    # Normalize for comparison.
+
     uris = VSCodeUri.get_uris()
     uris = [uri for uri in uris if uri.scheme == "vscode-remote"]
-    authorities = set(uri.authority for uri in uris)
+    authorities = set(uri.authority.lower() for uri in uris)
     if 2 <= len(authorities):
-        msg = f"`{authorities}` are found, it is impossible to determine autority."
+        msg = f"`{authorities}` are found, it is impossible to determine autority. uris: {uris}"
         raise ValueError(msg)
     elif 1 == len(authorities):
         return list(authorities)[0]
@@ -120,9 +124,9 @@ def get_remote_authority() -> str:
     jscode = "vscode.workspace.workspaceFolders.map(folder => {folder.uri});"
     uris = [VSCodeUri.model_validate(elem) for elem in api.eval_with_return(jscode, with_await=False)]
     uris = [uri for uri in uris if uri.scheme == "vscode-remote"]
-    authorities = set(uri.authority for uri in uris)
+    authorities = set(uri.authority.lower() for uri in uris)
     if 2 <= len(authorities):
-        msg = f"`{authorities}` are found, it is impossible to determine autority."
+        msg = f"`{authorities}` are found, it is impossible to determine autority. uris: {uris}"
         raise ValueError(msg)
     elif 1 == len(authorities):
         return list(authorities)[0]

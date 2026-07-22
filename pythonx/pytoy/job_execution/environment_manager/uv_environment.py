@@ -129,23 +129,50 @@ __add_uv_path_fallback_tried = False
 
 def _add_uv_path_fallback() -> bool:
     """
-    side-effects: updating of `os.envioron['PATH']
+    side-effects: updating of `os.environ['PATH']
     """
     global __add_uv_path_fallback_tried
     if __add_uv_path_fallback_tried:
         return False
     __add_uv_path_fallback_tried = True
-    try:
-        ret = subprocess.run(["bash", "-lic", "which uv"], text=True, timeout=2.0, capture_output=True)
+
+    import shutil
+    if bool(shutil.which("uv")):
+        return True
+
+    def _fetch_by_bash() -> None | str:
+        ret = subprocess.run(["bash", "-lic", "command -v uv"], text=True, timeout=2.0, capture_output=True)
         if ret.returncode != 0:
+            return None
+        uv = Path(ret.stdout.strip())
+        if uv.is_file():
+            return uv.parent.as_posix()
+        return None
+
+    def _fetch_by_default() -> None | str:
+        path = Path("~/.local/bin/uv").expanduser()
+        if path.exists(): 
+            return path.parent.as_posix()
+        else:
+            return None
+
+    try:
+        candidates = [_fetch_by_bash(), _fetch_by_default()]
+        folder = next(
+            (x for x in candidates if x is not None),
+            None,
+        )
+        if folder is None:
             return False
-        folder = Path(ret.stdout.strip()).parent.as_posix()
+
         current_path = os.environ.get("PATH", "")
-        new_path = f"{folder}{os.pathsep}{current_path}"
+        paths = current_path.split(os.pathsep) if current_path else []
+        if folder not in paths:
+            paths.insert(0, folder)
+        new_path = os.pathsep.join(paths)
         os.environ["PATH"] = new_path
         try:
             import vim
-
             vim.command(f'let $PATH="{new_path}"')
         except ImportError:
             pass
