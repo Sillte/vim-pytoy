@@ -7,15 +7,18 @@ name = "vim-pytoy"
 version = "0.1.0"
 description = "Python utility for Vim/Neovim + VSCode integration"
 dependencies = [
-    "pyte", 
-    "pywinpty", 
+    "ipython>=8.14",
+    "psutil>=5.9",
     "pydantic>=2.0.0",
-    "typing-extensions>=4.0.0",
-    "psutil",
-    "parso",
-    "toml", 
-    "markitdown", 
-    "GitPython",
+    "pynvim>=0.5",
+    "pyte>=0.8",
+    "ruff>=0.0.311",
+    "toml>=0.10",
+    "pip-system-certs>=0.1",
+    "markitdown>=0.0.1",
+    "requests>=2.31",
+    "pywinpty; sys_platform == 'win32'",
+    "pexpect; sys_platform == 'linux'",
     "pytoy-llm @ git+https://github.com/Sillte/pytoy-llm.git@main",
 ]
 requires-python = ">=3.12"
