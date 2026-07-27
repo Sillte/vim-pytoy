@@ -15,15 +15,13 @@ from pytoy.shared.timertask.thread_executor import ThreadExecutionRequest, Threa
 from pytoy.tools.llm.models import HooksForInteraction, LLMInteraction
 from pytoy.tools.llm.kernel import FairyKernel
 from pytoy_llm import completion
-from pytoy_llm.task import LLMTaskRequest, LLMTaskExecutor
-from pytoy_llm.models import InputMessage
-from pytoy_llm.models import SyncOutput
+from pytoy_llm.task import TaskRequest, TaskExecutor
 
 
 @dataclass
 class InteractionRequest:
     kernel: FairyKernel
-    task_request: LLMTaskRequest
+    task_request: TaskRequest
     on_success: Callable[[Any], None]
     on_failure: Callable[[Exception], None]
     hooks: HooksForInteraction | None = None
@@ -56,7 +54,7 @@ class InteractionProvider:
 
         # 実際のLLM呼び出し処理
         def _main(_) -> Any:
-            task_response = LLMTaskExecutor().execute(request.task_request)
+            task_response = TaskExecutor().execute(request.task_request)
             return task_response.output
 
         # スレッド実行リクエスト作成

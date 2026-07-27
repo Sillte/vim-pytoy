@@ -78,7 +78,7 @@ class ReferenceConverterManager:
         self._ext_to_converter = self._make_ext_to_converter(self._converters)
 
     @property
-    def converters(self) -> list[ConverterProtocol]:
+    def converters(self) -> Sequence[ConverterProtocol]:
         return self._converters
 
     def pick(self, uri: ResourceUri) -> None | ConverterProtocol:

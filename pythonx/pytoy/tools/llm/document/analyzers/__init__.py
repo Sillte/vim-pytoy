@@ -1,12 +1,12 @@
 from pydantic import BaseModel, Field
 
 
-from typing import Annotated, Literal, Sequence
+from typing import Annotated
 from pytoy.tools.llm.document.core import LanguageKind
 from pytoy_llm.materials.composers import InvocationPromptComposer
 from pytoy_llm.materials.composers.models import SystemPromptTemplate
-from pytoy_llm.models import InputMessage
-from pytoy_llm.task import InvocationSpecMeta, LLMInvocationSpec
+from pytoy_llm.models import LLMMessage
+from pytoy_llm.task.models import InvocationSpecMeta, LLMInvocationSpec
 
 
 class DocumentProfile(BaseModel):
@@ -35,7 +35,7 @@ def make_profile_spec() -> LLMInvocationSpec:
     )
     template = SystemPromptTemplate(
         name="DocumentProfile",
-        output_spec=DocumentProfile,
+        output_type=DocumentProfile,
         intent=intent,
         rules=["The output must be in JSON format matching the DocumentAnalysis model."],
         output_description="The analysis result of the document.",
@@ -43,13 +43,12 @@ def make_profile_spec() -> LLMInvocationSpec:
     )
     composer = InvocationPromptComposer(template)
 
-    def create_messages(input_text: str) -> list[InputMessage]:
-        system_message = InputMessage(role="system", content=composer.compose_prompt())
-        user_message = InputMessage(role="user", content=input_text)
-        return [system_message, user_message]
+    def create_messages(input_text: str) -> LLMMessage:
+        return LLMMessage.from_prompt(user=input_text, system=composer.compose_prompt())
+
 
     return LLMInvocationSpec(
         create_messages=create_messages,
-        output_spec=template.output_spec,
+        output_type=template.output_type,
         meta=InvocationSpecMeta(name=template.name, intent=template.intent),
     )

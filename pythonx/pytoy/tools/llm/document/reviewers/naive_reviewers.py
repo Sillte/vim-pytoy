@@ -6,9 +6,9 @@ from pytoy.shared.ui.notifications import EphemeralNotification
 from pytoy.shared.ui.pytoy_buffer import make_buffer
 from pytoy_llm.materials.composers import InvocationPromptComposer
 from pytoy_llm.materials.composers.models import SectionUsage, SystemPromptTemplate, TextSectionData
-from pytoy_llm.task import LLMTaskRequest, LLMTaskSpec
-from pytoy_llm.task import InvocationSpecMeta, LLMInvocationSpec, LLMTaskSpecMeta
-from pytoy_llm.models import InputMessage, SyncOutput
+from pytoy_llm.task import TaskRequest
+from pytoy_llm.task.models import InvocationSpecMeta, LLMInvocationSpec, TaskSpec, TaskSpecMeta
+from pytoy_llm.models import LLMMessage
 
 from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec
 from typing import Sequence, Literal, Annotated
@@ -162,17 +162,16 @@ def make_preparation_spec(document: str) -> LLMInvocationSpec:
         intent="Create `ReviewPreparation` JSON instance",
         rules=rules,
         output_description="Review Criterion and DocumentProfile",
-        output_spec=ReviewPreparation,
+        output_type=ReviewPreparation,
     )
 
     system_prompt = InvocationPromptComposer(template).compose_prompt()
 
-    def create_messages(_: str) -> Sequence[InputMessage]:
-        system_message = InputMessage(role="system", content=system_prompt)
-        user_message = InputMessage(role="user", content=document)
-        return [system_message, user_message]
+    def create_messages(_: str) -> LLMMessage:
+        return LLMMessage.from_prompt(user=document, system=system_prompt)
 
-    return LLMInvocationSpec(meta=meta, output_spec=ReviewPreparation, create_messages=create_messages)
+
+    return LLMInvocationSpec(meta=meta, output_type=ReviewPreparation, create_messages=create_messages)
 
 
 class ReviewContract:
@@ -214,7 +213,7 @@ def _make_review_request_report(review_preparation: ReviewPreparation) -> str:
     )
 
 
-def make_editor_assist_system_message(review_preparation: ReviewPreparation) -> InputMessage:
+def make_editor_assist_system_message(review_preparation: ReviewPreparation) -> LLMMessage:
     required_role = review_preparation.profile.required_role
     analysis_report = _make_document_analysis_report(review_preparation.profile)
     criteria_report = _make_document_criteria_report(review_preparation.criteria)
@@ -272,16 +271,15 @@ def make_editor_assist_system_message(review_preparation: ReviewPreparation) -> 
         name="Zero-base Document Reviewer",
         intent=intent,
         rules=rules,
-        output_spec=str,
+        output_type=str,
         role=f"Expert reviewer / {required_role}",
         output_description="Review of the document based on its analysis.",
     )
 
-    messages = InvocationPromptComposer(template).compose_messages()
-    return messages[0]
+    return InvocationPromptComposer(template).compose_message()
 
 
-def make_polishing_system_message(review_preparation: ReviewPreparation) -> InputMessage:
+def make_polishing_system_message(review_preparation: ReviewPreparation) -> LLMMessage:
     """Polishing モード用のシステムメッセージ"""
     required_role = review_preparation.profile.required_role
     analysis_report = _make_document_analysis_report(review_preparation.profile)
@@ -336,16 +334,15 @@ def make_polishing_system_message(review_preparation: ReviewPreparation) -> Inpu
         name="Polishing Document Reviewer",
         intent=intent,
         rules=rules,
-        output_spec=str,
+        output_type=str,
         role=f"Expert reviewer / {required_role}",
         output_description="Polishing review of the document based on its analysis.",
     )
 
-    messages = InvocationPromptComposer(template).compose_messages()
-    return messages[0]
+    return InvocationPromptComposer(template).compose_message()
 
 
-def make_review_system_message(review_preparation: ReviewPreparation) -> InputMessage:
+def make_review_system_message(review_preparation: ReviewPreparation) -> LLMMessage:
     if review_preparation.review_mode == "editor_assist":
         return make_editor_assist_system_message(review_preparation=review_preparation)
     else:
@@ -356,14 +353,14 @@ def make_review_spec(document: str, logger: logging.Logger) -> LLMInvocationSpec
 
     meta = InvocationSpecMeta(name="ReviewDocument", intent="Review the document")
 
-    def create_messages(input: ReviewPreparation) -> Sequence[InputMessage]:
+    def create_message(input: ReviewPreparation) -> LLMMessage:
         system_message = make_review_system_message(input)
-        user_message = InputMessage(role="user", content=document)
+        user_message = LLMMessage.from_prompt(user=document)
         logger.info(system_message.model_dump_json())
         logger.info(user_message.model_dump_json())
-        return [system_message, user_message]
+        return LLMMessage.merge([system_message, user_message])
 
-    return LLMInvocationSpec(meta=meta, output_spec=str, create_messages=create_messages)
+    return LLMInvocationSpec(meta=meta, output_type=str, create_messages=create_message)
 
 
 class NaiveReviewDocumentRequester:
@@ -393,9 +390,9 @@ class NaiveReviewDocumentRequester:
         interaction = InteractionProvider().create(request)
         return interaction
 
-    def _make_task_request(self, document: str, kernel: FairyKernel) -> LLMTaskRequest:
+    def _make_task_request(self, document: str, kernel: FairyKernel) -> TaskRequest:
         preparation_spec = make_preparation_spec(document)
         review_spec = make_review_spec(document, logger=self.logger)
-        meta = LLMTaskSpecMeta(name="ReviewDocument")
-        task_spec = LLMTaskSpec(invocation_specs=[preparation_spec, review_spec], meta=meta)
-        return LLMTaskRequest(task_spec=task_spec, task_input=document)
+        meta = TaskSpecMeta(name="ReviewDocument")
+        task_spec = TaskSpec(invocation_specs=[preparation_spec, review_spec], meta=meta)
+        return TaskRequest(spec=task_spec, input=document)

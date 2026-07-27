@@ -11,13 +11,13 @@ import uuid
 from pytoy_llm.materials.composers import InvocationPromptComposer
 from pytoy_llm.materials.composers.models import SectionUsage, SystemPromptTemplate
 from pytoy_llm.materials.core import ModelSectionData, SectionData
-from pytoy_llm.models import InputMessage, SyncOutput
-from pytoy_llm.task import (
+from pytoy_llm.models import LLMMessage 
+from pytoy_llm.task.models import (
     InvocationSpecMeta,
     LLMInvocationSpec,
-    LLMTaskRequest,
-    LLMTaskSpec,
-    LLMTaskSpecMeta,
+    TaskRequest,
+    TaskSpec,
+    TaskSpecMeta,
     FunctionInvocationSpec,
 )
 
@@ -163,14 +163,11 @@ def make_scoped_edit_spec(
 ) -> LLMInvocationSpec:
     """Based on the `DocumentAnalysis`. provide the edit."""
 
-    def _make_user_prompt(document: str) -> InputMessage:
-        return InputMessage(role="user", content=document)
 
-    user_message = _make_user_prompt(document)
     name = "Edit or generation of the part of document inside markers"
     output_description = "A part of the document, focusing on the specified scope between markers."
 
-    def create_messages(language_kind: LanguageKind) -> list[InputMessage]:
+    def create_message(language_kind: LanguageKind) -> LLMMessage:
         language = language_kind
         role = "An expert writer and editor"
         intent = "Recontruction of the part of the document while preserving intent, structure, and coherence."
@@ -188,7 +185,7 @@ def make_scoped_edit_spec(
 
         system_prompt = SystemPromptTemplate(
             name=name,
-            output_spec=str,
+            output_type=str,
             intent=intent,
             rules=rules,
             role=role,
@@ -202,14 +199,14 @@ def make_scoped_edit_spec(
             )
         else:
             composer = InvocationPromptComposer(prompt_template=system_prompt)
-        system_message = InputMessage(role="system", content=composer.compose_prompt())
-        logger.info(system_message.model_dump_json())
-        logger.info(user_message.model_dump_json())
-        return [system_message, user_message]
+        system_prompt = composer.compose_prompt()
+        logger.info(document)
+        logger.info(system_prompt)
+        return LLMMessage.from_prompt(user=document, system=system_prompt)
 
     return LLMInvocationSpec(
-        create_messages=create_messages,
-        output_spec=str,
+        create_messages=create_message,
+        output_type=str,
         meta=InvocationSpecMeta(name=name, intent="Scoped edit of the document."),
     )
 
@@ -228,7 +225,7 @@ class ScopedEditDocumentRequester:
     def query_end(self) -> str:
         return self.scoped_edit_contract.query_end
 
-    def _apply_output(self, buffer: PytoyBuffer, output: SyncOutput) -> None:
+    def _apply_output(self, buffer: PytoyBuffer, output: str) -> None:
         output_str = str(output)
         logger = self.pytoy_fairy.kernel.llm_context.logger
         logger.info(str(output))
@@ -255,11 +252,11 @@ class ScopedEditDocumentRequester:
         )
         return InteractionProvider().create(request)
 
-    def _make_task_request(self, document: str, kernel: FairyKernel) -> LLMTaskRequest:
+    def _make_task_request(self, document: str, kernel: FairyKernel) -> TaskRequest:
         select_language_spec = FunctionInvocationSpec.from_any(select_language_kind)
         edit_spec = make_scoped_edit_spec(
             document, self.scoped_edit_contract, kernel.llm_context.reference_handler, kernel.llm_context.logger
         )
-        meta = LLMTaskSpecMeta(name="ScopedEditDocument")
-        task_spec = LLMTaskSpec(invocation_specs=[select_language_spec, edit_spec], meta=meta)
-        return LLMTaskRequest(task_spec=task_spec, task_input=document)
+        meta = TaskSpecMeta(name="ScopedEditDocument")
+        task_spec = TaskSpec(invocation_specs=[select_language_spec, edit_spec], meta=meta)
+        return TaskRequest(spec=task_spec, input=document)

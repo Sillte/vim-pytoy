@@ -5,14 +5,14 @@ from typing import Annotated, cast, Callable
 from pydantic import BaseModel, Field
 from pytoy.tools.llm.document.voyages.domain import Compass, EvolvePolicy, Bearing, VoyageState
 
-from pytoy_llm.models import InputMessage, LLMConfig
+from pytoy_llm.models import LLMMessage, LLMConfig
+from pytoy_llm.llm_facade import LLMFacade
 
-from pytoy_llm.task import (
+from pytoy_llm.task.models import (
     InvocationSpecMeta,
     LLMInvocationSpec,
-    LLMTaskRequest,
-    LLMTaskSpec,
-    LLMTaskSpecMeta,
+    TaskRequest,
+    TaskSpec,
 )
 from pytoy_llm import completion
 
@@ -57,7 +57,8 @@ def wrap_logger(function: Callable, logger: logging.Logger) -> Callable:
         try:
             result = function(*args, **kwargs)
         except Exception as e:
-            logger.exception(f"Exception in {function.__name__}: {e}")
+            name = function.__name__ if hasattr(function, "__name__") else str(function)
+            logger.exception(f"Exception in {name}: {e}")
             raise  # そのまま外に伝える
 
         logger.info(f"{type(result).__name__}:{result}")
@@ -66,9 +67,7 @@ def wrap_logger(function: Callable, logger: logging.Logger) -> Callable:
     return wrapped
 
 
-def _evolve_create_messages(evolve_request: EvolveRequest) -> list[InputMessage]:
-    user_message = InputMessage(role="user", content=evolve_request.manuscript)
-
+def _evolve_create_message(evolve_request: EvolveRequest) -> LLMMessage:
     compass = evolve_request.compass
     compass_fragment = dedent(
         f"""
@@ -135,15 +134,14 @@ def _evolve_create_messages(evolve_request: EvolveRequest) -> list[InputMessage]
 
     """.strip()
     )
-    system_message = InputMessage(role="system", content=system_prompt)
-    return [user_message, system_message]
+    return LLMMessage.from_prompt(user=evolve_request.manuscript, system=system_prompt)
+
 
 
 def evolve(evolve_request: EvolveRequest) -> EvolveResponse:
     """Update the manuscript based on  `EvolveRequest`."""
-    messages = _evolve_create_messages(evolve_request)
-    result = completion(messages, output_format=EvolveResponse)
-    return cast(EvolveResponse, result)
+    message = _evolve_create_message(evolve_request)
+    return completion(message, output_type=EvolveResponse)
 
 
 def build_evolve_task_request(
@@ -151,18 +149,18 @@ def build_evolve_task_request(
     llm_config: LLMConfig | None = None,
     connection_name: str | None = None,
     logger: logging.Logger | None = None,
-) -> LLMTaskRequest:
-    create_messages = wrap_logger(_evolve_create_messages, logger) if logger else _evolve_create_messages
+) -> TaskRequest:
+    create_message = wrap_logger(_evolve_create_message, logger) if logger else _evolve_create_message
     meta = InvocationSpecMeta(name="EvolveInvocation", intent="Evolve the manuscript")
+    llm_facade = LLMFacade(connection=connection_name, llm_config=llm_config)
     invocation_spec = LLMInvocationSpec(
         meta=meta,
-        output_spec=EvolveResponse,
-        create_messages=create_messages,
-        llm_config=llm_config,
-        connection_name=connection_name,
+        output_type=EvolveResponse,
+        create_messages=create_message,
+        llm_facade=llm_facade,
     )
-    task_spec = LLMTaskSpec.from_single_spec(meta="VoyageEvolveTask", invocation_spec=invocation_spec)
-    return LLMTaskRequest(task_spec=task_spec, task_input=request)
+    task_spec = TaskSpec.from_single_spec(meta="VoyageEvolveTask", invocation_spec=invocation_spec)
+    return TaskRequest(spec=task_spec, input=request)
 
 
 class ReflectRequest(BaseModel, frozen=True):
@@ -178,12 +176,7 @@ class ReflectResponse(BaseModel, frozen=True):
     compass: Annotated[Compass, Field(description="The updated compass")]
 
 
-def _reflect_create_messages(reflect_request: ReflectRequest) -> list[InputMessage]:
-    user_message = InputMessage(
-        role="user",
-        content=reflect_request.manuscript,
-    )
-
+def _reflect_create_messages(reflect_request: ReflectRequest) -> LLMMessage:
     compass_json = reflect_request.compass.model_dump_json()
 
     system_prompt = dedent(
@@ -208,14 +201,13 @@ def _reflect_create_messages(reflect_request: ReflectRequest) -> list[InputMessa
     """.strip()
     )
 
-    system_message = InputMessage(role="system", content=system_prompt)
-    return [user_message, system_message]
+    return LLMMessage.from_prompt(user=reflect_request.manuscript, system=system_prompt)
 
 
 def reflect(reflect_request: ReflectRequest) -> ReflectResponse:
     """For testing or direct usage."""
     messages = _reflect_create_messages(reflect_request)
-    return cast(ReflectResponse, completion(messages, output_format=ReflectResponse))
+    return completion(messages, output_type=ReflectResponse)
 
 
 def build_reflect_task_request(
@@ -223,19 +215,19 @@ def build_reflect_task_request(
     llm_config: LLMConfig | None = None,
     connection_name: str | None = None,
     logger: logging.Logger | None = None,
-) -> LLMTaskRequest:
-    """Construct an LLMTaskRequest for the Reflect task."""
+) -> TaskRequest:
+    """Construct an TaskRequest for the Reflect task."""
     create_messages = wrap_logger(_reflect_create_messages, logger) if logger else _reflect_create_messages
     meta = InvocationSpecMeta(name="ReflectInvocation", intent="Reflect on the manuscript")
+    facade = LLMFacade(connection=connection_name, llm_config=llm_config)
     invocation_spec = LLMInvocationSpec(
         meta=meta,
-        output_spec=ReflectResponse,
+        output_type=ReflectResponse,
         create_messages=create_messages,
-        llm_config=llm_config,
-        connection_name=connection_name,
+        llm_facade=facade,
     )
-    task_spec = LLMTaskSpec.from_single_spec(meta="VoyageReflectTask", invocation_spec=invocation_spec)
-    return LLMTaskRequest(task_spec=task_spec, task_input=request)
+    task_spec = TaskSpec.from_single_spec(meta="VoyageReflectTask", invocation_spec=invocation_spec)
+    return TaskRequest(spec=task_spec, input=request)
 
 
 class VoyageInteractionCreator:

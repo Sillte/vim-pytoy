@@ -78,8 +78,6 @@ class ReferenceSectionWriter:
 
 
 if __name__ == "__main__":
-    # collector = ReferenceCollector(r"C:\Users\zaube\Desktop\Storing")
-    # collector.collect_all(r"C:\LocalLibrary\PublicLibrary\vim-pytoy\pythonx\pytoy\tools\llm\references")
     dataset = ReferenceDataset.load(r"C:\Users\zaube\Desktop\Storing")
     writer = ReferenceSectionWriter(dataset)
 

@@ -23,9 +23,6 @@ dependencies = [
 ]
 requires-python = ">=3.12"
 
-[project.optional-dependencies]
-windows = ["pywinpty"]
-
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -43,5 +40,12 @@ dev = [
     "ty", 
     "mypy>=1.14.1",
 ]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+
+select = ["E", "F", "I"]
 
 
