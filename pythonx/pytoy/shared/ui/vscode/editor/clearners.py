@@ -138,6 +138,9 @@ class EditorCleaner:
             // util
             // -----------------------------
             function sameUri(a, b) {
+                if (!a || !b) {
+                    return false;
+                }
                 return a.path === b.path &&
                        a.scheme === b.scheme &&
                        (a.authority || "") === (b.authority || "");
@@ -262,6 +265,9 @@ class EditorCleaner:
         (async (args) => {
 
             function sameUri(a, b) {
+                if (!a || !b) {
+                    return false;
+                }
                 return a.path === b.path &&
                        a.scheme === b.scheme &&
                        (a.authority || "") === (b.authority || "");
