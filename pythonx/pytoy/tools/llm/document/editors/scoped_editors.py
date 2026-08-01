@@ -10,7 +10,6 @@ import uuid
 
 from pytoy_llm.materials.composers import InvocationPromptComposer
 from pytoy_llm.materials.composers.models import SectionUsage, SystemPromptTemplate
-from pytoy_llm.materials.core import ModelSectionData, SectionData
 from pytoy_llm.models import LLMMessage 
 from pytoy_llm.task.models import (
     InvocationSpecMeta,
@@ -159,7 +158,6 @@ def make_scoped_edit_spec(
     document: str,
     scoped_edit_contract: ScopedReconstructionContract,
     reference_handler: ReferenceHandler,
-    logger: logging.Logger,
 ) -> LLMInvocationSpec:
     """Based on the `DocumentAnalysis`. provide the edit."""
 
@@ -200,8 +198,6 @@ def make_scoped_edit_spec(
         else:
             composer = InvocationPromptComposer(prompt_template=system_prompt)
         system_prompt = composer.compose_prompt()
-        logger.info(document)
-        logger.info(system_prompt)
         return LLMMessage.from_prompt(user=document, system=system_prompt)
 
     return LLMInvocationSpec(
@@ -227,8 +223,6 @@ class ScopedEditDocumentRequester:
 
     def _apply_output(self, buffer: PytoyBuffer, output: str) -> None:
         output_str = str(output)
-        logger = self.pytoy_fairy.kernel.llm_context.logger
-        logger.info(str(output))
         self.scoped_edit_contract.override_target(buffer, output_str)
 
     def _handle_error(self, buffer: PytoyBuffer, exception: Exception) -> None:
@@ -255,7 +249,7 @@ class ScopedEditDocumentRequester:
     def _make_task_request(self, document: str, kernel: FairyKernel) -> TaskRequest:
         select_language_spec = FunctionInvocationSpec.from_any(select_language_kind)
         edit_spec = make_scoped_edit_spec(
-            document, self.scoped_edit_contract, kernel.llm_context.reference_handler, kernel.llm_context.logger
+            document, self.scoped_edit_contract, kernel.llm_context.reference_handler
         )
         meta = TaskSpecMeta(name="ScopedEditDocument")
         task_spec = TaskSpec(invocation_specs=[select_language_spec, edit_spec], meta=meta)

@@ -107,8 +107,6 @@ class PytoyVoyageDocument:
     @classmethod
     def evolve(cls):
         voyage_ui = cls._ensure_ui()
-        from pytoy.tools.llm.document.voyages.presentation import DocumentVoyageUI
-
         voyage_ui.evolve()
 
     @classmethod
@@ -120,7 +118,6 @@ class PytoyVoyageDocument:
     def check_state(cls):
         if not cls._voyage_ui:
             raise ValueError("No `VoyageUI` yet.")
-        from pytoy.tools.llm.document.voyages.presentation import DocumentVoyageUI
 
         voyage_ui = cls._ensure_ui()
         voyage_ui.check_state()

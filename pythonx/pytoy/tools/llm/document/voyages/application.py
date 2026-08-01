@@ -5,8 +5,7 @@ from typing import Annotated, cast, Callable
 from pydantic import BaseModel, Field
 from pytoy.tools.llm.document.voyages.domain import Compass, EvolvePolicy, Bearing, VoyageState
 
-from pytoy_llm.models import LLMMessage, LLMConfig
-from pytoy_llm.llm_facade import LLMFacade
+from pytoy_llm.models import LLMMessage, LLMParam
 
 from pytoy_llm.task.models import (
     InvocationSpecMeta,
@@ -44,27 +43,6 @@ class EvolveResponse(BaseModel, frozen=True):
         str, Field(description="The reason and policy regarding the generation or revision of the manuscript.")
     ]
     compass: Annotated[Compass, Field(description="The direction at which the document should pursue.")]
-
-
-def wrap_logger(function: Callable, logger: logging.Logger) -> Callable:
-    @functools.wraps(function)
-    def wrapped(*args, **kwargs):
-        for arg in args:
-            logger.info(f"{type(arg).__name__}:{arg}")
-        for k, v in kwargs.items():
-            logger.info(f"{k}={type(v).__name__}:{v}")
-
-        try:
-            result = function(*args, **kwargs)
-        except Exception as e:
-            name = function.__name__ if hasattr(function, "__name__") else str(function)
-            logger.exception(f"Exception in {name}: {e}")
-            raise  # そのまま外に伝える
-
-        logger.info(f"{type(result).__name__}:{result}")
-        return result
-
-    return wrapped
 
 
 def _evolve_create_message(evolve_request: EvolveRequest) -> LLMMessage:
@@ -146,18 +124,16 @@ def evolve(evolve_request: EvolveRequest) -> EvolveResponse:
 
 def build_evolve_task_request(
     request: EvolveRequest,
-    llm_config: LLMConfig | None = None,
+    llm_param: LLMParam | None = None,
     connection_name: str | None = None,
-    logger: logging.Logger | None = None,
 ) -> TaskRequest:
-    create_message = wrap_logger(_evolve_create_message, logger) if logger else _evolve_create_message
     meta = InvocationSpecMeta(name="EvolveInvocation", intent="Evolve the manuscript")
-    llm_facade = LLMFacade(connection=connection_name, llm_config=llm_config)
     invocation_spec = LLMInvocationSpec(
         meta=meta,
         output_type=EvolveResponse,
-        create_messages=create_message,
-        llm_facade=llm_facade,
+        create_messages=_evolve_create_message,
+        connection=connection_name, 
+        llm_param = llm_param, 
     )
     task_spec = TaskSpec.from_single_spec(meta="VoyageEvolveTask", invocation_spec=invocation_spec)
     return TaskRequest(spec=task_spec, input=request)
@@ -212,19 +188,17 @@ def reflect(reflect_request: ReflectRequest) -> ReflectResponse:
 
 def build_reflect_task_request(
     request: ReflectRequest,
-    llm_config: LLMConfig | None = None,
+    llm_param: LLMParam | None = None,
     connection_name: str | None = None,
-    logger: logging.Logger | None = None,
 ) -> TaskRequest:
     """Construct an TaskRequest for the Reflect task."""
-    create_messages = wrap_logger(_reflect_create_messages, logger) if logger else _reflect_create_messages
     meta = InvocationSpecMeta(name="ReflectInvocation", intent="Reflect on the manuscript")
-    facade = LLMFacade(connection=connection_name, llm_config=llm_config)
     invocation_spec = LLMInvocationSpec(
         meta=meta,
         output_type=ReflectResponse,
-        create_messages=create_messages,
-        llm_facade=facade,
+        create_messages=_reflect_create_messages,
+        llm_param=llm_param,
+        connection = connection_name,
     )
     task_spec = TaskSpec.from_single_spec(meta="VoyageReflectTask", invocation_spec=invocation_spec)
     return TaskRequest(spec=task_spec, input=request)
@@ -241,15 +215,14 @@ class VoyageInteractionCreator:
         evolve_request: EvolveRequest,
         on_success: Callable[[EvolveResponse], None],
         on_failure: Callable[[Exception], None],
-        llm_config: LLMConfig | None = None,
+        llm_param: LLMParam | None = None,
         connection_name: str | None = None,
     ) -> LLMInteraction:
         """Create `evolve` interaction (asynchronous procedure call of `evolve`)"""
         task_request = build_evolve_task_request(
             evolve_request,
-            llm_config=llm_config,
+            llm_param=llm_param,
             connection_name=connection_name,
-            logger=self.kernel.llm_context.logger,
         )
         interaction_request = InteractionRequest(
             self.kernel, task_request=task_request, on_success=on_success, on_failure=on_failure
@@ -261,15 +234,14 @@ class VoyageInteractionCreator:
         reflect_request: ReflectRequest,
         on_success: Callable[[ReflectResponse], None],
         on_failure: Callable[[Exception], None],
-        llm_config: LLMConfig | None = None,
+        llm_param: LLMParam | None = None,
         connection_name: str | None = None,
     ) -> LLMInteraction:
         """Create `evolve` interaction (asynchronous procedure call of `evolve`)"""
         task_request = build_reflect_task_request(
             reflect_request,
-            llm_config=llm_config,
+            llm_param=llm_param,
             connection_name=connection_name,
-            logger=self.kernel.llm_context.logger,
         )
         interaction_request = InteractionRequest(
             self.kernel, task_request=task_request, on_success=on_success, on_failure=on_failure

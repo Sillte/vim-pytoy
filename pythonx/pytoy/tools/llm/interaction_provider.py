@@ -14,7 +14,7 @@ from typing import Any, Callable, Protocol, Sequence
 from pytoy.shared.timertask.thread_executor import ThreadExecutionRequest, ThreadExecutor
 from pytoy.tools.llm.models import HooksForInteraction, LLMInteraction
 from pytoy.tools.llm.kernel import FairyKernel
-from pytoy_llm import completion
+from pytoy_llm.event_sinks import LoggerEventSink
 from pytoy_llm.task import TaskRequest, TaskExecutor
 
 
@@ -54,7 +54,8 @@ class InteractionProvider:
 
         # 実際のLLM呼び出し処理
         def _main(_) -> Any:
-            task_response = TaskExecutor().execute(request.task_request)
+            event_sink = LoggerEventSink(request.kernel.llm_context.logger)
+            task_response = TaskExecutor().execute(request=request.task_request, event_sink=event_sink)
             return task_response.output
 
         # スレッド実行リクエスト作成
