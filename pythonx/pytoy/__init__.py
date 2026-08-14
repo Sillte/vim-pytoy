@@ -2,6 +2,17 @@ TERM_STDOUT = "__pystdout__"  # TERIMINAL NAME of `stdout`.
 TERM_STDERR = "__pystderr__"  # TERIMINAL NAME of `stderr`.
 
 
+def initialize_plugin(): 
+    # Command definitions.
+    # Maybe `Command` uses the public interfaces,
+    # Hence, `import`s are placed here.
+    from pytoy import commands  # NOQA
+
+    from pytoy.contexts.core import GlobalCoreContext 
+    context = GlobalCoreContext.get()
+    context.llm_import_resolver.import_background()
+
+
 def run(path=None):
     """Perform `python {path}`."""
     from pytoy.commands.console_command import script_run
@@ -27,11 +38,7 @@ def reset():
 
     hide_temporary()
 
-
-# Command definitions.
-# Maybe `Command` uses the public interfaces,
-# Hence, `import`s are placed here.
-from pytoy import commands  # NOQA
+initialize_plugin()
 
 if __name__ == "__main__":
     print("__name__", __name__)

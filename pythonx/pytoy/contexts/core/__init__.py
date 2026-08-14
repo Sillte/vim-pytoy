@@ -7,6 +7,7 @@ from functools import cached_property
 if TYPE_CHECKING:
     from pytoy.job_execution.environment_manager import EnvironmentManager
     from pytoy.shared.timertask.thread_executor import ThreadExecutionManager
+    from pytoy.bootstrap.import_resolvers import LLMImportResolver
 
     ...
     # from pytoy.job_execution.command_executor import CommandExecutionManager
@@ -34,3 +35,10 @@ class GlobalCoreContext:
         from pytoy.shared.timertask.thread_executor import ThreadExecutionManager
 
         return ThreadExecutionManager()
+
+    @cached_property
+    def llm_import_resolver(sefl) -> LLMImportResolver:
+        from pytoy.bootstrap.import_resolvers import LLMImportResolver
+        moratorium_time = 1.0
+        return LLMImportResolver(moratorium_time)
+
