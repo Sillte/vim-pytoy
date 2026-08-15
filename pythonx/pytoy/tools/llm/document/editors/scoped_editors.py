@@ -7,8 +7,8 @@ from pytoy.shared.ui.pytoy_window import CharacterRange
 
 import uuid
 
-from pytoy_llm.materials.composers import InvocationPromptComposer
-from pytoy_llm.materials.composers.models import SectionUsage, SystemPromptTemplate
+from pytoy_llm.composers import InvocationComposer, SystemPromptSpec, OutputSpec
+from pytoy_llm.materials.models import MaterialData, MaterialSection
 from pytoy_llm.models import LLMMessage 
 from pytoy_llm.task.models import (
     InvocationSpecMeta,
@@ -166,7 +166,7 @@ def make_scoped_edit_spec(
 
     def create_message(language_kind: LanguageKind) -> LLMMessage:
         language = language_kind
-        role = "An expert writer and editor"
+        guidance_role = "An expert writer and editor"
         intent = "Recontruction of the part of the document while preserving intent, structure, and coherence."
         language_ruleset = LanguageRuleSet.from_document_kind(language)
         style_ruleset = StyleRuleSet.from_language_and_uniformity_mode(language, "structure")
@@ -180,30 +180,29 @@ def make_scoped_edit_spec(
             *scoped_edit_contract.override_directive_rules,
         ]
 
-        system_prompt = SystemPromptTemplate(
+        system_prompt = SystemPromptSpec.from_any(
             name=name,
-            output_type=str,
+            output_spec=OutputSpec(output_type=str, description=output_description),
             intent=intent,
             rules=rules,
-            role=role,
-            output_description=output_description,
+            guidance_role=guidance_role,
         )
+        composer = InvocationComposer(system_prompt)
         if reference_handler.exist_reference:
-            section_usage = reference_handler.section_writer.make_section_usage()
-            section_data = reference_handler.section_writer.make_section_data()
-            composer = InvocationPromptComposer(
-                prompt_template=system_prompt, section_usages=[section_usage], section_data_list=[section_data]
-            )
+            usage = reference_handler.section_writer.make_material_usage()
+            data = reference_handler.section_writer.make_material_data()
+            supplementary_sections = [MaterialSection.from_any(name="ReferenceData", usage=usage, data=data)]
         else:
-            composer = InvocationPromptComposer(prompt_template=system_prompt)
-        system_prompt = composer.compose_prompt()
-        return LLMMessage.from_prompt(user=document, system=system_prompt)
+            supplementary_sections = None
+        return composer.compose_message(user_prompt=document, supplementary_sections=supplementary_sections)
 
     return LLMInvocationSpec(
         create_messages=create_message,
         output_type=str,
         meta=InvocationSpecMeta(name=name, intent="Scoped edit of the document."),
     )
+
+
 
 
 class ScopedEditDocumentRequester:
@@ -251,5 +250,5 @@ class ScopedEditDocumentRequester:
             document, self.scoped_edit_contract, kernel.llm_context.reference_handler
         )
         meta = TaskSpecMeta(name="ScopedEditDocument")
-        task_spec = TaskSpec(invocation_specs=[select_language_spec, edit_spec], meta=meta)
+        task_spec = TaskSpec.from_specs(invocation_specs=[select_language_spec, edit_spec], meta=meta)
         return TaskRequest(spec=task_spec, input=document)

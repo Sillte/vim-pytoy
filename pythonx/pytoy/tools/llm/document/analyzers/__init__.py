@@ -3,10 +3,9 @@ from pydantic import BaseModel, Field
 
 from typing import Annotated
 from pytoy.tools.llm.document.core import LanguageKind
-from pytoy_llm.materials.composers import InvocationPromptComposer
-from pytoy_llm.materials.composers.models import SystemPromptTemplate
-from pytoy_llm.models import LLMMessage
-from pytoy_llm.task.models import InvocationSpecMeta, LLMInvocationSpec
+from pytoy_llm.composers import InvocationComposer
+from pytoy_llm.composers.models import SystemPromptSpec, OutputSpec
+from pytoy_llm.task.models import LLMInvocationSpec
 
 
 class DocumentProfile(BaseModel):
@@ -30,25 +29,23 @@ class DocumentProfile(BaseModel):
 
 
 def make_profile_spec() -> LLMInvocationSpec:
-    intent = (
-        "Identify the dominant language of the document (such as English, Japanese, or Python), purpose and style .\n"
-    )
-    template = SystemPromptTemplate(
+    prompt_spec = SystemPromptSpec.from_any(
         name="DocumentProfile",
-        output_type=DocumentProfile,
-        intent=intent,
-        rules=["The output must be in JSON format matching the DocumentAnalysis model."],
-        output_description="The analysis result of the document.",
-        role="You are an expert in analyzing documents in natural and program languages.",
+        output_spec=DocumentProfile,
+        intent=(
+            "Identify the dominant language of the document, "
+            "its purpose, and its style."
+        ),
+        rules=[
+            "Base the profile on the provided document.",
+            "Distinguish observations from interpretations.",
+            "Do not infer unsupported characteristics.",
+        ],
+        guidance_role=(
+            "You are an expert in analyzing documents written "
+            "in natural and programming languages."
+        ),
     )
-    composer = InvocationPromptComposer(template)
 
-    def create_messages(input_text: str) -> LLMMessage:
-        return LLMMessage.from_prompt(user=input_text, system=composer.compose_prompt())
+    return InvocationComposer(prompt_spec).compose_llm_invocation_spec()
 
-
-    return LLMInvocationSpec(
-        create_messages=create_messages,
-        output_type=template.output_type,
-        meta=InvocationSpecMeta(name=template.name, intent=template.intent),
-    )

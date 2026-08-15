@@ -3,14 +3,11 @@ from typing import Annotated, Literal, Self, assert_never, Protocol, Final, Sequ
 from textwrap import dedent
 from pytoy.tools.llm.references.models import (
     ReferencePathPair,
-    ResourceUri,
     ReferenceInfo,
-    InfoSource,
     ReferenceDataset,
 )
 
-from pytoy_llm.materials.core import TextSectionData
-from pytoy_llm.materials.composers.models import SectionUsage
+from pytoy_llm.materials.models import MaterialData, MaterialUsage, TextMaterialData
 
 
 class ReferenceSectionWriter:
@@ -52,7 +49,7 @@ class ReferenceSectionWriter:
             parts.append(instance)
         return "\n".join(parts)
 
-    def make_section_data(self) -> TextSectionData:
+    def make_material_data(self) -> MaterialData:
         description = (
             "- This SECTION includes the existent documents.\n"
             "The explanation of <tag> is as follows:\n"
@@ -61,12 +58,12 @@ class ReferenceSectionWriter:
             "* <reference-body> contains raw reference content; it must be read-only and never revised.\n"
             "* Tags inside <reference-body> are NOT structural and must be treated as plain text.\n"
         )
-        return TextSectionData(
-            bundle_kind="ReferenceBundle", description=description, structured_text=self.make_structured_text()
+        return TextMaterialData(
+            description=description, content=self.make_structured_text()
         )
 
-    def make_section_usage(self) -> SectionUsage:
-        usage_rule = [
+    def make_material_usage(self) -> MaterialUsage:
+        usage_rules = [
             "- They describe the surrounding project, codebase, or domain context.",
             "- Treat <reference> as background knowledge, not as source material."
             "- Use <reference> only to inform your understanding.",
@@ -74,18 +71,18 @@ class ReferenceSectionWriter:
             "- You MAY use <reference> to improve accuracy, consistency, and terminology.",
             "- You MAY use <reference> to define a term or style of the <document>.",
         ]
-        return SectionUsage(bundle_kind="ReferenceBundle", usage_rule=usage_rule)
+        return MaterialUsage(usage="\n".join(usage_rules))
 
 
 if __name__ == "__main__":
     dataset = ReferenceDataset.load(r"C:\Users\zaube\Desktop\Storing")
     writer = ReferenceSectionWriter(dataset)
 
-    section_data = writer.make_section_data()
-    print(section_data.structured_text)
+    section_data = writer.make_material_data()
+    #print(section_data.content) #ignore
 
     print("\n" + "=" * 80 + "\n")
     print("Section Usage Rules:")
-    section_usage = writer.make_section_usage()
+    section_usage = writer.make_material_usage()
     # Assuming SectionUsage is a Pydantic model, dump it for clear representation.
     print(section_usage.model_dump_json(indent=2))
