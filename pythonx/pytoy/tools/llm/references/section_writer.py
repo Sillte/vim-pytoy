@@ -7,7 +7,8 @@ from pytoy.tools.llm.references.models import (
     ReferenceDataset,
 )
 
-from pytoy_llm.materials.models import MaterialData, MaterialUsage, TextMaterialData
+from pytoy_llm.materials.models import MaterialData, TextMaterialData
+from pytoy_llm.composers.materials import MaterialUsage
 
 
 class ReferenceSectionWriter:
