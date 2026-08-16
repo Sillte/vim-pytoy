@@ -4,8 +4,9 @@ from pytoy.tools.llm.models import LLMInteraction
 from pytoy.tools.llm.pytoy_fairy import PytoyFairy, FairyKernel
 from pytoy.shared.ui.notifications import EphemeralNotification
 from pytoy.shared.ui.pytoy_buffer import make_buffer
-from pytoy_llm.composers import InvocationComposer, SystemPromptSpec, OutputSpec
-from pytoy_llm.materials.models import MaterialUsage,  TextMaterialData
+from pytoy_llm.composer import InvocationComposer, SystemPromptSpec, OutputSpec
+from pytoy_llm.materials.models import TextMaterialData
+from pytoy_llm.composers.materials import MaterialUsage
 from pytoy_llm.task import TaskRequest
 from pytoy_llm.task.models import InvocationSpecMeta, LLMInvocationSpec, TaskSpec, TaskSpecMeta
 from pytoy_llm.models import LLMMessage

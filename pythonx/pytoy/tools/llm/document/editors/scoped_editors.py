@@ -7,8 +7,8 @@ from pytoy.shared.ui.pytoy_window import CharacterRange
 
 import uuid
 
-from pytoy_llm.composers import InvocationComposer, SystemPromptSpec, OutputSpec
-from pytoy_llm.materials.models import MaterialData, MaterialSection
+from pytoy_llm.composer import InvocationComposer, SystemPromptSpec, OutputSpec
+from pytoy_llm.composers.materials import MaterialSection
 from pytoy_llm.models import LLMMessage 
 from pytoy_llm.task.models import (
     InvocationSpecMeta,
