@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from pytoy.job_execution.command_executor.manager import CommandExecutionManager
     from pytoy.job_execution.terminal_executor.manager import TerminalExecutionManager
     from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager
-    from pytoy.tools.llm.kernel import FairyKernelManager
+    from pytoy.tools.llm.llm_execution.manager import LLMExecutionManager
     # from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
     # from pytoy.shared.autocmd.autocmd_manager import AutoCmdManager
 
@@ -45,10 +45,9 @@ class GlobalPytoyContext:
         return TerminalDriverManager()
 
     @cached_property
-    def fairy_kernel_manager(self) -> FairyKernelManager:
-        from pytoy.tools.llm.kernel import FairyKernelManager
-
-        return FairyKernelManager()
+    def llm_execution_manager(self) -> LLMExecutionManager:
+        from pytoy.tools.llm.llm_execution.manager import LLMExecutionManager
+        return LLMExecutionManager()
 
     @property
     def vim_context(self) -> GlobalVimContext:

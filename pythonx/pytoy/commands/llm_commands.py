@@ -11,9 +11,7 @@ app = App()
 
 
 @app.command("PytoyLLM")
-def pytoy_llm(kind: Annotated[Literal["config", "create-dataset", "review", "edit"] | None, Argument()] = None):
-    from pytoy.tools.llm.pytoy_fairy import PytoyFairy
-    from pytoy.tools.llm import ReferenceDatasetConstructor
+def pytoy_llm(kind: Annotated[Literal["config", "review", "edit"] | None, Argument()] = None):
     from pytoy_llm import get_configuration_path
     from pytoy.tools.llm.document.reviewers.naive_reviewers import NaiveReviewDocumentRequester
     from pytoy.tools.llm.document.editors.scoped_editors import ScopedEditDocumentRequester
@@ -27,31 +25,23 @@ def pytoy_llm(kind: Annotated[Literal["config", "create-dataset", "review", "edi
         param = WindowCreationParam.for_split("vertical", try_reuse=True)
         PytoyWindow.open(path, param=param)
 
-    def _make_reference_dataset():
-        current_window = PytoyWindow.get_current()
-        fairy = PytoyFairy(current_window.buffer)
-        ReferenceDatasetConstructor(fairy).make_dataset()
 
     def _make_review():
         current_window = PytoyWindow.get_current()
-        fairy = PytoyFairy(current_window.buffer)
-        review_doc = NaiveReviewDocumentRequester(fairy)
-        review_doc.make_interaction()
+        review_doc = NaiveReviewDocumentRequester(current_window.buffer)
+        review_doc.make_execution()
 
     def _edit_scope():
         current_window = PytoyWindow.get_current()
         current_buffer = current_window.buffer
-        llm_fairy: PytoyFairy = PytoyFairy(buffer=current_buffer)
 
         # Edit operation.
-        requester = ScopedEditDocumentRequester(llm_fairy)
-        requester.make_interaction()
+        requester = ScopedEditDocumentRequester(current_buffer)
+        requester.execute_request()
 
     match kind:
         case "config":
             _open_config()
-        case "create-dataset":
-            _make_reference_dataset()
         case "review":
             _make_review()
         case "edit":
@@ -89,19 +79,17 @@ class PytoyVoyageDocument:
     def get_manuscript_buffer(cls) -> "PytoyBuffer | None":
         if not cls._voyage_ui:
             return None
-        return cls._voyage_ui.pytoy_fairy.buffer
+        return cls._voyage_ui.pytoy_buffer
 
     @classmethod
     def reset(cls):
         from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
         from pytoy.tools.llm.document.voyages.presentation import DocumentVoyageUI
-        from pytoy.tools.llm.pytoy_fairy import PytoyFairy
 
         buffer = PytoyBuffer.get_current()
         if not buffer.is_file:
             raise ValueError("`manuscript buffer must be `FILE`.`")
-        fairy = PytoyFairy(buffer)
-        cls._voyage_ui = DocumentVoyageUI(fairy)
+        cls._voyage_ui = DocumentVoyageUI(buffer)
         return cls._voyage_ui
 
     @classmethod

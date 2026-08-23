@@ -1,18 +1,17 @@
 import logging
-from pytoy.tools.llm.interaction_provider import InteractionProvider, InteractionRequest
-from pytoy.tools.llm.models import LLMInteraction
-from pytoy.tools.llm.pytoy_fairy import PytoyFairy, FairyKernel
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.tools.llm.llm_execution.executor import LLMExecutor
+from pytoy.tools.llm.llm_execution.models import ExecutionRequest, ExecutionHooks
+from pytoy.shared.pytoy_configuration import PytoyConfiguration
+
 from pytoy.shared.ui.notifications import EphemeralNotification
 from pytoy.shared.ui.pytoy_buffer import make_buffer
 from pytoy_llm.composer import InvocationComposer, SystemPromptSpec, OutputSpec
-from pytoy_llm.materials.models import TextMaterialData
-from pytoy_llm.composers.materials import MaterialUsage
-from pytoy_llm.task import TaskRequest
 from pytoy_llm.task.models import InvocationSpecMeta, LLMInvocationSpec, TaskSpec, TaskSpecMeta
 from pytoy_llm.models import LLMMessage
 
-from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec
-from typing import Sequence, Literal, Annotated
+from pytoy.tools.llm.document.analyzers import DocumentProfile
+from typing import Literal, Annotated
 from pydantic import BaseModel, Field
 
 
@@ -345,7 +344,7 @@ def make_review_llm_message(review_preparation: ReviewPreparation, document: str
         return make_polishing_llm_message(review_preparation=review_preparation, document=document)
 
 
-def make_review_spec(document: str, logger: logging.Logger) -> LLMInvocationSpec:
+def make_review_spec(document: str) -> LLMInvocationSpec:
 
     meta = InvocationSpecMeta(name="ReviewDocument", intent="Review the document")
 
@@ -358,33 +357,26 @@ def make_review_spec(document: str, logger: logging.Logger) -> LLMInvocationSpec
 class NaiveReviewDocumentRequester:
     review_buffer_name = "__doc__"
 
-    def __init__(self, pytoy_fairy: PytoyFairy):
-        self._id = uuid.uuid4().hex[:8]
-        self.pytoy_fairy = pytoy_fairy
-        self.buffer = self.pytoy_fairy.buffer
+    def __init__(self, pytoy_buffer: PytoyBuffer):
+        self.buffer = pytoy_buffer
         self.review_contract = ReviewContract(self.review_buffer_name)
-        self.logger: logging.Logger = self.pytoy_fairy.llm_context.logger
 
-    def make_interaction(self) -> LLMInteraction:
+    def make_execution(self):
         def on_success(output):
             self.review_contract.display_review(output)
 
         def on_failure(exception):
             EphemeralNotification().notify(str(exception))
 
-        task_request = self._make_task_request(document=self.buffer.content, kernel=self.pytoy_fairy.kernel)
-        request = InteractionRequest(
-            kernel=self.pytoy_fairy.kernel,
-            task_request=task_request,
-            on_success=on_success,
-            on_failure=on_failure,
-        )
-        interaction = InteractionProvider().create(request)
-        return interaction
+        task_spec = self._make_task_spec(document=self.buffer.content)
 
-    def _make_task_request(self, document: str, kernel: FairyKernel) -> TaskRequest:
+        logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
+        execution_request = ExecutionRequest(task_spec=task_spec, input=self.buffer.content, logger=logger)
+        return LLMExecutor().execute(request=execution_request, hooks=ExecutionHooks(on_success=on_success, on_failure=on_failure))
+
+    def _make_task_spec(self, document: str) -> TaskSpec:
         preparation_spec = make_preparation_spec(document)
-        review_spec = make_review_spec(document, logger=self.logger)
+        review_spec = make_review_spec(document)
         meta = TaskSpecMeta(name="ReviewDocument")
         task_spec = TaskSpec.from_specs(invocation_specs=[preparation_spec, review_spec], meta=meta)
-        return TaskRequest(spec=task_spec, input=document)
+        return task_spec

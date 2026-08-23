@@ -1,4 +1,5 @@
-from pytoy.shared.command import App
+from typing import Annotated 
+from pytoy.shared.command import App, Option
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import make_buffer
 
@@ -7,7 +8,7 @@ app = App()
 
 
 @app.command("GatherTextFiles")
-def gather_text_files():
+def gather_text_files(depth: Annotated[int | None, Option(default=None)], pattern: Annotated[str | None, Option(default=None)]):
     from pytoy_llm.materials.text_files import TextFilesCollector, TextFilesMaterialQuery
     from pytoy_llm.composers.materials import MaterialDataExplorerTaskComposer
     from pytoy.job_execution.environment_manager import EnvironmentManager
@@ -18,8 +19,10 @@ def gather_text_files():
     path = buffer.file_path
     workspace = EnvironmentManager().find_workspace(path, preference="system")
     workspace = workspace or path.parent
+    if not pattern:
+        pattern = f"*{path.suffix}"
 
-    query = TextFilesMaterialQuery.from_any(collection_root=path, patterns=[f"*{path.suffix}"], max_depth=None, only_meta=False)
+    query = TextFilesMaterialQuery.from_any(collection_root=path, patterns=[pattern], max_depth=depth, only_meta=False)
     material = TextFilesCollector(workspace=workspace).get_material(query)
     composer = MaterialDataExplorerTaskComposer([material.text_material_data])
     section_text = composer.compose_system_prompt()

@@ -13,8 +13,8 @@ from pytoy_llm.task.models import (
 )
 from pytoy_llm import completion
 
-from pytoy.tools.llm.kernel import FairyKernel
-from pytoy.tools.llm.interaction_provider import InteractionProvider, InteractionRequest, LLMInteraction
+from pytoy.tools.llm.llm_execution.executor import LLMExecutor
+from pytoy.tools.llm.llm_execution.models import ExecutionRequest, ExecutionHooks, LLMExecution
 
 
 class EvolveRequest(BaseModel, frozen=True):
@@ -120,11 +120,10 @@ def evolve(evolve_request: EvolveRequest) -> EvolveResponse:
     return completion(message, output_type=EvolveResponse)
 
 
-def build_evolve_task_request(
-    request: EvolveRequest,
+def build_evolve_task_spec(
     llm_param: LLMParam | None = None,
     connection_name: str | None = None,
-) -> TaskRequest:
+) -> TaskSpec:
     meta = InvocationSpecMeta(name="EvolveInvocation", intent="Evolve the manuscript")
     invocation_spec = LLMInvocationSpec(
         meta=meta,
@@ -134,7 +133,7 @@ def build_evolve_task_request(
         llm_param = llm_param, 
     )
     task_spec = TaskSpec.from_single_spec(meta="VoyageEvolveTask", invocation_spec=invocation_spec)
-    return TaskRequest(spec=task_spec, input=request)
+    return task_spec
 
 
 class ReflectRequest(BaseModel, frozen=True):
@@ -184,11 +183,10 @@ def reflect(reflect_request: ReflectRequest) -> ReflectResponse:
     return completion(messages, output_type=ReflectResponse)
 
 
-def build_reflect_task_request(
-    request: ReflectRequest,
+def build_reflect_task_spec(
     llm_param: LLMParam | None = None,
     connection_name: str | None = None,
-) -> TaskRequest:
+) -> TaskSpec:
     """Construct an TaskRequest for the Reflect task."""
     meta = InvocationSpecMeta(name="ReflectInvocation", intent="Reflect on the manuscript")
     invocation_spec = LLMInvocationSpec(
@@ -198,15 +196,14 @@ def build_reflect_task_request(
         llm_param=llm_param,
         connection = connection_name,
     )
-    task_spec = TaskSpec.from_single_spec(meta="VoyageReflectTask", invocation_spec=invocation_spec)
-    return TaskRequest(spec=task_spec, input=request)
+    return TaskSpec.from_single_spec(meta="VoyageReflectTask", invocation_spec=invocation_spec)
 
 
 class VoyageInteractionCreator:
     """Create the interaction."""
 
-    def __init__(self, kernel: FairyKernel):
-        self.kernel = kernel
+    def __init__(self):
+        pass
 
     def create_evolve_interaction(
         self,
@@ -215,17 +212,16 @@ class VoyageInteractionCreator:
         on_failure: Callable[[Exception], None],
         llm_param: LLMParam | None = None,
         connection_name: str | None = None,
-    ) -> LLMInteraction:
+    ) -> LLMExecution:
         """Create `evolve` interaction (asynchronous procedure call of `evolve`)"""
-        task_request = build_evolve_task_request(
-            evolve_request,
+        task_spec = build_evolve_task_spec(
             llm_param=llm_param,
             connection_name=connection_name,
         )
-        interaction_request = InteractionRequest(
-            self.kernel, task_request=task_request, on_success=on_success, on_failure=on_failure
-        )
-        return InteractionProvider().create(interaction_request)
+        execution_request = ExecutionRequest(task_spec=task_spec, input=evolve_request)
+        executor = LLMExecutor()
+        return executor.execute(execution_request, hooks=ExecutionHooks(on_success=on_success, on_failure=on_failure))
+
 
     def create_reflect_interaction(
         self,
@@ -234,14 +230,12 @@ class VoyageInteractionCreator:
         on_failure: Callable[[Exception], None],
         llm_param: LLMParam | None = None,
         connection_name: str | None = None,
-    ) -> LLMInteraction:
+    ) -> LLMExecution:
         """Create `evolve` interaction (asynchronous procedure call of `evolve`)"""
-        task_request = build_reflect_task_request(
-            reflect_request,
+        task_spec = build_reflect_task_spec(
             llm_param=llm_param,
             connection_name=connection_name,
         )
-        interaction_request = InteractionRequest(
-            self.kernel, task_request=task_request, on_success=on_success, on_failure=on_failure
-        )
-        return InteractionProvider().create(interaction_request)
+        execution_request = ExecutionRequest(task_spec=task_spec, input=reflect_request)
+        executor = LLMExecutor()
+        return executor.execute(execution_request, hooks=ExecutionHooks(on_success=on_success, on_failure=on_failure))

@@ -5,7 +5,6 @@ from pytoy.shared.ui.pytoy_buffer import (
     PytoyBufferProvider,
     BufferQuery,
     BufferSource,
-    make_buffer,
     LineRange,
 )
 from pytoy.shared.ui.pytoy_window import PytoyWindow, CursorPosition, PytoyWindowProvider, WindowCreationParam

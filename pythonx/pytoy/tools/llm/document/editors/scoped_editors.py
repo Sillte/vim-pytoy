@@ -1,11 +1,14 @@
 import re
+import logging
+import uuid
 
 from typing import Sequence
 from pytoy.shared.ui.notifications import EphemeralNotification
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_window import CharacterRange
 
-import uuid
+from pytoy.shared.pytoy_configuration import PytoyConfiguration
+
 
 from pytoy_llm.composer import InvocationComposer, SystemPromptSpec, OutputSpec
 from pytoy_llm.composers.materials import MaterialSection
@@ -13,7 +16,6 @@ from pytoy_llm.models import LLMMessage
 from pytoy_llm.task.models import (
     InvocationSpecMeta,
     LLMInvocationSpec,
-    TaskRequest,
     TaskSpec,
     TaskSpecMeta,
     FunctionInvocationSpec,
@@ -22,11 +24,9 @@ from pytoy_llm.task.models import (
 from pytoy.shared.timertask import add_log_message
 from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec, LanguageKind
 from pytoy.tools.llm.document.editors.edit_rules import LanguageRuleSet, CompletionRuleSet, StyleRuleSet
-from pytoy.tools.llm.interaction_provider import InteractionProvider, InteractionRequest
-from pytoy.tools.llm.kernel import FairyKernel
-from pytoy.tools.llm.models import LLMInteraction
-from pytoy.tools.llm.pytoy_fairy import PytoyFairy
-from pytoy.tools.llm.references import ReferenceHandler
+
+from pytoy.tools.llm.llm_execution.executor import LLMExecutor
+from pytoy.tools.llm.llm_execution.models import ExecutionRequest, ExecutionHooks
 
 
 def select_language_kind(document: str) -> LanguageKind:
@@ -156,7 +156,6 @@ class ScopedReconstructionContract:
 def make_scoped_edit_spec(
     document: str,
     scoped_edit_contract: ScopedReconstructionContract,
-    reference_handler: ReferenceHandler,
 ) -> LLMInvocationSpec:
     """Based on the `DocumentAnalysis`. provide the edit."""
 
@@ -188,12 +187,7 @@ def make_scoped_edit_spec(
             guidance_role=guidance_role,
         )
         composer = InvocationComposer(system_prompt)
-        if reference_handler.exist_reference:
-            usage = reference_handler.section_writer.make_material_usage()
-            data = reference_handler.section_writer.make_material_data()
-            supplementary_sections = [MaterialSection.from_any(name="ReferenceData", usage=usage, data=data)]
-        else:
-            supplementary_sections = None
+        supplementary_sections = None
         return composer.compose_message(user_prompt=document, supplementary_sections=supplementary_sections)
 
     return LLMInvocationSpec(
@@ -206,10 +200,10 @@ def make_scoped_edit_spec(
 
 
 class ScopedEditDocumentRequester:
-    def __init__(self, pytoy_fairy: PytoyFairy):
+    def __init__(self, pytoy_buffer: PytoyBuffer):
         self._id = uuid.uuid4().hex[:8]
         self.scoped_edit_contract = ScopedReconstructionContract.from_id(self._id)
-        self.pytoy_fairy = pytoy_fairy
+        self.pytoy_buffer = pytoy_buffer
 
     @property
     def query_start(self) -> str:
@@ -228,27 +222,32 @@ class ScopedEditDocumentRequester:
         add_log_message(str(exception))
         EphemeralNotification().notify("LLM Error. See `:messages`.")
 
-    def make_interaction(self) -> LLMInteraction:
-        buffer = self.pytoy_fairy.buffer
-        kernel = self.pytoy_fairy.kernel
-        self.scoped_edit_contract.insert_markers(buffer, self.pytoy_fairy.selection)
+    def execute_request(self) -> None:
+        buffer = self.pytoy_buffer
+        if buffer.window is None:
+            raise ValueError("Cannot execute because Selection cannot be obtained.")
+        self.scoped_edit_contract.insert_markers(buffer, buffer.window.selection)
 
         document = buffer.content
-        task_request = self._make_task_request(document, kernel)
+        task_spec = self._make_task_spec(document)
+        logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
+        logger.info("Preparation of `ScopeEdit`.")
 
-        request = InteractionRequest(
-            kernel=kernel,
-            task_request=task_request,
-            on_success=lambda output: self._apply_output(buffer, output),
-            on_failure=lambda exc: self._handle_error(buffer, exc),
-        )
-        return InteractionProvider().create(request)
+        kind = "ScopedEditor"
+        llm_request = ExecutionRequest(task_spec=task_spec, input=document, logger=logger, kind=kind)
+        executor = LLMExecutor()
+        if not executor.can_execute(llm_request, kind=kind):
+            raise RuntimeError("Already another request is executing for ScopedEditor.")
+        hooks = ExecutionHooks(on_success=lambda output: self._apply_output(buffer, output), 
+                               on_failure=lambda exc: self._handle_error(buffer, exc))
+        executor.execute(llm_request, hooks=hooks)
 
-    def _make_task_request(self, document: str, kernel: FairyKernel) -> TaskRequest:
+
+    def _make_task_spec(self, document: str) -> TaskSpec:
         select_language_spec = FunctionInvocationSpec.from_any(select_language_kind)
         edit_spec = make_scoped_edit_spec(
-            document, self.scoped_edit_contract, kernel.llm_context.reference_handler
+            document, self.scoped_edit_contract
         )
         meta = TaskSpecMeta(name="ScopedEditDocument")
         task_spec = TaskSpec.from_specs(invocation_specs=[select_language_spec, edit_spec], meta=meta)
-        return TaskRequest(spec=task_spec, input=document)
+        return task_spec
