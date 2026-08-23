@@ -9,7 +9,7 @@ from pytoy.tools.llm.references.models import (
     ReferencePathPair,
     ResourceUri,
 )
-from pytoy_llm.materials.utils import FileGatherer
+from pytoy_llm.foundation.paths import PathGatherer
 
 
 class ReferenceCollector:
@@ -24,11 +24,10 @@ class ReferenceCollector:
         self._stored_folder = Path(stored_folder)
         self._stored_folder.mkdir(exist_ok=True, parents=True)
 
-        self._exclude_predicators = [lambda item: item.startswith("."), lambda item: item.startswith("__")]
 
     def collect_all(self, root_folder: Path | str) -> ReferenceDataset:
         root_folder = Path(root_folder)
-        filepaths = FileGatherer(self._exclude_predicators, [self._stored_folder]).gather(root_folder)
+        filepaths = PathGatherer().gather(root_folder, target="file")
         path_pairs = self._dump_reference(root_folder, filepaths)
         meta = DatasetMeta(root_folder=root_folder)
         dataset = ReferenceDataset(meta=meta, path_pairs=path_pairs)

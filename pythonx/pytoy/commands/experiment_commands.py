@@ -8,7 +8,7 @@ app = App()
 
 @app.command("GatherTextFiles")
 def gather_text_files():
-    from pytoy_llm.materials.text_files import TextFilesCollector
+    from pytoy_llm.materials.text_files import TextFilesCollector, TextFilesMaterialQuery
     from pytoy_llm.composers.materials import MaterialDataExplorerTaskComposer
     from pytoy.job_execution.environment_manager import EnvironmentManager
 
@@ -18,9 +18,9 @@ def gather_text_files():
     path = buffer.file_path
     workspace = EnvironmentManager().find_workspace(path, preference="system")
     workspace = workspace or path.parent
-    collector = TextFilesCollector(path, workspace=workspace)
-    bundle = collector.bundle
-    composer = MaterialDataExplorerTaskComposer([bundle.text_material_data])
+    query = TextFilesMaterialQuery.from_any(collection_root=path, patterns=[""], max_depth=None)
+    material = TextFilesCollector(workspace=workspace).get_material(query)
+    composer = MaterialDataExplorerTaskComposer([material.text_material_data])
     section_text = composer.compose_system_prompt()
     buffer = make_buffer("__docs__", "vertical")
     buffer.init_buffer()
@@ -30,7 +30,7 @@ def gather_text_files():
 @app.command("GatherGitDiffs")
 def gather_git_diffs():
     from pytoy_llm.materials.git_diffs.collectors import GitDiffCollector
-    from pytoy_llm.materials.git_diffs.models import GitDiffBundleQuery
+    from pytoy_llm.materials.git_diffs.models import GitDiffMaterialQuery
     from pytoy_llm.composers.materials import MaterialDataExplorerTaskComposer
     from pytoy.job_execution.environment_manager import EnvironmentManager
     from pathlib import Path
@@ -43,8 +43,8 @@ def gather_git_diffs():
     workspace = workspace or path.parent
 
     collector = GitDiffCollector(path)
-    query = GitDiffBundleQuery()
-    bundle = collector.get_bundle(query)
+    query = GitDiffMaterialQuery()
+    bundle = collector.get_material(query)
     composer = MaterialDataExplorerTaskComposer([bundle.text_material_data])
     section_text = composer.compose_system_prompt()
     buffer = make_buffer("__docs__", "vertical")
