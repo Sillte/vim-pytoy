@@ -18,7 +18,8 @@ def gather_text_files():
     path = buffer.file_path
     workspace = EnvironmentManager().find_workspace(path, preference="system")
     workspace = workspace or path.parent
-    query = TextFilesMaterialQuery.from_any(collection_root=path, patterns=[""], max_depth=None)
+
+    query = TextFilesMaterialQuery.from_any(collection_root=path, patterns=[f"*{path.suffix}"], max_depth=None, only_meta=False)
     material = TextFilesCollector(workspace=workspace).get_material(query)
     composer = MaterialDataExplorerTaskComposer([material.text_material_data])
     section_text = composer.compose_system_prompt()
