@@ -21,7 +21,7 @@ from pytoy_llm.task.models import (
     FunctionInvocationSpec,
 )
 
-from pytoy.shared.timertask import add_log_message
+from pytoy.shared.timertask.thread_execution import add_log_message
 from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec, LanguageKind
 from pytoy.tools.llm.document.editors.edit_rules import LanguageRuleSet, CompletionRuleSet, StyleRuleSet
 

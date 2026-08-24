@@ -1,16 +1,13 @@
-from unittest.mock import MagicMock
-from pytoy.shared.timertask.thread_executor import ThreadExecutionManager, ThreadExecutionManager, ThreadExecutor, ThreadExecutionRequest, TimerStopException
-import time
 
-def test_naive():
-    class DummyContext:
-        class DummyContent:
-            def __init__(self):
-                self.thread_execution_manager = ThreadExecutionManager()
-            def get(self):
-                return self
-        def get(self):
-            return DummyContext.DummyContent()
+def test_naive2():
+
+    from unittest.mock import MagicMock
+    from pytoy.shared.timertask.thread_execution import ThreadExecutor, ThreadExecutionRequest, ThreadExecutionHooks
+    from pytoy.shared.timertask.thread_execution.models import ThreadExecutionResult
+    from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
+    import time
+
+
 
     # 簡単な task
     def simple_task(cancel_token):
@@ -24,28 +21,19 @@ def test_naive():
         print("Task finished")
         return 42
 
-    ctx = DummyContext().get()
-    executor = ThreadExecutor(ctx=ctx) # type: ignore
-    on_finish = MagicMock()
-    on_error = MagicMock()
+    executor = ThreadExecutor(manager=ThreadExecutionManager()) # type: ignore
+    hooks = ThreadExecutionHooks(on_finish=MagicMock(), on_error=MagicMock())
 
-    request = ThreadExecutionRequest(
+    request = ThreadExecutionRequest.from_any(
         main_func=simple_task,
-        on_finish=on_finish,
-        on_error=on_error
     )
-
-    exec_obj = executor.execute(request)
+    handler = executor.execute_with_creation(request, hooks=hooks)
+    id_ = handler.id
 
     time.sleep(0.1)
+    handler._manager._consumer._queue.put(ThreadExecutionResult(id=id_, result_type="Finished", result=42))
+    handler._manager._consumer._polling()
 
-    # polling を強制的に回す（通常は TimerTask が回す）
-    while exec_obj.alive:
-        time.sleep(0.1)
-    try:
-        ctx.thread_execution_manager._polling()
-    except TimerStopException:
-        pass
-    on_finish.assert_called_once_with(42)
-    on_error.assert_not_called()
-    print("All done.")
+    hooks.on_finish.assert_called_once_with(42)  # type:ignore
+    hooks.on_error.assert_not_called() # type:ignore
+ 

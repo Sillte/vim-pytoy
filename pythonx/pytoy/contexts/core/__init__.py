@@ -6,8 +6,8 @@ from functools import cached_property
 # Only for lazy loading to speed up.
 if TYPE_CHECKING:
     from pytoy.job_execution.environment_manager import EnvironmentManager
-    from pytoy.shared.timertask.thread_executor import ThreadExecutionManager
     from pytoy.bootstrap.import_resolvers import LLMImportResolver
+    from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
 
     ...
     # from pytoy.job_execution.command_executor import CommandExecutionManager
@@ -30,9 +30,10 @@ class GlobalCoreContext:
 
         return EnvironmentManager()
 
+
     @cached_property
     def thread_execution_manager(self) -> ThreadExecutionManager:
-        from pytoy.shared.timertask.thread_executor import ThreadExecutionManager
+        from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
 
         return ThreadExecutionManager()
 

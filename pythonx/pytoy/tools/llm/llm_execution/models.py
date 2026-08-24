@@ -4,14 +4,14 @@ from typing import Any, Self
 import uuid
 import logging
 
-from typing import Any, Callable, Sequence
+from typing import Callable
 from pytoy_llm.task.models import TaskSpec, TaskContextState, TaskResponse
 
 import time
 from dataclasses import dataclass, field
 from pytoy.shared.lib.event.domain import Event
 
-from pytoy.shared.timertask.thread_executor import ThreadExecution
+from pytoy.shared.timertask.thread_execution import ThreadExecutionHandler
 
 type ExecutionID = str
 type ExecutionKind = str
@@ -19,7 +19,7 @@ type ExecutionKind = str
 
 @dataclass(frozen=True)
 class LLMExecution:
-    thread_execution: ThreadExecution
+    thread_handler: ThreadExecutionHandler
     on_exit: Event[Any]
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: float = field(default_factory=lambda: time.time())

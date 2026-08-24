@@ -4,7 +4,7 @@ from pytoy.shared.lib.event.domain import EventEmitter
 
 from typing import Any
 
-from pytoy.shared.timertask.thread_executor import ThreadExecutionRequest, ThreadExecutor
+from pytoy.shared.timertask.thread_execution import ThreadExecutionRequest, ThreadExecutor, ThreadExecutionHooks
 from pytoy_llm.event_sinks import LoggerEventSink
 from pytoy_llm.task import TaskRequest, TaskExecutor
 from pytoy.tools.llm.llm_execution.models import ExecutionRequest, ExecutionHooks, LLMExecution, ExecutionPolicy, ExecutionKind, ExecutionContext
@@ -57,9 +57,10 @@ class LLMExecutor:
             task_response = TaskExecutor().execute(request=task_request, event_sink=event_sink)
             return task_response.output
 
-        execution_request = ThreadExecutionRequest(main_func=_main, on_finish=_on_finish, on_error=_on_error)
-        thread_execution = ThreadExecutor().execute(execution_request)
-        llm_execution = LLMExecution(thread_execution=thread_execution, on_exit=execution_end_emitter.event)
+        execution_request = ThreadExecutionRequest(main_func=_main)
+        execution_hooks = ThreadExecutionHooks.from_any(on_finish=_on_finish, on_error=_on_error)
+        thread_handler = ThreadExecutor().execute_with_creation(execution_request, hooks=execution_hooks)
+        llm_execution = LLMExecution(thread_handler=thread_handler, on_exit=execution_end_emitter.event)
         llm_context = ExecutionContext(hooks=hooks, request=request)
         self.execution_manager.register(llm_execution,  llm_context)
         return llm_execution

@@ -1,6 +1,6 @@
 import logging
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, make_buffer
-from pytoy.shared.timertask import add_log_message
+from pytoy.shared.timertask.thread_execution import add_log_message
 from pytoy.tools.llm.document.voyages.domain import VoyageState
 from pytoy.shared.pytoy_configuration import PytoyConfiguration
 from pytoy.tools.llm.document.voyages.application import (
