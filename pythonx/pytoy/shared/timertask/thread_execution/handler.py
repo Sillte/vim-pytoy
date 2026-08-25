@@ -30,11 +30,11 @@ class ThreadExecutionHandler:
 
     @classmethod
     @main_thread_only
-    def create(cls, request: ThreadExecutionRequest, hooks: ThreadExecutionHooks, *, manager: ThreadExecutionManager | None = None) -> Self:
+    def create(cls, request: ThreadExecutionRequest,  *, manager: ThreadExecutionManager | None = None) -> Self:
         if manager is None: 
              manager = GlobalCoreContext.get().thread_execution_manager
         factory = ThreadExecutionFactory(manager=manager)
-        execution = factory.create(request, hooks)
+        execution = factory.create(request)
         return cls(id=execution.id, manager=manager)
 
     @classmethod
@@ -45,11 +45,12 @@ class ThreadExecutionHandler:
         return [cls(id=execution.id, manager=manager) for execution in executions]
 
     @main_thread_only
-    def start(self) -> None:
+    def start(self, hooks: ThreadExecutionHooks | None = None) -> None:
+        hooks = hooks or ThreadExecutionHooks.from_any()
         execution = self._manager.get_execution(self._id)
         if execution is None:
             raise ValueError(f"`execution` does not exist; {self._id=}")
-        execution.start()
+        execution.start(hooks=hooks)
 
     # This is a collaborative cancel, so it can be called from non-main thread.
     def cancel(self) -> None:

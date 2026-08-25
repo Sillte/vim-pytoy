@@ -13,7 +13,7 @@ class ThreadExecutionFactory:
             manager = GlobalCoreContext.get().thread_execution_manager
         self._manager: ThreadExecutionManager = manager
 
-    def create(self, request: ThreadExecutionRequest, hooks:ThreadExecutionHooks) -> ThreadExecution: 
+    def create(self, request: ThreadExecutionRequest) -> ThreadExecution: 
         id_ = str(uuid.uuid4())
         cancel_token = Event()
 
@@ -28,5 +28,5 @@ class ThreadExecutionFactory:
 
         thread = Thread(target=_run, daemon=True, args=(cancel_token,))
         execution = ThreadExecution(id=id_, thread=thread, cancel_token=cancel_token)
-        return self._manager.register(execution, hooks=hooks)
+        return self._manager.register(execution)
          

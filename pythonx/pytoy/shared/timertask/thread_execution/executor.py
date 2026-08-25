@@ -13,8 +13,8 @@ class ThreadExecutor:
         self._factory = ThreadExecutionFactory(manager=self._manager)
 
     def execute(self, request: ThreadExecutionRequest, hooks:ThreadExecutionHooks) -> ThreadExecutionHandler: 
-        execution = self._factory.create(request, hooks)
+        execution = self._factory.create(request)
         handler = ThreadExecutionHandler(id=execution.id, manager=self._manager)
-        handler.start()
+        handler.start(hooks=hooks)
         return handler
 

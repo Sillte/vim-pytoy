@@ -39,6 +39,7 @@ class ThreadExecution:
     cancel_token: CancelToken
     id: ThreadExecutionID = field(default_factory=lambda: str(uuid.uuid4()))
     status: ThreadExecutionStatus = "created"
+    hooks: ThreadExecutionHooks | None = None
     exit_emitter: EventEmitter[ThreadExecutionResult] = field(default_factory=EventEmitter)
     kind: str = "$default"
 
@@ -46,16 +47,19 @@ class ThreadExecution:
     def on_exit(self) -> Event:
         return self.exit_emitter.event
 
-    def start(self) -> None:
+    def start(self, hooks: ThreadExecutionHooks) -> None:
         if self.status != "created":
             raise RuntimeError(f"When `start` is called, `status` must be `created`, but `{self.status}`")
+        self.hooks = hooks
         self.status = "running"
         self.thread.start()
 
-    def complete_from_result(self, result: ThreadExecutionResult, hooks: ThreadExecutionHooks) -> None:
+    def complete_from_result(self, result: ThreadExecutionResult) -> None:
+        if self.hooks is None:
+            raise RuntimeError("`self.hooks` is None. It is an implementation error.")
         hook_exception: Exception | None = None
         try:
-            self._resolve_result(result, hooks)
+            self._resolve_result(result)
         except Exception as e:
             hook_exception = e
 
@@ -64,7 +68,9 @@ class ThreadExecution:
         if hook_exception is not None:
             raise hook_exception
 
-    def _resolve_result(self, result: ThreadExecutionResult, hooks: ThreadExecutionHooks) -> None:
+    def _resolve_result(self, result: ThreadExecutionResult) -> None:
+        assert self.hooks is not None
+        hooks = self.hooks
         match result.result_type:
             case "Finished":
                 self.status = "finished"

@@ -12,18 +12,15 @@ from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
 class ThreadExecutionManager:
     def __init__(self):
         self._executions: dict[ThreadExecutionID, ThreadExecution] = {}
-        self._hooks: dict[ThreadExecutionID, ThreadExecutionHooks] = {}
         self._queue:  Queue[ThreadExecutionResult] = Queue()
         self._consumer = _ThreadExecutionConsumer(queue=self._queue, consume=self._consume)
 
 
-    def register(self, execution: ThreadExecution, hooks: ThreadExecutionHooks) -> ThreadExecution:
+    def register(self, execution: ThreadExecution) -> ThreadExecution:
         self._executions[execution.id] = execution
-        self._hooks[execution.id] = hooks
 
         def _deregister(_):
             self._executions.pop(execution.id, None)
-            self._hooks.pop(execution.id, None)
         execution.on_exit.subscribe(_deregister)
         return execution
 
@@ -57,10 +54,9 @@ class ThreadExecutionManager:
         self.assert_main_thread()
 
         execution = self._executions.get(result.id)
-        hooks = self._hooks.get(result.id)
-        if not execution or not hooks:
+        if not execution:
             return
-        execution.complete_from_result(result, hooks=hooks)
+        execution.complete_from_result(result)
 
     def assert_main_thread(self) -> None:
         if threading.current_thread() is not threading.main_thread():
