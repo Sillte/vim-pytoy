@@ -59,7 +59,7 @@ class LLMExecutor:
 
         execution_request = ThreadExecutionRequest(main_func=_main)
         execution_hooks = ThreadExecutionHooks.from_any(on_finish=_on_finish, on_error=_on_error)
-        thread_handler = ThreadExecutor().execute_with_creation(execution_request, hooks=execution_hooks)
+        thread_handler = ThreadExecutor().execute(execution_request, hooks=execution_hooks)
         llm_execution = LLMExecution(thread_handler=thread_handler, on_exit=execution_end_emitter.event)
         llm_context = ExecutionContext(hooks=hooks, request=request)
         self.execution_manager.register(llm_execution,  llm_context)

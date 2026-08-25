@@ -27,7 +27,7 @@ def test_naive2():
     request = ThreadExecutionRequest.from_any(
         main_func=simple_task,
     )
-    handler = executor.execute_with_creation(request, hooks=hooks)
+    handler = executor.execute(request, hooks=hooks)
     id_ = handler.id
 
     time.sleep(0.1)

@@ -4,7 +4,7 @@ from threading import Thread
 from pytoy.contexts.core import GlobalCoreContext
 
 from threading import Event 
-from .models import  ThreadExecution, ThreadExecutionHooks, ThreadExecutionRequest, ThreadExecutionResult
+from .models import ThreadExecution, ThreadExecutionHooks, ThreadExecutionRequest, ThreadExecutionResult
 from .manager import ThreadExecutionManager
 
 class ThreadExecutionFactory:

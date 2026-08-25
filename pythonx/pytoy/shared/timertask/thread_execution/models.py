@@ -1,4 +1,4 @@
-from  __future__ import annotations
+from __future__ import annotations
 from typing import Callable, Any, cast, Literal, Self, Sequence, assert_never
 from threading import Thread
 from threading import Event as ThreadingEvent
@@ -12,6 +12,7 @@ type CancelToken = ThreadingEvent
 type ThreadExecutionStatus = Literal["created", "running", "finished", "error"]
 type ResultType = Literal["Finished", "Error"]
 
+
 @dataclass(frozen=True)
 class ThreadExecutionResult:
     id: ThreadExecutionID
@@ -19,15 +20,17 @@ class ThreadExecutionResult:
     result: Any | None = None
     exception: Exception | None = None
 
+
 @dataclass(frozen=True)
 class ThreadExecutionHooks:
-    on_finish: Callable[[Any], None] 
+    on_finish: Callable[[Any], None]
     on_error: Callable[[Exception], None]
 
     @classmethod
-    def from_any(cls, on_finish: Callable[[Any], None] | None = None,  on_error: Callable[[Exception], None] | None = None) -> Self:
-        return cls(on_finish=(on_finish or (lambda _: None)), 
-                   on_error= (on_error or (lambda _: None)))
+    def from_any(
+        cls, on_finish: Callable[[Any], None] | None = None, on_error: Callable[[Exception], None] | None = None
+    ) -> Self:
+        return cls(on_finish=(on_finish or (lambda _: None)), on_error=(on_error or (lambda _: None)))
 
 
 @dataclass
@@ -50,6 +53,18 @@ class ThreadExecution:
         self.thread.start()
 
     def complete_from_result(self, result: ThreadExecutionResult, hooks: ThreadExecutionHooks) -> None:
+        hook_exception: Exception | None = None
+        try:
+            self._resolve_result(result, hooks)
+        except Exception as e:
+            hook_exception = e
+
+        self.exit_emitter.fire(result)
+
+        if hook_exception is not None:
+            raise hook_exception
+
+    def _resolve_result(self, result: ThreadExecutionResult, hooks: ThreadExecutionHooks) -> None:
         match result.result_type:
             case "Finished":
                 self.status = "finished"
@@ -63,9 +78,6 @@ class ThreadExecution:
             case _:
                 assert_never(result.result_type)
 
-        self.exit_emitter.fire(result)
-     
-    
 
 @dataclass(frozen=True)
 class ThreadExecutionRequest:
@@ -74,12 +86,10 @@ class ThreadExecutionRequest:
     check periodically `is_set`.
     """
 
-    main_func: Callable[[CancelToken], Any] 
+    main_func: Callable[[CancelToken], Any]
 
-    @classmethod
-    def _solve_main_func(
-        cls, main_func: Callable[[CancelToken], Any] | Callable[[], Any]
-    ) -> Callable[[CancelToken], Any]:
+    @staticmethod
+    def _solve_main_func(main_func: Callable[[CancelToken], Any] | Callable[[], Any]) -> Callable[[CancelToken], Any]:
         """Wrap the function without the argument."""
         from inspect import signature, Parameter
         from functools import wraps
@@ -89,21 +99,21 @@ class ThreadExecutionRequest:
 
         if len(params) == 0 or all(p.default is not Parameter.empty for p in params):
             original = cast(Callable[[], Any], main_func)
+
             @wraps(original)
-            def wrapper(event: Event) -> Any:
-                return original()  
+            def wrapper(cancel_token: CancelToken) -> Any:
+                return original()
+
             return cast(Callable[[CancelToken], Any], wrapper)
         return cast(Callable[[CancelToken], Any], main_func)
 
     @classmethod
-    def from_any(cls,
-                  main_func: Callable[[CancelToken], Any] | Callable[[], Any],
-                  ):
+    def from_any(
+        cls,
+        main_func: Callable[[CancelToken], Any] | Callable[[], Any],
+    ) -> Self:
         main_func = cls._solve_main_func(main_func)
         return cls(main_func=main_func)
-
-
-
 
 
 @dataclass(frozen=True)
@@ -113,15 +123,16 @@ class ThreadExecutionQuery:
     kind: str | None = None
 
     @classmethod
-    def from_any(cls, id: ThreadExecutionID | None = None,
-                      statuses: ThreadExecutionStatus | Sequence[ThreadExecutionStatus] | None = None, 
-                      kind: str | None = None) -> Self:
-        if statuses is None: 
+    def from_any(
+        cls,
+        id: ThreadExecutionID | None = None,
+        statuses: ThreadExecutionStatus | Sequence[ThreadExecutionStatus] | None = None,
+        kind: str | None = None,
+    ) -> Self:
+        if statuses is None:
             n_statuses = None
         elif isinstance(statuses, str):
-            n_statuses = (cast(ThreadExecutionStatus, statuses), )
+            n_statuses = (cast(ThreadExecutionStatus, statuses),)
         else:
             n_statuses = tuple(statuses)
         return cls(id=id, statuses=n_statuses, kind=kind)
-
-
