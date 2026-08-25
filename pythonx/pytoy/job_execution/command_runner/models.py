@@ -57,7 +57,7 @@ class SpawnOption:
 
 @dataclass(frozen=True)
 class JobEvents:
-    # Basically, update is one line
+    # Basically, update is per one line
     on_job_exit: Event[JobResult]
     on_update_stdout_line: Event[str]
     on_update_stderr_line: Event[str]

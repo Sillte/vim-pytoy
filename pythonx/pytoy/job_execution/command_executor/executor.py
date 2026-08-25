@@ -3,14 +3,13 @@ from pytoy.job_execution.command_executor.manager import CommandExecutionManager
 from pytoy.job_execution.command_executor.models import (
     BufferRequest,
     CommandExecution,
-    ExecutionContext,
-    ExecutionHooks,
-    ExecutionKind,
-    ExecutionPolicy,
-    ExecutionRequest,
-    ExecutionResult,
+    CommandExecutionContext,
+    CommandExecutionHooks,
+    CommandExecutionKind,
+    CommandExecutionRequest,
+    CommandExecutionResult,
     PostProcessContext,
-    ExecutionWrapperType,
+    CommandExecutionWrapperType,
 )
 from pytoy.job_execution.command_runner import CommandRunner
 from pytoy.job_execution.command_runner.models import OutputJobRequest, SpawnOption
@@ -49,11 +48,11 @@ class CommandExecutor:
         return self._stderr
 
     def execute(
-        self, request: ExecutionRequest, hooks: ExecutionHooks | None = None, *, init_buffer: bool = True
+        self, request: CommandExecutionRequest, hooks: CommandExecutionHooks | None = None, *, init_buffer: bool = True
     ) -> CommandExecution:
         runner = CommandRunner(stdout=self.stdout, stderr=self.stderr, init_buffer=init_buffer)
         if hooks is None:
-            hooks = ExecutionHooks()
+            hooks = CommandExecutionHooks()
         if not request.cwd:
             # [TODO: Implment `Current` object so that we can get the global state.]
             from pytoy.job_execution.utils import get_current_directory
@@ -64,8 +63,8 @@ class CommandExecutor:
         env = request.env
         command = self._solve_command(request.command, request.command_wrapper, cwd=cwd)
 
-        def _on_exit(result: ExecutionResult, *, hooks: ExecutionHooks) -> None:
-            def _call_if_possible(func: Callable[[ExecutionResult], None] | None):
+        def _on_exit(result: CommandExecutionResult, *, hooks: CommandExecutionHooks) -> None:
+            def _call_if_possible(func: Callable[[CommandExecutionResult], None] | None):
                 if func:
                     func(result)
 
@@ -84,7 +83,7 @@ class CommandExecutor:
 
         runner.run(job_request, spawn_option)
 
-        context = ExecutionContext(
+        context = CommandExecutionContext(
             buffer=self._buffer_request,
             execution_request=replace(request, cwd=cwd, env=env),
             hooks=hooks,
@@ -99,7 +98,7 @@ class CommandExecutor:
         return execution
 
     def _solve_command(
-        self, command: str | list[str] | tuple[str], command_wrapper: ExecutionWrapperType | None, cwd: str | Path
+        self, command: str | list[str] | tuple[str], command_wrapper: CommandExecutionWrapperType | None, cwd: str | Path
     ) -> list[str] | str:
         if callable(command_wrapper):
             return command_wrapper(command)
@@ -108,9 +107,6 @@ class CommandExecutor:
         command_wrapper = execution_env.command_wrapper
         return command_wrapper(command)
 
-    def can_execute(self, _: ExecutionRequest, kind: ExecutionKind | None = None) -> bool:
-        policy = ExecutionPolicy(kind=kind)
-        return self._execution_manager.can_execute(policy)
 
 
 if __name__ == "__main__":

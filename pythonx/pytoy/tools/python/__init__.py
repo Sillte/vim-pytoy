@@ -4,7 +4,7 @@ import re
 
 from pathlib import Path
 
-from pytoy.job_execution.command_executor.launcher import LaunchProfile, get_default_hooks, ExecutionHooks
+from pytoy.job_execution.command_executor.launcher import LaunchProfile, get_default_hooks, CommandExecutionHooks
 from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
 
 from pytoy.shared.ui import PytoyBuffer, QuickfixRecord
@@ -42,7 +42,7 @@ class PythonExecutor:
         quickfix_profile = QuickfixProfile(quickfix_creator=quickfix_creator)
         quickfix_hooks = make_quickfix_hooks(quickfix_profile)
         default_hooks = get_default_hooks()
-        hooks = ExecutionHooks.merge(quickfix_hooks, default_hooks)
+        hooks = CommandExecutionHooks.merge(quickfix_hooks, default_hooks)
         command_profile = LaunchProfile(kind="PythonExecutor", command_wrapper=command_wrapper, execution_hooks=hooks)
 
         self.command_launcher = CommandLauncher(launch_profile=command_profile)

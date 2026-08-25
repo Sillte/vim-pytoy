@@ -14,7 +14,7 @@ from pytoy.job_execution.environment_manager.models import (
     EnvironmentKind,
     ExecutionPreference,
     CommandWrapperType,
-    ExecutionWrapperType,
+    CommandExecutionWrapperType,
 )
 from pytoy.job_execution.environment_manager.models import ToolRunnerStrategyProtocol
 

@@ -1,7 +1,7 @@
 from configparser import ConfigParser
 from pytoy import TERM_STDOUT
 from pytoy.job_execution.command_executor.launcher import CommandLauncher, LaunchProfile, get_default_hooks
-from pytoy.job_execution.command_executor import ExecutionHooks
+from pytoy.job_execution.command_executor import CommandExecutionHooks
 from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile
 from pytoy.shared.ui import PytoyBuffer, PytoyWindow, QuickfixRecord
 from pytoy.shared.ui.pytoy_buffer import make_buffer
@@ -60,7 +60,7 @@ class PytestRunner:
             return [QuickfixRecord.from_dict(row, cwd) for row in rows]
 
         hooks = get_default_hooks()
-        hooks = ExecutionHooks.merge(hooks, QuickfixProfile(quickfix_creator=make_qf_records).execution_hooks)
+        hooks = CommandExecutionHooks.merge(hooks, QuickfixProfile(quickfix_creator=make_qf_records).execution_hooks)
         launch_profile = LaunchProfile(kind=self.kind, execution_hooks=hooks)
         CommandLauncher(launch_profile).run(command, stdout=self.stdout, stderr=self.stdout, cwd=cwd)
 

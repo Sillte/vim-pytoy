@@ -4,7 +4,7 @@ from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
 
 from pytoy.job_execution.terminal_runner.models import TerminalJobRequest, SpawnOption, JobID, Event, JobEvents
 from pytoy.job_execution.terminal_runner.models import TerminalDriver
-from pytoy.job_execution.terminal_runner.models import ExecutionWrapperType
+from pytoy.job_execution.terminal_runner.models import CommandExecutionWrapperType
 
 
 from dataclasses import dataclass
@@ -42,7 +42,7 @@ class BufferRequest:
 @dataclass(frozen=True)
 class ExecutionRequest:
     driver: TerminalDriverProtocol
-    command_wrapper: ExecutionWrapperType | None = None
+    command_wrapper: CommandExecutionWrapperType | None = None
     cwd: str | Path | None = None
     env: dict[str, str] | None = None
 

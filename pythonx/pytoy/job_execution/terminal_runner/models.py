@@ -3,7 +3,7 @@ from pytoy.shared.lib.text import CursorPosition
 from pytoy.shared.lib.event.domain import Event
 
 from typing import Callable, Literal, Sequence, Protocol, Hashable, Any, Self, runtime_checkable
-from pytoy.job_execution.environment_manager import CommandWrapperType, ExecutionWrapperType  # noqa
+from pytoy.job_execution.environment_manager import CommandWrapperType, CommandExecutionWrapperType  # noqa
 
 
 from pathlib import Path

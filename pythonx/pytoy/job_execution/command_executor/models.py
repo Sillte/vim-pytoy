@@ -7,14 +7,14 @@ from pytoy.job_execution.command_runner import CommandRunner
 from typing import Callable, Mapping, Self, Any
 from pytoy.job_execution.command_runner.models import JobResult, JobID, JobEvents
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, BufferSource
-from pytoy.job_execution.environment_manager import ExecutionWrapperType
+from pytoy.job_execution.environment_manager import CommandExecutionWrapperType
 
 
-type ExecutionResult = JobResult
-type ExecutionID = JobID
-type ExecutionEvents = JobEvents
+type CommandExecutionResult = JobResult
+type CommandExecutionID = JobID
+type CommandExecutionEvents = JobEvents
 
-type ExecutionKind = str
+type CommandExecutionKind = str
 
 
 @dataclass(frozen=True)
@@ -32,13 +32,32 @@ class BufferRequest:
 
 
 @dataclass(frozen=True)
-class ExecutionRequest:
-    command: str | list[str] | tuple[str]
-    cwd: str | Path | None = None
-    command_wrapper: ExecutionWrapperType | None = None
+class CommandExecutionRequest:
+    command: str | list[str]
+    cwd: Path | None = None
+    command_wrapper: CommandExecutionWrapperType | None = None
     env: Mapping[str, str] | None = None
-    kind: ExecutionKind = "$default"
+    kind: CommandExecutionKind = "$default"
     meta: Mapping[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_any(
+        cls,
+        command: str | list[str],
+        cwd: str | Path | None = None,
+        command_wrapper: CommandExecutionWrapperType | None = None,
+        env: Mapping[str, str] | None = None,
+        kind: CommandExecutionKind = "$default",
+        meta: Mapping[str, Any] | None = None,
+    ) -> Self:
+        return cls(
+            command=command,
+            cwd=Path(cwd) if cwd is not None else None,
+            command_wrapper=command_wrapper,
+            env=env,
+            kind=kind,
+            meta=meta or {},
+        )
 
 
 @dataclass(frozen=True)
@@ -46,10 +65,10 @@ class CommandExecution:
     runner: CommandRunner
     command: list[str] | str
     cwd: Path
-    id: ExecutionID
+    id: CommandExecutionID
 
     @property
-    def events(self) -> ExecutionEvents:
+    def events(self) -> CommandExecutionEvents:
         return self.runner.events
 
     @property
@@ -59,7 +78,7 @@ class CommandExecution:
 
 @dataclass(frozen=True)
 class PostProcessContext:
-    result: ExecutionResult
+    result: CommandExecutionResult
     execution: CommandExecution
 
     @property
@@ -72,21 +91,21 @@ class PostProcessContext:
 
 
 @dataclass(frozen=True)
-class ExecutionHooks:
+class CommandExecutionHooks:
     """Recommendation policy... Use `on_finish` rather than on_success / on_failure."""
 
-    on_success: Callable[[ExecutionResult], None] | None = None
-    on_failure: Callable[[ExecutionResult], None] | None = None
-    on_finish: Callable[[ExecutionResult], None] | None = None
+    on_success: Callable[[CommandExecutionResult], None] | None = None
+    on_failure: Callable[[CommandExecutionResult], None] | None = None
+    on_finish: Callable[[CommandExecutionResult], None] | None = None
     on_start: Callable[[CommandExecution], None] | None = None
     on_post_process: Callable[[PostProcessContext], None] | None = None
 
     @staticmethod
-    def merge(hook1: "ExecutionHooks", hook2: "ExecutionHooks") -> "ExecutionHooks":
+    def merge(hook1: "CommandExecutionHooks", hook2: "CommandExecutionHooks") -> "CommandExecutionHooks":
         from dataclasses import fields
 
         merged_kwargs = {}
-        for item in fields(ExecutionHooks):
+        for item in fields(CommandExecutionHooks):
             f1 = getattr(hook1, item.name)
             f2 = getattr(hook2, item.name)
 
@@ -100,17 +119,17 @@ class ExecutionHooks:
                     return lambda *a, **k: (f1(*a, **k), f2(*a, **k))
 
                 merged_kwargs[item.name] = _merged()
-        return ExecutionHooks(**merged_kwargs)
+        return CommandExecutionHooks(**merged_kwargs)
 
 
 @dataclass(frozen=True)
-class ExecutionContext:
+class CommandExecutionContext:
     """This should be used for repeating the same `Command`again."""
 
     buffer: BufferRequest
-    execution_request: ExecutionRequest
-    hooks: ExecutionHooks
-    kind: ExecutionKind = "$default"
+    execution_request: CommandExecutionRequest
+    hooks: CommandExecutionHooks
+    kind: CommandExecutionKind = "$default"
 
     @property
     def meta(self) -> Mapping[str, Any]:
@@ -119,11 +138,11 @@ class ExecutionContext:
 
 @dataclass(frozen=True)
 class ExecutionPolicy:
-    kind: ExecutionKind | None = None
+    kind: CommandExecutionKind | None = None
     allow_parallel: bool = False
 
 
 @dataclass(frozen=True)
 class ExecutionQuery:
-    kind: ExecutionKind | None = None
+    kind: CommandExecutionKind | None = None
     stdout: BufferSource | None = None

@@ -3,7 +3,7 @@ from pytoy.job_execution.command_executor.launcher import (
     CommandLauncher,
     LaunchProfile,
     get_default_hooks,
-    ExecutionHooks,
+    CommandExecutionHooks,
 )
 from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
 from pytoy.shared.ui import PytoyBuffer
@@ -34,7 +34,7 @@ class MypyChecker:
         quickfix_regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+):(?P<_type>(.+)):(?P<text>(.+))"
         profile = QuickfixProfile(quickfix_creator=quickfix_regex)
         hooks = get_default_hooks()
-        hooks = ExecutionHooks.merge(hooks, make_quickfix_hooks(profile))
+        hooks = CommandExecutionHooks.merge(hooks, make_quickfix_hooks(profile))
 
         profile = LaunchProfile(kind=self.kind, execution_hooks=hooks)
         launcher = CommandLauncher(profile)

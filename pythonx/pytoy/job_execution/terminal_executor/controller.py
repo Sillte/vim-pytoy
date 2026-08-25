@@ -9,7 +9,7 @@ from pytoy.job_execution.terminal_executor.models import (
     ExecutionRequest,
     TerminalDriverProtocol,
     TerminalExecution,
-    ExecutionWrapperType,
+    CommandExecutionWrapperType,
 )
 from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager
 from pytoy.shared.ui.pytoy_buffer import BufferSource
@@ -17,7 +17,7 @@ from pytoy.shared.ui.pytoy_buffer import BufferSource
 
 @dataclass(frozen=True)
 class LaunchProfile:
-    command_wrapper: ExecutionWrapperType | None = None
+    command_wrapper: CommandExecutionWrapperType | None = None
     cwd: Path | None = None
 
 

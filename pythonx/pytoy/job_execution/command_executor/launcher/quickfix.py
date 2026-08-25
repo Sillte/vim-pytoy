@@ -1,4 +1,4 @@
-from pytoy.job_execution.command_executor.models import ExecutionHooks, ExecutionResult, PostProcessContext
+from pytoy.job_execution.command_executor.models import CommandExecutionHooks, CommandExecutionResult, PostProcessContext
 from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, QuickfixCreator, QuickfixRecordRegex
 
 
@@ -12,16 +12,16 @@ class QuickfixProfile:
     quickfix_source: Literal["stdout", "stderr", "both", "auto"] = "auto"
 
     @property
-    def execution_hooks(self) -> ExecutionHooks:
+    def execution_hooks(self) -> CommandExecutionHooks:
         return make_quickfix_hooks(self)
 
 
-def make_quickfix_hooks(quickfix_profile: QuickfixProfile) -> ExecutionHooks:
+def make_quickfix_hooks(quickfix_profile: QuickfixProfile) -> CommandExecutionHooks:
     from pytoy.shared.ui.pytoy_quickfix import to_quickfix_creator
 
     quickfix_creator = to_quickfix_creator(quickfix_profile.quickfix_creator)
 
-    def _decide_quickfix_source(result: ExecutionResult, quickfix_profile: QuickfixProfile):
+    def _decide_quickfix_source(result: CommandExecutionResult, quickfix_profile: QuickfixProfile):
         match quickfix_profile.quickfix_source:
             case "stdout":
                 return result.stdout
@@ -41,6 +41,6 @@ def make_quickfix_hooks(quickfix_profile: QuickfixProfile) -> ExecutionHooks:
         records = quickfix_creator(quickfix_source, execution.cwd)
         PytoyQuickfix().handle_records(records, is_open=False)
 
-    quickfix_hooks = ExecutionHooks(on_post_process=on_post_process)
+    quickfix_hooks = CommandExecutionHooks(on_post_process=on_post_process)
 
     return quickfix_hooks

@@ -17,7 +17,7 @@ class CommandWrapperProtocol(Protocol):
 
 
 type CommandWrapperType = CommandWrapperProtocol
-type ExecutionWrapperType = CommandWrapperType | ExecutionPreference
+type CommandExecutionWrapperType = CommandWrapperType | ExecutionPreference
 
 
 class ToolRunnerStrategyProtocol(Protocol):

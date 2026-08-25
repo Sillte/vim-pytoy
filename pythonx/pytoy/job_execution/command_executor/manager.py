@@ -1,8 +1,8 @@
 from pytoy.job_execution.command_executor.models import (
     CommandExecution,
-    ExecutionContext,
-    ExecutionID,
-    ExecutionKind,
+    CommandExecutionContext,
+    CommandExecutionID,
+    CommandExecutionKind,
     ExecutionPolicy,
     ExecutionQuery,
 )
@@ -14,12 +14,12 @@ from typing import Sequence
 
 class CommandExecutionManager:
     def __init__(self):
-        self._executions: dict[ExecutionID, CommandExecution] = {}
-        self._contexts: dict[ExecutionID, ExecutionContext] = {}
-        self._last_context_by_kind: dict[ExecutionKind, ExecutionContext] = {}
+        self._executions: dict[CommandExecutionID, CommandExecution] = {}
+        self._contexts: dict[CommandExecutionID, CommandExecutionContext] = {}
+        self._last_context_by_kind: dict[CommandExecutionKind, CommandExecutionContext] = {}
         self._last_context = None
 
-    def register(self, execution: CommandExecution, context: ExecutionContext):
+    def register(self, execution: CommandExecution, context: CommandExecutionContext):
         self._executions[execution.id] = execution
         self._contexts[execution.id] = context
 
@@ -43,21 +43,14 @@ class CommandExecutionManager:
         return [self._executions[id_] for id_ in target_ids]
 
     def get_running(
-        self, kind: ExecutionKind | None = None, stdout: BufferSource | None = None
+        self, kind: CommandExecutionKind | None = None, stdout: BufferSource | None = None
     ) -> Sequence[CommandExecution]:
         query = ExecutionQuery(kind=kind, stdout=stdout)
         return self.select(query)
 
     @property
-    def last_context(self) -> ExecutionContext | None:
+    def last_context(self) -> CommandExecutionContext | None:
         return self._last_context
 
-    def get_last_context_by_kind(self, kind: ExecutionKind) -> ExecutionContext | None:
+    def get_last_context_by_kind(self, kind: CommandExecutionKind) -> CommandExecutionContext | None:
         return self._last_context_by_kind.get(kind)
-
-    def can_execute(self, policy: ExecutionPolicy) -> bool:
-        if policy.allow_parallel:
-            return True
-        if policy.kind is None:
-            return not self._executions
-        return not (any(self._contexts[id_].kind == policy.kind for id_ in self._executions))

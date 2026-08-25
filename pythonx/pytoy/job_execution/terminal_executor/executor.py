@@ -14,7 +14,7 @@ from pytoy.job_execution.terminal_runner.models import (
     TerminalDriver,
     TerminalDriverProtocol,
     TerminalJobRequest,
-    ExecutionWrapperType,
+    CommandExecutionWrapperType,
 )
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
@@ -94,7 +94,7 @@ class TerminalExecutor:
         return self._execution_manager.can_execute(policy)
 
     def _solve_command_environment(
-        self, driver: TerminalDriverProtocol, command_wrapper: ExecutionWrapperType | None, cwd: str | Path
+        self, driver: TerminalDriverProtocol, command_wrapper: CommandExecutionWrapperType | None, cwd: str | Path
     ) -> TerminalDriverProtocol:
         if callable(command_wrapper):
             return TerminalDriver.with_command_wrapper(driver, command_wrapper=command_wrapper)

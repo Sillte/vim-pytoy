@@ -6,7 +6,7 @@ from pytoy.contexts.core import GlobalCoreContext
 from pytoy.job_execution.command_executor.launcher import (
     CommandLauncher,
     LaunchProfile,
-    ExecutionHooks,
+    CommandExecutionHooks,
     get_default_hooks,
 )
 from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
@@ -69,7 +69,7 @@ class RuffChecker:
         quickfix_hooks = make_quickfix_hooks(quickfix_profile)
 
         default_hooks = get_default_hooks()
-        hooks = ExecutionHooks.merge(default_hooks, quickfix_hooks)
+        hooks = CommandExecutionHooks.merge(default_hooks, quickfix_hooks)
 
         profile = LaunchProfile(kind=self.kind, execution_hooks=hooks)
         launcher = CommandLauncher(profile)
