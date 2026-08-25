@@ -1,13 +1,17 @@
+from __future__ import annotations
 #  Models used for `command_executor` package.
 # It is intended to behaive like a domain model in this package.
 
+import uuid
 from pathlib import Path
 from dataclasses import dataclass, field
 from pytoy.job_execution.command_runner import CommandRunner
-from typing import Callable, Mapping, Self, Any
+from typing import Callable, Mapping, Self, Any, Literal, cast
+from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.job_execution.command_runner.models import JobResult, JobID, JobEvents
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, BufferSource
 from pytoy.job_execution.environment_manager import CommandExecutionWrapperType
+from pytoy.job_execution.command_runner.models import OutputJobRequest, SpawnOption
 
 
 type CommandExecutionResult = JobResult
@@ -15,6 +19,8 @@ type CommandExecutionID = JobID
 type CommandExecutionEvents = JobEvents
 
 type CommandExecutionKind = str
+
+type CommandExecutionStatus = Literal["created", "running", "finished", "error"]
 
 
 @dataclass(frozen=True)
@@ -61,44 +67,14 @@ class CommandExecutionRequest:
 
 
 @dataclass(frozen=True)
-class CommandExecution:
-    runner: CommandRunner
-    command: list[str] | str
-    cwd: Path
-    id: CommandExecutionID
-
-    @property
-    def events(self) -> CommandExecutionEvents:
-        return self.runner.events
-
-    @property
-    def stdout(self) -> PytoyBuffer:
-        return self.runner.stdout
-
-
-@dataclass(frozen=True)
-class PostProcessContext:
-    result: CommandExecutionResult
-    execution: CommandExecution
-
-    @property
-    def stdout(self) -> PytoyBuffer:
-        return self.execution.runner.stdout
-
-    @property
-    def stderr(self) -> PytoyBuffer | None:
-        return self.execution.runner.stderr
-
-
-@dataclass(frozen=True)
 class CommandExecutionHooks:
     """Recommendation policy... Use `on_finish` rather than on_success / on_failure."""
 
     on_success: Callable[[CommandExecutionResult], None] | None = None
     on_failure: Callable[[CommandExecutionResult], None] | None = None
     on_finish: Callable[[CommandExecutionResult], None] | None = None
-    on_start: Callable[[CommandExecution], None] | None = None
-    on_post_process: Callable[[PostProcessContext], None] | None = None
+    on_start: Callable[["CommandExecution"], None] | None = None
+    on_post_process: Callable[["PostProcessContext"], None] | None = None
 
     @staticmethod
     def merge(hook1: "CommandExecutionHooks", hook2: "CommandExecutionHooks") -> "CommandExecutionHooks":
@@ -121,6 +97,103 @@ class CommandExecutionHooks:
                 merged_kwargs[item.name] = _merged()
         return CommandExecutionHooks(**merged_kwargs)
 
+    @classmethod
+    def from_any(
+        cls,
+        *,
+        on_success: Callable[[CommandExecutionResult], None] | None = None,
+        on_failure: Callable[[CommandExecutionResult], None] | None = None,
+        on_finish: Callable[[CommandExecutionResult], None] | None = None,
+        on_start: Callable[["CommandExecution"], None] | None = None,
+        on_post_process: Callable[["PostProcessContext"], None] | None = None,
+    ) -> Self:
+        return cls(
+            on_success=on_success,
+            on_failure=on_failure,
+            on_finish=on_finish,
+            on_start=on_start,
+            on_post_process=on_post_process,
+        )
+
+
+
+
+@dataclass
+class CommandExecution:
+    runner: CommandRunner
+    command: list[str] | str
+    cwd: Path
+    buffer_request: BufferRequest
+    execution_request: CommandExecutionRequest
+    env: Mapping[str, str] = field(default_factory=dict)
+    kind: CommandExecutionKind = "$default"
+    status: CommandExecutionStatus | None = "created"
+    id: CommandExecutionID = field(default_factory=lambda : str(uuid.uuid4()))
+    exit_emitter: EventEmitter[None] = field(default_factory=EventEmitter)
+
+
+
+    @property
+    def events(self) -> CommandExecutionEvents:
+        return self.runner.events
+
+    @property
+    def on_exit(self) -> Event:
+        return self.exit_emitter.event
+
+    @property
+    def stdout(self) -> PytoyBuffer:
+        return self.runner.stdout
+
+    @property
+    def stderr(self) -> PytoyBuffer | None:
+        return self.runner.stderr
+
+    def start(self, hooks: CommandExecutionHooks) -> None:
+        self.status = "running"
+
+        def _on_exit(result: CommandExecutionResult, *, hooks: CommandExecutionHooks) -> None:
+            def _call_if_possible(func: Callable[[CommandExecutionResult], None] | None):
+                if func:
+                    func(result)
+
+            if result.success:
+                _call_if_possible(hooks.on_success)
+            else:
+                _call_if_possible(hooks.on_failure)
+            _call_if_possible(hooks.on_finish)
+
+            if hooks.on_post_process:
+                post_process = PostProcessContext(result=result, execution=self)
+                hooks.on_post_process(post_process)
+
+        job_request = OutputJobRequest(command=self.command, on_exit=lambda result: _on_exit(result, hooks=hooks))
+        spawn_option = SpawnOption(cwd=self.cwd, env=self.env)
+        self.runner.run(job_request, spawn_option)
+
+        self.runner.events.on_job_exit.subscribe(lambda _: self.exit_emitter.fire(None))
+
+        if hooks.on_start:
+            hooks.on_start(self)
+
+    def terminate(self) -> None:
+        self.runner.terminate()
+
+
+@dataclass(frozen=True)
+class PostProcessContext:
+    result: CommandExecutionResult
+    execution: CommandExecution
+
+    @property
+    def stdout(self) -> PytoyBuffer:
+        return self.execution.runner.stdout
+
+    @property
+    def stderr(self) -> PytoyBuffer | None:
+        return self.execution.runner.stderr
+
+
 
 @dataclass(frozen=True)
 class CommandExecutionContext:
@@ -137,12 +210,6 @@ class CommandExecutionContext:
 
 
 @dataclass(frozen=True)
-class ExecutionPolicy:
-    kind: CommandExecutionKind | None = None
-    allow_parallel: bool = False
-
-
-@dataclass(frozen=True)
-class ExecutionQuery:
+class CommandExecutionQuery:
     kind: CommandExecutionKind | None = None
     stdout: BufferSource | None = None

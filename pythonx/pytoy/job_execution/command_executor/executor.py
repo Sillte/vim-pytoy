@@ -19,6 +19,9 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Callable
 
+from .factory import CommandExecutionFactory
+from .handler import CommandExecutionHandler
+
 
 class CommandExecutor:
     def __init__(self, buffer_request: BufferRequest | str, *, ctx: GlobalPytoyContext | None = None):
@@ -49,63 +52,20 @@ class CommandExecutor:
 
     def execute(
         self, request: CommandExecutionRequest, hooks: CommandExecutionHooks | None = None, *, init_buffer: bool = True
-    ) -> CommandExecution:
-        runner = CommandRunner(stdout=self.stdout, stderr=self.stderr, init_buffer=init_buffer)
-        if hooks is None:
-            hooks = CommandExecutionHooks()
-        if not request.cwd:
-            # [TODO: Implment `Current` object so that we can get the global state.]
-            from pytoy.job_execution.utils import get_current_directory
+    ) -> CommandExecutionHandler:
+        factory = CommandExecutionFactory(manager=self._execution_manager, environment_manager=self._environment_manager) 
+        execution = factory.create(request, self._buffer_request)
 
-            cwd = get_current_directory()
-        else:
-            cwd = Path(request.cwd)
-        env = request.env
-        command = self._solve_command(request.command, request.command_wrapper, cwd=cwd)
+        if init_buffer:
+            execution.stdout.init_buffer()
+            if execution.stderr:
+                execution.stderr.init_buffer()
 
-        def _on_exit(result: CommandExecutionResult, *, hooks: CommandExecutionHooks) -> None:
-            def _call_if_possible(func: Callable[[CommandExecutionResult], None] | None):
-                if func:
-                    func(result)
+        handler = CommandExecutionHandler(id=execution.id, manager=self._execution_manager)
+        hooks = hooks or CommandExecutionHooks()
+        handler.start(hooks=hooks)
+        return handler
 
-            if result.success:
-                _call_if_possible(hooks.on_success)
-            else:
-                _call_if_possible(hooks.on_failure)
-            _call_if_possible(hooks.on_finish)
-
-            if hooks.on_post_process:
-                post_process = PostProcessContext(result=result, execution=execution)
-                hooks.on_post_process(post_process)
-
-        job_request = OutputJobRequest(command=command, on_exit=lambda result: _on_exit(result, hooks=hooks))
-        spawn_option = SpawnOption(cwd=cwd, env=env)
-
-        runner.run(job_request, spawn_option)
-
-        context = CommandExecutionContext(
-            buffer=self._buffer_request,
-            execution_request=replace(request, cwd=cwd, env=env),
-            hooks=hooks,
-            kind=request.kind,
-        )
-        execution = CommandExecution(runner=runner, command=command, cwd=cwd, id=runner.job_id)
-
-        self._execution_manager.register(execution, context)
-        if hooks.on_start:
-            hooks.on_start(execution)
-
-        return execution
-
-    def _solve_command(
-        self, command: str | list[str] | tuple[str], command_wrapper: CommandExecutionWrapperType | None, cwd: str | Path
-    ) -> list[str] | str:
-        if callable(command_wrapper):
-            return command_wrapper(command)
-
-        execution_env = self._environment_manager.solve_preference(cwd, preference=command_wrapper)
-        command_wrapper = execution_env.command_wrapper
-        return command_wrapper(command)
 
 
 

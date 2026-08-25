@@ -3,15 +3,14 @@ from pathlib import Path
 from typing import Mapping, Any, Self
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.job_execution.command_executor.executor import CommandExecutor, CommandExecution
+from pytoy.job_execution.command_executor.executor import CommandExecution
 from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile  # NOQA
 from pytoy.job_execution.command_executor.launcher.quickfix import make_quickfix_hooks  # noqa
-from pytoy.job_execution.command_executor.manager import CommandExecutionManager
+from pytoy.job_execution.command_executor import CommandExecutionHandler, CommandExecutionQuery
 from pytoy.job_execution.command_executor.models import (
     BufferRequest,
     CommandExecutionHooks,
     CommandExecutionKind,
-    ExecutionQuery,
     CommandExecutionRequest,
     PostProcessContext,
     CommandExecutionWrapperType,
@@ -52,19 +51,13 @@ def get_default_hooks() -> CommandExecutionHooks:
 
 class CommandLauncher:
     def __init__(
-        self, launch_profile: LaunchProfile | CommandExecutionKind, *, execution_manager: CommandExecutionManager | None = None
+        self, launch_profile: LaunchProfile | CommandExecutionKind
     ):
-        if not execution_manager:
-            execution_manager = GlobalPytoyContext.get().command_execution_manager
         if isinstance(launch_profile, str):
             launch_profile = LaunchProfile.from_str(launch_profile)
 
-        self._execution_manager = execution_manager
         self._launch_profile = launch_profile
 
-    @property
-    def execution_manager(self) -> CommandExecutionManager:
-        return self._execution_manager
 
     @property
     def launch_profile(self) -> LaunchProfile:
@@ -72,7 +65,7 @@ class CommandLauncher:
 
     @property
     def last_context(self) -> CommandExecutionContext | None:
-        return self.execution_manager.get_last_context_by_kind(self.launch_profile.kind)
+        return CommandExecutionHandler.get_last_context(self.launch_profile.kind)
 
     def run(
         self,
@@ -119,7 +112,7 @@ class CommandLauncher:
         if stderr is not None:
             stderr = stderr.source if isinstance(stderr, PytoyBuffer) else BufferSource.from_any(stderr)
         buffer_request = BufferRequest(stdout=stdout, stderr=stderr)
-        last_context = self.execution_manager.get_last_context_by_kind(command_kind)
+        last_context = CommandExecutionHandler.get_last_context(command_kind)
         if not last_context:
             raise RuntimeError(f"Previous execution for `{command_kind=}` does not exist.")
         execution_request = last_context.execution_request
@@ -131,14 +124,16 @@ class CommandLauncher:
         self._send_request(buffer_request, execution_request, execution_hooks, init_buffer=init_buffer)
 
     def stop(self):
-        query = ExecutionQuery(kind=self.launch_profile.kind)
-        for execution in self.execution_manager.select(query):
-            execution.runner.terminate()
+        query = CommandExecutionQuery(kind=self.launch_profile.kind)
+        handlers = CommandExecutionHandler.query(query)
+        for handler in handlers:
+            handler.terminate()
 
     @property
     def is_running(self) -> bool:
-        query = ExecutionQuery(kind=self.launch_profile.kind)
-        return bool(self.execution_manager.select(query=query))
+        query = CommandExecutionQuery(kind=self.launch_profile.kind)
+        handlers = CommandExecutionHandler.query(query)
+        return bool(handlers)
 
     def _send_request(
         self,
@@ -147,6 +142,13 @@ class CommandLauncher:
         execution_hooks: CommandExecutionHooks,
         *,
         init_buffer: bool = True,
-    ):
-        command_executor = CommandExecutor(buffer_request)
-        command_executor.execute(execution_request, init_buffer=init_buffer, hooks=execution_hooks)
+    ) -> CommandExecutionHandler:
+        handler = CommandExecutionHandler.create(execution_request, buffer_request=buffer_request)
+        if init_buffer:
+            handler.stdout.init_buffer()
+            if handler.stderr:
+                handler.stderr.init_buffer()
+        handler.start(hooks=execution_hooks)
+        return handler
+
+
