@@ -12,12 +12,10 @@ from .models import CommandExecution, CommandExecutionHooks, CommandExecutionReq
 from .manager import CommandExecutionManager
 
 class CommandExecutionFactory:
-    def __init__(self, *, manager: CommandExecutionManager | None = None, environment_manager: EnvironmentManager | None = None):
-        if manager is None:
-            manager = GlobalPytoyContext.get().command_execution_manager
+    def __init__(self, *, environment_manager: EnvironmentManager | None = None):
+
         if environment_manager is None:
             environment_manager = GlobalCoreContext.get().environment_manager 
-        self._manager: CommandExecutionManager = manager
         self._environment_manager: EnvironmentManager = environment_manager
 
     def create(self, request: CommandExecutionRequest, buffer_request: BufferRequest, *, init_buffer: bool = False) -> CommandExecution: 
@@ -33,7 +31,6 @@ class CommandExecutionFactory:
         command = self._solve_command(request.command, request.command_wrapper, cwd=cwd)
         env = request.env or {}
         execution = CommandExecution(runner=runner, command=command, buffer_request=buffer_request, execution_request=request, cwd=cwd, env=env, kind=request.kind)
-        self._manager.register(execution)
         return execution
 
 

@@ -36,8 +36,9 @@ class CommandExecutionHandler:
     def create(cls, request: CommandExecutionRequest, buffer_request: BufferRequest, *, manager: CommandExecutionManager | None = None) -> Self:
         if manager is None: 
              manager = GlobalPytoyContext.get().command_execution_manager
-        factory = CommandExecutionFactory(manager=manager)
+        factory = CommandExecutionFactory()
         execution = factory.create(request, buffer_request=buffer_request)
+        manager.register(execution)
         return cls(id=execution.id, manager=manager)
 
     @classmethod
