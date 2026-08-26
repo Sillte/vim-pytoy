@@ -1,21 +1,25 @@
+from __future__ import annotations
+import uuid
+
 from pytoy.job_execution.terminal_runner import TerminalJobRunner
 from pytoy.job_execution.terminal_runner.models import TerminalDriverProtocol
 from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
+from pytoy.shared.lib.event import Event, EventEmitter
 
-from pytoy.job_execution.terminal_runner.models import TerminalJobRequest, SpawnOption, JobID, Event, JobEvents
+from pytoy.job_execution.terminal_runner.models import TerminalJobRequest, SpawnOption, JobID, JobEvents
 from pytoy.job_execution.terminal_runner.models import TerminalDriver
 from pytoy.job_execution.terminal_runner.models import CommandExecutionWrapperType
 
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Self
 
 
-type ExecutionID = JobID
-type ExecutionEvents = JobEvents
+type TerminalExecutionID = JobID
+type TerminalExecutionEvents = JobEvents
 
-type DriverKind = str
+type TerminalDriverKind = str
 
 
 @dataclass(frozen=True)
@@ -40,36 +44,22 @@ class BufferRequest:
 
 
 @dataclass(frozen=True)
-class ExecutionRequest:
-    driver: TerminalDriverProtocol
+class TerminalExecutionRequest:
+    driver: TerminalDriverProtocol | TerminalDriverKind
     command_wrapper: CommandExecutionWrapperType | None = None
     cwd: str | Path | None = None
     env: dict[str, str] | None = None
 
-
 @dataclass(frozen=True)
-class TerminalExecution:
-    runner: TerminalJobRunner
-    driver: TerminalDriverProtocol
-    cwd: Path
-    id: ExecutionID
-
-    @property
-    def events(self) -> ExecutionEvents:
-        return self.runner.events
-
-
-@dataclass(frozen=True)
-class ExecutionHooks:
+class TerminalExecutionHooks:
     on_finish: Callable[[Any], None] | None = None
-    on_start: Callable[["TerminalExecution"], None] | None = None
 
     @staticmethod
-    def merge(hook1: "ExecutionHooks", hook2: "ExecutionHooks") -> "ExecutionHooks":
+    def merge(hook1: "TerminalExecutionHooks", hook2: "TerminalExecutionHooks") -> "TerminalExecutionHooks":
         from dataclasses import fields
 
         merged_kwargs = {}
-        for item in fields(ExecutionHooks):
+        for item in fields(TerminalExecutionHooks):
             f1 = getattr(hook1, item.name)
             f2 = getattr(hook2, item.name)
 
@@ -83,26 +73,68 @@ class ExecutionHooks:
                     return lambda *a, **k: (f1(*a, **k), f2(*a, **k))
 
                 merged_kwargs[item.name] = _merged()
-        return ExecutionHooks(**merged_kwargs)
+        return TerminalExecutionHooks(**merged_kwargs)
 
 
 @dataclass(frozen=True)
-class ExecutionContext:
+class TerminalExecution:
+    runner: TerminalJobRunner
+    driver: TerminalDriverProtocol
+    cwd: Path
+    request: TerminalExecutionRequest
+    buffer_request: BufferRequest
+    env: dict[str, str] | None = None
+    id: TerminalExecutionID = field(default_factory=lambda : uuid.uuid4())
+    exit_emitter: EventEmitter[Any] = field(default_factory=EventEmitter)
+
+    @property
+    def kind(self) -> str:
+        return self.driver.kind
+
+    @property 
+    def on_exit(self) -> Event[Any]:
+        return self.exit_emitter.event
+
+    def start(self, hooks: TerminalExecutionHooks) -> None:
+
+        def _on_exit(result: Any, *, hooks: TerminalExecutionHooks) -> None:
+            def _call_if_possible(func: Callable[[Any], None] | None):
+                if func:
+                    func(result)
+
+            _call_if_possible(hooks.on_finish)
+
+        job_request = TerminalJobRequest(driver=self.driver, on_exit=lambda result: _on_exit(result, hooks=hooks))
+
+        spawn_option = SpawnOption(cwd=self.cwd, env=self.env)
+        self.runner.run(job_request, spawn_option)
+        self.runner.events.on_job_exit.subscribe(lambda value: self.exit_emitter.fire(value)) 
+
+
+
+@dataclass(frozen=True)
+class TerminalExecutionContext:
     """This should be used for repeating the same `Application` again."""
 
     buffer_source: BufferSource
-    execution_request: ExecutionRequest
-    hooks: ExecutionHooks
-    kind: DriverKind
+    execution_request: TerminalExecutionRequest
+    hooks: TerminalExecutionHooks
+    kind: TerminalDriverKind
 
 
 @dataclass(frozen=True)
-class ExecutionPolicy:
+class TerminalExecutionPolicy:
     buffer_request: BufferRequest
-    kind: DriverKind | None = None
+    kind: TerminalDriverKind | None = None
 
 
 @dataclass(frozen=True)
-class ExecutionQuery:
+class TerminalExecutionQuery:
     buffer: BufferSource | None = None
-    kind: DriverKind | None = None
+    kind: TerminalDriverKind | None = None
+
+    @classmethod
+    def from_any(cls, buffer: str | Path | BufferSource | None = None, kind: TerminalDriverKind | None = None) -> Self:
+        if buffer is not None:
+            buffer = BufferSource.from_any(buffer)
+        return cls(buffer=buffer, kind=kind)

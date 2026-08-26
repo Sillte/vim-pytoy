@@ -1,5 +1,4 @@
-from pytoy.job_execution.terminal_executor.controller import LaunchProfile
-from pytoy.job_execution.terminal_executor.controller import TerminalController
+from pytoy.job_execution.terminal_executor.controller import TerminalExecutionController
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_window import PytoyWindow
 from pytoy.tools.console.selector import TerminalSelector
@@ -10,11 +9,11 @@ from pathlib import Path
 
 class ConsoleRunner:
     def __init__(self):
-        self._controller = TerminalController()
+        self._controller = TerminalExecutionController()
         self._selector = TerminalSelector()
 
     @property
-    def controller(self) -> TerminalController:
+    def controller(self) -> TerminalExecutionController:
         return self._controller
 
     @property
@@ -26,10 +25,10 @@ class ConsoleRunner:
         cwd = Path(cwd) if cwd else current_window.buffer.file_path.parent
         resolved_driver = driver or self.selector.get_preferrable_driver(current_window)
         resolved_buffer = buffer or self.selector.get_preferrable_buffer(current_window)
-        execution = self.controller.get_or_create_execution(
-            resolved_driver, resolved_buffer, launch_profile=LaunchProfile(cwd=cwd)
+        handler = self.controller.get_or_create_handler(
+            resolved_driver, resolved_buffer, cwd=cwd,
         )
-        execution.runner.send(cmd)
+        handler.send(cmd)
 
     def stop(self, buffer: str | None, driver: str | None = None, cwd: Path | str | None = None):
         input = driver or PytoyWindow.get_current()
@@ -48,4 +47,4 @@ class ConsoleRunner:
         resolved_buffer = buffer or self.selector.get_preferrable_buffer(resolved_driver)
         lines = PytoyBuffer.get_current().get_lines(line_range)
         content = "\n".join(lines)
-        self.controller.send(resolved_driver, resolved_buffer, content=content, launch_profile=LaunchProfile(cwd=cwd))
+        self.controller.send(resolved_driver, resolved_buffer, content=content, cwd=cwd)

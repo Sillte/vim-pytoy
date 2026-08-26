@@ -2,94 +2,73 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.job_execution.terminal_executor.executor import TerminalExecutionManager, TerminalExecutor
+from pytoy.job_execution.terminal_executor.manager import TerminalExecutionManager
 from pytoy.job_execution.terminal_executor.models import (
     BufferRequest,
-    DriverKind,
-    ExecutionRequest,
+    TerminalDriverKind,
+    TerminalExecutionRequest,
     TerminalDriverProtocol,
-    TerminalExecution,
+    TerminalExecutionQuery,
+    TerminalExecutionHooks, 
     CommandExecutionWrapperType,
 )
-from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager
 from pytoy.shared.ui.pytoy_buffer import BufferSource
 
+from .handler import TerminalExecutionHandler
 
-@dataclass(frozen=True)
-class LaunchProfile:
-    command_wrapper: CommandExecutionWrapperType | None = None
-    cwd: Path | None = None
-
-
-class TerminalController:
+class TerminalExecutionController:
     def __init__(
         self,
-        driver_manager: TerminalDriverManager | None = None,
-        execution_manager: TerminalExecutionManager | None = None,
     ):
-        ctx = GlobalPytoyContext.get()
-        self._driver_manager = driver_manager or ctx.terminal_driver_manager
-        self._execution_manager = execution_manager or ctx.terminal_execution_manager
+        pass
 
-    @property
-    def driver_manager(self) -> TerminalDriverManager:
-        return self._driver_manager
-
-    @property
-    def execution_manager(self) -> TerminalExecutionManager:
-        return self._execution_manager
-
-    def _to_driver_kind(self, driver: DriverKind | TerminalDriverProtocol) -> DriverKind:
-        return driver if isinstance(driver, str) else driver.kind
+    def _to_driver_kind(self, driver: TerminalDriverKind | TerminalDriverProtocol) -> TerminalDriverKind:
+        return driver.kind if isinstance(driver, TerminalDriverProtocol) else driver
 
     def send(
         self,
-        driver: DriverKind | TerminalDriverProtocol,
+        driver: TerminalDriverKind | TerminalDriverProtocol,
         buffer_name: str | Path | BufferSource,
         content: str,
         *,
-        launch_profile: LaunchProfile | None = None,
-    ) -> TerminalExecution:
-        launch_profile = launch_profile or LaunchProfile()
-        execution = self.get_or_create_execution(driver, buffer_name, launch_profile=launch_profile)
-        execution.runner.send(content)
-        return execution
+        command_wrapper: CommandExecutionWrapperType | None = None, 
+        cwd: Path | None = None
+    ) -> TerminalExecutionHandler:
+        handler = self.get_or_create_handler(driver, buffer_name, command_wrapper=command_wrapper, cwd=cwd)
+        handler.send(content)
+        return handler
 
-    def stop(self, buffer: str | BufferSource | Path):
-        buffer_source = BufferSource.from_any(buffer)
-        if executions := self.execution_manager.get_running(kind=None, buffer=buffer_source):
-            execution = executions[0]
-            execution.runner.interrupt()
-        else:
-            print("Target Executor is not existent.")
+    def stop(self, buffer: str | BufferSource | Path | None = None):
+        handlers = TerminalExecutionHandler.query(TerminalExecutionQuery.from_any(buffer))
+        for handler in handlers:
+            handler.stop()
 
-    def terminate(self, buffer: str | Path | BufferSource) -> None:
-        buffer_source = BufferSource.from_any(buffer)
-        executions = self.execution_manager.get_running(kind=None, buffer=buffer_source)
-        for execution in executions:
-            execution.runner.terminate()
-        if not executions:
-            print("Target Executor is not existent.")
+    def terminate(self, buffer: str | Path | BufferSource | None = None) -> None:
+        handlers = TerminalExecutionHandler.query(TerminalExecutionQuery.from_any(buffer))
+        for handler in handlers:
+            handler.terminate()
 
-    def get_or_create_execution(
+    def get_or_create_handler(
         self,
-        driver: str | TerminalDriverProtocol,
+        driver: TerminalDriverKind | TerminalDriverProtocol,
         buffer_name: str | Path | BufferSource,
         *,
-        launch_profile: LaunchProfile | None = None,
-    ) -> TerminalExecution:
-        launch_profile = launch_profile or LaunchProfile()
-        driver_kind = self._to_driver_kind(driver)
+        hooks: TerminalExecutionHooks | None = None, 
+        command_wrapper: CommandExecutionWrapperType | None = None, 
+        cwd: Path | None = None
+    ) -> TerminalExecutionHandler:
         buffer_source = BufferSource.from_any(buffer_name)
-        executions = self.execution_manager.get_running(kind=driver_kind, buffer=buffer_source)
-        if executions:
-            execution = executions[0]
+        driver_kind = self._to_driver_kind(driver)
+        query =TerminalExecutionQuery.from_any(buffer=buffer_source, kind=driver_kind)
+        handlers = TerminalExecutionHandler.query(query=query)
+
+        if handlers:
+            handler = handlers[0]
         else:
             buffer_req = BufferRequest(source=buffer_source)
-            driver = self.driver_manager.create(driver_kind=driver_kind)
-            execution_req = ExecutionRequest(
-                driver=driver, command_wrapper=launch_profile.command_wrapper, cwd=launch_profile.cwd
+            execution_req = TerminalExecutionRequest(
+                driver=driver, command_wrapper=command_wrapper, cwd=cwd
             )
-            executor = TerminalExecutor(buffer_req)
-            execution = executor.execute(execution_req)
-        return execution
+            handler = TerminalExecutionHandler.create(request=execution_req, buffer_request=buffer_req)
+            handler.start(hooks=hooks)
+        return handler

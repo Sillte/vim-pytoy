@@ -7,12 +7,12 @@ def get_current_directory(buffer: PytoyBuffer | None = None) -> Path:
     """Return the current_directory.
 
     1. if the current buffer is regarded as file, then it is regarded
-    2. if not, the `current directiony` of `(Nvim) is regarded as
+    2. if not, the `current directiony` of `(Nvim) is regarded as the current directory.
 
     Rationale:
     When `vscode` and `neovim` are used the same time,
     it assumes different `current_folder` .
-    This function is intended to resovle this.
+    This function is intended to resolve this regard.
     """
     if not buffer:
         buffer = PytoyBuffer.get_current()
@@ -21,7 +21,7 @@ def get_current_directory(buffer: PytoyBuffer | None = None) -> Path:
         current_folder = filename.parent
     else:
         # TODO: Define the utility function for all backends.
-        import vim
+        import vim  # type: ignore
 
         cwd = vim.eval("getcwd()")
         current_folder = Path(cwd)

@@ -1,5 +1,5 @@
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.job_execution.terminal_executor.models import DriverKind, TerminalDriverProtocol
+from pytoy.job_execution.terminal_executor.models import TerminalDriverKind, TerminalDriverProtocol
 from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager
 from pytoy.shared.lib.text import LineRange
 from pytoy.shared.ui.pytoy_window import PytoyWindow
@@ -15,7 +15,7 @@ class TerminalSelector:
         ctx = GlobalPytoyContext.get()
         self._driver_manager = driver_manager or ctx.terminal_driver_manager
 
-    def _to_driver_kind(self, driver: DriverKind | TerminalDriverProtocol) -> DriverKind:
+    def _to_driver_kind(self, driver: TerminalDriverKind | TerminalDriverProtocol) -> TerminalDriverKind:
         return driver if isinstance(driver, str) else driver.kind
 
     @property
