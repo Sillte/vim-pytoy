@@ -1,10 +1,13 @@
+from __future__ import annotations
 import threading
 from collections.abc import Callable
 from functools import wraps
 from typing import Self, Sequence
 
+from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.outcome import is_success, is_failure
 from pytoy.contexts.core import GlobalCoreContext
-from. models import  ThreadExecutionID, ThreadExecutionStatus, ThreadExecutionRequest, ThreadExecutionHooks, ThreadExecutionQuery
+from. models import  ThreadExecutionID, ThreadExecutionStatus, ThreadExecutionRequest, ThreadExecutionHooks, ThreadExecutionQuery, ThreadExecutionExit
 from .manager import ThreadExecutionManager
 from .factory import ThreadExecutionFactory
 
@@ -50,6 +53,10 @@ class ThreadExecutionHandler:
         execution = self._manager.get_execution(self._id)
         if execution is None:
             raise ValueError(f"`execution` does not exist; {self._id=}")
+
+        execution.on_exit.map(lambda exit: exit.outcome).filter(is_success).once().subscribe(hooks.on_finish)
+        execution.on_exit.map(lambda exit: exit.outcome).filter(is_failure).once().subscribe(hooks.on_error)
+
         execution.start(hooks=hooks)
 
     # This is a collaborative cancel, so it can be called from non-main thread.
@@ -70,5 +77,13 @@ class ThreadExecutionHandler:
             return None
         return execution.status
 
+    @property
+    def on_exit(self) -> Event[ThreadExecutionExit]:
+        execution = self._manager.get_execution(self._id)
+        if execution is None:
+            raise ValueError(f"`execution` does not exist; {self._id=}")
+        return execution.on_exit
 
 
+
+# afafaa

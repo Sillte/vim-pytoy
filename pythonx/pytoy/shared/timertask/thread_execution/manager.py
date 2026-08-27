@@ -3,7 +3,7 @@ import threading
 from threading import Thread
 from queue import Queue, Empty
 from pytoy.shared.lib.backend import can_use_vim
-from .models import  ThreadExecution, ThreadExecutionID, ThreadExecutionHooks, ThreadExecutionQuery, ThreadExecutionResult
+from .models import  ThreadExecution, ThreadExecutionID, ThreadExecutionHooks, ThreadExecutionQuery, ThreadExecutionExit
 
 from pytoy.shared.timertask.timer import TimerTask
 from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
@@ -12,7 +12,7 @@ from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
 class ThreadExecutionManager:
     def __init__(self):
         self._executions: dict[ThreadExecutionID, ThreadExecution] = {}
-        self._queue:  Queue[ThreadExecutionResult] = Queue()
+        self._queue:  Queue[ThreadExecutionExit] = Queue()
         self._consumer = _ThreadExecutionConsumer(queue=self._queue, consume=self._consume)
 
 
@@ -27,7 +27,7 @@ class ThreadExecutionManager:
     def get_execution(self, execution_id: ThreadExecutionID) -> ThreadExecution | None:
         return self._executions.get(execution_id)
 
-    def submit_result(self, result: ThreadExecutionResult) -> None:
+    def submit_result(self, result: ThreadExecutionExit) -> None:
         self._queue.put(result)
 
     def select(self, query: ThreadExecutionQuery | None = None) -> Sequence[ThreadExecution]:
@@ -50,13 +50,13 @@ class ThreadExecutionManager:
         return [self._executions[id_] for id_ in target_ids]
 
 
-    def _consume(self, result: ThreadExecutionResult) -> None:
+    def _consume(self, execution_exit: ThreadExecutionExit) -> None:
         self.assert_main_thread()
 
-        execution = self._executions.get(result.id)
+        execution = self._executions.get(execution_exit.id)
         if not execution:
             return
-        execution.complete_from_result(result)
+        execution.notify_exit(execution_exit)
 
     def assert_main_thread(self) -> None:
         if threading.current_thread() is not threading.main_thread():
@@ -82,7 +82,7 @@ def get_backend_thread_util() -> BackendThreadUtilProtocol:
 
 
 class _ThreadExecutionConsumer:
-    def __init__(self, queue: Queue[ThreadExecutionResult], consume: Callable[[ThreadExecutionResult], None],
+    def __init__(self, queue: Queue[ThreadExecutionExit], consume: Callable[[ThreadExecutionExit], None],
                        interval: int = 200,  backend_thread_util: BackendThreadUtilProtocol | None = None):
         self._queue = queue
         self._consume = consume
@@ -101,8 +101,8 @@ class _ThreadExecutionConsumer:
     def _polling(self) -> None:
         while True:
             try:
-                result: ThreadExecutionResult = self._queue.get_nowait()
+                exit_entity: ThreadExecutionExit = self._queue.get_nowait()
             except Empty:
                 break
-            self._consume(result)
+            self._consume(exit_entity)
 

@@ -1,4 +1,5 @@
-from typing import Any, Callable
+from __future__ import annotations
+from typing import Any, Callable, Protocol, TypeGuard, overload
 
 type Listener[T] = Callable[[T], Any]
 type Dispose = Callable[[], None]
@@ -15,7 +16,7 @@ class Disposable:
 type Subscribe[T] = Callable[[Listener[T]], "Disposable"]
 
 
-class EventProtocol[T]:
+class EventProtocol[T](Protocol):
     def subscribe(self, listener: Listener[T]) -> Disposable: ...
 
     def map(self, transform: Callable[[T], Any]) -> "EventProtocol": ...
@@ -23,7 +24,7 @@ class EventProtocol[T]:
     def filter(self, predicate: Callable[[T], bool]) -> "EventProtocol": ...
 
 
-class Event[T](EventProtocol):
+class Event[T]:
     def __init__(self, subscribe: Subscribe[T]):
         self._subscribe = subscribe
 
@@ -34,17 +35,31 @@ class Event[T](EventProtocol):
         # For decorator.
         return self.subscribe(listener)
 
-    def once(self) -> "Event":
+    def once(self) -> Event:
         from pytoy.shared.lib.event import utils
 
         return utils.once(self)
 
-    def map(self, transform: Callable[[T], Any]) -> "Event":
+    def map[R](self, transform: Callable[[T], R]) -> Event[R]:
         from pytoy.shared.lib.event import utils
 
         return utils.map_event(self, transform)
 
-    def filter(self, predicate: Callable[[T], bool]) -> "Event":
+    @overload
+    def filter[R](
+        self,
+        predicate: Callable[[T], TypeGuard[R]],
+    ) -> Event[R]:
+        ...
+
+    @overload
+    def filter(
+        self,
+        predicate: Callable[[T], bool],
+    ) -> Event[T]:
+        ...
+
+    def filter(self, predicate: Callable[[T], bool]) -> Event[Any]:
         from pytoy.shared.lib.event import utils
 
         return utils.filter(self, predicate)

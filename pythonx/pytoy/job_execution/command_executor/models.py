@@ -132,7 +132,6 @@ class CommandExecution:
     exit_emitter: EventEmitter[None] = field(default_factory=EventEmitter)
 
 
-
     @property
     def events(self) -> CommandExecutionEvents:
         return self.runner.events

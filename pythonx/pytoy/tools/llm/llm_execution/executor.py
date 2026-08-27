@@ -7,7 +7,7 @@ from typing import Any
 from pytoy.shared.timertask.thread_execution import ThreadExecutionRequest, ThreadExecutor, ThreadExecutionHooks
 from pytoy_llm.event_sinks import LoggerEventSink
 from pytoy_llm.task import TaskRequest, TaskExecutor
-from pytoy.tools.llm.llm_execution.models import ExecutionRequest, ExecutionHooks, LLMExecution, ExecutionPolicy, ExecutionKind, ExecutionContext
+from pytoy.tools.llm.llm_execution.models import LLMExecutionRequest, LLMExecutionHooks, LLMExecution, ExecutionPolicy, LLMExecutionKind, LLMExecutionContext
 from pytoy.tools.llm.llm_execution.manager import LLMExecutionManager
 
 
@@ -22,10 +22,10 @@ class LLMExecutor:
         return self._execution_manager
 
     def execute(
-        self, request: ExecutionRequest, hooks: ExecutionHooks | None = None
+        self, request: LLMExecutionRequest, hooks: LLMExecutionHooks | None = None
     ) -> LLMExecution:
         if hooks is None:
-            hooks = ExecutionHooks()
+            hooks = LLMExecutionHooks.from_any()
 
         task_request = TaskRequest(spec=request.task_spec, input=request.input, context_state=request.context_state)
 
@@ -60,11 +60,11 @@ class LLMExecutor:
         execution_request = ThreadExecutionRequest(main_func=_main)
         execution_hooks = ThreadExecutionHooks.from_any(on_finish=_on_finish, on_error=_on_error)
         thread_handler = ThreadExecutor().execute(execution_request, hooks=execution_hooks)
-        llm_execution = LLMExecution(thread_handler=thread_handler, on_exit=execution_end_emitter.event)
-        llm_context = ExecutionContext(hooks=hooks, request=request)
-        self.execution_manager.register(llm_execution,  llm_context)
+        llm_execution = LLMExecution(thread_handler=thread_handler, request=request)
+        llm_context = LLMExecutionContext(hooks=hooks, request=request)
+        self.execution_manager.register_context(llm_execution,  llm_context)
         return llm_execution
 
-    def can_execute(self, _: ExecutionRequest, kind: ExecutionKind | None = None) -> bool:
+    def can_execute(self, _: LLMExecutionRequest, kind: LLMExecutionKind | None = None) -> bool:
         policy = ExecutionPolicy(kind=kind)
         return self._execution_manager.can_execute(policy)

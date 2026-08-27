@@ -26,7 +26,7 @@ from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spe
 from pytoy.tools.llm.document.editors.edit_rules import LanguageRuleSet, CompletionRuleSet, StyleRuleSet
 
 from pytoy.tools.llm.llm_execution.executor import LLMExecutor
-from pytoy.tools.llm.llm_execution.models import ExecutionRequest, ExecutionHooks
+from pytoy.tools.llm.llm_execution.models import LLMExecutionRequest, LLMExecutionHooks
 
 
 def select_language_kind(document: str) -> LanguageKind:
@@ -234,11 +234,11 @@ class ScopedEditDocumentRequester:
         logger.info("Preparation of `ScopeEdit`.")
 
         kind = "ScopedEditor"
-        llm_request = ExecutionRequest(task_spec=task_spec, input=document, logger=logger, kind=kind)
+        llm_request = LLMExecutionRequest(task_spec=task_spec, input=document, logger=logger, kind=kind)
         executor = LLMExecutor()
         if not executor.can_execute(llm_request, kind=kind):
             raise RuntimeError("Already another request is executing for ScopedEditor.")
-        hooks = ExecutionHooks(on_success=lambda output: self._apply_output(buffer, output), 
+        hooks = LLMExecutionHooks(on_success=lambda output: self._apply_output(buffer, output), 
                                on_failure=lambda exc: self._handle_error(buffer, exc))
         executor.execute(llm_request, hooks=hooks)
 

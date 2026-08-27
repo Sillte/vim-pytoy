@@ -4,8 +4,9 @@ from threading import Thread
 from pytoy.contexts.core import GlobalCoreContext
 
 from threading import Event 
-from .models import ThreadExecution, ThreadExecutionHooks, ThreadExecutionRequest, ThreadExecutionResult
+from .models import ThreadExecution, ThreadExecutionRequest, ThreadExecutionExit
 from .manager import ThreadExecutionManager
+from pytoy.shared.lib.outcome import Success, Failure
 
 class ThreadExecutionFactory:
     def __init__(self, *, manager: ThreadExecutionManager | None = None):
@@ -21,10 +22,11 @@ class ThreadExecutionFactory:
             try:
                 ret = request.main_func(event)
             except Exception as e:
-                result = ThreadExecutionResult(id=id_, result_type="Error", exception=e)
+                outcome = Failure(e)
             else:
-                result = ThreadExecutionResult(id=id_, result_type="Finished", result=ret)
-            self._manager.submit_result(result)
+                outcome = Success(ret)
+            exit_entity = ThreadExecutionExit(id=id_, outcome=outcome)
+            self._manager.submit_result(exit_entity)
 
         thread = Thread(target=_run, daemon=True, args=(cancel_token,))
         execution = ThreadExecution(id=id_, thread=thread, cancel_token=cancel_token)

@@ -1,7 +1,7 @@
 import logging
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.tools.llm.llm_execution.executor import LLMExecutor
-from pytoy.tools.llm.llm_execution.models import ExecutionRequest, ExecutionHooks
+from pytoy.tools.llm.llm_execution.models import LLMExecutionRequest, LLMExecutionHooks
 from pytoy.shared.pytoy_configuration import PytoyConfiguration
 
 from pytoy.shared.ui.notifications import EphemeralNotification
@@ -371,8 +371,8 @@ class NaiveReviewDocumentRequester:
         task_spec = self._make_task_spec(document=self.buffer.content)
 
         logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
-        execution_request = ExecutionRequest(task_spec=task_spec, input=self.buffer.content, logger=logger)
-        return LLMExecutor().execute(request=execution_request, hooks=ExecutionHooks(on_success=on_success, on_failure=on_failure))
+        execution_request = LLMExecutionRequest(task_spec=task_spec, input=self.buffer.content, logger=logger)
+        return LLMExecutor().execute(request=execution_request, hooks=LLMExecutionHooks(on_success=on_success, on_failure=on_failure))
 
     def _make_task_spec(self, document: str) -> TaskSpec:
         preparation_spec = make_preparation_spec(document)

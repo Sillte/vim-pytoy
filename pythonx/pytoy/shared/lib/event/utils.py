@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, overload, TypeGuard, Any
 from pytoy.shared.lib.event.domain import Disposable, Listener, Event
 
 
@@ -28,15 +28,27 @@ def map_event[T, U](event: Event[T], transform: Callable[[T], U]) -> Event[U]:
 
     return Event[U](subscribe)
 
+@overload
+def filter[T, R](
+    event: Event[T],
+    predicator: Callable[[T], TypeGuard[R]],
+) -> Event[R]:
+    ...
 
-def filter[T](event: Event[T], predicator: Callable[[T], bool]) -> Event[T]:
+@overload
+def filter[T](
+    event: Event[T],
+    predicator: Callable[[T], bool],
+) -> Event[T]:
+    ...
+
+def filter[T](event: Event[T], predicator: Callable[[T], bool]) -> Event[Any]:
     def subscribe(listener: Listener[T]) -> Disposable:
         def wrapper(value: T) -> None:
             if predicator(value):
                 listener(value)
             else:
                 ...
-
         disposable = event.subscribe(wrapper)
         return Disposable(lambda: disposable.dispose())
 

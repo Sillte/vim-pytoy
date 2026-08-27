@@ -14,7 +14,7 @@ from pytoy_llm.task.models import (
 from pytoy_llm import completion
 
 from pytoy.tools.llm.llm_execution.executor import LLMExecutor
-from pytoy.tools.llm.llm_execution.models import ExecutionRequest, ExecutionHooks, LLMExecution
+from pytoy.tools.llm.llm_execution.models import LLMExecutionRequest, LLMExecutionHooks, LLMExecution
 
 
 class EvolveRequest(BaseModel, frozen=True):
@@ -218,9 +218,9 @@ class VoyageInteractionCreator:
             llm_param=llm_param,
             connection_name=connection_name,
         )
-        execution_request = ExecutionRequest(task_spec=task_spec, input=evolve_request)
+        execution_request = LLMExecutionRequest(task_spec=task_spec, input=evolve_request)
         executor = LLMExecutor()
-        return executor.execute(execution_request, hooks=ExecutionHooks(on_success=on_success, on_failure=on_failure))
+        return executor.execute(execution_request, hooks=LLMExecutionHooks(on_success=on_success, on_failure=on_failure))
 
 
     def create_reflect_interaction(
@@ -236,6 +236,6 @@ class VoyageInteractionCreator:
             llm_param=llm_param,
             connection_name=connection_name,
         )
-        execution_request = ExecutionRequest(task_spec=task_spec, input=reflect_request)
+        execution_request = LLMExecutionRequest(task_spec=task_spec, input=reflect_request)
         executor = LLMExecutor()
-        return executor.execute(execution_request, hooks=ExecutionHooks(on_success=on_success, on_failure=on_failure))
+        return executor.execute(execution_request, hooks=LLMExecutionHooks(on_success=on_success, on_failure=on_failure))

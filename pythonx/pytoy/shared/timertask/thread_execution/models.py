@@ -6,19 +6,17 @@ from dataclasses import dataclass, field
 import uuid
 
 from pytoy.shared.lib.event import Event, EventEmitter
+from pytoy.shared.lib.outcome import Outcome, Success, Failure
 
 type ThreadExecutionID = str
 type CancelToken = ThreadingEvent
 type ThreadExecutionStatus = Literal["created", "running", "finished", "error"]
 type ResultType = Literal["Finished", "Error"]
 
-
 @dataclass(frozen=True)
-class ThreadExecutionResult:
+class ThreadExecutionExit[T, E]:
     id: ThreadExecutionID
-    result_type: ResultType
-    result: Any | None = None
-    exception: Exception | None = None
+    outcome: Outcome[T, E]
 
 
 @dataclass(frozen=True)
@@ -34,56 +32,26 @@ class ThreadExecutionHooks:
 
 
 @dataclass
-class ThreadExecution:
+class ThreadExecution[T, E]:
     thread: Thread
     cancel_token: CancelToken
     id: ThreadExecutionID = field(default_factory=lambda: str(uuid.uuid4()))
     status: ThreadExecutionStatus = "created"
-    hooks: ThreadExecutionHooks | None = None
-    exit_emitter: EventEmitter[ThreadExecutionResult] = field(default_factory=EventEmitter)
+    exit_emitter: EventEmitter[ThreadExecutionExit[T, E]] = field(default_factory=EventEmitter)
     kind: str = "$default"
 
     @property
-    def on_exit(self) -> Event:
+    def on_exit(self) -> Event[ThreadExecutionExit[T, E]]:
         return self.exit_emitter.event
 
     def start(self, hooks: ThreadExecutionHooks) -> None:
         if self.status != "created":
             raise RuntimeError(f"When `start` is called, `status` must be `created`, but `{self.status}`")
-        self.hooks = hooks
         self.status = "running"
         self.thread.start()
 
-    def complete_from_result(self, result: ThreadExecutionResult) -> None:
-        if self.hooks is None:
-            raise RuntimeError("`self.hooks` is None. It is an implementation error.")
-        hook_exception: Exception | None = None
-        try:
-            self._resolve_result(result)
-        except Exception as e:
-            hook_exception = e
-
-        self.exit_emitter.fire(result)
-
-        if hook_exception is not None:
-            raise hook_exception
-
-    def _resolve_result(self, result: ThreadExecutionResult) -> None:
-        assert self.hooks is not None
-        hooks = self.hooks
-        match result.result_type:
-            case "Finished":
-                self.status = "finished"
-                hooks.on_finish(result.result)
-            case "Error":
-                self.status = "error"
-                if result.exception:
-                    hooks.on_error(result.exception)
-                else:
-                    raise RuntimeError(f"`{result=}` does not have exception.")
-            case _:
-                assert_never(result.result_type)
-
+    def notify_exit(self, execution_exit: ThreadExecutionExit) -> None:
+        self.exit_emitter.fire(execution_exit)
 
 @dataclass(frozen=True)
 class ThreadExecutionRequest:
