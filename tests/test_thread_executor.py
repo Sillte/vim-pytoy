@@ -3,7 +3,7 @@ def test_naive2():
 
     from unittest.mock import MagicMock
     from pytoy.shared.timertask.thread_execution import ThreadExecutor, ThreadExecutionRequest, ThreadExecutionHooks
-    from pytoy.shared.lib.outcome  import Success, Outcome, Failure
+    from pytoy.shared.lib.outcome  import Success, Outcome, Error
     from pytoy.shared.timertask.thread_execution.models import ThreadExecutionExit
     from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
     import time

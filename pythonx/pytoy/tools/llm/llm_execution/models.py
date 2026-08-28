@@ -10,7 +10,7 @@ from pytoy_llm.task.models import TaskSpec, TaskContextState, TaskResponse
 import time
 from dataclasses import dataclass, field
 from pytoy.shared.lib.event import Event, EventEmitter
-from pytoy.shared.lib.outcome import Outcome, Success, Failure
+from pytoy.shared.lib.outcome import Outcome, Success, Error
 
 from pytoy.shared.timertask.thread_execution import ThreadExecutionHandler, ThreadExecutionRequest, ThreadExecutionStatus, ThreadExecutionExit
 
@@ -144,8 +144,8 @@ class LLMExecution[T]:
         match exit_entity.outcome:
             case Success(value):
                 llm_exit_entity = LLMExecutionExit(id=self.id, outcome=value.outcome)
-            case Failure(error):
-                llm_exit_entity = LLMExecutionExit(id=self.id, outcome=Failure(error))
+            case Error(error):
+                llm_exit_entity = LLMExecutionExit(id=self.id, outcome=Error(error))
         self.on_exit_emitter.fire(llm_exit_entity)
 
 

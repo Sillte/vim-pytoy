@@ -5,7 +5,7 @@ from functools import wraps
 from typing import Self, Sequence
 
 from pytoy.shared.lib.event import Event
-from pytoy.shared.lib.outcome import is_success, is_failure
+from pytoy.shared.lib.outcome import is_success, is_error
 from pytoy.contexts.core import GlobalCoreContext
 from. models import  ThreadExecutionID, ThreadExecutionStatus, ThreadExecutionRequest, ThreadExecutionHooks, ThreadExecutionQuery, ThreadExecutionExit
 from .manager import ThreadExecutionManager
@@ -55,7 +55,7 @@ class ThreadExecutionHandler:
             raise ValueError(f"`execution` does not exist; {self._id=}")
 
         execution.on_exit.map(lambda exit: exit.outcome).filter(is_success).once().subscribe(hooks.on_finish)
-        execution.on_exit.map(lambda exit: exit.outcome).filter(is_failure).once().subscribe(hooks.on_error)
+        execution.on_exit.map(lambda exit: exit.outcome).filter(is_error).once().subscribe(hooks.on_error)
 
         execution.start(hooks=hooks)
 

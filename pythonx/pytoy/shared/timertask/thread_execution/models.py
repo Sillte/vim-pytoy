@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 import uuid
 
 from pytoy.shared.lib.event import Event, EventEmitter
-from pytoy.shared.lib.outcome import Outcome, Success, Failure
+from pytoy.shared.lib.outcome import Outcome, Success, Error
 
 type ThreadExecutionID = str
 type CancelToken = ThreadingEvent

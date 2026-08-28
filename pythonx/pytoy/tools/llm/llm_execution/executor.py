@@ -9,6 +9,7 @@ from pytoy_llm.event_sinks import LoggerEventSink
 from pytoy_llm.task import TaskRequest, TaskExecutor
 from pytoy.tools.llm.llm_execution.models import LLMExecutionRequest, LLMExecutionHooks, LLMExecution, ExecutionPolicy, LLMExecutionKind, LLMExecutionContext
 from pytoy.tools.llm.llm_execution.manager import LLMExecutionManager
+from .handler import LLMExecutionHandler
 
 
 class LLMExecutor:

@@ -6,7 +6,7 @@ from pytoy.contexts.core import GlobalCoreContext
 from threading import Event 
 from .models import ThreadExecution, ThreadExecutionRequest, ThreadExecutionExit
 from .manager import ThreadExecutionManager
-from pytoy.shared.lib.outcome import Success, Failure
+from pytoy.shared.lib.outcome import Success, Error
 
 class ThreadExecutionFactory:
     def __init__(self, *, manager: ThreadExecutionManager | None = None):
@@ -22,7 +22,7 @@ class ThreadExecutionFactory:
             try:
                 ret = request.main_func(event)
             except Exception as e:
-                outcome = Failure(e)
+                outcome = Error(e)
             else:
                 outcome = Success(ret)
             exit_entity = ThreadExecutionExit(id=id_, outcome=outcome)
