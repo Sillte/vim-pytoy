@@ -1,10 +1,9 @@
 from pathlib import Path
-from typing import Annotated, Literal, Self, assert_never, Protocol, Final, Sequence
+from typing import Final, Protocol, Sequence
+
 from markitdown import MarkItDown
 
-import requests
-from pydantic import Field, BaseModel, field_validator
-from pytoy.tools.llm.references.models import ReferenceDataset, ResourceUri, ReferenceInfo, Extension
+from pytoy.tools.llm.references.models import Extension, ResourceUri
 
 
 class HTTPMarkItDownConverter:

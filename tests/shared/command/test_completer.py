@@ -1,9 +1,15 @@
-import pytest
-from typing import Literal, Annotated
-from pytoy.shared.command.core.models import CommandModel, Completer, Option, Argument
+from typing import Annotated, Literal
 
-from pytoy.shared.command.service.completion import CandidateFactory, CmdlineStatus, NextTokenResolver, CompletionCandidate
+import pytest
+
+from pytoy.shared.command.core.models import Argument, CommandModel, Option
 from pytoy.shared.command.core.tokenizer import tokenize
+from pytoy.shared.command.service.completion import (
+    CandidateFactory,
+    CmdlineStatus,
+    CompletionCandidate,
+    NextTokenResolver,
+)
 
 
 def run_case(cmd_line: str, cursor_pos: int, model: CommandModel, debug: bool = False) -> dict:
@@ -19,10 +25,7 @@ def run_case(cmd_line: str, cursor_pos: int, model: CommandModel, debug: bool = 
     resolver = NextTokenResolver()
 
     if current_position.current_token:
-        prev_tokens = [
-            t for t in tokens
-            if t.end < current_position.cursor_pos
-        ]
+        prev_tokens = [t for t in tokens if t.end < current_position.cursor_pos]
     else:
         prev_tokens = tokens
     appeals = resolver.resolve_appeals(prev_tokens, model)
@@ -47,8 +50,10 @@ def run_case(cmd_line: str, cursor_pos: int, model: CommandModel, debug: bool = 
 
 # --- functions ---
 def func_with_input(input: Annotated[str, Option(..., completer=lambda: ["input", "output"])] = "input"): ...
-def func_with_input_and_literal(input: Annotated[Literal["input"] | str, Option(..., completer=lambda: ["in1", "out1"])] = "input"): ...
-def func_arg_completer(arg: Annotated[Literal["five"], Argument(completer=lambda: ["first", "second", "five"])]):...
+def func_with_input_and_literal(
+    input: Annotated[Literal["input"] | str, Option(..., completer=lambda: ["in1", "out1"])] = "input",
+): ...
+def func_arg_completer(arg: Annotated[Literal["five"], Argument(completer=lambda: ["first", "second", "five"])]): ...
 
 
 @pytest.mark.parametrize(
@@ -64,7 +69,10 @@ def func_arg_completer(arg: Annotated[Literal["five"], Argument(completer=lambda
             "--input=i",
             8,
             func_with_input_and_literal,
-            {CompletionCandidate(start=0, end=9, value="--input=in1"), CompletionCandidate(start=0, end=9, value="--input=input")},
+            {
+                CompletionCandidate(start=0, end=9, value="--input=in1"),
+                CompletionCandidate(start=0, end=9, value="--input=input"),
+            },
         ),
         (
             "f",
@@ -79,18 +87,18 @@ def test_completion(cmd_line, cursor, func, expected):
     result = run_case(cmd_line, cursor, model, debug=False)
     assert set(result["candidates"]) == expected
 
+
 if __name__ == "__main__":
     pytest.main([__file__, "--capture=no"])
 
+    # cmd_line = "--input=i"
+    # cursor = 8
+    # model = CommandModel.from_callable(func_with_input_and_literal)
+    # print(model)
+    # result = run_case(cmd_line, cursor, model, debug=True)
 
-    #cmd_line = "--input=i"
-    #cursor = 8
-    #model = CommandModel.from_callable(func_with_input_and_literal)
-    #print(model)
-    #result = run_case(cmd_line, cursor, model, debug=True)
-
-    #cmd_line = "f"
-    #cursor = 0
-    #model = CommandModel.from_callable(func_arg_completer)
-    #print(model)
-    #result = run_case(cmd_line, cursor, model, debug=True)
+    # cmd_line = "f"
+    # cursor = 0
+    # model = CommandModel.from_callable(func_arg_completer)
+    # print(model)
+    # result = run_case(cmd_line, cursor, model, debug=True)

@@ -3,20 +3,21 @@
 # As of 2026/01, this class handles `uv`.
 # """
 
-from pathlib import Path
-from typing import Literal, assert_never, Sequence, Self
-from pytoy.job_execution.environment_manager.models import EnvironmentSolverProtocol, SystemEnvironmentSolver
-from pytoy.job_execution.environment_manager.models import SystemStrategy
-from pytoy.job_execution.environment_manager.uv_environment import UvStrategy
-from pytoy.job_execution.environment_manager.uv_environment import UVEnvironmentSolver
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal, Self, Sequence, assert_never
+
 from pytoy.job_execution.environment_manager.models import (
-    EnvironmentKind,
-    ExecutionPreference,
-    CommandWrapperType,
     CommandExecutionWrapperType,
+    CommandWrapperType,
+    EnvironmentKind,
+    EnvironmentSolverProtocol,
+    ExecutionPreference,
+    SystemEnvironmentSolver,
+    SystemStrategy,
+    ToolRunnerStrategyProtocol,
 )
-from pytoy.job_execution.environment_manager.models import ToolRunnerStrategyProtocol
+from pytoy.job_execution.environment_manager.uv_environment import UVEnvironmentSolver, UvStrategy
 
 
 @dataclass(frozen=True)

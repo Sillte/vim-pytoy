@@ -1,7 +1,9 @@
-from typing import Mapping, get_args, Any
-from pydantic import BaseModel
-import toml
+# type: ignore
 import re
+from typing import Any, Mapping, get_args
+
+import toml
+from pydantic import BaseModel
 
 
 def _generate_literal_comments(model: type[BaseModel]) -> dict[str, str]:
@@ -143,6 +145,7 @@ if __name__ == "__main__":
         print(k, v)
 
     from typing import Literal
+
     from pydantic import BaseModel
 
     # -------------------------------

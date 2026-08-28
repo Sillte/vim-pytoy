@@ -1,14 +1,21 @@
-from typing import Callable, ClassVar, Sequence, Any
 from collections import defaultdict
-from pytoy.shared.command.core.models import CommandModel, RangeParam, CountParam
-from pytoy.shared.command.app.protocol import CommandApplicationProtocol, GroupApplicationProtocol
-from pytoy.shared.command.app.protocol import RangeSpec, CountSpec, NoneSpec, InvocationSpec
+from typing import Any, Callable, ClassVar, Sequence
+
+from pytoy.shared.command.app.protocol import (
+    CommandApplicationProtocol,
+    CountSpec,
+    GroupApplicationProtocol,
+    InvocationSpec,
+    NoneSpec,
+    RangeSpec,
+)
+from pytoy.shared.command.core.models import CommandModel, CountParam, RangeParam
 from pytoy.shared.command.service import (
-    ExecutionService,
-    CompletionService,
+    CompletionCandidate,
     CompletionParam,
     CompletionResult,
-    CompletionCandidate,
+    CompletionService,
+    ExecutionService,
 )
 
 

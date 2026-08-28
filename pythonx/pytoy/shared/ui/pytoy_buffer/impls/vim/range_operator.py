@@ -1,14 +1,12 @@
+from typing import Sequence
+
 import vim
 
-
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
+from pytoy.shared.ui.pytoy_buffer.impls.text_searchers import TextSearcher
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.shared.ui.pytoy_buffer.impls.vim_buffer_utils import VimBufferRangeHandler
 from pytoy.shared.ui.pytoy_buffer.protocol import RangeOperatorProtocol
-from pytoy.shared.ui.pytoy_buffer.impls.text_searchers import TextSearcher
-
-
-from typing import Sequence
 
 
 class RangeOperatorVim(RangeOperatorProtocol):

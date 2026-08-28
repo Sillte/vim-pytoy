@@ -1,8 +1,9 @@
-from pytoy.shared.ui.vscode.document import Api, VSCodeUri, Document
-from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
-from pydantic import BaseModel, ConfigDict, ValidationError, Field, PrivateAttr
-from typing import Sequence, Self, Literal
+from typing import Literal, Self, Sequence
 
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError
+
+from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
+from pytoy.shared.ui.vscode.document import Api, Document, VSCodeUri
 from pytoy.shared.ui.vscode.editor.models import TextEditorRevealType
 
 

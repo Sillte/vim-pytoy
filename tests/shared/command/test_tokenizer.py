@@ -1,13 +1,9 @@
 from typing import Literal
+
 import pytest
 
-from pytoy.shared.command.core.tokenizer import (
-    tokenize,
-    InterpretedInput,
-    ResolvedInput,
-    BooleanOptionTakesNoValue
-)
 from pytoy.shared.command.core.models import CommandModel
+from pytoy.shared.command.core.tokenizer import BooleanOptionTakesNoValue, InterpretedInput, ResolvedInput, tokenize
 
 
 def test_literal_basic():
@@ -54,7 +50,7 @@ def test_interpret_tokens_boolean_options():
 
     tokens = tokenize("--verbose true")
     interp = InterpretedInput.from_tokens(tokens, model)
-    assert any(isinstance(elem, BooleanOptionTakesNoValue) for elem in  interp.exceptions)
+    assert any(isinstance(elem, BooleanOptionTakesNoValue) for elem in interp.exceptions)
 
 
 def test_interpret_tokens_option_value_assignment():
@@ -114,6 +110,7 @@ def test_resolved_input_rejects_unconvertible_argument():
 
     with pytest.raises(TypeError, match="Cannot convert argument 'value' value 'not-a-number' to any allowed type"):
         ResolvedInput.from_interpreted_input(model, interp)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "--capture=no"])

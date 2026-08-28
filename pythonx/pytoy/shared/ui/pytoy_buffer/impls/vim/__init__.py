@@ -1,26 +1,29 @@
 from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING, Sequence
+
+import vim
+
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.shared.ui.pytoy_buffer.impls.vim.range_operator import RangeOperatorVim
-from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferQuery, BufferSource, URI
-import vim
-from pathlib import Path
-from typing import Sequence, TYPE_CHECKING
+from pytoy.shared.ui.pytoy_buffer.models import URI, BufferEvents, BufferQuery, BufferSource
 
 VIM_ERROR = getattr(vim, "error", Exception)
 
-from pytoy.shared.ui.pytoy_buffer.protocol import (
-    PytoyBufferProtocol,
-    RangeOperatorProtocol,
-    PytoyBufferProviderProtocol,
-    BufferID,
-)
 from pytoy.shared.lib.entity import EntityRegistry
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.action_events import KeyActionEvents
+from pytoy.shared.ui.pytoy_buffer.protocol import (
+    BufferID,
+    PytoyBufferProtocol,
+    PytoyBufferProviderProtocol,
+    RangeOperatorProtocol,
+)
 
 if TYPE_CHECKING:
-    from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol
     from pytoy.contexts.vim import GlobalVimContext
+    from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol
 
 
 class PytoyBufferVim(PytoyBufferProtocol):

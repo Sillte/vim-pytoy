@@ -1,12 +1,13 @@
 from __future__ import annotations
-from typing import Callable, cast, Literal, Self, Sequence, assert_never
-from threading import Thread
-from threading import Event as ThreadingEvent
-from dataclasses import dataclass, field
+
 import uuid
+from dataclasses import dataclass, field
+from threading import Event as ThreadingEvent
+from threading import Thread
+from typing import Callable, Literal, Self, Sequence, cast
 
 from pytoy.shared.lib.event import Event, EventEmitter
-from pytoy.shared.lib.outcome import Outcome, Success, Error
+from pytoy.shared.lib.outcome import Outcome
 
 type ThreadExecutionID = str
 type CancelToken = ThreadingEvent
@@ -66,8 +67,8 @@ class ThreadExecutionRequest[T]:
     @staticmethod
     def _solve_main_func(main_func: Callable[[CancelToken], T] | Callable[[], T]) -> Callable[[CancelToken], T]:
         """Wrap the function without the argument."""
-        from inspect import signature, Parameter
         from functools import wraps
+        from inspect import Parameter, signature
 
         sig = signature(main_func)
         params = list(sig.parameters.values())

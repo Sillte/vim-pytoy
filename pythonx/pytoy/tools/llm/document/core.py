@@ -1,5 +1,6 @@
-from typing import Literal, Annotated
-from pydantic import Field, BaseModel
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, Field
 
 type LanguageKind = Literal["python", "english", "japanese"]
 

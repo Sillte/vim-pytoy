@@ -1,8 +1,9 @@
 import logging
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, make_buffer
-from pytoy.shared.timertask.thread_execution import add_log_message
-from pytoy.tools.llm.document.voyages.domain import VoyageState
+
 from pytoy.shared.pytoy_configuration import PytoyConfiguration
+from pytoy.shared.timertask.thread_execution import add_log_message
+from pytoy.shared.ui.notifications import EphemeralNotification
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, make_buffer
 from pytoy.tools.llm.document.voyages.application import (
     EvolveRequest,
     EvolveResponse,
@@ -10,9 +11,8 @@ from pytoy.tools.llm.document.voyages.application import (
     ReflectResponse,
     VoyageInteractionCreator,
 )
+from pytoy.tools.llm.document.voyages.domain import VoyageState
 from pytoy.tools.llm.utils import TomlConverter
-from pytoy.shared.ui.notifications import EphemeralNotification
-from typing import Mapping, Any
 
 
 class DocumentVoyageUI:

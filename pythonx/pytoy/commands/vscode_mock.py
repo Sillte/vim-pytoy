@@ -1,19 +1,18 @@
 from pytoy.shared.command import App
-from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 
 app = App()
 
 
 @app.command(name="MyWindow")
 def mywindow_func2():
-    from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
-
     # window = PytoyWindow.get_current()
     # PytoyWindowProvider().create_window("hgoehoge", "s")
     # print(window.buffer)
     # print(window.buffer.content)
     # window.focus()
     from pytoy.job_execution.utils import get_current_directory
+    from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
 
     Api().eval_with_return("vscode.env.remoteName")
     print("GETCURRENT", get_current_directory())
@@ -36,21 +35,18 @@ def mywindow_func2():
 def mywindow_func():
     print("hgoegege")
     from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
+
     # window = PytoyWindow.get_current()
     # PytoyWindowProvider().create_window("hgoehoge", "s")
     # print(window.buffer)
     # print(window.buffer.content)
     # window.focus()
 
-    from pytoy.shared.ui.pytoy_window.impls.vscode import (
-        PytoyBufferVSCode,
-    )
-
     windows = PytoyWindowProvider().get_windows()
     for elem in windows:
-        print(elem.buffer._impl.uri)  # type: ignore
+        print(elem.buffer._impl.uri)
     for elem in PytoyWindowProvider().get_windows():
-        print(elem.buffer._impl.uri.path)  # type: ignore
+        print(elem.buffer._impl.uri.path)
 
     # windows[0].impl.editor.focus()
     # print(window.valid, window.impl.editor.document.uri)

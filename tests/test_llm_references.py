@@ -1,5 +1,7 @@
-from pytoy.tools.llm.references import ReferenceCollector
 from pathlib import Path
+
+from pytoy.tools.llm.references import ReferenceCollector
+
 
 def check_naive():
     stored_folder = "./__save"
@@ -9,5 +11,5 @@ def check_naive():
     assert Path(stored_folder).exists()
 
 
-if __name__  == "__main__":
+if __name__ == "__main__":
     pass

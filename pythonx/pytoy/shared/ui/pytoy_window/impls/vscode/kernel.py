@@ -1,13 +1,13 @@
 from __future__ import annotations
-from pytoy.shared.lib.event.domain import Event
-from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowID, WindowEvents
-from dataclasses import dataclass
-from typing import Self, TYPE_CHECKING
-from pytoy.shared.ui.vscode.editor import Editor
+
+from typing import TYPE_CHECKING
+
 import vim
 
-
+from pytoy.shared.lib.event.domain import Event
+from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowID, WindowEvents
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
+from pytoy.shared.ui.vscode.editor import Editor
 from pytoy.shared.ui.vscode.uri import VSCodeUri
 
 

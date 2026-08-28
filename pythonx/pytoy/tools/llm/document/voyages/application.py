@@ -1,20 +1,18 @@
 from textwrap import dedent
-from typing import Annotated, cast, Callable
+from typing import Annotated, Callable
+
 from pydantic import BaseModel, Field
-from pytoy.tools.llm.document.voyages.domain import Compass, EvolvePolicy, Bearing, VoyageState
-
+from pytoy_llm import completion
 from pytoy_llm.models import LLMMessage, LLMParam
-
 from pytoy_llm.task.models import (
     InvocationSpecMeta,
     LLMInvocationSpec,
-    TaskRequest,
     TaskSpec,
 )
-from pytoy_llm import completion
 
+from pytoy.tools.llm.document.voyages.domain import Bearing, Compass, EvolvePolicy
 from pytoy.tools.llm.llm_execution.executor import LLMExecutor
-from pytoy.tools.llm.llm_execution.models import LLMExecutionRequest, LLMExecutionHooks, LLMExecution
+from pytoy.tools.llm.llm_execution.models import LLMExecution, LLMExecutionHooks, LLMExecutionRequest
 
 
 class EvolveRequest(BaseModel, frozen=True):

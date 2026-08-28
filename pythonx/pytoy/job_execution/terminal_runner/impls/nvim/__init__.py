@@ -1,31 +1,33 @@
 from __future__ import annotations
-import vim
+
 import time
 from pathlib import Path
-from queue import Queue, Empty
+from queue import Empty, Queue
 from threading import Thread
-from typing import Any, Sequence, Callable
+from typing import Any, Callable, Sequence
 
+import vim
 from pyte import Screen, Stream
+
+from pytoy.job_execution.process_utils import find_children_pids
+from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
+from pytoy.job_execution.terminal_runner.impls.utils import send_ctrl_c
 from pytoy.job_execution.terminal_runner.models import (
-    TerminalJobProtocol,
-    TerminalJobRequest,
-    TerminalDriverProtocol,
-    SpawnOption,
     ConsoleSnapshot,
-    Snapshot,
-    WaitOperation,
-    RawStr,
-    LineStr,
     InputOperation,
     JobEvents,
     JobID,
+    LineStr,
+    RawStr,
+    Snapshot,
+    SpawnOption,
+    TerminalDriverProtocol,
+    TerminalJobProtocol,
+    TerminalJobRequest,
+    WaitOperation,
 )
-from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
-from pytoy.shared.lib.text import CursorPosition
 from pytoy.shared.lib.function import FunctionRegistry
-from pytoy.job_execution.process_utils import find_children_pids
-from pytoy.job_execution.terminal_runner.impls.utils import send_ctrl_c
+from pytoy.shared.lib.text import CursorPosition
 
 
 class _InputSolverTask:

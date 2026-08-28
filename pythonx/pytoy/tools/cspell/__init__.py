@@ -1,11 +1,10 @@
-from pathlib import Path
-from tokenize import tokenize, STRING, COMMENT
-import uuid
-import re
 import ast
+import re
 import subprocess
-
+import uuid
 from dataclasses import dataclass
+from pathlib import Path
+from tokenize import COMMENT, STRING, tokenize
 
 
 class CSpellOneFileChecker:

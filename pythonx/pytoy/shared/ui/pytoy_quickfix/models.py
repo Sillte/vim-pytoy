@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import Any, Self, Mapping
 from pathlib import Path
+from typing import Any, Mapping, Self
+
 from pytoy.shared.lib.text import CursorPosition
 
 

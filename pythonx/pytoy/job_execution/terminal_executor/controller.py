@@ -1,16 +1,13 @@
-from dataclasses import dataclass
 from pathlib import Path
 
-from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.job_execution.terminal_executor.manager import TerminalExecutionManager
 from pytoy.job_execution.terminal_executor.models import (
     BufferRequest,
-    TerminalDriverKind,
-    TerminalExecutionRequest,
-    TerminalDriverProtocol,
-    TerminalExecutionQuery,
-    TerminalExecutionHooks,
     CommandExecutionWrapperType,
+    TerminalDriverKind,
+    TerminalDriverProtocol,
+    TerminalExecutionHooks,
+    TerminalExecutionQuery,
+    TerminalExecutionRequest,
 )
 from pytoy.shared.ui.pytoy_buffer import BufferSource
 

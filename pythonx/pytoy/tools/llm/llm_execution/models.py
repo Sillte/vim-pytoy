@@ -1,25 +1,22 @@
 from __future__ import annotations
-from typing import Any, Self
-from functools import cached_property
 
-import uuid
 import logging
-
-from typing import Callable
-from pytoy_llm.task.models import TaskSpec, TaskContextState, TaskResponse, TaskResult
-
 import time
+import uuid
 from dataclasses import dataclass, field
-from pytoy.shared.lib.event import Event, EventEmitter
-from pytoy.shared.lib.outcome import Outcome, Success, Error, is_success, is_error
+from functools import cached_property
+from typing import Any, Callable, Self
 
+from pytoy_llm.task.models import TaskContextState, TaskResponse, TaskResult, TaskSpec
+
+from pytoy.shared.lib.event import Event, EventEmitter
+from pytoy.shared.lib.outcome import Outcome, is_error, is_success
 from pytoy.shared.timertask.thread_execution import (
+    ThreadExecutionExit,
     ThreadExecutionHandler,
     ThreadExecutionRequest,
     ThreadExecutionStatus,
-    ThreadExecutionExit,
 )
-
 
 type LLMExecutionID = str
 type LLMExecutionStatus = ThreadExecutionStatus

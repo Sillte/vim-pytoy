@@ -1,6 +1,6 @@
 import os
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -25,6 +25,7 @@ class VimPluginPackage:
         """
         if start_folder is None:
             import vim
+
             from pytoy.shared.ui.utils import to_filepath
 
             try:

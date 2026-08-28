@@ -1,14 +1,15 @@
-from pathlib import Path
-import time
-import os
 import json
-from typing import Annotated, Literal
+import os
+import time
 from logging.handlers import RotatingFileHandler
-from pytoy.devtools.vimplugin_package import VimPluginPackage
+from pathlib import Path
+from typing import Annotated, Literal
+
 from pytoy.devtools.vim_rebooter import VimRebooter
-from pytoy.shared.timertask import TimerTask
-from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
+from pytoy.devtools.vimplugin_package import VimPluginPackage
 from pytoy.shared.command import App, Argument
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
+from pytoy.shared.timertask import TimerTask
 
 
 class VimRebootExecutor:
@@ -156,9 +157,11 @@ def timer_task_stop():
 
 @app.command("PytoyExecute")
 def pytoy_execute(input_path: Annotated[str | None, Argument()] = None):
-    import vim
-    from pytoy.shared.ui import PytoyBuffer
     from pathlib import Path
+
+    import vim
+
+    from pytoy.shared.ui import PytoyBuffer
 
     if not input_path:
         path = PytoyBuffer.get_current().file_path
@@ -176,12 +179,13 @@ def pytoy_execute(input_path: Annotated[str | None, Argument()] = None):
 
 @app.command(name="PytoyLog")
 def pytoy_log(location: Annotated[Literal["local", "global"] | None, Argument()] = None):
+    import logging
+    from pathlib import Path
+
     from pytoy.contexts.core import GlobalCoreContext
     from pytoy.shared.pytoy_configuration import PytoyConfiguration
     from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
     from pytoy.shared.ui.pytoy_window import PytoyWindow
-    from pathlib import Path
-    import logging
 
     def _logger_to_latest_log(logger) -> None | Path:
         log_files = []

@@ -1,15 +1,10 @@
 """Unit tests for PytoyWindowVim implementation."""
-import sys
-from pathlib import Path
-import pytest
-from typing import Generator
+
+# Import implementations
+from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
 
 from .mocks.vim import MockVim
 
-# Import implementations
-
-from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
-from pytoy.shared.ui.pytoy_window.impls.vim import PytoyWindowVim
 
 class MockKernelRegistry:
     kernels = {}
@@ -24,6 +19,7 @@ class MockKernelRegistry:
     def dispose(cls, winid: int):
         cls.kernels.pop(winid, None)
 
+
 class MockKernel:
     def __init__(self, winid):
         self.winid = winid
@@ -31,10 +27,12 @@ class MockKernel:
         self.buffer = MockBuffer()
         self.valid = True
 
+
 class MockWindow:
     cursor = (1, 0)
     valid = True
     winid = 1
+
 
 class MockBuffer:
     lines = ["Hello world"]
@@ -44,14 +42,6 @@ class MockBuffer:
 def test_window_creation(vim_env: MockVim):
     """Test window creation and basic properties"""
     buf = vim_env.create_buffer(1, "test.txt")
-    win = vim_env.create_window(1, buf)
 
     kernel_registry = dict()
     kernel_registry[1] = VimWindowKernel(1)
-    class DummyCtx():
-        @property
-        def window_kernel_registry(self):
-            return kernel_registry
-    pytoy_win = PytoyWindowVim(win.number, ctx=DummyCtx())
-
-

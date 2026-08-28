@@ -1,9 +1,8 @@
-from pydantic import BaseModel, ConfigDict, model_validator
-
-
 import re
 from pathlib import Path
 from typing import Self, Sequence
+
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from pytoy.shared.ui.vscode.api import Api
 

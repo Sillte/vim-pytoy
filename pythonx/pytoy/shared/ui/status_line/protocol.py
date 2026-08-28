@@ -1,7 +1,5 @@
 from typing import Protocol, Sequence
 
-from dataclasses import dataclass, replace
-from typing import Self, Mapping
 from pytoy.shared.ui.status_line.models import StatusLineItem
 
 

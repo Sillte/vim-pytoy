@@ -1,12 +1,12 @@
-import vim
-from pathlib import Path
-from typing import Sequence, Mapping, Any
-
 import json
-from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixProtocol, PytoyQuickfixUIProtocol
-from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
-
+from pathlib import Path
 from shlex import quote
+from typing import Any, Mapping, Sequence
+
+import vim
+
+from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
+from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixProtocol, PytoyQuickfixUIProtocol
 
 
 class PytoyQuickfixVimUI(PytoyQuickfixUIProtocol):

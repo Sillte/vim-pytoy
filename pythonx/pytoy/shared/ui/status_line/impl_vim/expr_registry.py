@@ -1,9 +1,8 @@
 from collections import defaultdict
-from pytoy.shared.lib.function import RegisteredFunction, FunctionName, FunctionRegistry
-from pytoy.shared.ui.status_line.models import StatusLineItemFunction
-
-
 from typing import Mapping
+
+from pytoy.shared.lib.function import FunctionName, FunctionRegistry, RegisteredFunction
+from pytoy.shared.ui.status_line.models import StatusLineItemFunction
 
 
 class RegistryView:
@@ -45,7 +44,6 @@ class VimExprRegistry:
     """
 
     def __init__(self, winid: int) -> None:  # noqa
-        import vim
 
         self._winid = winid
         # NOTE: `prefix` is crucial for assuring the uniqueness among different windows.

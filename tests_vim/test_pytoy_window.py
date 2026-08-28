@@ -1,7 +1,6 @@
-from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
-from pytoy.shared.ui.pytoy_window import PytoyWindow
 from pytoy.shared.lib.text import CursorPosition
-from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
+from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
+from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode
 
 
 def test_function():

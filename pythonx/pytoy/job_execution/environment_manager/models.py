@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol, overload, Literal, Sequence
+from typing import Literal, Protocol, Sequence, overload
 
 DefaultEnvironment = Literal["system"]
 type EnvironmentKind = Literal["uv"] | DefaultEnvironment

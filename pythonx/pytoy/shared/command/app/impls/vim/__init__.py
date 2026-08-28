@@ -1,14 +1,20 @@
-from dataclasses import dataclass
-from typing import Callable, Any, Literal, assert_never
-from textwrap import dedent
-from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
-from pytoy.shared.command.core.models import CommandModel, RangeParam, CountParam
-from pytoy.shared.command.service.executor import ExecutionService
-from pytoy.shared.command.service.completion import CompletionService, CompletionParam, CompletionResult
-from pytoy.shared.command.app.protocol import CommandApplicationProtocol, GroupApplicationProtocol
-from pytoy.shared.command.app.protocol import RangeSpec, CountSpec, NoneSpec, InvocationSpec
-
 import re
+from dataclasses import dataclass
+from textwrap import dedent
+from typing import Any, Callable, Literal, assert_never
+
+from pytoy.shared.command.app.protocol import (
+    CommandApplicationProtocol,
+    CountSpec,
+    GroupApplicationProtocol,
+    InvocationSpec,
+    NoneSpec,
+    RangeSpec,
+)
+from pytoy.shared.command.core.models import CommandModel, CountParam, RangeParam
+from pytoy.shared.command.service.completion import CompletionParam, CompletionResult, CompletionService
+from pytoy.shared.command.service.executor import ExecutionService
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 
 _pattern = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 

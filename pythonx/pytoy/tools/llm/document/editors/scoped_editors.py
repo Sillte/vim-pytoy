@@ -1,32 +1,27 @@
-import re
 import logging
+import re
 import uuid
-
 from typing import Sequence
-from pytoy.shared.ui.notifications import EphemeralNotification
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
-from pytoy.shared.ui.pytoy_window import CharacterRange
 
-from pytoy.shared.pytoy_configuration import PytoyConfiguration
-
-
-from pytoy_llm.composer import InvocationComposer, SystemPromptSpec, OutputSpec
-from pytoy_llm.composers.materials import MaterialSection
+from pytoy_llm.composer import InvocationComposer, OutputSpec, SystemPromptSpec
 from pytoy_llm.models import LLMMessage
 from pytoy_llm.task.models import (
+    FunctionInvocationSpec,
     InvocationSpecMeta,
     LLMInvocationSpec,
     TaskSpec,
     TaskSpecMeta,
-    FunctionInvocationSpec,
 )
 
+from pytoy.shared.pytoy_configuration import PytoyConfiguration
 from pytoy.shared.timertask.thread_execution import add_log_message
-from pytoy.tools.llm.document.analyzers import DocumentProfile, make_profile_spec, LanguageKind
-from pytoy.tools.llm.document.editors.edit_rules import LanguageRuleSet, CompletionRuleSet, StyleRuleSet
-
+from pytoy.shared.ui.notifications import EphemeralNotification
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_window import CharacterRange
+from pytoy.tools.llm.document.analyzers import LanguageKind
+from pytoy.tools.llm.document.editors.edit_rules import CompletionRuleSet, LanguageRuleSet, StyleRuleSet
 from pytoy.tools.llm.llm_execution.executor import LLMExecutor
-from pytoy.tools.llm.llm_execution.models import LLMExecutionRequest, LLMExecutionHooks
+from pytoy.tools.llm.llm_execution.models import LLMExecutionHooks, LLMExecutionRequest
 
 
 def select_language_kind(document: str) -> LanguageKind:

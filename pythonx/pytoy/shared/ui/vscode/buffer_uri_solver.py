@@ -1,6 +1,7 @@
+from typing import Mapping
+
 import vim
 
-from typing import Mapping
 from pytoy.shared.ui.vscode.uri import VSCodeUri
 
 

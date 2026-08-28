@@ -1,8 +1,8 @@
 from pytoy.shared.command.service.completion import (
-    CompletionService,
+    CompletionCandidate,
     CompletionParam,
     CompletionResult,
-    CompletionCandidate,
+    CompletionService,
 )
 from pytoy.shared.command.service.executor import ExecutionService
 

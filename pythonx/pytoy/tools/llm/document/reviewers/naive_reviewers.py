@@ -1,21 +1,17 @@
 import logging
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
-from pytoy.tools.llm.llm_execution.executor import LLMExecutor
-from pytoy.tools.llm.llm_execution.models import LLMExecutionRequest, LLMExecutionHooks
-from pytoy.shared.pytoy_configuration import PytoyConfiguration
+from typing import Annotated, Literal
 
-from pytoy.shared.ui.notifications import EphemeralNotification
-from pytoy.shared.ui.pytoy_buffer import make_buffer
-from pytoy_llm.composer import InvocationComposer, SystemPromptSpec, OutputSpec
-from pytoy_llm.task.models import InvocationSpecMeta, LLMInvocationSpec, TaskSpec, TaskSpecMeta
-from pytoy_llm.models import LLMMessage
-
-from pytoy.tools.llm.document.analyzers import DocumentProfile
-from typing import Literal, Annotated
 from pydantic import BaseModel, Field
+from pytoy_llm.composer import InvocationComposer, OutputSpec, SystemPromptSpec
+from pytoy_llm.models import LLMMessage
+from pytoy_llm.task.models import InvocationSpecMeta, LLMInvocationSpec, TaskSpec, TaskSpecMeta
 
-
-import uuid
+from pytoy.shared.pytoy_configuration import PytoyConfiguration
+from pytoy.shared.ui.notifications import EphemeralNotification
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, make_buffer
+from pytoy.tools.llm.document.analyzers import DocumentProfile
+from pytoy.tools.llm.llm_execution.executor import LLMExecutor
+from pytoy.tools.llm.llm_execution.models import LLMExecutionHooks, LLMExecutionRequest
 
 type DocumentQuality = Literal[
     "clarity",

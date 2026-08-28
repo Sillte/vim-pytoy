@@ -1,3 +1,5 @@
+from typing import Sequence
+
 from pytoy.job_execution.command_executor.models import (
     CommandExecution,
     CommandExecutionContext,
@@ -6,9 +8,6 @@ from pytoy.job_execution.command_executor.models import (
     CommandExecutionQuery,
 )
 from pytoy.shared.ui.pytoy_buffer import BufferSource
-
-
-from typing import Sequence
 
 
 class CommandExecutionManager:

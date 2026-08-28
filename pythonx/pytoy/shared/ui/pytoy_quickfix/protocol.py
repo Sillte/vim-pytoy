@@ -1,4 +1,5 @@
-from typing import Protocol, Any, Sequence, Self
+from typing import Protocol, Sequence
+
 from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
 
 

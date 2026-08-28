@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Mapping, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Mapping
 
-from pytoy.job_execution.command_runner.models import OutputJobProtocol, OutputJobRequest, SpawnOption, JobEvents, JobID
-from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
+from pytoy.job_execution.command_runner.models import JobEvents, JobID, OutputJobProtocol, OutputJobRequest, SpawnOption
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.ui import PytoyBuffer
-from pytoy.shared.ui.pytoy_buffer import make_buffer, make_duo_buffers, BufferSource
+from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer, make_duo_buffers
 
 if TYPE_CHECKING:
     from pytoy.contexts.pytoy import GlobalPytoyContext

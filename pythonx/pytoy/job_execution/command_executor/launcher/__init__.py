@@ -1,20 +1,22 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Any, Self
+from typing import Any, Mapping, Self
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.job_execution.command_executor.executor import CommandExecution
-from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile  # NOQA
-from pytoy.job_execution.command_executor.launcher.quickfix import make_quickfix_hooks  # noqa
 from pytoy.job_execution.command_executor import CommandExecutionHandler, CommandExecutionQuery
+from pytoy.job_execution.command_executor.launcher.quickfix import (
+    QuickfixProfile,  # NOQA
+    make_quickfix_hooks,  # noqa
+)
 from pytoy.job_execution.command_executor.models import (
     BufferRequest,
+    CommandExecution,
+    CommandExecutionContext,
     CommandExecutionHooks,
     CommandExecutionKind,
     CommandExecutionRequest,
-    PostProcessContext,
     CommandExecutionWrapperType,
-    CommandExecutionContext,
+    PostProcessContext,
 )
 from pytoy.job_execution.utils import get_current_directory
 from pytoy.shared.ui import BufferSource, PytoyBuffer

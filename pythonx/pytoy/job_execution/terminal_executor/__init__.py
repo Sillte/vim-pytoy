@@ -1,10 +1,10 @@
 from pytoy.job_execution.terminal_executor.controller import TerminalExecutionController
 from pytoy.job_execution.terminal_executor.handler import TerminalExecutionHandler
 from pytoy.job_execution.terminal_executor.models import (
+    CommandExecutionWrapperType,
+    TerminalExecutionHooks,
     TerminalExecutionQuery,
     TerminalExecutionRequest,
-    TerminalExecutionHooks,
-    CommandExecutionWrapperType,
 )
 
 __all__ = [

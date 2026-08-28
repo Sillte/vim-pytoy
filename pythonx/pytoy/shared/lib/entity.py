@@ -1,4 +1,4 @@
-from typing import Protocol, Hashable, Callable
+from typing import Callable, Hashable, Protocol
 from weakref import WeakValueDictionary
 
 from pytoy.shared.lib.event.domain import Event

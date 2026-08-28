@@ -1,29 +1,30 @@
 from __future__ import annotations
-import vim
-import time
+
 import json
+import time
 from pathlib import Path
 from typing import Any, Sequence
 
+import vim
+
+from pytoy.job_execution.process_utils import find_children_pids
+from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
 from pytoy.job_execution.terminal_runner.models import (
-    TerminalJobProtocol,
-    TerminalJobRequest,
-    SpawnOption,
     ConsoleSnapshot,
-    Snapshot,
-    WaitOperation,
-    WaitUntilOperation,
-    RawStr,
-    LineStr,
     InputOperation,
     JobEvents,
     JobID,
+    LineStr,
+    RawStr,
+    Snapshot,
+    SpawnOption,
+    TerminalJobProtocol,
+    TerminalJobRequest,
+    WaitOperation,
+    WaitUntilOperation,
 )
-
-from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
-from pytoy.shared.lib.text import CursorPosition
 from pytoy.shared.lib.function import FunctionRegistry
-from pytoy.job_execution.process_utils import find_children_pids
+from pytoy.shared.lib.text import CursorPosition
 
 
 class TerminalJobVim(TerminalJobProtocol):

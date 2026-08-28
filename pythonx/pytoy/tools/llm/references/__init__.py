@@ -1,10 +1,10 @@
-from typing import Annotated, Literal, Self, assert_never, Protocol, Any
 from pathlib import Path
+from typing import Annotated, Any, Literal, Protocol, Self, assert_never
 
-from pytoy.tools.llm.references.reference_collectors import ReferenceCollector  # noqa:  # type: ignore
-from pytoy.tools.llm.references.section_writer import ReferenceSectionWriter  # noqa:  # type: ignore
-from pytoy.tools.llm.references.models import InfoSource, ReferenceDataset  # noqa: #type: ignore
-from pytoy.tools.llm.references.converters import ConverterProtocol, MarkdownConverter, MarkItDownConverter  # noqa: # type: ignore
+from pytoy.tools.llm.references.converters import ConverterProtocol, MarkdownConverter, MarkItDownConverter
+from pytoy.tools.llm.references.models import InfoSource, ReferenceDataset
+from pytoy.tools.llm.references.reference_collectors import ReferenceCollector
+from pytoy.tools.llm.references.section_writer import ReferenceSectionWriter
 
 
 class ReferenceHandler:

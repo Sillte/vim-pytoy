@@ -1,9 +1,4 @@
 {
-    "python.analysis.extraPaths": [
-        "./pythonx"
-    ],
-    "remote.autoForwardPortsFallback": 0,
-    "editor.cursorSurroundingLines": 0,
     "files.exclude": {
         "**/__pycache__": true,
         "**/.git": true,
@@ -12,5 +7,12 @@
     "search.exclude": {
         "**/__pycache__": true,
         "**/node_modules": true
+    },
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
     }
 }

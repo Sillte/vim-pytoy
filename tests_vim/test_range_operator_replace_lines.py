@@ -1,10 +1,9 @@
 # Please execute this with `:PytoyExecute`
-from pytoy.shared.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
-from pytoy.infra.core.models import CursorPosition, LineRange
-from pathlib import Path
 
-import vim
+
+from pytoy.infra.core.models import LineRange
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam
 
 # Tests for `range_operator.replace_text`.
 

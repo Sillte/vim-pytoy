@@ -1,21 +1,21 @@
-import types
+from dataclasses import dataclass, field
 from typing import (
-    Sequence,
+    TYPE_CHECKING,
     Any,
     Callable,
-    Mapping,
-    TYPE_CHECKING,
-    Self,
     Literal,
+    Mapping,
+    Self,
+    Sequence,
 )
-from dataclasses import dataclass, field
+
+from pytoy.shared.command.core.utils import flatten_union, is_literal, is_union, literal_values, unwrap_annotated
 from pytoy.shared.lib.text import LineRange
-from pytoy.shared.command.core.utils import flatten_union, is_union, unwrap_annotated, is_literal, literal_values
 
 # 0-based, exclusive range [start, end)
 RangeParam = LineRange
 if TYPE_CHECKING:
-    from inspect import Parameter
+    pass
 
 MISSING_DEFAULT = object()
 
@@ -317,7 +317,7 @@ class CommandModel:
 
     @classmethod
     def from_callable(cls, function: Callable) -> Self:
-        from inspect import signature, Parameter
+        from inspect import Parameter, signature
 
         sig = signature(function)
         args_name: str | None = None

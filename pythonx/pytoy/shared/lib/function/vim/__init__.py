@@ -1,8 +1,8 @@
-from typing import Callable, Self
 import re
 from textwrap import dedent
-from pytoy.shared.lib.function.domain import FunctionRegistryProtocol, FunctionName, RegisteredFunction, StrCallable
+from typing import Callable, Self
 
+from pytoy.shared.lib.function.domain import FunctionName, FunctionRegistryProtocol, RegisteredFunction, StrCallable
 
 _VIM_FUNC_NAME_RE = re.compile(r"[^0-9A-Za-z_]")
 

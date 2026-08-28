@@ -1,23 +1,17 @@
 import types
 from typing import (
-    Sequence,
-    Any,
-    Callable,
-    Mapping,
-    get_origin,
-    get_args,
-    Union,
     TYPE_CHECKING,
     Annotated,
-    Self,
+    Any,
     Literal,
+    Sequence,
+    Union,
+    get_args,
+    get_origin,
 )
-from dataclasses import dataclass, field
-from pytoy.shared.lib.text import LineRange
-
 
 if TYPE_CHECKING:
-    from inspect import Parameter
+    pass
 
 
 type TypeLike = Any

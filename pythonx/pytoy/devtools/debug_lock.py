@@ -1,9 +1,8 @@
-from pytoy.devtools.debug_logger import DebugLogger
-
-
 import threading
 import time
 from contextlib import contextmanager
+
+from pytoy.devtools.debug_logger import DebugLogger
 
 
 class DebugLock:

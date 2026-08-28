@@ -1,36 +1,36 @@
 from __future__ import annotations
+
 # **Specification**
 # * Editor: Editor of VSCode.
 # * Editor of PytoyWindow: the buffers of windows is managed in neovim.
-
 from pathlib import Path
-from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange
-from pytoy.shared.lib.event.domain import Event
-from pytoy.shared.ui.pytoy_buffer.models import BufferSource
-from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import WindowURISolver
-from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
-from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
-from pytoy.shared.ui.vscode.editor.models import TextEditorRevealType
-from pytoy.shared.ui.vscode.uri import VSCodeUri
+from typing import TYPE_CHECKING, Literal, Sequence, assert_never, cast
+
 import vim  # (vscode-neovim extention)
-from typing import Sequence, Literal, assert_never, cast, TYPE_CHECKING
+
+from pytoy.shared.lib.event.domain import Event
+from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer.impls.vscode import PytoyBufferVSCode
+from pytoy.shared.ui.pytoy_buffer.models import BufferSource
+from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel, WindowURISolver
+from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
 from pytoy.shared.ui.pytoy_window.protocol import (
+    PytoyWindowID,
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
-    PytoyWindowID,
     StatusLineManagerProtocol,
     WindowEvents,
 )
+from pytoy.shared.ui.pytoy_window.vim_window_utils import get_last_selection
+from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.shared.ui.vscode.document import Api, Document
 from pytoy.shared.ui.vscode.editor import Editor
+from pytoy.shared.ui.vscode.editor.models import TextEditorRevealType
+from pytoy.shared.ui.vscode.uri import VSCodeUri
 from pytoy.shared.ui.vscode.utils import wait_until_true
-from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
 
-from pytoy.shared.ui.pytoy_window.vim_window_utils import get_last_selection
 from ...vim_window_utils import VimWinIDConverter
-
 
 if TYPE_CHECKING:
     from pytoy.contexts.vscode import GlobalVSCodeContext

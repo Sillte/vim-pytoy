@@ -5,8 +5,8 @@ the global state of process.
 but it seems work when this is called via `subprocess`.
 """
 
-import sys
 import ctypes
+import sys
 import time
 
 pid = int(sys.argv[1])

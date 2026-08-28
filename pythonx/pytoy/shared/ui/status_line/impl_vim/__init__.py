@@ -1,21 +1,24 @@
+from typing import Mapping, Sequence, cast
+
+import vim
+
+from pytoy.shared.ui.pytoy_window.impls.vim import VimWinIDConverter
+from pytoy.shared.ui.pytoy_window.protocol import WindowEvents
 from pytoy.shared.ui.status_line.impl_vim.expr_registry import VimExprRegistry
-from pytoy.shared.ui.status_line.impl_vim.models import StatusNode, Conditional, Align
-from pytoy.shared.ui.status_line.impl_vim.models import parse_statusline, to_statusline
-from pytoy.shared.ui.status_line.impl_vim.node_converters import VimStatusNodeConverter
-from pytoy.shared.ui.status_line.impl_vim.node_converters import UnknownNodeConverter
-from pytoy.shared.ui.status_line.impl_vim.node_converters import VimExprNodeConverter
-from pytoy.shared.ui.status_line.impl_vim.node_converters import VimTextNodeConverter
+from pytoy.shared.ui.status_line.impl_vim.models import Align, Conditional, StatusNode, parse_statusline, to_statusline
+from pytoy.shared.ui.status_line.impl_vim.node_converters import (
+    UnknownNodeConverter,
+    VimExprNodeConverter,
+    VimStatusNodeConverter,
+    VimTextNodeConverter,
+)
 from pytoy.shared.ui.status_line.models import (
-    StatusLineItem,
-    UnknownStatusLineItem,
-    TextStatusLineItem,
     FunctionStatusLineItem,
+    StatusLineItem,
+    TextStatusLineItem,
+    UnknownStatusLineItem,
 )
 from pytoy.shared.ui.status_line.protocol import StatusLineManagerProtocol
-from pytoy.shared.ui.pytoy_window.protocol import WindowEvents
-from pytoy.shared.ui.pytoy_window.impls.vim import VimWinIDConverter
-from typing import Mapping, Sequence, cast
-import vim
 
 
 class StatusLineManagerVim(StatusLineManagerProtocol):

@@ -1,7 +1,7 @@
-from pytoy.shared.ui.pytoy_window import PytoyWindow
-
 from typing import Annotated, Literal, assert_never
-from pytoy.shared.command import App, Argument, Option
+
+from pytoy.shared.command import App, Argument
+from pytoy.shared.ui.pytoy_window import PytoyWindow
 
 app = App()
 

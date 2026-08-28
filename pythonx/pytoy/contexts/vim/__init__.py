@@ -1,15 +1,16 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, ClassVar
-from functools import cached_property
-from pytoy.shared.lib.entity import EntityRegistry
 
+from functools import cached_property
+from typing import TYPE_CHECKING, ClassVar
+
+from pytoy.shared.lib.entity import EntityRegistry
 
 # Only for lazy loading to speed up.
 if TYPE_CHECKING:
-    from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
-    from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
     from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager
     from pytoy.shared.lib.keymap.keymap_manager import KeymapManager
+    from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
+    from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
 
 
 class GlobalVimContext:

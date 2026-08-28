@@ -1,10 +1,11 @@
-from dataclasses import dataclass, field
-from collections import defaultdict
-from typing import Sequence, Mapping, Any, Self, get_args, get_origin
-from collections.abc import Sequence as ABCSequence
-import shlex
 import re
-from pytoy.shared.command.core.models import BooleanOptions, CommandModel, MISSING_DEFAULT, Token
+import shlex
+from collections import defaultdict
+from collections.abc import Sequence as ABCSequence
+from dataclasses import dataclass, field
+from typing import Any, Mapping, Self, Sequence, get_args, get_origin
+
+from pytoy.shared.command.core.models import MISSING_DEFAULT, BooleanOptions, CommandModel, Token
 
 
 class OptionValueMissingError(Exception):

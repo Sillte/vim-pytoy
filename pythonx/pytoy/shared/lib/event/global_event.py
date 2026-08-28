@@ -1,9 +1,7 @@
-from pytoy.shared.lib.event.domain import Listener
 from collections import defaultdict
-from pytoy.shared.lib.event.domain import Disposable, Event, EventProtocol
+from typing import Any, Callable, Hashable, Self, Sequence
 
-
-from typing import Hashable, Self, Sequence, Callable, Any
+from pytoy.shared.lib.event.domain import Disposable, Event, EventProtocol, Listener
 
 
 class EntityEventExceptionGroup(ExceptionGroup):

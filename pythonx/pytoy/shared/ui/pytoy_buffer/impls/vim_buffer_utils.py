@@ -1,6 +1,8 @@
-from pytoy.shared.lib.text import CursorPosition, LineRange, CharacterRange
-import vim
 from typing import Sequence
+
+import vim
+
+from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
 
 
 class VimBufferRangeHandler:

@@ -1,9 +1,8 @@
 from pathlib import Path
+from typing import Annotated, Literal
 
-from pytoy.shared.command import Argument, App, Option, RangeParam, Group
-from typing import Literal, Annotated
 from pytoy import TERM_STDERR, TERM_STDOUT
-
+from pytoy.shared.command import App, Argument, Group, Option, RangeParam
 
 app = App()
 
@@ -65,8 +64,8 @@ def script_run(path: Annotated[Path | None, Option()] = None, cwd: Annotated[Pat
 
 @group.command("rerun")
 def script_rerun():
-    from pytoy.tools.python import PythonExecutor
     from pytoy.shared.ui import make_duo_buffers
+    from pytoy.tools.python import PythonExecutor
 
     executor = PythonExecutor()
     stdout_buffer, stderr_buffer = make_duo_buffers(TERM_STDOUT, TERM_STDERR)
@@ -87,7 +86,7 @@ app = App()
 @app.command("HideTemporary")
 def hide_temporary():
     from pytoy.shared.ui import PytoyBufferProvider
-    from pytoy.shared.ui.pytoy_buffer.models import BufferSource, BufferQuery
+    from pytoy.shared.ui.pytoy_buffer.models import BufferQuery, BufferSource
 
     source1 = BufferSource.from_no_file(name=TERM_STDOUT)
     source2 = BufferSource.from_no_file(name=TERM_STDERR)

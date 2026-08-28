@@ -1,21 +1,12 @@
-from pathlib import Path
-from typing import Any
-
-from pytoy.contexts.core import GlobalCoreContext
-from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.job_execution.environment_manager import EnvironmentManager
-from pytoy.job_execution.command_runner import CommandRunner
-from pytoy_llm.task import TaskRequest, TaskExecutor
-from pytoy_llm.task.models import TaskResult
 from pytoy_llm.event_sinks import LoggerEventSink
-from pytoy.shared.lib.event.domain import EventEmitter
-from pytoy.shared.lib.outcome import Outcome, Success, Error
-from pytoy.shared.timertask.thread_execution import ThreadExecutionHandler, ThreadExecutionRequest
+from pytoy_llm.task import TaskExecutor, TaskRequest
+from pytoy_llm.task.models import TaskResult
 
+from pytoy.contexts.pytoy import GlobalPytoyContext
+from pytoy.shared.timertask.thread_execution import ThreadExecutionRequest
 
-from threading import Event
-from .models import LLMExecution, LLMExecutionRequest, LLMExecutionResult
 from .manager import LLMExecutionManager
+from .models import LLMExecution, LLMExecutionRequest
 
 
 class LLMExecutionFactory:

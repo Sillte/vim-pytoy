@@ -1,5 +1,6 @@
-from pytoy.shared.lib.text import CursorPosition, CharacterRange
+from pytoy.shared.lib.text import CharacterRange, CursorPosition
 from pytoy.shared.ui.pytoy_buffer.impls.text_searchers import TextSearcher
+
 
 def test_find_first_single_line():
     lines = ["hello world"]
@@ -11,9 +12,10 @@ def test_find_first_single_line():
     assert result.start == CursorPosition(0, 6)
     assert result.end == CursorPosition(0, 11)
 
+
 def test_find_first_multi_line():
     lines = [
-        "firstline", 
+        "firstline",
         "hello",
         "AA beautiful world",
     ]
@@ -24,7 +26,7 @@ def test_find_first_multi_line():
     assert result is not None
     assert result.start == CursorPosition(2, 3)
     assert result.end == CursorPosition(2, 12)
-    
+
 
 def test_find_all_multiple_matches():
     lines = ["abc abc abc"]
@@ -52,6 +54,7 @@ def test_find_within_character_range_single_line():
     assert result.start == CursorPosition(0, 4)
     assert result.end == CursorPosition(0, 7)
 
+
 def test_find_within_character_range_multi_line():
     lines = [
         "aaa",
@@ -70,6 +73,7 @@ def test_find_within_character_range_multi_line():
     assert result.start == CursorPosition(1, 0)
     assert result.end == CursorPosition(1, 3)
 
+
 def test_find_first_not_found():
     lines = ["hello world"]
     searcher = TextSearcher.create(lines)
@@ -78,12 +82,14 @@ def test_find_first_not_found():
 
     assert result is None
 
+
 def test_find_empty_text():
     lines = ["abc"]
     searcher = TextSearcher.create(lines)
 
     assert searcher.find_first("") is None
     assert searcher.find_all("") == []
+
 
 def test_find_first_reverse():
     lines = ["abc abc abc"]

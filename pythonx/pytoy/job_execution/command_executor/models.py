@@ -1,18 +1,17 @@
 from __future__ import annotations
+
 #  Models used for `command_executor` package.
 # It is intended to behaive like a domain model in this package.
-
 import uuid
-from pathlib import Path
 from dataclasses import dataclass, field
-from pytoy.job_execution.command_runner import CommandRunner
-from typing import Callable, Mapping, Self, Any, Literal, cast
-from pytoy.shared.lib.event import Event, EventEmitter
-from pytoy.job_execution.command_runner.models import JobResult, JobID, JobEvents
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, BufferSource
-from pytoy.job_execution.environment_manager import CommandExecutionWrapperType
-from pytoy.job_execution.command_runner.models import OutputJobRequest, SpawnOption
+from pathlib import Path
+from typing import Any, Callable, Literal, Mapping, Self
 
+from pytoy.job_execution.command_runner import CommandRunner
+from pytoy.job_execution.command_runner.models import JobEvents, JobID, JobResult, OutputJobRequest, SpawnOption
+from pytoy.job_execution.environment_manager import CommandExecutionWrapperType
+from pytoy.shared.lib.event import Event, EventEmitter
+from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
 
 type CommandExecutionResult = JobResult
 type CommandExecutionID = JobID

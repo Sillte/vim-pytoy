@@ -1,8 +1,10 @@
 from __future__ import annotations
-from enum import StrEnum
-from typing import Literal, Self, TYPE_CHECKING, assert_never
+
 from dataclasses import dataclass
-from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange
+from enum import StrEnum
+from typing import TYPE_CHECKING, Literal, Self, assert_never
+
+from pytoy.shared.lib.text import CursorPosition, LineRange
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol

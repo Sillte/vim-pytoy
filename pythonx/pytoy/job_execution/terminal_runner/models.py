@@ -1,12 +1,10 @@
 from dataclasses import dataclass, field
-from pytoy.shared.lib.text import CursorPosition
-from pytoy.shared.lib.event.domain import Event
-
-from typing import Callable, Literal, Sequence, Protocol, Hashable, Any, Self, runtime_checkable
-from pytoy.job_execution.environment_manager import CommandWrapperType, CommandExecutionWrapperType  # noqa
-
-
 from pathlib import Path
+from typing import Any, Callable, Hashable, Literal, Protocol, Self, Sequence, runtime_checkable
+
+from pytoy.job_execution.environment_manager import CommandExecutionWrapperType, CommandWrapperType  # noqa
+from pytoy.shared.lib.event.domain import Event
+from pytoy.shared.lib.text import CursorPosition
 
 type ReturnCode = int
 type JobID = Hashable
@@ -51,7 +49,6 @@ class WaitUntilOperation:
         snapshot_getter: Callable[[], Snapshot],
     ) -> bool:
         """Return True if the condition is fulfilled."""
-        import vim  # type: ignore
 
         interval = float(self.timeout) / self.n_trials
         for _ in range(self.n_trials):

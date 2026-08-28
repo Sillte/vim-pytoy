@@ -1,6 +1,7 @@
-from typing import assert_never, Sequence, Self, Literal
+from typing import Literal, Self, Sequence, assert_never
+
 from pydantic import BaseModel
-from pytoy.tools.llm.document.core import DocumentKind
+
 from pytoy.tools.llm.document.core import LanguageKind
 
 

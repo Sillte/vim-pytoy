@@ -1,14 +1,13 @@
 from pathlib import Path
-from typing import Annotated, Literal, Self, assert_never, Protocol, Final, Sequence, Any
-from textwrap import dedent
-from pytoy.tools.llm.references.models import (
-    ReferencePathPair,
-    ReferenceInfo,
-    ReferenceDataset,
-)
 
-from pytoy_llm.materials.models import MaterialData, TextMaterialData
 from pytoy_llm.composers.materials import MaterialUsage
+from pytoy_llm.materials.models import MaterialData, TextMaterialData
+
+from pytoy.tools.llm.references.models import (
+    ReferenceDataset,
+    ReferenceInfo,
+    ReferencePathPair,
+)
 
 
 class ReferenceSectionWriter:

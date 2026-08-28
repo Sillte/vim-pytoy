@@ -1,17 +1,15 @@
 from __future__ import annotations
-from pytoy.job_execution.command_runner.models import (
-    OutputJobRequest,
-    SpawnOption,
-    JobID,
-    JobEvents,
-    Snapshot,
-    OutputJobProtocol,
-    JobResult,
-)
-from pytoy.shared.lib.event.domain import Event, EventEmitter
-from typing import Any
 
 import time
+from typing import Any
+
+from pytoy.job_execution.command_runner.models import (
+    JobEvents,
+    JobResult,
+    OutputJobProtocol,
+    Snapshot,
+)
+from pytoy.shared.lib.event.domain import EventEmitter
 
 
 class OutputJobCore:

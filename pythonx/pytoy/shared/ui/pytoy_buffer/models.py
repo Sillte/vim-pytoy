@@ -1,9 +1,8 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Hashable, Literal, Self, Sequence
+
 from pytoy.shared.lib.event.domain import Event
-
-
-from dataclasses import dataclass
 
 type BufferID = Hashable
 

@@ -1,7 +1,6 @@
-from pytoy.shared.command.core.models import RangeParam, CountParam, Field, CommandModel
 from typing import Annotated
 
-import pytest
+from pytoy.shared.command.core.models import CommandModel, CountParam, Field, RangeParam
 
 
 def func_simple(arg: str, opt: int = 42): ...

@@ -1,26 +1,23 @@
 from __future__ import annotations
 
 from pathlib import Path
-from pytoy.job_execution.terminal_runner.impls.utils.pty_console import PtyConsole
-
-
 from threading import Thread
 
 from pyte import Screen, Stream
+
+from pytoy.job_execution.process_utils import find_children_pids
+from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
+from pytoy.job_execution.terminal_runner.impls.utils.pty_console import PtyConsole
+from pytoy.job_execution.terminal_runner.impls.utils.virtual_tty import VirtualTTY
 from pytoy.job_execution.terminal_runner.models import (
-    TerminalJobProtocol,
-    TerminalJobRequest,
-    SpawnOption,
-    Snapshot,
     JobEvents,
     JobID,
+    Snapshot,
+    SpawnOption,
+    TerminalJobProtocol,
+    TerminalJobRequest,
 )
-from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
 from pytoy.shared.lib.function import FunctionRegistry
-from pytoy.job_execution.process_utils import find_children_pids
-
-from pytoy.job_execution.terminal_runner.impls.utils.virtual_tty import VirtualTTY
-
 from pytoy.shared.timertask import TimerTask
 
 

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Sequence, Literal
+from typing import Literal, Sequence
 
 
 @dataclass(frozen=True)

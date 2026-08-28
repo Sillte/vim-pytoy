@@ -1,12 +1,13 @@
-from pytoy.shared.timertask.domain import (
-    TimerTaskImplProtocol,
-    TaskName,
-    OnTaskCallback,
-    NormalStopReason,
-)
-from typing import Callable
-import time
 import threading
+import time
+from typing import Callable
+
+from pytoy.shared.timertask.domain import (
+    NormalStopReason,
+    OnTaskCallback,
+    TaskName,
+    TimerTaskImplProtocol,
+)
 
 
 class _Task:

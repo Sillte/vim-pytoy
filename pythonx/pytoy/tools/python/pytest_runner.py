@@ -1,16 +1,15 @@
 from configparser import ConfigParser
+from pathlib import Path
+from typing import Literal, Sequence
+
 from pytoy import TERM_STDOUT
-from pytoy.job_execution.command_executor.launcher import CommandLauncher, LaunchProfile, get_default_hooks
 from pytoy.job_execution.command_executor import CommandExecutionHooks
+from pytoy.job_execution.command_executor.launcher import CommandLauncher, LaunchProfile, get_default_hooks
 from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile
 from pytoy.shared.ui import PytoyBuffer, PytoyWindow, QuickfixRecord
 from pytoy.shared.ui.pytoy_buffer import make_buffer
 from pytoy.tools.pytest.utils import PytestDecipher, to_func_command
 from pytoy.tools.python.path_resolver import PathResolver
-
-
-from pathlib import Path
-from typing import Literal, Sequence
 
 
 class PytestRunner:

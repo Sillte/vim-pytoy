@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Final, Sequence
 
+from pytoy_llm.foundation.paths import PathGatherer
+
 from pytoy.tools.llm.references.converters import ReferenceConverterManager
 from pytoy.tools.llm.references.models import (
     DatasetMeta,
@@ -9,7 +11,6 @@ from pytoy.tools.llm.references.models import (
     ReferencePathPair,
     ResourceUri,
 )
-from pytoy_llm.foundation.paths import PathGatherer
 
 
 class ReferenceCollector:

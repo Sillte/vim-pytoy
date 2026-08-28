@@ -1,6 +1,5 @@
 from pytoy.shared.command import App
 
-
 app = App()
 
 

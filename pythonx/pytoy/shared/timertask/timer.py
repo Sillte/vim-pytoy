@@ -1,8 +1,13 @@
-from typing import Callable, Any
+from typing import Any, Callable
 
 from pytoy.shared.lib.backend import can_use_vim
-from pytoy.shared.timertask.domain import TaskName, OnTaskCallback, OnFinishCallback, OnErrorCallback
-from pytoy.shared.timertask.domain import TimerTaskImplProtocol
+from pytoy.shared.timertask.domain import (
+    OnErrorCallback,
+    OnFinishCallback,
+    OnTaskCallback,
+    TaskName,
+    TimerTaskImplProtocol,
+)
 
 
 def _wrap_to_one_argument_func(

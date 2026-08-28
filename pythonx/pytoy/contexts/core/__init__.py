@@ -1,12 +1,12 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, ClassVar
-from functools import cached_property
 
+from functools import cached_property
+from typing import TYPE_CHECKING, ClassVar
 
 # Only for lazy loading to speed up.
 if TYPE_CHECKING:
-    from pytoy.job_execution.environment_manager import EnvironmentManager
     from pytoy.bootstrap.import_resolvers import LLMImportResolver
+    from pytoy.job_execution.environment_manager import EnvironmentManager
     from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
 
     ...

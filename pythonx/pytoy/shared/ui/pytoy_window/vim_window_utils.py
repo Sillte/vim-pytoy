@@ -1,6 +1,6 @@
-from pytoy.shared.lib.text import CursorPosition, CharacterRange
 import vim  # (vscode-neovim extention)
-from typing import Sequence
+
+from pytoy.shared.lib.text import CharacterRange, CursorPosition
 
 
 def get_last_selection(winid: int) -> CharacterRange | None:

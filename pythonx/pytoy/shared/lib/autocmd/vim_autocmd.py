@@ -1,10 +1,10 @@
-from pytoy.shared.lib.event.domain import Disposable, Event, EventEmitter
-from typing import Callable, Any, Literal, assert_never, Sequence
+from typing import Any, Callable, Literal, Sequence, assert_never
+
+from pytoy.shared.lib.event.domain import Event, EventEmitter
 
 ArgumentSpec = Literal["count", "event", "abuf", "afile"]
 
 from dataclasses import dataclass
-
 
 type Group = str
 

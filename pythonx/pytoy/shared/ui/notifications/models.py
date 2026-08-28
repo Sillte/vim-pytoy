@@ -1,6 +1,5 @@
-from typing import Literal, Self
 from dataclasses import dataclass
-
+from typing import Literal, Self
 
 LEVEL = Literal["info", "warning", "error"]
 

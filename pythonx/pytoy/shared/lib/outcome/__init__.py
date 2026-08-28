@@ -1,5 +1,5 @@
-from typing import TypeGuard
 from dataclasses import dataclass
+from typing import TypeGuard
 
 
 @dataclass(frozen=True)

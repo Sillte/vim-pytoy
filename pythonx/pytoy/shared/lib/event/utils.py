@@ -1,5 +1,6 @@
-from typing import Callable, overload, TypeGuard, Any
-from pytoy.shared.lib.event.domain import Disposable, Listener, Event
+from typing import Any, Callable, TypeGuard, overload
+
+from pytoy.shared.lib.event.domain import Disposable, Event, Listener
 
 
 def once[T](event: Event[T]) -> Event[T]:

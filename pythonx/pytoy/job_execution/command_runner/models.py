@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from pytoy.shared.lib.event.domain import Event
-
-from typing import Callable, Literal, Sequence, Protocol, Hashable, Any, Mapping
-
 from pathlib import Path
+from typing import Callable, Hashable, Literal, Mapping, Protocol, Sequence
+
+from pytoy.shared.lib.event.domain import Event
 
 type ReturnCode = int
 type JobID = Hashable

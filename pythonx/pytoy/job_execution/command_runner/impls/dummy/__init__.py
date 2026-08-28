@@ -1,16 +1,18 @@
 from __future__ import annotations
-from pytoy.job_execution.command_runner.models import (
-    OutputJobRequest,
-    SpawnOption,
-    JobID,
-    JobEvents,
-    Snapshot,
-    OutputJobProtocol,
-)
-from pytoy.job_execution.command_runner.impls.core import OutputJobCore
-from pathlib import Path
-import threading
+
 import subprocess
+import threading
+from pathlib import Path
+
+from pytoy.job_execution.command_runner.impls.core import OutputJobCore
+from pytoy.job_execution.command_runner.models import (
+    JobEvents,
+    JobID,
+    OutputJobProtocol,
+    OutputJobRequest,
+    Snapshot,
+    SpawnOption,
+)
 from pytoy.job_execution.process_utils import find_children_pids
 
 

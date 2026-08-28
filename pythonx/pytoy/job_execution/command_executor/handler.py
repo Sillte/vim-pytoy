@@ -1,25 +1,24 @@
 import threading
 from collections.abc import Callable
+from dataclasses import replace
 from functools import wraps
 from typing import Self, Sequence
-from dataclasses import dataclass, replace
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
+from .factory import CommandExecutionFactory
+from .manager import CommandExecutionManager
 from .models import (
-    CommandExecutionID,
-    CommandExecutionStatus,
-    CommandExecutionRequest,
-    CommandExecutionHooks,
-    CommandExecutionQuery,
     BufferRequest,
     CommandExecutionContext,
+    CommandExecutionHooks,
+    CommandExecutionID,
     CommandExecutionKind,
-    CommandExecutionContext,
+    CommandExecutionQuery,
+    CommandExecutionRequest,
+    CommandExecutionStatus,
 )
-from .manager import CommandExecutionManager
-from .factory import CommandExecutionFactory
 
 
 def assert_main_thread() -> None:

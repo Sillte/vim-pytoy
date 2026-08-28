@@ -1,19 +1,22 @@
 from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
 import vim
-from pytoy.job_execution.command_runner.models import (
-    OutputJobRequest,
-    SpawnOption,
-    JobID,
-    JobEvents,
-    Snapshot,
-    OutputJobProtocol,
-)
+
 from pytoy.job_execution.command_runner.impls.core import OutputJobCore
+from pytoy.job_execution.command_runner.models import (
+    JobEvents,
+    JobID,
+    OutputJobProtocol,
+    OutputJobRequest,
+    Snapshot,
+    SpawnOption,
+)
 from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.shared.timertask import TimerTask
-from typing import TYPE_CHECKING, Any
-from pathlib import Path
 
 if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext

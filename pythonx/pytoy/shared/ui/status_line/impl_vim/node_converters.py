@@ -1,12 +1,12 @@
 from typing import Sequence
 
 from pytoy.shared.ui.status_line.impl_vim.expr_registry import RegistryView
-from pytoy.shared.ui.status_line.impl_vim.models import Highlight, Text, VimExpr, StatusNode
+from pytoy.shared.ui.status_line.impl_vim.models import Highlight, StatusNode, Text, VimExpr
 from pytoy.shared.ui.status_line.models import (
     FunctionStatusLineItem,
+    StatusLineItem,
     TextStatusLineItem,
     UnknownStatusLineItem,
-    StatusLineItem,
 )
 
 

@@ -1,6 +1,7 @@
-from pytoy.shared.lib.text import CursorPosition, LineRange, CharacterRange
-from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol, RangeOperatorProtocol
 from typing import Sequence
+
+from pytoy.shared.lib.text import CharacterRange, LineRange
+from pytoy.shared.ui.pytoy_buffer.protocol import RangeOperatorProtocol
 
 
 class RangeOperator(RangeOperatorProtocol):

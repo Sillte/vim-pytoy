@@ -1,6 +1,7 @@
-from typing import Sequence, Any
+from typing import Any, Sequence
+
 from pytoy.shared.command.core.models import CommandModel, InjectedParam
-from pytoy.shared.command.core.tokenizer import tokenize, InterpretedInput, ResolvedInput
+from pytoy.shared.command.core.tokenizer import InterpretedInput, ResolvedInput, tokenize
 
 
 class ExecutionService:

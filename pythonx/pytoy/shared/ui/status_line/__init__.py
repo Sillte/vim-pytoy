@@ -1,8 +1,10 @@
 from __future__ import annotations
-from typing import Sequence, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Sequence
+
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.ui.status_line.models import StatusLineItem
 from pytoy.shared.ui.status_line.protocol import StatusLineManagerProtocol
-from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window.protocol import WindowEvents

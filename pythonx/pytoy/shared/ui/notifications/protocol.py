@@ -1,5 +1,6 @@
-from typing import Protocol, Literal
-from pytoy.shared.ui.notifications.models import NotificationParam, LEVEL
+from typing import Protocol
+
+from pytoy.shared.ui.notifications.models import LEVEL, NotificationParam
 
 
 class EphemeralNotificationProtocol(Protocol):

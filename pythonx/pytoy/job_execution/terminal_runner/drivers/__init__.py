@@ -1,17 +1,17 @@
+from typing import Sequence
+
+from pytoy.contexts.pytoy import GlobalPytoyContext
+from pytoy.job_execution.process_utils import force_kill
 from pytoy.job_execution.terminal_runner.models import (
-    TerminalDriverProtocol,
-    Snapshot,
     InputOperation,
+    InterruptionCode,
+    LineStr,
+    RawStr,
+    Snapshot,
+    TerminalDriverProtocol,
     WaitOperation,
     WaitUntilOperation,
 )
-from pytoy.job_execution.terminal_runner.models import LineStr, RawStr, InterruptionCode
-
-from pytoy.job_execution.process_utils import force_kill
-from pytoy.contexts.pytoy import GlobalPytoyContext
-
-
-from typing import Sequence
 
 DEFAULT_SHELL_DRIVER_NAME = "shell"
 

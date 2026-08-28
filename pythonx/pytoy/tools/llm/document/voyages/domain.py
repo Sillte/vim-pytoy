@@ -1,7 +1,7 @@
+from typing import Any, Literal, Mapping
+
 from pydantic import BaseModel, Field
-from typing import Literal, Mapping, Any, Self
 from typing_extensions import Annotated
-from textwrap import dedent
 
 CompassProgress = Annotated[
     Literal["emerging", "shaping", "committed"],

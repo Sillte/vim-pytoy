@@ -1,10 +1,11 @@
-import vim
 import re
 
+import vim
+
+from pytoy.shared.lib.event import EventEmitter
 from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.shared.lib.function.domain import RegisteredFunction
 from pytoy.shared.lib.keymap.models import Keymap, KeymapSpec
-from pytoy.shared.lib.event import EventEmitter
 
 
 class KeymapManager:

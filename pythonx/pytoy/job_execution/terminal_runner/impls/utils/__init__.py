@@ -1,6 +1,6 @@
+import os
 import subprocess
 import sys
-import os
 
 
 def find_children(parent_pid: int) -> list[int]:

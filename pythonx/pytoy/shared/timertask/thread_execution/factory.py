@@ -1,12 +1,11 @@
 import uuid
-from threading import Thread
+from threading import Event, Thread
 
 from pytoy.contexts.core import GlobalCoreContext
+from pytoy.shared.lib.outcome import Error, Success
 
-from threading import Event
-from .models import ThreadExecution, ThreadExecutionRequest, ThreadExecutionExit
 from .manager import ThreadExecutionManager
-from pytoy.shared.lib.outcome import Success, Error
+from .models import ThreadExecution, ThreadExecutionExit, ThreadExecutionRequest
 
 
 class ThreadExecutionFactory:

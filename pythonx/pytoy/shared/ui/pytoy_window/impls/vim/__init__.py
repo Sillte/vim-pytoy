@@ -1,23 +1,25 @@
 from __future__ import annotations
+
 from pathlib import Path
-from pytoy.shared.lib.event.domain import Event
-from pytoy.shared.ui.pytoy_buffer.models import BufferSource
-from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
+from typing import TYPE_CHECKING, Literal, Self, Sequence, assert_never, cast
+
 import vim
-from typing import Sequence, assert_never, Literal, Self, TYPE_CHECKING, cast
-from pytoy.shared.lib.text import CursorPosition, CharacterRange, LineRange
+
+from pytoy.shared.lib.event.domain import Event
+from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer.impls.vim import PytoyBufferVim
+from pytoy.shared.ui.pytoy_buffer.models import BufferSource
+from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
 from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
-from pytoy.shared.ui.pytoy_window.vim_window_utils import VimWinIDConverter, get_last_selection
-
 from pytoy.shared.ui.pytoy_window.protocol import (
+    PytoyWindowID,
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
-    PytoyWindowID,
     StatusLineManagerProtocol,
     WindowEvents,
 )
+from pytoy.shared.ui.pytoy_window.vim_window_utils import VimWinIDConverter, get_last_selection
 from pytoy.shared.ui.status_line import StatusLineManager
 
 if TYPE_CHECKING:

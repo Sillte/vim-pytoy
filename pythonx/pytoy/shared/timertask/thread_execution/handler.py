@@ -1,22 +1,24 @@
 from __future__ import annotations
+
 import threading
 from collections.abc import Callable
 from functools import wraps
 from typing import Self, Sequence
 
-from pytoy.shared.lib.event import Event
-from pytoy.shared.lib.outcome import is_success, is_error
 from pytoy.contexts.core import GlobalCoreContext
-from .models import (
-    ThreadExecutionID,
-    ThreadExecutionStatus,
-    ThreadExecutionRequest,
-    ThreadExecutionHooks,
-    ThreadExecutionQuery,
-    ThreadExecutionExit,
-)
-from .manager import ThreadExecutionManager
+from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.outcome import is_error, is_success
+
 from .factory import ThreadExecutionFactory
+from .manager import ThreadExecutionManager
+from .models import (
+    ThreadExecutionExit,
+    ThreadExecutionHooks,
+    ThreadExecutionID,
+    ThreadExecutionQuery,
+    ThreadExecutionRequest,
+    ThreadExecutionStatus,
+)
 
 
 def assert_main_thread() -> None:

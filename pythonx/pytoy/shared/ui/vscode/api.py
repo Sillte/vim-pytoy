@@ -1,6 +1,6 @@
 """This works only when `vscode+nvim`"""
 
-from typing import Mapping, Any
+from typing import Any, Mapping
 
 
 class Api:

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import shlex
 from pathlib import Path
 from typing import Protocol, runtime_checkable
@@ -59,8 +60,8 @@ class WinPtyAdapter(PtyConsoleProtocol):
         """Unfortunately, this does not work in the environment
         VSCode + neovim extension.
         """
-        from pytoy.job_execution.terminal_runner.impls.utils import send_ctrl_c as func
         from pytoy.job_execution.terminal_runner.impls.utils import find_children
+        from pytoy.job_execution.terminal_runner.impls.utils import send_ctrl_c as func
 
         self._proc.write("\x03\x03\x03")
         if self.pid:

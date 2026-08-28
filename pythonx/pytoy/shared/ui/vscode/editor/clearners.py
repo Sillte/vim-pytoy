@@ -1,6 +1,6 @@
-from pytoy.shared.ui.vscode.document import Api, VSCodeUri
 from typing import Sequence
 
+from pytoy.shared.ui.vscode.document import Api, VSCodeUri
 from pytoy.shared.ui.vscode.editor import Editor
 
 

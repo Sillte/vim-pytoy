@@ -1,6 +1,6 @@
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.ui.notifications.models import LEVEL, NotificationParam
 from pytoy.shared.ui.notifications.protocol import EphemeralNotificationProtocol
-from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
 
 
 class EphemeralNotification(EphemeralNotificationProtocol):

@@ -3,11 +3,11 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Literal, Self, assert_never, Any, Sequence
+from typing import Annotated, Any, Literal, Self, Sequence, assert_never
 from urllib.parse import urlparse
 
 import requests
-from pydantic import Field, BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 type InfoSource = Literal["local", "web"]
 

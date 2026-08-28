@@ -1,20 +1,21 @@
 from __future__ import annotations
+
 import uuid
-
-from pytoy.job_execution.terminal_runner import TerminalJobRunner
-from pytoy.job_execution.terminal_runner.models import TerminalDriverProtocol
-from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
-from pytoy.shared.lib.event import Event, EventEmitter
-
-from pytoy.job_execution.terminal_runner.models import TerminalJobRequest, SpawnOption, JobID, JobEvents
-from pytoy.job_execution.terminal_runner.models import TerminalDriver
-from pytoy.job_execution.terminal_runner.models import CommandExecutionWrapperType
-
-
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Self
 
+from pytoy.job_execution.terminal_runner import TerminalJobRunner
+from pytoy.job_execution.terminal_runner.models import (
+    CommandExecutionWrapperType,
+    JobEvents,
+    JobID,
+    SpawnOption,
+    TerminalDriverProtocol,
+    TerminalJobRequest,
+)
+from pytoy.shared.lib.event import Event, EventEmitter
+from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
 
 type TerminalExecutionID = JobID
 type TerminalExecutionEvents = JobEvents

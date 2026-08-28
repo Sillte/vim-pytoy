@@ -5,19 +5,19 @@ from typing import Self, Sequence
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
-from pytoy.shared.lib.outcome import Outcome, Success, Error, is_success, is_error
+from pytoy.shared.lib.outcome import is_error, is_success
 
+from .factory import LLMExecutionFactory
+from .manager import LLMExecutionManager
 from .models import (
-    LLMExecutionID,
-    LLMExecutionStatus,
-    LLMExecutionRequest,
-    LLMExecutionHooks,
-    LLMExecutionQuery,
     LLMExecutionContext,
     LLMExecutionExit,
+    LLMExecutionHooks,
+    LLMExecutionID,
+    LLMExecutionQuery,
+    LLMExecutionRequest,
+    LLMExecutionStatus,
 )
-from .manager import LLMExecutionManager
-from .factory import LLMExecutionFactory
 
 
 def assert_main_thread() -> None:

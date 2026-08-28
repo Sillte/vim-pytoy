@@ -1,26 +1,21 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, Callable
 
-from pyte import Screen, Stream
+from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.job_execution.terminal_runner.models import (
-    TerminalJobProtocol,
-    TerminalJobRequest,
-    TerminalDriverProtocol,
-    SpawnOption,
-    ConsoleSnapshot,
-    Snapshot,
-    WaitOperation,
-    WaitUntilOperation,
-    RawStr,
-    LineStr,
     InputOperation,
     JobEvents,
-    JobID,
+    LineStr,
+    RawStr,
+    Snapshot,
+    SpawnOption,
+    TerminalJobRequest,
+    WaitOperation,
+    WaitUntilOperation,
 )
-from typing import Any, Callable
 from pytoy.shared.lib.events import EventEmitter
-from pytoy.job_execution.process_utils import find_children_pids
 
 
 class TerminalJobCore:

@@ -1,6 +1,7 @@
-from pytoy.shared.lib.autocmd.vim_autocmd import Group, EmitSpec, VimAutocmd, PayloadMapper
+from typing import Callable
+
+from pytoy.shared.lib.autocmd.vim_autocmd import EmitSpec, Group, PayloadMapper, VimAutocmd
 from pytoy.shared.lib.function import FunctionRegistry, RegisteredFunction
-from typing import Any, Callable
 
 
 class AutoCmdManager:

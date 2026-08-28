@@ -1,19 +1,20 @@
 from __future__ import annotations
-from unittest import mock
-from pathlib import Path
-from typing import Sequence, TYPE_CHECKING, ClassVar
 
-from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferSource, BufferQuery, URI
+from pathlib import Path
+from typing import TYPE_CHECKING, ClassVar, Sequence
+from unittest import mock
+
+from pytoy.shared.lib.entity import EntityRegistry
+from pytoy.shared.lib.event.domain import Event, EventEmitter
+from pytoy.shared.lib.events.action_events import KeyActionEvents
+from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
+from pytoy.shared.ui.pytoy_buffer.models import URI, BufferEvents, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.protocol import (
+    BufferID,
     PytoyBufferProtocol,
     PytoyBufferProviderProtocol,
     RangeOperatorProtocol,
-    BufferID,
 )
-from pytoy.shared.lib.events.action_events import KeyActionEvents
-from pytoy.shared.lib.entity import EntityRegistry
-from pytoy.shared.lib.event.domain import Event, EventEmitter
-from pytoy.shared.lib.text import LineRange, CharacterRange, CursorPosition
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol
@@ -168,8 +169,8 @@ class PytoyBufferDummy(PytoyBufferProtocol):
 
     def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindowProtocol"]:
         # TODO: this is temporary.
-        from pytoy.shared.ui.pytoy_window.impls.dummy import PytoyWindowDummy
         from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+        from pytoy.shared.ui.pytoy_window.impls.dummy import PytoyWindowDummy
 
         return [PytoyWindowDummy(winid=id(self), buffer=PytoyBuffer(self))]
 

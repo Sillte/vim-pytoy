@@ -1,8 +1,9 @@
+import json
+from typing import assert_never
+
 from pytoy.shared.ui.notifications.models import LEVEL, NotificationParam
 from pytoy.shared.ui.notifications.protocol import EphemeralNotificationProtocol
 from pytoy.shared.ui.vscode.api import Api
-from typing import assert_never
-import json
 
 
 class EphemeralNotificationVSCode(EphemeralNotificationProtocol):

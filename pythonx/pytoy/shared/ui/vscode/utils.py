@@ -1,9 +1,8 @@
 import time
 from pathlib import Path
-from pytoy.shared.ui.vscode.uri import VSCodeUri
-from pytoy.shared.ui.vscode.api import Api
+
 from pytoy.shared.lib.text import CursorPosition
-from pytoy.shared.ui.pytoy_window import PytoyWindow
+from pytoy.shared.ui.vscode.uri import VSCodeUri
 
 
 def wait_until_true(condition_func, timeout: float = 3.0, n_trials: int = 100, initial_wait=None) -> bool:

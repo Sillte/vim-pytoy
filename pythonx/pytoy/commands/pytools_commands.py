@@ -1,8 +1,8 @@
 """Python related commands."""
 
-from typing import Literal, Annotated
-from pytoy.shared.command import App, Argument
+from typing import Annotated, Literal
 
+from pytoy.shared.command import App, Argument
 
 app = App()
 

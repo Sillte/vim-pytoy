@@ -1,5 +1,5 @@
-from typing import Protocol, Literal, Callable
 from dataclasses import dataclass
+from typing import Callable, Literal, Protocol
 
 
 # NOTE: It is unknown whether `InvocationSpec` is necessary or not.

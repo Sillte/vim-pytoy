@@ -8,7 +8,7 @@ class _TestTarget:
     start_line: int
     end_line: int
     funcname: str
-    classname: str = None
+    classname: str | None = None
 
     @property
     def command(self):
@@ -19,8 +19,8 @@ class _TestTarget:
 
 
 class ScriptDecipher:
-    def __init__(self, path, targets):
-        self.path = path
+    def __init__(self, path: str | Path, targets):
+        self.path = Path(path)
         self.targets = targets
 
     def pick(self, line_number: int):
@@ -31,7 +31,7 @@ class ScriptDecipher:
         return None
 
     @classmethod
-    def from_path(cls, path: Path):
+    def from_path(cls, path: Path | str):
         # [NOTE]: import of parso takes some time,
         # so, we do now want to import it at initialization.
         import parso
@@ -100,8 +100,9 @@ class ScriptDecipher:
 
 
 if __name__ == "__main__":
-    import parso
     from pathlib import Path
+
+    import parso
 
     module = parso.parse(Path(__file__).read_text())
     print(module)

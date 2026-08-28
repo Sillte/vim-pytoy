@@ -1,10 +1,10 @@
+from pathlib import Path
+
 from pytoy.job_execution.terminal_executor.controller import TerminalExecutionController
+from pytoy.shared.lib.text import LineRange
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_window import PytoyWindow
 from pytoy.tools.console.selector import TerminalSelector
-from pytoy.shared.lib.text import LineRange
-
-from pathlib import Path
 
 
 class ConsoleRunner:

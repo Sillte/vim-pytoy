@@ -1,8 +1,7 @@
 from typing import Annotated
-from pytoy.shared.command import App, Option
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
-from pytoy.shared.ui.pytoy_buffer import make_buffer
 
+from pytoy.shared.command import App, Option
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, make_buffer
 
 app = App()
 
@@ -11,8 +10,9 @@ app = App()
 def gather_text_files(
     depth: Annotated[int | None, Option(default=None)], pattern: Annotated[str | None, Option(default=None)]
 ):
-    from pytoy_llm.materials.text_files import TextFilesCollector, TextFilesMaterialQuery
     from pytoy_llm.composers.materials import MaterialDataExplorerTaskComposer
+    from pytoy_llm.materials.text_files import TextFilesCollector, TextFilesMaterialQuery
+
     from pytoy.job_execution.environment_manager import EnvironmentManager
 
     buffer = PytoyBuffer.get_current()
@@ -35,11 +35,13 @@ def gather_text_files(
 
 @app.command("GatherGitDiffs")
 def gather_git_diffs():
+    from pathlib import Path
+
+    from pytoy_llm.composers.materials import MaterialDataExplorerTaskComposer
     from pytoy_llm.materials.git_diffs.collectors import GitDiffCollector
     from pytoy_llm.materials.git_diffs.models import GitDiffMaterialQuery
-    from pytoy_llm.composers.materials import MaterialDataExplorerTaskComposer
+
     from pytoy.job_execution.environment_manager import EnvironmentManager
-    from pathlib import Path
 
     buffer = PytoyBuffer.get_current()
     if not buffer.is_file:

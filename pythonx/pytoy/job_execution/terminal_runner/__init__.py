@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Mapping, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Mapping
 
 from pytoy.job_execution.terminal_runner.models import (
+    JobEvents,
+    JobID,
+    Snapshot,
+    SpawnOption,
     TerminalJobProtocol,
     TerminalJobRequest,
-    SpawnOption,
-    JobEvents,
-    Snapshot,
-    JobID,
 )
-from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.ui import PytoyBuffer
-from pytoy.shared.ui.pytoy_buffer import make_buffer, make_duo_buffers, BufferSource
+from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer, make_duo_buffers
 
 if TYPE_CHECKING:
     from pytoy.contexts.pytoy import GlobalPytoyContext
@@ -167,10 +167,9 @@ class TerminalJobRunner:
 
 if __name__ == "__main__":
     # Simple Tests.
-    from pytoy.shared.ui.pytoy_window.facade import PytoyWindowProvider
-    from pytoy.job_execution.terminal_runner.drivers import ShellDriver
-    from pytoy.job_execution.terminal_runner.drivers import IPythonDriver
+    from pytoy.job_execution.terminal_runner.drivers import IPythonDriver, ShellDriver
     from pytoy.shared.timertask import TimerTask
+    from pytoy.shared.ui.pytoy_window.facade import PytoyWindowProvider
     # driver = ShellDriver("cmd.exe")
 
     driver = IPythonDriver()

@@ -1,7 +1,8 @@
-from typing import Sequence, cast, Annotated, Literal, assert_never, ClassVar, TYPE_CHECKING
-from pytoy.shared.ui.pytoy_window import PytoyWindow, WindowCreationParam
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from typing import TYPE_CHECKING, Annotated, ClassVar, Literal, assert_never
+
 from pytoy.shared.command import App, Argument
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_window import PytoyWindow, WindowCreationParam
 
 if TYPE_CHECKING:
     from pytoy.tools.llm.document.voyages.presentation import DocumentVoyageUI
@@ -13,8 +14,9 @@ app = App()
 @app.command("PytoyLLM")
 def pytoy_llm(kind: Annotated[Literal["config", "review", "edit"] | None, Argument()] = None):
     from pytoy_llm import get_configuration_path
-    from pytoy.tools.llm.document.reviewers.naive_reviewers import NaiveReviewDocumentRequester
+
     from pytoy.tools.llm.document.editors.scoped_editors import ScopedEditDocumentRequester
+    from pytoy.tools.llm.document.reviewers.naive_reviewers import NaiveReviewDocumentRequester
 
     # If you would like to use ...
     # if ctx is None:

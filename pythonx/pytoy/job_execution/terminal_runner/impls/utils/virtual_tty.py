@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import codecs
 import time
-from threading import Thread
 from pathlib import Path
-from typing import Callable, Optional
+from threading import Thread
+from typing import Callable
 
 from pyte import Screen, Stream
 
-from pytoy.job_execution.terminal_runner.models import Snapshot, ConsoleSnapshot
-from pytoy.shared.lib.text import CursorPosition
 from pytoy.job_execution.terminal_runner.impls.utils.pty_console import PtyConsole, PtyConsoleProtocol
+from pytoy.job_execution.terminal_runner.models import ConsoleSnapshot, Snapshot
+from pytoy.shared.lib.text import CursorPosition
 
 
 class VirtualTTY:

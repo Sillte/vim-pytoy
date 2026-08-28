@@ -1,6 +1,7 @@
 from typing import Callable
-from pytoy.shared.lib.function.domain import FunctionRegistryProtocol, FunctionName, RegisteredFunction
+
 from pytoy.shared.lib.backend import can_use_vim
+from pytoy.shared.lib.function.domain import FunctionName, FunctionRegistryProtocol, RegisteredFunction
 
 
 def make_function_name(function: Callable, *, prefix: str | None = None) -> FunctionName:

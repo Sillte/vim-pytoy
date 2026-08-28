@@ -1,20 +1,12 @@
-import logging
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.shared.lib.event.domain import EventEmitter
-
-from typing import Any
-
-from pytoy.shared.timertask.thread_execution import ThreadExecutionRequest, ThreadExecutor, ThreadExecutionHooks
-from pytoy_llm.event_sinks import LoggerEventSink
-from pytoy_llm.task import TaskRequest, TaskExecutor
+from pytoy.tools.llm.llm_execution.manager import LLMExecutionManager
 from pytoy.tools.llm.llm_execution.models import (
-    LLMExecutionRequest,
     LLMExecutionHooks,
-    ExecutionPolicy,
     LLMExecutionKind,
     LLMExecutionQuery,
+    LLMExecutionRequest,
 )
-from pytoy.tools.llm.llm_execution.manager import LLMExecutionManager
+
 from .handler import LLMExecutionHandler
 
 

@@ -1,22 +1,20 @@
+import threading
+from textwrap import dedent
+from typing import Callable, Self
+
 import vim
 
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.timertask.domain import (
-    TaskStatus,
     FunctionName,
+    NormalStopReason,
     OnTaskCallback,
     RegisteredTask,
     TaskName,
+    TaskStatus,
     TimerStopException,
     TimerTaskImplProtocol,
 )
-from pytoy.shared.timertask.domain import NormalStopReason, OnFinishCallback, OnErrorCallback
-
-from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
-
-
-from textwrap import dedent
-from typing import Callable, Self
-import threading
 
 
 class TimerTaskImplVim(TimerTaskImplProtocol):

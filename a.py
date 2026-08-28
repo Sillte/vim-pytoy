@@ -1,5 +1,6 @@
 import asyncio
-from greenlet import greenlet, getcurrent
+
+from greenlet import getcurrent, greenlet
 
 
 async def main():

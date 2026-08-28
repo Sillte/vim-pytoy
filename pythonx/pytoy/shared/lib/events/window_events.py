@@ -1,10 +1,11 @@
 from __future__ import annotations
-from pytoy.shared.lib.autocmd.autocmd_manager import EmitSpec, PayloadMapper, AutoCmdManager
 
-from pytoy.shared.lib.event.domain import Event
-from pytoy.shared.lib.event.global_event import GlobalEvent
 from functools import cached_property
 from typing import TYPE_CHECKING, Self
+
+from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager, EmitSpec, PayloadMapper
+from pytoy.shared.lib.event.domain import Event
+from pytoy.shared.lib.event.global_event import GlobalEvent
 
 if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext

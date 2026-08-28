@@ -8,17 +8,18 @@ This module is intended to provide the common interface for bufffer.
 """
 
 from pathlib import Path
-from typing import Literal, TYPE_CHECKING, Sequence
-from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, URI, BufferSource, BufferQuery
+from typing import TYPE_CHECKING, Literal, Sequence
+
 from pytoy.shared.lib.events.action_events import KeyActionEvents
-from pytoy.shared.ui.pytoy_buffer.protocol import (
-    PytoyBufferProtocol,
-    RangeOperatorProtocol,
-    PytoyBufferProviderProtocol,
-    Event,
-    BufferID,
-)
 from pytoy.shared.lib.text import CharacterRange, LineRange
+from pytoy.shared.ui.pytoy_buffer.models import URI, BufferEvents, BufferQuery, BufferSource
+from pytoy.shared.ui.pytoy_buffer.protocol import (
+    BufferID,
+    Event,
+    PytoyBufferProtocol,
+    PytoyBufferProviderProtocol,
+    RangeOperatorProtocol,
+)
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window import PytoyWindow
@@ -211,7 +212,7 @@ def make_duo_buffers(
 
 
 def _get_provider_impl() -> PytoyBufferProviderProtocol:
-    from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
+    from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 
     backend_enum = get_backend_enum()
     if backend_enum == BackendEnum.VSCODE:

@@ -1,5 +1,6 @@
-from pytoy.shared.ui.status_line.protocol import StatusLineManagerProtocol, StatusLineItem
 from typing import List, Sequence
+
+from pytoy.shared.ui.status_line.protocol import StatusLineItem, StatusLineManagerProtocol
 
 
 class StatusLineManagerDummy(StatusLineManagerProtocol):

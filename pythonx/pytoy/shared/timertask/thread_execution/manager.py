@@ -1,12 +1,12 @@
-from typing import Sequence, MutableMapping, Callable
 import threading
-from threading import Thread
-from queue import Queue, Empty
-from pytoy.shared.lib.backend import can_use_vim
-from .models import ThreadExecution, ThreadExecutionID, ThreadExecutionQuery, ThreadExecutionExit
+from queue import Empty, Queue
+from typing import Callable, Sequence
 
-from pytoy.shared.timertask.timer import TimerTask
+from pytoy.shared.lib.backend import can_use_vim
 from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
+from pytoy.shared.timertask.timer import TimerTask
+
+from .models import ThreadExecution, ThreadExecutionExit, ThreadExecutionID, ThreadExecutionQuery
 
 
 class ThreadExecutionManager:

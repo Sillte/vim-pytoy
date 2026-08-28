@@ -1,5 +1,5 @@
-from pytoy.shared.lib.keymap import KeymapManager, KeySequence, KeymapSpec
 from pytoy.shared.lib.event.domain import Event
+from pytoy.shared.lib.keymap import KeymapManager, KeymapSpec, KeySequence
 
 
 class KeyActionEvents:

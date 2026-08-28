@@ -1,6 +1,6 @@
 # Experimental codes related to VSCode
-from typing import Self, Literal
-from pathlib import Path
+from typing import Self
+
 from pydantic import BaseModel, ConfigDict
 
 from pytoy.shared.ui.vscode.api import Api

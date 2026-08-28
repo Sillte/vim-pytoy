@@ -1,8 +1,7 @@
 from typing import Callable
-from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 
-from pytoy.shared.command.app.protocol import CommandApplicationProtocol, GroupApplicationProtocol
-from pytoy.shared.command.app.protocol import InvocationSpec
+from pytoy.shared.command.app.protocol import CommandApplicationProtocol, GroupApplicationProtocol, InvocationSpec
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 
 
 def get_application_impl() -> CommandApplicationProtocol:

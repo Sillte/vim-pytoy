@@ -1,9 +1,15 @@
-import pytest
 from typing import Literal
-from pytoy.shared.command.core.models import CommandModel
 
-from pytoy.shared.command.service.completion import CandidateFactory, CmdlineStatus, NextTokenResolver, CompletionCandidate
+import pytest
+
+from pytoy.shared.command.core.models import CommandModel
 from pytoy.shared.command.core.tokenizer import tokenize
+from pytoy.shared.command.service.completion import (
+    CandidateFactory,
+    CmdlineStatus,
+    CompletionCandidate,
+    NextTokenResolver,
+)
 
 
 def run_case(cmd_line: str, cursor_pos: int, model: CommandModel, debug: bool = False) -> dict:
@@ -19,10 +25,7 @@ def run_case(cmd_line: str, cursor_pos: int, model: CommandModel, debug: bool = 
     resolver = NextTokenResolver()
 
     if current_position.current_token:
-        prev_tokens = [
-            t for t in tokens
-            if t.end < current_position.cursor_pos
-        ]
+        prev_tokens = [t for t in tokens if t.end < current_position.cursor_pos]
     else:
         prev_tokens = tokens
     appeals = resolver.resolve_appeals(prev_tokens, model)
@@ -54,6 +57,7 @@ def arg_literal_with_option(arg: Literal["foo", "bar"], input: str = "hogehoge")
 def only_option(input: str = "hogehoge"): ...
 def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
 
+
 @pytest.mark.parametrize(
     "cmd_line,cursor,func,expected",
     [
@@ -70,7 +74,6 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
             arg_and_input,
             {CompletionCandidate(start=0, end=4, value="--input")},
         ),
-
         # case3
         (
             "--input ",
@@ -81,7 +84,6 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
                 CompletionCandidate(start=8, end=8, value="DDQ"),
             },
         ),
-
         # case4
         (
             "--input K",
@@ -89,7 +91,6 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
             arg_and_input_literal_kk,
             {CompletionCandidate(start=8, end=9, value="KKK")},
         ),
-
         # case5
         (
             "--input=K",
@@ -97,7 +98,6 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
             arg_and_input_literal_kk,
             {CompletionCandidate(start=0, end=9, value="--input=KKK")},
         ),
-
         # case6
         (
             "a",
@@ -105,7 +105,6 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
             arg_literal,
             {CompletionCandidate(start=0, end=1, value="apple")},
         ),
-
         # case7
         (
             "",
@@ -116,7 +115,6 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
                 CompletionCandidate(start=0, end=0, value="bar"),
             },
         ),
-
         # case8
         (
             "-",
@@ -126,7 +124,6 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
                 CompletionCandidate(start=0, end=1, value="--input"),
             },
         ),
-
         # case9
         (
             "--unknown",
@@ -134,25 +131,14 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
             only_option,
             set(),
         ),
-        (
-            "--opti",
-            5,
-            option_with_under_bar,
-            {CompletionCandidate(start=0, end=6, value="--option-bar")}
-        ),
-        (
-            "--opti    ",
-            0,
-            option_with_under_bar,
-            {CompletionCandidate(start=0, end=6, value="--option-bar")}
-        ),
+        ("--opti", 5, option_with_under_bar, {CompletionCandidate(start=0, end=6, value="--option-bar")}),
+        ("--opti    ", 0, option_with_under_bar, {CompletionCandidate(start=0, end=6, value="--option-bar")}),
         (
             "--option-bar=de",
             13,
             option_with_under_bar,
-            {CompletionCandidate(start=0, end=15, value="--option-bar=default")}
+            {CompletionCandidate(start=0, end=15, value="--option-bar=default")},
         ),
-        
     ],
 )
 def test_completion(cmd_line, cursor, func, expected):
@@ -160,11 +146,11 @@ def test_completion(cmd_line, cursor, func, expected):
     result = run_case(cmd_line, cursor, model, debug=False)
     assert set(result["candidates"]) == expected
 
+
 if __name__ == "__main__":
     pytest.main([__file__, "--capture=no"])
 
-
-    #cmd_line = "--option-bar=de"
-    #cursor = 12
-    #model = CommandModel.from_callable(option_with_under_bar)
-    #result = run_case(cmd_line, cursor, model, debug=True)
+    # cmd_line = "--option-bar=de"
+    # cursor = 12
+    # model = CommandModel.from_callable(option_with_under_bar)
+    # result = run_case(cmd_line, cursor, model, debug=True)

@@ -1,7 +1,7 @@
-from pytoy.shared.ui.status_line.models import FunctionStatusLineItem
-from pytoy.shared.ui.status_line import StatusLineManager
-from pytoy.shared.ui.pytoy_window.protocol import WindowEvents
 from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
+from pytoy.shared.ui.pytoy_window.protocol import WindowEvents
+from pytoy.shared.ui.status_line import StatusLineManager
+from pytoy.shared.ui.status_line.models import FunctionStatusLineItem
 
 window = PytoyWindowProvider().get_current()
 winid = window.winid

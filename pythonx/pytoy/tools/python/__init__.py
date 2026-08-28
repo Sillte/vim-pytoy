@@ -1,16 +1,17 @@
 "Exectuor for `Python`."
 
 import re
-
 from pathlib import Path
-
-from pytoy.job_execution.command_executor.launcher import LaunchProfile, get_default_hooks, CommandExecutionHooks
-from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
-
-from pytoy.shared.ui import PytoyBuffer, QuickfixRecord
-
-from pytoy.job_execution.command_executor.launcher import CommandLauncher
 from typing import Sequence
+
+from pytoy.job_execution.command_executor.launcher import (
+    CommandExecutionHooks,
+    CommandLauncher,
+    LaunchProfile,
+    get_default_hooks,
+)
+from pytoy.job_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
+from pytoy.shared.ui import PytoyBuffer, QuickfixRecord
 
 
 class PythonExecutor:

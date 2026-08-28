@@ -1,19 +1,15 @@
 from pathlib import Path
 
 from pytoy.contexts.core import GlobalCoreContext
-from pytoy.job_execution.environment_manager import EnvironmentManager
 from pytoy.job_execution.command_runner import CommandRunner
+from pytoy.job_execution.environment_manager import EnvironmentManager
 
-from threading import Event
 from .models import (
-    CommandExecution,
-    CommandExecutionHooks,
-    CommandExecutionRequest,
-    CommandExecutionResult,
     BufferRequest,
+    CommandExecution,
+    CommandExecutionRequest,
     CommandExecutionWrapperType,
 )
-from .manager import CommandExecutionManager
 
 
 class CommandExecutionFactory:

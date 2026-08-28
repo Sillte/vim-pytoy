@@ -1,11 +1,11 @@
-from pydantic import BaseModel, Field
-
-
 from typing import Annotated
-from pytoy.tools.llm.document.core import LanguageKind
+
+from pydantic import BaseModel, Field
 from pytoy_llm.composer import InvocationComposer
-from pytoy_llm.composer.models import SystemPromptSpec, OutputSpec
+from pytoy_llm.composer.models import OutputSpec, SystemPromptSpec
 from pytoy_llm.task.models import LLMInvocationSpec
+
+from pytoy.tools.llm.document.core import LanguageKind
 
 
 class DocumentProfile(BaseModel):

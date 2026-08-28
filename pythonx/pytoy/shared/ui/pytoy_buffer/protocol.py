@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import Protocol, Sequence, TYPE_CHECKING, Hashable
-from pathlib import Path
-from pytoy.shared.lib.text import CharacterRange, LineRange
+
+from typing import TYPE_CHECKING, Protocol, Sequence
+
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.action_events import KeyActionEvents
-from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferID, BufferQuery, URI, BufferSource
+from pytoy.shared.lib.text import CharacterRange, LineRange
+from pytoy.shared.ui.pytoy_buffer.models import URI, BufferEvents, BufferID, BufferSource
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol

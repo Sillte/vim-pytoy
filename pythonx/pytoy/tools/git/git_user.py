@@ -1,10 +1,11 @@
-import subprocess
 import re
+import subprocess
 from dataclasses import dataclass
-from typing import List, Callable
-from subprocess import PIPE
 from pathlib import Path
+from subprocess import PIPE
+from typing import Callable, List
 from urllib import parse
+
 from pytoy.job_execution.utils import get_current_directory
 
 
@@ -184,7 +185,6 @@ if __name__ == "__main__":
     print(user.initial_commit)
     print(user.target_files)
     import subprocess
-
     from pathlib import Path
 
     print(get_remote_link(__file__, 10))

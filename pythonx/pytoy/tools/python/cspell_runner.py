@@ -1,9 +1,8 @@
+from pathlib import Path
+
 from pytoy.shared.ui import PytoyQuickfix
 from pytoy.shared.ui.pytoy_quickfix import to_quickfix_creator
 from pytoy.tools.cspell import CSpellOneFileChecker
-
-
-from pathlib import Path
 
 
 class CSpellRunner:
@@ -11,7 +10,6 @@ class CSpellRunner:
         pass
 
     def run(self) -> None:
-        from pytoy import TERM_STDOUT
         from pytoy.shared.ui import PytoyBuffer
 
         path = PytoyBuffer.get_current().file_path

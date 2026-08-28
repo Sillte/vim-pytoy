@@ -1,9 +1,9 @@
 from pytoy.contexts.core import GlobalCoreContext
 
-from .models import ThreadExecutionHooks, ThreadExecutionRequest
-from .manager import ThreadExecutionManager
-from .handler import ThreadExecutionHandler
 from .factory import ThreadExecutionFactory
+from .handler import ThreadExecutionHandler
+from .manager import ThreadExecutionManager
+from .models import ThreadExecutionHooks, ThreadExecutionRequest
 
 
 class ThreadExecutor:

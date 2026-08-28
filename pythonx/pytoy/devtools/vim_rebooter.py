@@ -1,6 +1,6 @@
 import os
-import sys
 import subprocess
+import sys
 
 
 class VimRebooter:
@@ -9,7 +9,8 @@ class VimRebooter:
 
     def __call__(self):
         import vim
-        from pytoy.shared.lib.backend import get_backend_enum, BackendEnum
+
+        from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 
         backend_enum = get_backend_enum()
 

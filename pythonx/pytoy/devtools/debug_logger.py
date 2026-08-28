@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from pathlib import Path
-from datetime import datetime
-from contextlib import contextmanager
-from typing import TextIO, Sequence, Self
 import os
 import sys
 import threading
 import time
 import traceback
+from contextlib import contextmanager
+from datetime import datetime
+from pathlib import Path
+from typing import Self, Sequence, TextIO
 
 
 class DebugLogger:

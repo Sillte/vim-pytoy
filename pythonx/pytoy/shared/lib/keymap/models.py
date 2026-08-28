@@ -1,8 +1,9 @@
 # Note:
 # Here, I would like to use implenetation of `vim`
 from dataclasses import dataclass
+
+from pytoy.shared.lib.event import Event
 from pytoy.shared.lib.function.domain import RegisteredFunction
-from pytoy.shared.lib.event import Event, EventEmitter
 
 
 class KeySequence(str):

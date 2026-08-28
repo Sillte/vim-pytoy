@@ -1,7 +1,5 @@
-from pathlib import Path
-from pytoy.shared.ui.vscode.uri import Uri
-from pytoy.shared.ui.vscode.document import Document
 from pytoy.shared.ui.vscode.editor import Editor
+from pytoy.shared.ui.vscode.uri import VSCodeUri
 
 current = Editor.get_current()
 doc = current.document  #  `document` is fixed, here. not dynamic.
@@ -12,7 +10,7 @@ uris = current.get_clean_target_uris_for_unique()
 
 current.close()
 
-uri = Uri.from_untitled_name("hogehgeo")
+uri = VSCodeUri.from_untitled_name("hogehgeo")
 editor = Editor.create(uri)
 assert editor.valid
 

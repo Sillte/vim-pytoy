@@ -1,7 +1,8 @@
 from dataclasses import dataclass, replace
-from typing import Sequence, Literal, Mapping, assert_never
-from pytoy.shared.command.core.models import CommandModel, ArgumentModel, OptionModel, Token, BooleanOptions
-from pytoy.shared.command.core.tokenizer import tokenize, InterpretedInput, OptionValueMissingError
+from typing import Literal, Mapping, Sequence, assert_never
+
+from pytoy.shared.command.core.models import ArgumentModel, BooleanOptions, CommandModel, OptionModel, Token
+from pytoy.shared.command.core.tokenizer import InterpretedInput, OptionValueMissingError, tokenize
 
 # Input to the inside of the domain.
 

@@ -2,8 +2,8 @@
 
 import re
 from pathlib import Path
-from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 
 _pattern = re.compile(r"^vscode\-remote://[^/]+")
 

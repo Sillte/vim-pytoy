@@ -1,5 +1,6 @@
-from pytoy.shared.lib.text import CursorPosition, CharacterRange
-from typing import Sequence, Self
+from typing import Self, Sequence
+
+from pytoy.shared.lib.text import CharacterRange, CursorPosition
 
 
 class TextSearcher:

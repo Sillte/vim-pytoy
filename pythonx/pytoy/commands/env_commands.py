@@ -1,5 +1,6 @@
-from pytoy.shared.command import Argument, App
-from typing import Literal, Annotated
+from typing import Annotated, Literal
+
+from pytoy.shared.command import App, Argument
 
 app = App()
 

@@ -1,15 +1,14 @@
+from typing import Sequence
+
 from pytoy.job_execution.terminal_executor.models import (
+    TerminalDriverKind,
+    TerminalExecution,
     TerminalExecutionContext,
     TerminalExecutionID,
-    TerminalDriverKind,
     TerminalExecutionPolicy,
     TerminalExecutionQuery,
-    TerminalExecution,
 )
 from pytoy.shared.ui.pytoy_buffer import BufferSource
-
-
-from typing import Sequence
 
 
 class TerminalExecutionManager:
