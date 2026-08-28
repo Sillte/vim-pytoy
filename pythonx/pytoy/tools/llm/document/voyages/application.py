@@ -113,7 +113,6 @@ def _evolve_create_message(evolve_request: EvolveRequest) -> LLMMessage:
     return LLMMessage.from_prompt(user=evolve_request.manuscript, system=system_prompt)
 
 
-
 def evolve(evolve_request: EvolveRequest) -> EvolveResponse:
     """Update the manuscript based on  `EvolveRequest`."""
     message = _evolve_create_message(evolve_request)
@@ -129,8 +128,8 @@ def build_evolve_task_spec(
         meta=meta,
         output_type=EvolveResponse,
         create_messages=_evolve_create_message,
-        connection=connection_name, 
-        llm_param = llm_param, 
+        connection=connection_name,
+        llm_param=llm_param,
     )
     task_spec = TaskSpec.from_single_spec(meta="VoyageEvolveTask", invocation_spec=invocation_spec)
     return task_spec
@@ -194,7 +193,7 @@ def build_reflect_task_spec(
         output_type=ReflectResponse,
         create_messages=_reflect_create_messages,
         llm_param=llm_param,
-        connection = connection_name,
+        connection=connection_name,
     )
     return TaskSpec.from_single_spec(meta="VoyageReflectTask", invocation_spec=invocation_spec)
 
@@ -220,8 +219,9 @@ class VoyageInteractionCreator:
         )
         execution_request = LLMExecutionRequest(task_spec=task_spec, input=evolve_request)
         executor = LLMExecutor()
-        return executor.execute(execution_request, hooks=LLMExecutionHooks.from_any(handle_output=handle_output, on_exception=on_failure))
-
+        return executor.execute(
+            execution_request, hooks=LLMExecutionHooks.from_any(handle_output=handle_output, on_exception=on_failure)
+        )
 
     def create_reflect_interaction(
         self,
@@ -238,4 +238,6 @@ class VoyageInteractionCreator:
         )
         execution_request = LLMExecutionRequest(task_spec=task_spec, input=reflect_request)
         executor = LLMExecutor()
-        return executor.execute(execution_request, hooks=LLMExecutionHooks.from_any(handle_output=handle_output, on_exception=on_failure))
+        return executor.execute(
+            execution_request, hooks=LLMExecutionHooks.from_any(handle_output=handle_output, on_exception=on_failure)
+        )

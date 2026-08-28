@@ -51,7 +51,7 @@ class WaitUntilOperation:
         snapshot_getter: Callable[[], Snapshot],
     ) -> bool:
         """Return True if the condition is fulfilled."""
-        import vim  #type: ignore
+        import vim  # type: ignore
 
         interval = float(self.timeout) / self.n_trials
         for _ in range(self.n_trials):

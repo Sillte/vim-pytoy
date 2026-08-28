@@ -3,7 +3,7 @@ import threading
 from threading import Thread
 from queue import Queue, Empty
 from pytoy.shared.lib.backend import can_use_vim
-from .models import  ThreadExecution, ThreadExecutionID, ThreadExecutionQuery, ThreadExecutionExit
+from .models import ThreadExecution, ThreadExecutionID, ThreadExecutionQuery, ThreadExecutionExit
 
 from pytoy.shared.timertask.timer import TimerTask
 from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
@@ -12,15 +12,15 @@ from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
 class ThreadExecutionManager:
     def __init__(self):
         self._executions: dict[ThreadExecutionID, ThreadExecution] = {}
-        self._queue:  Queue[ThreadExecutionExit] = Queue()
+        self._queue: Queue[ThreadExecutionExit] = Queue()
         self._consumer = _ThreadExecutionConsumer(queue=self._queue, consume=self._consume)
-
 
     def register(self, execution: ThreadExecution) -> ThreadExecution:
         self._executions[execution.id] = execution
 
         def _deregister(_):
             self._executions.pop(execution.id, None)
+
         execution.on_exit.subscribe(_deregister)
         return execution
 
@@ -36,19 +36,10 @@ class ThreadExecutionManager:
         if query.id is not None:
             target_ids = [id_ for id_ in target_ids if self._executions[id_].id == query.id]
         if query.statuses is not None:
-            target_ids = [
-                id_
-                for id_ in target_ids
-                if self._executions[id_].status in set(query.statuses)
-            ]
+            target_ids = [id_ for id_ in target_ids if self._executions[id_].status in set(query.statuses)]
         if query.kind is not None:
-            target_ids = [
-                id_
-                for id_ in target_ids
-                if self._executions[id_].kind == query.kind
-            ]
+            target_ids = [id_ for id_ in target_ids if self._executions[id_].kind == query.kind]
         return [self._executions[id_] for id_ in target_ids]
-
 
     def _consume(self, execution_exit: ThreadExecutionExit) -> None:
         self.assert_main_thread()
@@ -69,6 +60,7 @@ def add_log_message(message: str) -> None:
     # change the function.
     get_backend_thread_util().add_message(message)
 
+
 def get_backend_thread_util() -> BackendThreadUtilProtocol:
     """Get the backend thread util implementation."""
     if can_use_vim():
@@ -82,12 +74,17 @@ def get_backend_thread_util() -> BackendThreadUtilProtocol:
 
 
 class _ThreadExecutionConsumer:
-    def __init__(self, queue: Queue[ThreadExecutionExit], consume: Callable[[ThreadExecutionExit], None],
-                       interval: int = 200,  backend_thread_util: BackendThreadUtilProtocol | None = None):
+    def __init__(
+        self,
+        queue: Queue[ThreadExecutionExit],
+        consume: Callable[[ThreadExecutionExit], None],
+        interval: int = 200,
+        backend_thread_util: BackendThreadUtilProtocol | None = None,
+    ):
         self._queue = queue
         self._consume = consume
         self._interval = interval
-        self._backend_thread_util= backend_thread_util or get_backend_thread_util()
+        self._backend_thread_util = backend_thread_util or get_backend_thread_util()
         self._started: bool = False
         self._timertask_name: None | str = None
         self._start()
@@ -105,4 +102,3 @@ class _ThreadExecutionConsumer:
             except Empty:
                 break
             self._consume(exit_entity)
-

@@ -2,9 +2,8 @@ import threading
 
 
 class LLMImportResolver:
-    """Import llm-related libraries in the background to avoid blocking plugin startup.
-    """
-    
+    """Import llm-related libraries in the background to avoid blocking plugin startup."""
+
     def __init__(self, moratorium_time: float = 1.0) -> None:
         self._moratorium_time = moratorium_time
         self._import_done: threading.Event | None = None
@@ -14,11 +13,10 @@ class LLMImportResolver:
 
         self._moratorium_event = threading.Event()
 
-
     def import_background(self) -> None:
         with self._lock:
             if self._import_done is not None:
-                return 
+                return
 
             event = self._import_done = threading.Event()
 
@@ -36,11 +34,11 @@ class LLMImportResolver:
 
     def notify_capacity(self) -> None:
         self._moratorium_event.set()
-        
+
     def ensure_import(self) -> None:
         with self._lock:
             if self._imported:
-                return 
+                return
 
             event = self._import_done
 
@@ -56,9 +54,11 @@ class LLMImportResolver:
         try:
             import litellm
             from pytoy_llm import completion, run
+
             self._imported = True
         except ImportError as e:
-            from pathlib import Path 
+            from pathlib import Path
+
             Path("_llm_import_error.txt").write_text(str(e))
             self._import_error = e
 

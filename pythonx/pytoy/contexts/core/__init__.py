@@ -30,7 +30,6 @@ class GlobalCoreContext:
 
         return EnvironmentManager()
 
-
     @cached_property
     def thread_execution_manager(self) -> ThreadExecutionManager:
         from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
@@ -40,6 +39,6 @@ class GlobalCoreContext:
     @cached_property
     def llm_import_resolver(sefl) -> LLMImportResolver:
         from pytoy.bootstrap.import_resolvers import LLMImportResolver
+
         moratorium_time = 1.0
         return LLMImportResolver(moratorium_time)
-

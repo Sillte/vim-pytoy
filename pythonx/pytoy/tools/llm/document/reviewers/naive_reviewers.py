@@ -161,7 +161,7 @@ def make_preparation_spec(document: str) -> LLMInvocationSpec:
         name="PrepareReview",
         intent="Create `ReviewPreparation` JSON instance",
         rules=rules,
-        output_spec=OutputSpec(output_type=ReviewPreparation, description="Review Criterion and DocumentProfile")
+        output_spec=OutputSpec(output_type=ReviewPreparation, description="Review Criterion and DocumentProfile"),
     )
 
     composer = InvocationComposer(prompt_spec)
@@ -331,7 +331,7 @@ def make_polishing_llm_message(review_preparation: ReviewPreparation, document: 
         name="Polishing Document Reviewer",
         intent=intent,
         rules=rules,
-        output_spec=OutputSpec(output_type=str, description="Polishing review of the document based on its analysis."), 
+        output_spec=OutputSpec(output_type=str, description="Polishing review of the document based on its analysis."),
         guidance_role=f"Expert reviewer / {required_role}",
     )
     return InvocationComposer(system_prompt_spec).compose_message(user_prompt=document)
@@ -372,7 +372,10 @@ class NaiveReviewDocumentRequester:
 
         logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
         execution_request = LLMExecutionRequest(task_spec=task_spec, input=self.buffer.content, logger=logger)
-        return LLMExecutor().execute(request=execution_request, hooks=LLMExecutionHooks.from_any(handle_output=on_success, on_exception=on_failure))
+        return LLMExecutor().execute(
+            request=execution_request,
+            hooks=LLMExecutionHooks.from_any(handle_output=on_success, on_exception=on_failure),
+        )
 
     def _make_task_spec(self, document: str) -> TaskSpec:
         preparation_spec = make_preparation_spec(document)

@@ -65,9 +65,7 @@ class KeymapManager:
 
         winid = int(vim.eval(f"bufwinid({spec.buffer})"))
         if winid == -1:
-            raise ValueError(
-                f"Buffer {spec.buffer} is not displayed in any window."
-            )
+            raise ValueError(f"Buffer {spec.buffer} is not displayed in any window.")
 
         escaped = command.replace("'", "''")
         vim.command(f"call win_execute({winid}, '{escaped}')")
@@ -82,11 +80,7 @@ class KeymapManager:
         if spec.buffer is not None:
             opts.append("<buffer>")
 
-        return (
-            f"nnoremap {' '.join(opts)} "
-            f"{spec.key} "
-            f":call {function.impl_name}()<CR>"
-        )
+        return f"nnoremap {' '.join(opts)} {spec.key} :call {function.impl_name}()<CR>"
 
     def _make_deregister_command(self, spec: KeymapSpec) -> str:
         if spec.buffer is None:

@@ -13,13 +13,17 @@ from dataclasses import dataclass, field
 from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.shared.lib.outcome import Outcome, Success, Error, is_success, is_error
 
-from pytoy.shared.timertask.thread_execution import ThreadExecutionHandler, ThreadExecutionRequest, ThreadExecutionStatus, ThreadExecutionExit
+from pytoy.shared.timertask.thread_execution import (
+    ThreadExecutionHandler,
+    ThreadExecutionRequest,
+    ThreadExecutionStatus,
+    ThreadExecutionExit,
+)
 
 
 type LLMExecutionID = str
 type LLMExecutionStatus = ThreadExecutionStatus
 type LLMExecutionKind = str
-
 
 
 @dataclass(frozen=True)
@@ -60,6 +64,7 @@ class LLMExecutionResult[T]:
     def output(self) -> T:
         return self.task_response.output
 
+
 @dataclass(frozen=True)
 class LLMExecutionExit[T]:
     id: str
@@ -95,8 +100,12 @@ class LLMExecutionHooks[T]:
         return LLMExecutionHooks(**merged_kwargs)
 
     @classmethod
-    def from_any(cls, on_finish: Callable[[TaskResult[T]], None] | None = None, on_exception: Callable[[Exception], None] | None = None, 
-                 handle_output: Callable[[T], None] | None = None) -> Self:
+    def from_any(
+        cls,
+        on_finish: Callable[[TaskResult[T]], None] | None = None,
+        on_exception: Callable[[Exception], None] | None = None,
+        handle_output: Callable[[T], None] | None = None,
+    ) -> Self:
         def _resolve_handle_output(
             target: Callable[[TaskResult[T]], None],
             handle_output: Callable[[T], None],
@@ -111,7 +120,6 @@ class LLMExecutionHooks[T]:
         on_exception = on_exception or (lambda _: None)
         on_finish = _resolve_handle_output(on_finish, handle_output) if handle_output else on_finish
         return cls(on_finish=on_finish, on_exception=on_exception)
-        
 
 
 @dataclass(frozen=True)
@@ -136,23 +144,27 @@ class LLMExecution[T]:
     timestamp: float = field(default_factory=lambda: time.time())
 
     @classmethod
-    def from_any(cls, thread_handler: ThreadExecutionHandler | ThreadExecutionRequest, llm_request: LLMExecutionRequest[T]) -> Self:
-        if isinstance(thread_handler, ThreadExecutionRequest): 
+    def from_any(
+        cls, thread_handler: ThreadExecutionHandler | ThreadExecutionRequest, llm_request: LLMExecutionRequest[T]
+    ) -> Self:
+        if isinstance(thread_handler, ThreadExecutionRequest):
             thread_handler = ThreadExecutionHandler.create(thread_handler)
 
         return cls(thread_handler=thread_handler, request=llm_request)
 
     def start(self, hooks: LLMExecutionHooks) -> None:
         self.status = "running"
-        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_success).map(lambda success: success.value).once().subscribe(hooks.on_finish)
-        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(lambda error: error.exception).once().subscribe(hooks.on_exception)
+        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_success).map(
+            lambda success: success.value
+        ).once().subscribe(hooks.on_finish)
+        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(
+            lambda error: error.exception
+        ).once().subscribe(hooks.on_exception)
         self.thread_handler.start()
-
 
     @cached_property
     def on_exit(self) -> Event[LLMExecutionExit[T]]:
-        def _convert(thread_exit: ThreadExecutionExit[T]) -> LLMExecutionExit[T]: 
+        def _convert(thread_exit: ThreadExecutionExit[T]) -> LLMExecutionExit[T]:
             return LLMExecutionExit(id=self.id, outcome=thread_exit.outcome)
+
         return self.thread_handler.on_exit.map(_convert)
-
-

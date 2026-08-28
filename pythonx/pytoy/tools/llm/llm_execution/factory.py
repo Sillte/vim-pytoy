@@ -13,9 +13,10 @@ from pytoy.shared.lib.outcome import Outcome, Success, Error
 from pytoy.shared.timertask.thread_execution import ThreadExecutionHandler, ThreadExecutionRequest
 
 
-from threading import Event 
-from .models import LLMExecution,  LLMExecutionRequest, LLMExecutionResult
+from threading import Event
+from .models import LLMExecution, LLMExecutionRequest, LLMExecutionResult
 from .manager import LLMExecutionManager
+
 
 class LLMExecutionFactory:
     def __init__(self, *, manager: LLMExecutionManager | None = None):
@@ -23,7 +24,7 @@ class LLMExecutionFactory:
             manager = GlobalPytoyContext.get().llm_execution_manager
         self._manager = manager
 
-    def create[T](self, request: LLMExecutionRequest[T]) -> LLMExecution[T]: 
+    def create[T](self, request: LLMExecutionRequest[T]) -> LLMExecution[T]:
         task_request = TaskRequest(spec=request.task_spec, input=request.input, context_state=request.context_state)
 
         def _main(_) -> TaskResult[T]:
@@ -37,4 +38,3 @@ class LLMExecutionFactory:
 
         thread_request = ThreadExecutionRequest.from_any(_main)
         return LLMExecution.from_any(thread_request, llm_request=request)
-

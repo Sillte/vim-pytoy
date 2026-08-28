@@ -242,9 +242,7 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
                     line = param.cursor.line
                     col = param.cursor.col
                     winid = window.winid
-                    vim.eval(
-                        f"win_execute({winid}, 'call cursor({line + 1}, {col + 1})')"
-                    )
+                    vim.eval(f"win_execute({winid}, 'call cursor({line + 1}, {col + 1})')")
                 return window
 
         stored_winid = int(vim.eval("win_getid()"))
@@ -261,6 +259,7 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
         if anchor is None:
             anchor = self.get_current()
         from pytoy.shared.ui.pytoy_window import PytoyWindow
+
         # [TODO]: PytoyWindowProviderVim should not know its facade...
         if isinstance(anchor, PytoyWindow):
             anchor = anchor.impl

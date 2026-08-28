@@ -4,35 +4,56 @@ from pytoy.contexts.core import GlobalCoreContext
 from pytoy.job_execution.environment_manager import EnvironmentManager
 from pytoy.job_execution.command_runner import CommandRunner
 
-from threading import Event 
-from .models import CommandExecution, CommandExecutionHooks, CommandExecutionRequest, CommandExecutionResult, BufferRequest, CommandExecutionWrapperType
+from threading import Event
+from .models import (
+    CommandExecution,
+    CommandExecutionHooks,
+    CommandExecutionRequest,
+    CommandExecutionResult,
+    BufferRequest,
+    CommandExecutionWrapperType,
+)
 from .manager import CommandExecutionManager
+
 
 class CommandExecutionFactory:
     def __init__(self, *, environment_manager: EnvironmentManager | None = None):
 
         if environment_manager is None:
-            environment_manager = GlobalCoreContext.get().environment_manager 
+            environment_manager = GlobalCoreContext.get().environment_manager
         self._environment_manager: EnvironmentManager = environment_manager
 
-    def create(self, request: CommandExecutionRequest, buffer_request: BufferRequest, *, init_buffer: bool = False) -> CommandExecution: 
+    def create(
+        self, request: CommandExecutionRequest, buffer_request: BufferRequest, *, init_buffer: bool = False
+    ) -> CommandExecution:
         stdout, stderr = CommandRunner.solve_buffers(buffer_request.stdout, buffer_request.stderr)
         runner = CommandRunner(stdout=stdout, stderr=stderr, init_buffer=init_buffer)
 
         if request.cwd is None:
             # [TODO: Implement `Current` object so that we can get the global state.]
             from pytoy.job_execution.utils import get_current_directory
+
             cwd = get_current_directory()
         else:
             cwd = Path(request.cwd)
         command = self._solve_command(request.command, request.command_wrapper, cwd=cwd)
         env = request.env or {}
-        execution = CommandExecution(runner=runner, command=command, buffer_request=buffer_request, execution_request=request, cwd=cwd, env=env, kind=request.kind)
+        execution = CommandExecution(
+            runner=runner,
+            command=command,
+            buffer_request=buffer_request,
+            execution_request=request,
+            cwd=cwd,
+            env=env,
+            kind=request.kind,
+        )
         return execution
 
-
     def _solve_command(
-        self, command: str | list[str] | tuple[str], command_wrapper: CommandExecutionWrapperType | None, cwd: str | Path
+        self,
+        command: str | list[str] | tuple[str],
+        command_wrapper: CommandExecutionWrapperType | None,
+        cwd: str | Path,
     ) -> list[str] | str:
         if callable(command_wrapper):
             return command_wrapper(command)

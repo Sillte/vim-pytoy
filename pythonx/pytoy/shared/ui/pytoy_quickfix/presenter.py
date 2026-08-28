@@ -26,26 +26,29 @@ class _LineCodec:
         if match is None:
             raise ValueError(f"Cannot extract quickfix index from: {line!r}")
         return int(match.group("index"))
-    
+
+
 class _FileWindowSelector:
     def __init__(self):
         pass
-        
+
     def select(self) -> PytoyWindow:
         windows = PytoyWindow.get_windows()
         for window in windows:
             if window.is_left() and window.buffer.is_file:
                 return window
         return PytoyWindow.get_current()
-    
+
+
 class _QuickfixBufferProvider:
     def __init__(self, buffer_name: str):
         self._buffer_name = buffer_name
+
     @property
     def buffer_name(self) -> str:
         return self._buffer_name
-    
-    def provide(self) -> PytoyBuffer: 
+
+    def provide(self) -> PytoyBuffer:
         provider = PytoyBufferProvider()
         source = BufferSource(type="nofile", name=self.buffer_name)
         query = BufferQuery(buffer_sources=[source])
@@ -65,7 +68,6 @@ class _QuickfixBufferProvider:
         window = provider.open_window(source, param)
         buffer = window.buffer
         return buffer
-
 
 
 class QuickfixPresenter:
@@ -101,7 +103,7 @@ class QuickfixPresenter:
         index = self._line_codec.decode(text)
         record = self.quickfix.records[index]
         window = self._file_window_selector.select()
-        
+
         provider = PytoyWindowProvider()
         position = CursorPosition(line=record.lnum - 1, col=0)
         source = BufferSource(type="file", name=record.filename)
@@ -109,4 +111,3 @@ class QuickfixPresenter:
         window = provider.open_window(source=source, param=param)
         if with_focus:
             window.focus()
-

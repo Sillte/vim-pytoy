@@ -137,6 +137,7 @@ def _add_uv_path_fallback() -> bool:
     __add_uv_path_fallback_tried = True
 
     import shutil
+
     if bool(shutil.which("uv")):
         return True
 
@@ -151,7 +152,7 @@ def _add_uv_path_fallback() -> bool:
 
     def _fetch_by_default() -> None | str:
         path = Path("~/.local/bin/uv").expanduser()
-        if path.exists(): 
+        if path.exists():
             return path.parent.as_posix()
         else:
             return None
@@ -173,6 +174,7 @@ def _add_uv_path_fallback() -> bool:
         os.environ["PATH"] = new_path
         try:
             import vim
+
             vim.command(f'let $PATH="{new_path}"')
         except ImportError:
             pass

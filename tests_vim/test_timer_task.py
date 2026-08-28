@@ -25,4 +25,3 @@ TimerTask.register(
     on_error=on_error_timer,
     repeat=20,
 )
-

@@ -2,13 +2,14 @@ TERM_STDOUT = "__pystdout__"  # TERIMINAL NAME of `stdout`.
 TERM_STDERR = "__pystderr__"  # TERIMINAL NAME of `stderr`.
 
 
-def initialize_plugin(): 
+def initialize_plugin():
     # Command definitions.
     # Maybe `Command` uses the public interfaces,
     # Hence, `import`s are placed here.
     from pytoy import commands  # NOQA
 
-    from pytoy.contexts.core import GlobalCoreContext 
+    from pytoy.contexts.core import GlobalCoreContext
+
     context = GlobalCoreContext.get()
     context.llm_import_resolver.import_background()
 
@@ -37,6 +38,7 @@ def reset():
     from pytoy.commands.console_command import hide_temporary
 
     hide_temporary()
+
 
 initialize_plugin()
 

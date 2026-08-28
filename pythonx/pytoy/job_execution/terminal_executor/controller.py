@@ -9,12 +9,13 @@ from pytoy.job_execution.terminal_executor.models import (
     TerminalExecutionRequest,
     TerminalDriverProtocol,
     TerminalExecutionQuery,
-    TerminalExecutionHooks, 
+    TerminalExecutionHooks,
     CommandExecutionWrapperType,
 )
 from pytoy.shared.ui.pytoy_buffer import BufferSource
 
 from .handler import TerminalExecutionHandler
+
 
 class TerminalExecutionController:
     def __init__(
@@ -31,8 +32,8 @@ class TerminalExecutionController:
         buffer_name: str | Path | BufferSource,
         content: str,
         *,
-        command_wrapper: CommandExecutionWrapperType | None = None, 
-        cwd: Path | None = None
+        command_wrapper: CommandExecutionWrapperType | None = None,
+        cwd: Path | None = None,
     ) -> TerminalExecutionHandler:
         handler = self.get_or_create_handler(driver, buffer_name, command_wrapper=command_wrapper, cwd=cwd)
         handler.send(content)
@@ -53,22 +54,20 @@ class TerminalExecutionController:
         driver: TerminalDriverKind | TerminalDriverProtocol,
         buffer_name: str | Path | BufferSource,
         *,
-        hooks: TerminalExecutionHooks | None = None, 
-        command_wrapper: CommandExecutionWrapperType | None = None, 
-        cwd: Path | None = None
+        hooks: TerminalExecutionHooks | None = None,
+        command_wrapper: CommandExecutionWrapperType | None = None,
+        cwd: Path | None = None,
     ) -> TerminalExecutionHandler:
         buffer_source = BufferSource.from_any(buffer_name)
         driver_kind = self._to_driver_kind(driver)
-        query =TerminalExecutionQuery.from_any(buffer=buffer_source, kind=driver_kind)
+        query = TerminalExecutionQuery.from_any(buffer=buffer_source, kind=driver_kind)
         handlers = TerminalExecutionHandler.query(query=query)
 
         if handlers:
             handler = handlers[0]
         else:
             buffer_req = BufferRequest(source=buffer_source)
-            execution_req = TerminalExecutionRequest(
-                driver=driver, command_wrapper=command_wrapper, cwd=cwd
-            )
+            execution_req = TerminalExecutionRequest(driver=driver, command_wrapper=command_wrapper, cwd=cwd)
             handler = TerminalExecutionHandler.create(request=execution_req, buffer_request=buffer_req)
             handler.start(hooks=hooks)
         return handler

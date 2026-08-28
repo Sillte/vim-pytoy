@@ -7,15 +7,23 @@ from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
 from pytoy.shared.lib.outcome import Outcome, Success, Error, is_success, is_error
 
-from. models import  LLMExecutionID, LLMExecutionStatus, LLMExecutionRequest, LLMExecutionHooks, LLMExecutionQuery,  LLMExecutionContext, LLMExecutionExit
+from .models import (
+    LLMExecutionID,
+    LLMExecutionStatus,
+    LLMExecutionRequest,
+    LLMExecutionHooks,
+    LLMExecutionQuery,
+    LLMExecutionContext,
+    LLMExecutionExit,
+)
 from .manager import LLMExecutionManager
 from .factory import LLMExecutionFactory
 
+
 def assert_main_thread() -> None:
     if threading.current_thread() is not threading.main_thread():
-        raise RuntimeError(
-            "This method must be called from the main thread."
-        )
+        raise RuntimeError("This method must be called from the main thread.")
+
 
 def main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
     @wraps(func)
@@ -25,6 +33,7 @@ def main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
 
     return wrapper
 
+
 class LLMExecutionHandler[T]:
     def __init__(self, id: LLMExecutionID, *, manager: LLMExecutionManager) -> None:
         self._id = id
@@ -33,18 +42,20 @@ class LLMExecutionHandler[T]:
     @classmethod
     @main_thread_only
     def create(cls, request: LLMExecutionRequest, *, manager: LLMExecutionManager | None = None) -> Self:
-        if manager is None: 
-             manager = GlobalPytoyContext.get().llm_execution_manager
+        if manager is None:
+            manager = GlobalPytoyContext.get().llm_execution_manager
         factory = LLMExecutionFactory()
         execution = factory.create(request)
         manager.register(execution)
         return cls(id=execution.id, manager=manager)
 
     @classmethod
-    def query(cls, query: LLMExecutionQuery | None = None, *, manager: LLMExecutionManager | None = None) -> Sequence[Self]:
+    def query(
+        cls, query: LLMExecutionQuery | None = None, *, manager: LLMExecutionManager | None = None
+    ) -> Sequence[Self]:
         query = query or LLMExecutionQuery()
-        if manager is None: 
-             manager = GlobalPytoyContext.get().llm_execution_manager
+        if manager is None:
+            manager = GlobalPytoyContext.get().llm_execution_manager
         executions = manager.select(query)
         return [cls(id=execution.id, manager=manager) for execution in executions]
 
@@ -54,7 +65,6 @@ class LLMExecutionHandler[T]:
         if execution is None:
             return None
         return execution.status
-
 
     @main_thread_only
     def start(self, hooks: LLMExecutionHooks | None = None) -> None:
@@ -70,8 +80,12 @@ class LLMExecutionHandler[T]:
             hooks=hooks,
         )
 
-        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_success).map(lambda success: success.value).once().subscribe(hooks.on_finish)
-        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(lambda error: error.exception).once().subscribe(hooks.on_exception)
+        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_success).map(
+            lambda success: success.value
+        ).once().subscribe(hooks.on_finish)
+        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(
+            lambda error: error.exception
+        ).once().subscribe(hooks.on_exception)
         self._manager.register_context(execution, context)
 
     @property
@@ -84,5 +98,3 @@ class LLMExecutionHandler[T]:
         if execution is None:
             raise ValueError(f"`execution` does not exist; {self._id=}")
         return execution.on_exit
-
-

@@ -19,8 +19,10 @@ class CommandExecutionManager:
 
     def register(self, execution: CommandExecution) -> None:
         self._executions[execution.id] = execution
+
         def _deregister(_):
             self._executions.pop(execution.id, None)
+
         execution.on_exit.subscribe(_deregister)
 
     def register_context(self, context: CommandExecutionContext) -> None:

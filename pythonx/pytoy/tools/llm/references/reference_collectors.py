@@ -24,7 +24,6 @@ class ReferenceCollector:
         self._stored_folder = Path(stored_folder)
         self._stored_folder.mkdir(exist_ok=True, parents=True)
 
-
     def collect_all(self, root_folder: Path | str) -> ReferenceDataset:
         root_folder = Path(root_folder)
         filepaths = PathGatherer().gather(root_folder, target="file")

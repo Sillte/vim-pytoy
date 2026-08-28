@@ -12,6 +12,7 @@ type ThreadExecutionID = str
 type CancelToken = ThreadingEvent
 type ThreadExecutionStatus = Literal["created", "running", "finished", "error"]
 
+
 @dataclass(frozen=True)
 class ThreadExecutionExit[T]:
     id: ThreadExecutionID
@@ -51,6 +52,7 @@ class ThreadExecution[T]:
 
     def notify_exit(self, execution_exit: ThreadExecutionExit[T]) -> None:
         self.exit_emitter.fire(execution_exit)
+
 
 @dataclass(frozen=True)
 class ThreadExecutionRequest[T]:

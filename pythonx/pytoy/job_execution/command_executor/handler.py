@@ -7,15 +7,25 @@ from dataclasses import dataclass, replace
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 
-from. models import  CommandExecutionID, CommandExecutionStatus, CommandExecutionRequest, CommandExecutionHooks, CommandExecutionQuery, BufferRequest, CommandExecutionContext, CommandExecutionKind, CommandExecutionContext
+from .models import (
+    CommandExecutionID,
+    CommandExecutionStatus,
+    CommandExecutionRequest,
+    CommandExecutionHooks,
+    CommandExecutionQuery,
+    BufferRequest,
+    CommandExecutionContext,
+    CommandExecutionKind,
+    CommandExecutionContext,
+)
 from .manager import CommandExecutionManager
 from .factory import CommandExecutionFactory
 
+
 def assert_main_thread() -> None:
     if threading.current_thread() is not threading.main_thread():
-        raise RuntimeError(
-            "This method must be called from the main thread."
-        )
+        raise RuntimeError("This method must be called from the main thread.")
+
 
 def main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
     @wraps(func)
@@ -33,9 +43,15 @@ class CommandExecutionHandler:
 
     @classmethod
     @main_thread_only
-    def create(cls, request: CommandExecutionRequest, buffer_request: BufferRequest, *, manager: CommandExecutionManager | None = None) -> Self:
-        if manager is None: 
-             manager = GlobalPytoyContext.get().command_execution_manager
+    def create(
+        cls,
+        request: CommandExecutionRequest,
+        buffer_request: BufferRequest,
+        *,
+        manager: CommandExecutionManager | None = None,
+    ) -> Self:
+        if manager is None:
+            manager = GlobalPytoyContext.get().command_execution_manager
         factory = CommandExecutionFactory()
         execution = factory.create(request, buffer_request=buffer_request)
         manager.register(execution)
@@ -43,17 +59,20 @@ class CommandExecutionHandler:
 
     @classmethod
     @main_thread_only
-    def get_last_context(cls, kind: CommandExecutionKind, *, manager: CommandExecutionManager | None = None) -> CommandExecutionContext | None:
-        if manager is None: 
-             manager = GlobalPytoyContext.get().command_execution_manager
+    def get_last_context(
+        cls, kind: CommandExecutionKind, *, manager: CommandExecutionManager | None = None
+    ) -> CommandExecutionContext | None:
+        if manager is None:
+            manager = GlobalPytoyContext.get().command_execution_manager
         return manager.get_last_context_by_kind(kind)
-        
 
     @classmethod
-    def query(cls, query: CommandExecutionQuery | None = None, *, manager: CommandExecutionManager | None = None) -> Sequence[Self]:
+    def query(
+        cls, query: CommandExecutionQuery | None = None, *, manager: CommandExecutionManager | None = None
+    ) -> Sequence[Self]:
         query = query or CommandExecutionQuery()
-        if manager is None: 
-             manager = GlobalPytoyContext.get().command_execution_manager
+        if manager is None:
+            manager = GlobalPytoyContext.get().command_execution_manager
         executions = manager.select(query)
         return [cls(id=execution.id, manager=manager) for execution in executions]
 
@@ -72,7 +91,6 @@ class CommandExecutionHandler:
             kind=execution.kind,
         )
         self._manager.register_context(context)
-
 
     @main_thread_only
     def terminate(self) -> None:
@@ -105,6 +123,3 @@ class CommandExecutionHandler:
         if execution is None:
             raise ValueError(f"`execution` does not exist; {self._id=}")
         return execution.stderr
-        
-
-

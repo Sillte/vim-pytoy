@@ -53,7 +53,9 @@ class CommandExecutor:
     def execute(
         self, request: CommandExecutionRequest, hooks: CommandExecutionHooks | None = None, *, init_buffer: bool = True
     ) -> CommandExecutionHandler:
-        factory = CommandExecutionFactory(manager=self._execution_manager, environment_manager=self._environment_manager) 
+        factory = CommandExecutionFactory(
+            manager=self._execution_manager, environment_manager=self._environment_manager
+        )
         execution = factory.create(request, self._buffer_request)
 
         if init_buffer:
@@ -65,8 +67,6 @@ class CommandExecutor:
         hooks = hooks or CommandExecutionHooks()
         handler.start(hooks=hooks)
         return handler
-
-
 
 
 if __name__ == "__main__":

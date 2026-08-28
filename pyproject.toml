@@ -12,7 +12,6 @@ dependencies = [
     "pydantic>=2.0.0",
     "pynvim>=0.5",
     "pyte>=0.8",
-    "ruff>=0.0.311",
     "toml>=0.10",
     "pip-system-certs>=0.1",
     "markitdown>=0.0.1",
@@ -30,13 +29,12 @@ pythonpath = ["pythonx"]
 addopts = "-v"
 
 [tool.setuptools.packages.find]
-where = ["pythonx"] # Explicitly tells setuptools to look in 'src'
+where = ["pythonx"]
 
 [dependency-groups]
 dev = [
     "pytest>=7.0.0",
-    "black>=22.0.0",
-    "ruff",
+    "ruff>=0.15",
     "ty", 
     "mypy>=1.14.1",
 ]
@@ -47,5 +45,3 @@ line-length = 120
 [tool.ruff.lint]
 
 select = ["E", "F", "I"]
-
-

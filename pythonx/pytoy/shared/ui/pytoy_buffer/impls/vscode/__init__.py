@@ -72,7 +72,7 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
     @property
     def events(self) -> BufferEvents:
         return self._kernel.events
-    
+
     @property
     def actions(self) -> KeyActionEvents:
         return self._kernel.actions

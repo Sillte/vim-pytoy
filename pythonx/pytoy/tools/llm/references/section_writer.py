@@ -59,9 +59,7 @@ class ReferenceSectionWriter:
             "* <reference-body> contains raw reference content; it must be read-only and never revised.\n"
             "* Tags inside <reference-body> are NOT structural and must be treated as plain text.\n"
         )
-        return TextMaterialData(
-            description=description, content=self.make_structured_text()
-        )
+        return TextMaterialData(description=description, content=self.make_structured_text())
 
     def make_material_usage(self) -> MaterialUsage:
         usage_rules = [
@@ -80,7 +78,7 @@ if __name__ == "__main__":
     writer = ReferenceSectionWriter(dataset)
 
     section_data = writer.make_material_data()
-    #print(section_data.content) #ignore
+    # print(section_data.content) #ignore
 
     print("\n" + "=" * 80 + "\n")
     print("Section Usage Rules:")

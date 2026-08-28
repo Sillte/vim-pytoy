@@ -164,7 +164,7 @@ class DebugLogger:
 
     def _set_depth(self, value):
         self._depth.value = value
-        
+
 
 class VimEventTracer:
     DEFAULT_EVENTS = [
@@ -176,14 +176,14 @@ class VimEventTracer:
         "WinEnter",
         "WinNew",
     ]
-    
+
     instances: dict[str, Self] = dict()
-    
+
     @classmethod
     def get(cls, name: str) -> Self | None:
         return cls.instances.get(name)
 
-    def __new__(cls, name:str = "default", events: Sequence[str] | None = None, *args, **kwargs):
+    def __new__(cls, name: str = "default", events: Sequence[str] | None = None, *args, **kwargs):
         if name in cls.instances:
             instance = cls.instances[name]
             if events and set(events) != instance._events:
@@ -191,8 +191,7 @@ class VimEventTracer:
             return instance
         return super().__new__(cls, *args, **kwargs)
 
-
-    def __init__(self, name:str = "default", events: Sequence[str] | None = None) -> None:
+    def __init__(self, name: str = "default", events: Sequence[str] | None = None) -> None:
         if getattr(self, "_initialized", False):
             return
 
@@ -205,11 +204,11 @@ class VimEventTracer:
         self._enabled = False
         self._name = name
         self.instances[self._name] = self
-        
+
     @property
     def logger(self) -> DebugLogger:
         return self._logger
-    
+
     @property
     def id(self) -> int:
         return self._id
@@ -217,9 +216,10 @@ class VimEventTracer:
     @property
     def name(self):
         return self._name
-        
+
     def start(self) -> None:
         import vim
+
         if self._enabled:
             return
         self._enabled = True
@@ -232,16 +232,17 @@ class VimEventTracer:
                 rf'autocmd {event} * python3 from pytoy.devtools.debug_logger import log_nvim_event; log_nvim_event("{self._name}", "{event}")'
             )
         vim.command("augroup END")
-        
+
     def stop(self) -> None:
         if not self._enabled:
-            return 
+            return
         import vim
+
         vim.command(f"augroup PytoyTrace{self._id}")
         vim.command("autocmd!")
         vim.command("augroup END")
         self._enabled = False
-        
+
 
 def log_nvim_event(name: str, event: str):
     import vim
@@ -255,14 +256,8 @@ def log_nvim_event(name: str, event: str):
     winid = vim.eval("win_getid()")
     buffer_name = vim.current.buffer.name
 
+    logger.log(f"[EVENT] {event} buf={bufnr} win={winid} name={buffer_name}")
 
-    logger.log(
-        f"[EVENT] {event} "
-        f"buf={bufnr} "
-        f"win={winid} "
-        f"name={buffer_name}"
-    )
-    
 
 if __name__ == "__main__":
     ...

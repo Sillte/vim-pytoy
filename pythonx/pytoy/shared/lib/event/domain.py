@@ -49,15 +49,13 @@ class Event[T]:
     def filter[R](
         self,
         predicate: Callable[[T], TypeGuard[R]],
-    ) -> Event[R]:
-        ...
+    ) -> Event[R]: ...
 
     @overload
     def filter(
         self,
         predicate: Callable[[T], bool],
-    ) -> Event[T]:
-        ...
+    ) -> Event[T]: ...
 
     def filter(self, predicate: Callable[[T], bool]) -> Event[Any]:
         from pytoy.shared.lib.event import utils

@@ -26,7 +26,9 @@ class ConsoleRunner:
         resolved_driver = driver or self.selector.get_preferrable_driver(current_window)
         resolved_buffer = buffer or self.selector.get_preferrable_buffer(current_window)
         handler = self.controller.get_or_create_handler(
-            resolved_driver, resolved_buffer, cwd=cwd,
+            resolved_driver,
+            resolved_buffer,
+            cwd=cwd,
         )
         handler.send(cmd)
 

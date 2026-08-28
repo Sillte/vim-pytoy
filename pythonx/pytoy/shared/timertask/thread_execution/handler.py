@@ -7,15 +7,22 @@ from typing import Self, Sequence
 from pytoy.shared.lib.event import Event
 from pytoy.shared.lib.outcome import is_success, is_error
 from pytoy.contexts.core import GlobalCoreContext
-from. models import  ThreadExecutionID, ThreadExecutionStatus, ThreadExecutionRequest, ThreadExecutionHooks, ThreadExecutionQuery, ThreadExecutionExit
+from .models import (
+    ThreadExecutionID,
+    ThreadExecutionStatus,
+    ThreadExecutionRequest,
+    ThreadExecutionHooks,
+    ThreadExecutionQuery,
+    ThreadExecutionExit,
+)
 from .manager import ThreadExecutionManager
 from .factory import ThreadExecutionFactory
 
+
 def assert_main_thread() -> None:
     if threading.current_thread() is not threading.main_thread():
-        raise RuntimeError(
-            "This method must be called from the main thread."
-        )
+        raise RuntimeError("This method must be called from the main thread.")
+
 
 def main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
     @wraps(func)
@@ -33,17 +40,17 @@ class ThreadExecutionHandler[T]:
 
     @classmethod
     @main_thread_only
-    def create(cls, request: ThreadExecutionRequest[T],  *, manager: ThreadExecutionManager | None = None) -> Self:
-        if manager is None: 
-             manager = GlobalCoreContext.get().thread_execution_manager
+    def create(cls, request: ThreadExecutionRequest[T], *, manager: ThreadExecutionManager | None = None) -> Self:
+        if manager is None:
+            manager = GlobalCoreContext.get().thread_execution_manager
         factory = ThreadExecutionFactory(manager=manager)
         execution = factory.create(request)
         return cls(id=execution.id, manager=manager)
 
     @classmethod
     def query(cls, query: ThreadExecutionQuery, *, manager: ThreadExecutionManager | None = None) -> Sequence[Self]:
-        if manager is None: 
-             manager = GlobalCoreContext.get().thread_execution_manager
+        if manager is None:
+            manager = GlobalCoreContext.get().thread_execution_manager
         executions = manager.select(query)
         return [cls(id=execution.id, manager=manager) for execution in executions]
 
@@ -54,8 +61,12 @@ class ThreadExecutionHandler[T]:
         if execution is None:
             raise ValueError(f"`execution` does not exist; {self._id=}")
 
-        execution.on_exit.map(lambda exit: exit.outcome).filter(is_success).map(lambda success: success.value).once().subscribe(hooks.on_finish)
-        execution.on_exit.map(lambda exit: exit.outcome).filter(is_error).map(lambda error: error.exception).once().subscribe(hooks.on_exception)
+        execution.on_exit.map(lambda exit: exit.outcome).filter(is_success).map(
+            lambda success: success.value
+        ).once().subscribe(hooks.on_finish)
+        execution.on_exit.map(lambda exit: exit.outcome).filter(is_error).map(
+            lambda error: error.exception
+        ).once().subscribe(hooks.on_exception)
 
         execution.start()
 
@@ -83,4 +94,3 @@ class ThreadExecutionHandler[T]:
         if execution is None:
             raise ValueError(f"`execution` does not exist; {self._id=}")
         return execution.on_exit
-

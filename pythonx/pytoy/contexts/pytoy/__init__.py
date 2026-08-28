@@ -47,6 +47,7 @@ class GlobalPytoyContext:
     @cached_property
     def llm_execution_manager(self) -> LLMExecutionManager:
         from pytoy.tools.llm.llm_execution.manager import LLMExecutionManager
+
         return LLMExecutionManager()
 
     @property

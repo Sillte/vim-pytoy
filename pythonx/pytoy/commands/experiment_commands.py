@@ -1,4 +1,4 @@
-from typing import Annotated 
+from typing import Annotated
 from pytoy.shared.command import App, Option
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import make_buffer
@@ -8,7 +8,9 @@ app = App()
 
 
 @app.command("GatherTextFiles")
-def gather_text_files(depth: Annotated[int | None, Option(default=None)], pattern: Annotated[str | None, Option(default=None)]):
+def gather_text_files(
+    depth: Annotated[int | None, Option(default=None)], pattern: Annotated[str | None, Option(default=None)]
+):
     from pytoy_llm.materials.text_files import TextFilesCollector, TextFilesMaterialQuery
     from pytoy_llm.composers.materials import MaterialDataExplorerTaskComposer
     from pytoy.job_execution.environment_manager import EnvironmentManager

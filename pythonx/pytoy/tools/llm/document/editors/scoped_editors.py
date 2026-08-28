@@ -12,7 +12,7 @@ from pytoy.shared.pytoy_configuration import PytoyConfiguration
 
 from pytoy_llm.composer import InvocationComposer, SystemPromptSpec, OutputSpec
 from pytoy_llm.composers.materials import MaterialSection
-from pytoy_llm.models import LLMMessage 
+from pytoy_llm.models import LLMMessage
 from pytoy_llm.task.models import (
     InvocationSpecMeta,
     LLMInvocationSpec,
@@ -159,7 +159,6 @@ def make_scoped_edit_spec(
 ) -> LLMInvocationSpec:
     """Based on the `DocumentAnalysis`. provide the edit."""
 
-
     name = "Edit or generation of the part of document inside markers"
     output_description = "A part of the document, focusing on the specified scope between markers."
 
@@ -195,8 +194,6 @@ def make_scoped_edit_spec(
         output_type=str,
         meta=InvocationSpecMeta(name=name, intent="Scoped edit of the document."),
     )
-
-
 
 
 class ScopedEditDocumentRequester:
@@ -238,16 +235,15 @@ class ScopedEditDocumentRequester:
         executor = LLMExecutor()
         if not executor.can_execute(kind=kind):
             raise RuntimeError("Already another request is executing for ScopedEditor.")
-        hooks = LLMExecutionHooks.from_any(handle_output=lambda output: self._apply_output(buffer, output), 
-                                           on_exception=lambda exc: self._handle_error(buffer, exc))
+        hooks = LLMExecutionHooks.from_any(
+            handle_output=lambda output: self._apply_output(buffer, output),
+            on_exception=lambda exc: self._handle_error(buffer, exc),
+        )
         executor.execute(llm_request, hooks=hooks)
-
 
     def _make_task_spec(self, document: str) -> TaskSpec:
         select_language_spec = FunctionInvocationSpec.from_any(select_language_kind)
-        edit_spec = make_scoped_edit_spec(
-            document, self.scoped_edit_contract
-        )
+        edit_spec = make_scoped_edit_spec(document, self.scoped_edit_contract)
         meta = TaskSpecMeta(name="ScopedEditDocument")
         task_spec = TaskSpec.from_specs(invocation_specs=[select_language_spec, edit_spec], meta=meta)
         return task_spec

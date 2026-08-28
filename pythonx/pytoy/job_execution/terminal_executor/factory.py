@@ -8,7 +8,7 @@ from pytoy.job_execution.terminal_executor.models import (
     BufferRequest,
     TerminalExecutionRequest,
     TerminalExecution,
-    TerminalDriverKind, 
+    TerminalDriverKind,
 )
 from pytoy.job_execution.terminal_runner import TerminalJobRunner
 from pytoy.job_execution.terminal_runner.models import (
@@ -47,7 +47,7 @@ class TerminalExecutionFactory:
         else:
             cwd = Path(request.cwd)
 
-        driver =  self._resolve_driver_protocol(request.driver)
+        driver = self._resolve_driver_protocol(request.driver)
         driver = self._resolve_command_environment(
             driver=driver,
             command_wrapper=request.command_wrapper,
@@ -57,12 +57,7 @@ class TerminalExecutionFactory:
         runner = TerminalJobRunner(buffer=stdout)
 
         execution = TerminalExecution(
-            request=request,
-            buffer_request=buffer_request,
-            runner=runner,
-            driver=driver,
-            cwd=cwd,
-            env=request.env
+            request=request, buffer_request=buffer_request, runner=runner, driver=driver, cwd=cwd, env=request.env
         )
 
         return execution
@@ -94,4 +89,3 @@ class TerminalExecutionFactory:
             driver,
             execution_env.command_wrapper,
         )
-

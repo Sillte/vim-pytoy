@@ -32,20 +32,13 @@ def make_profile_spec() -> LLMInvocationSpec:
     prompt_spec = SystemPromptSpec.from_any(
         name="DocumentProfile",
         output_spec=DocumentProfile,
-        intent=(
-            "Identify the dominant language of the document, "
-            "its purpose, and its style."
-        ),
+        intent=("Identify the dominant language of the document, its purpose, and its style."),
         rules=[
             "Base the profile on the provided document.",
             "Distinguish observations from interpretations.",
             "Do not infer unsupported characteristics.",
         ],
-        guidance_role=(
-            "You are an expert in analyzing documents written "
-            "in natural and programming languages."
-        ),
+        guidance_role=("You are an expert in analyzing documents written in natural and programming languages."),
     )
 
     return InvocationComposer(prompt_spec).compose_llm_invocation_spec()
-

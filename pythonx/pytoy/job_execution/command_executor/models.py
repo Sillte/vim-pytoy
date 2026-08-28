@@ -116,8 +116,6 @@ class CommandExecutionHooks:
         )
 
 
-
-
 @dataclass
 class CommandExecution:
     runner: CommandRunner
@@ -128,9 +126,8 @@ class CommandExecution:
     env: Mapping[str, str] = field(default_factory=dict)
     kind: CommandExecutionKind = "$default"
     status: CommandExecutionStatus | None = "created"
-    id: CommandExecutionID = field(default_factory=lambda : str(uuid.uuid4()))
+    id: CommandExecutionID = field(default_factory=lambda: str(uuid.uuid4()))
     exit_emitter: EventEmitter[None] = field(default_factory=EventEmitter)
-
 
     @property
     def events(self) -> CommandExecutionEvents:
@@ -191,7 +188,6 @@ class PostProcessContext:
     @property
     def stderr(self) -> PytoyBuffer | None:
         return self.execution.runner.stderr
-
 
 
 @dataclass(frozen=True)

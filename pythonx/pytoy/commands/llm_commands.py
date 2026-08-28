@@ -25,7 +25,6 @@ def pytoy_llm(kind: Annotated[Literal["config", "review", "edit"] | None, Argume
         param = WindowCreationParam.for_split("vertical", try_reuse=True)
         PytoyWindow.open(path, param=param)
 
-
     def _make_review():
         current_window = PytoyWindow.get_current()
         review_doc = NaiveReviewDocumentRequester(current_window.buffer)

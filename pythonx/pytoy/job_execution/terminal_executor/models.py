@@ -50,6 +50,7 @@ class TerminalExecutionRequest:
     cwd: str | Path | None = None
     env: dict[str, str] | None = None
 
+
 @dataclass(frozen=True)
 class TerminalExecutionHooks:
     on_finish: Callable[[Any], None] | None = None
@@ -84,14 +85,14 @@ class TerminalExecution:
     request: TerminalExecutionRequest
     buffer_request: BufferRequest
     env: dict[str, str] | None = None
-    id: TerminalExecutionID = field(default_factory=lambda : uuid.uuid4())
+    id: TerminalExecutionID = field(default_factory=lambda: uuid.uuid4())
     exit_emitter: EventEmitter[Any] = field(default_factory=EventEmitter)
 
     @property
     def kind(self) -> str:
         return self.driver.kind
 
-    @property 
+    @property
     def on_exit(self) -> Event[Any]:
         return self.exit_emitter.event
 
@@ -108,8 +109,7 @@ class TerminalExecution:
 
         spawn_option = SpawnOption(cwd=self.cwd, env=self.env)
         self.runner.run(job_request, spawn_option)
-        self.runner.events.on_job_exit.subscribe(lambda value: self.exit_emitter.fire(value)) 
-
+        self.runner.events.on_job_exit.subscribe(lambda value: self.exit_emitter.fire(value))
 
 
 @dataclass(frozen=True)

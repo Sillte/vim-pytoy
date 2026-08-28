@@ -15,10 +15,11 @@ from pytoy.shared.command import App, Argument
 
 app = App()
 
+
 @app.command("Greeting")
 def hello(arg: Annotated[Literal["morning", "evening"] | None, Argument()] = None):
-  greeting = arg or "hello" 
-  print(f"{greeting.title()} from Pytoy!")
+    greeting = arg or "hello"
+    print(f"{greeting.title()} from Pytoy!")
 ```
 
 2. Execute the python script or vim source

@@ -16,8 +16,8 @@ __all__ = [
     "CommandExecutionHooks",
     "CommandExecutionEvents",
     "CommandExecutionRequest",
-    "CommandExecutionHandler", 
-    "CommandExecutionResult", 
+    "CommandExecutionHandler",
+    "CommandExecutionResult",
     "CommandExecutionQuery",
     "BufferRequest",
 ]

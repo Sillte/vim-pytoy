@@ -204,6 +204,7 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
         anchor = param.anchor or current
         # [TODO]: This is not appropriate.
         from pytoy.shared.ui.pytoy_window import PytoyWindow
+
         if isinstance(anchor, PytoyWindow):
             anchor = anchor.impl
 
@@ -222,7 +223,7 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
             for editor in Editor.get_editors(only_visible=True):
                 if editor.uri == vscode_uri:
                     return editor
-        
+
         uri = self._to_uri(source)
 
         if param.target == "in-place":

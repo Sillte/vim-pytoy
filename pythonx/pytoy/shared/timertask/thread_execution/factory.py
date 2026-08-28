@@ -3,10 +3,11 @@ from threading import Thread
 
 from pytoy.contexts.core import GlobalCoreContext
 
-from threading import Event 
+from threading import Event
 from .models import ThreadExecution, ThreadExecutionRequest, ThreadExecutionExit
 from .manager import ThreadExecutionManager
 from pytoy.shared.lib.outcome import Success, Error
+
 
 class ThreadExecutionFactory:
     def __init__(self, *, manager: ThreadExecutionManager | None = None):
@@ -14,7 +15,7 @@ class ThreadExecutionFactory:
             manager = GlobalCoreContext.get().thread_execution_manager
         self._manager: ThreadExecutionManager = manager
 
-    def create(self, request: ThreadExecutionRequest) -> ThreadExecution: 
+    def create(self, request: ThreadExecutionRequest) -> ThreadExecution:
         id_ = str(uuid.uuid4())
         cancel_token = Event()
 
@@ -31,4 +32,3 @@ class ThreadExecutionFactory:
         thread = Thread(target=_run, daemon=True, args=(cancel_token,))
         execution = ThreadExecution(id=id_, thread=thread, cancel_token=cancel_token)
         return self._manager.register(execution)
-         

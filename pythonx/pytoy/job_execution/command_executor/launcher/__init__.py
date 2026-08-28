@@ -50,14 +50,11 @@ def get_default_hooks() -> CommandExecutionHooks:
 
 
 class CommandLauncher:
-    def __init__(
-        self, launch_profile: LaunchProfile | CommandExecutionKind
-    ):
+    def __init__(self, launch_profile: LaunchProfile | CommandExecutionKind):
         if isinstance(launch_profile, str):
             launch_profile = LaunchProfile.from_str(launch_profile)
 
         self._launch_profile = launch_profile
-
 
     @property
     def launch_profile(self) -> LaunchProfile:
@@ -150,5 +147,3 @@ class CommandLauncher:
                 handler.stderr.init_buffer()
         handler.start(hooks=execution_hooks)
         return handler
-
-

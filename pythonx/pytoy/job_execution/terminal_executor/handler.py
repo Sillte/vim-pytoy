@@ -1,6 +1,6 @@
 import threading
 from functools import wraps
-from dataclasses import replace 
+from dataclasses import replace
 from typing import Callable, Self, Sequence
 from pathlib import Path
 
@@ -14,8 +14,8 @@ from pytoy.job_execution.terminal_executor.models import (
     TerminalExecution,
     TerminalExecutionContext,
     TerminalExecutionHooks,
-    TerminalExecutionID, 
-    TerminalExecutionQuery
+    TerminalExecutionID,
+    TerminalExecutionQuery,
 )
 from pytoy.job_execution.terminal_runner import TerminalJobRunner
 from pytoy.job_execution.terminal_runner.models import (
@@ -25,13 +25,13 @@ from pytoy.job_execution.terminal_runner.models import (
 )
 
 from pytoy.job_execution.utils import get_current_directory
-from .factory import TerminalExecutionFactory 
+from .factory import TerminalExecutionFactory
+
 
 def assert_main_thread() -> None:
     if threading.current_thread() is not threading.main_thread():
-        raise RuntimeError(
-            "This method must be called from the main thread."
-        )
+        raise RuntimeError("This method must be called from the main thread.")
+
 
 def main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
     @wraps(func)
@@ -53,8 +53,13 @@ class TerminalExecutionHandler:
         self._manager = manager
 
     @classmethod
-    def create(cls, request: TerminalExecutionRequest,
-                    buffer_request: BufferRequest, *, manager: TerminalExecutionManager | None = None) -> Self:
+    def create(
+        cls,
+        request: TerminalExecutionRequest,
+        buffer_request: BufferRequest,
+        *,
+        manager: TerminalExecutionManager | None = None,
+    ) -> Self:
         if manager is None:
             manager = GlobalPytoyContext.get().terminal_execution_manager
         execution = TerminalExecutionFactory().create(request, buffer_request)
@@ -69,7 +74,6 @@ class TerminalExecutionHandler:
         executions = manager.select(query=query)
         return [cls(id=item.id, manager=manager) for item in executions]
 
-
     @main_thread_only
     def start(
         self,
@@ -80,9 +84,7 @@ class TerminalExecutionHandler:
         execution = self._manager.get(self._id)
 
         if execution is None:
-            raise ValueError(
-                f"`execution` does not exist; {self._id=}"
-            )
+            raise ValueError(f"`execution` does not exist; {self._id=}")
 
         execution.start(hooks=hooks)
 
@@ -113,7 +115,6 @@ class TerminalExecutionHandler:
     def terminate(self) -> None:
         execution = self._get_execution()
         execution.runner.terminate()
-
 
     def _get_execution(self) -> TerminalExecution:
         execution = self._manager.get(self._id)

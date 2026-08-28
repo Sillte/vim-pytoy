@@ -28,19 +28,20 @@ def map_event[T, U](event: Event[T], transform: Callable[[T], U]) -> Event[U]:
 
     return Event[U](subscribe)
 
+
 @overload
 def filter[T, R](
     event: Event[T],
     predicator: Callable[[T], TypeGuard[R]],
-) -> Event[R]:
-    ...
+) -> Event[R]: ...
+
 
 @overload
 def filter[T](
     event: Event[T],
     predicator: Callable[[T], bool],
-) -> Event[T]:
-    ...
+) -> Event[T]: ...
+
 
 def filter[T](event: Event[T], predicator: Callable[[T], bool]) -> Event[Any]:
     def subscribe(listener: Listener[T]) -> Disposable:
@@ -49,6 +50,7 @@ def filter[T](event: Event[T], predicator: Callable[[T], bool]) -> Event[Any]:
                 listener(value)
             else:
                 ...
+
         disposable = event.subscribe(wrapper)
         return Disposable(lambda: disposable.dispose())
 

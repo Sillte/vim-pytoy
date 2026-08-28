@@ -22,6 +22,7 @@ class LLMExecutionManager:
         def _deregister(_):
             self._executions.pop(execution.id, None)
             self._contexts.pop(execution.id, None)
+
         execution.on_exit.subscribe(_deregister)
 
     def register_context(self, execution: LLMExecution, context: LLMExecutionContext) -> None:
@@ -40,9 +41,7 @@ class LLMExecutionManager:
     def get(self, execution_id: LLMExecutionID) -> LLMExecution | None:
         return self._executions.get(execution_id)
 
-    def get_running(
-        self, kind: LLMExecutionKind | None = None
-    ) -> Sequence[LLMExecution]:
+    def get_running(self, kind: LLMExecutionKind | None = None) -> Sequence[LLMExecution]:
         query = LLMExecutionQuery(kind=kind, status="running")
         return self.select(query)
 
