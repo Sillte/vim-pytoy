@@ -26,14 +26,14 @@ def main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
     return wrapper
 
 
-class ThreadExecutionHandler:
+class ThreadExecutionHandler[T]:
     def __init__(self, id: ThreadExecutionID, manager: ThreadExecutionManager) -> None:
         self._id = id
         self._manager = manager
 
     @classmethod
     @main_thread_only
-    def create(cls, request: ThreadExecutionRequest,  *, manager: ThreadExecutionManager | None = None) -> Self:
+    def create(cls, request: ThreadExecutionRequest[T],  *, manager: ThreadExecutionManager | None = None) -> Self:
         if manager is None: 
              manager = GlobalCoreContext.get().thread_execution_manager
         factory = ThreadExecutionFactory(manager=manager)
@@ -48,16 +48,16 @@ class ThreadExecutionHandler:
         return [cls(id=execution.id, manager=manager) for execution in executions]
 
     @main_thread_only
-    def start(self, hooks: ThreadExecutionHooks | None = None) -> None:
+    def start(self, hooks: ThreadExecutionHooks[T] | None = None) -> None:
         hooks = hooks or ThreadExecutionHooks.from_any()
         execution = self._manager.get_execution(self._id)
         if execution is None:
             raise ValueError(f"`execution` does not exist; {self._id=}")
 
-        execution.on_exit.map(lambda exit: exit.outcome).filter(is_success).once().subscribe(hooks.on_finish)
-        execution.on_exit.map(lambda exit: exit.outcome).filter(is_error).once().subscribe(hooks.on_error)
+        execution.on_exit.map(lambda exit: exit.outcome).filter(is_success).map(lambda success: success.value).once().subscribe(hooks.on_finish)
+        execution.on_exit.map(lambda exit: exit.outcome).filter(is_error).map(lambda error: error.exception).once().subscribe(hooks.on_exception)
 
-        execution.start(hooks=hooks)
+        execution.start()
 
     # This is a collaborative cancel, so it can be called from non-main thread.
     def cancel(self) -> None:
@@ -78,12 +78,9 @@ class ThreadExecutionHandler:
         return execution.status
 
     @property
-    def on_exit(self) -> Event[ThreadExecutionExit]:
+    def on_exit(self) -> Event[ThreadExecutionExit[T]]:
         execution = self._manager.get_execution(self._id)
         if execution is None:
             raise ValueError(f"`execution` does not exist; {self._id=}")
         return execution.on_exit
 
-
-
-# afafaa

@@ -26,7 +26,7 @@ class ThreadExecutionFactory:
             else:
                 outcome = Success(ret)
             exit_entity = ThreadExecutionExit(id=id_, outcome=outcome)
-            self._manager.submit_result(exit_entity)
+            self._manager.submit_exit_entity(exit_entity)
 
         thread = Thread(target=_run, daemon=True, args=(cancel_token,))
         execution = ThreadExecution(id=id_, thread=thread, cancel_token=cancel_token)

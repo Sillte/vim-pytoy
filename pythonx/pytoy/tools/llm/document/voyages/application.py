@@ -208,7 +208,7 @@ class VoyageInteractionCreator:
     def create_evolve_interaction(
         self,
         evolve_request: EvolveRequest,
-        on_success: Callable[[EvolveResponse], None],
+        handle_output: Callable[[EvolveResponse], None],
         on_failure: Callable[[Exception], None],
         llm_param: LLMParam | None = None,
         connection_name: str | None = None,
@@ -220,13 +220,13 @@ class VoyageInteractionCreator:
         )
         execution_request = LLMExecutionRequest(task_spec=task_spec, input=evolve_request)
         executor = LLMExecutor()
-        return executor.execute(execution_request, hooks=LLMExecutionHooks(on_success=on_success, on_failure=on_failure))
+        return executor.execute(execution_request, hooks=LLMExecutionHooks.from_any(handle_output=handle_output, on_exception=on_failure))
 
 
     def create_reflect_interaction(
         self,
         reflect_request: ReflectRequest,
-        on_success: Callable[[ReflectResponse], None],
+        handle_output: Callable[[ReflectResponse], None],
         on_failure: Callable[[Exception], None],
         llm_param: LLMParam | None = None,
         connection_name: str | None = None,
@@ -238,4 +238,4 @@ class VoyageInteractionCreator:
         )
         execution_request = LLMExecutionRequest(task_spec=task_spec, input=reflect_request)
         executor = LLMExecutor()
-        return executor.execute(execution_request, hooks=LLMExecutionHooks(on_success=on_success, on_failure=on_failure))
+        return executor.execute(execution_request, hooks=LLMExecutionHooks.from_any(handle_output=handle_output, on_exception=on_failure))

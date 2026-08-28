@@ -1,18 +1,20 @@
 from __future__ import annotations
 from typing import Any, Self
+from functools import cached_property
 
 import uuid
 import logging
 
 from typing import Callable
-from pytoy_llm.task.models import TaskSpec, TaskContextState, TaskResponse
+from pytoy_llm.task.models import TaskSpec, TaskContextState, TaskResponse, TaskResult
 
 import time
 from dataclasses import dataclass, field
 from pytoy.shared.lib.event import Event, EventEmitter
-from pytoy.shared.lib.outcome import Outcome, Success, Error
+from pytoy.shared.lib.outcome import Outcome, Success, Error, is_success, is_error
 
 from pytoy.shared.timertask.thread_execution import ThreadExecutionHandler, ThreadExecutionRequest, ThreadExecutionStatus, ThreadExecutionExit
+
 
 type LLMExecutionID = str
 type LLMExecutionStatus = ThreadExecutionStatus
@@ -61,15 +63,15 @@ class LLMExecutionResult[T]:
 @dataclass(frozen=True)
 class LLMExecutionExit[T]:
     id: str
-    outcome: Outcome[TaskResponse[T], Exception]
+    outcome: Outcome[T, Exception]
 
 
 @dataclass(frozen=True)
 class LLMExecutionHooks[T]:
     """Recommendation policy... Use `on_finish` rather than on_success / on_failure."""
 
-    on_success: Callable[[T], None]
-    on_failure: Callable[[Exception], None]
+    on_finish: Callable[[TaskResult[T]], None]
+    on_exception: Callable[[Exception], None]
 
     @staticmethod
     def merge(hook1: "LLMExecutionHooks", hook2: "LLMExecutionHooks") -> "LLMExecutionHooks":
@@ -93,10 +95,22 @@ class LLMExecutionHooks[T]:
         return LLMExecutionHooks(**merged_kwargs)
 
     @classmethod
-    def from_any(cls, on_success: Callable[[T], None] | None = None, on_failure: Callable[[Exception], None] | None = None) -> Self:
-        on_success = on_success or (lambda _: None)
-        on_failure = on_failure or (lambda _: None)
-        return cls(on_success=on_success, on_failure=on_failure)
+    def from_any(cls, on_finish: Callable[[TaskResult[T]], None] | None = None, on_exception: Callable[[Exception], None] | None = None, 
+                 handle_output: Callable[[T], None] | None = None) -> Self:
+        def _resolve_handle_output(
+            target: Callable[[TaskResult[T]], None],
+            handle_output: Callable[[T], None],
+        ) -> Callable[[TaskResult[T]], None]:
+            def handler(result: TaskResult[T]) -> None:
+                target(result)
+                handle_output(result.output)
+
+            return handler
+
+        on_finish = on_finish or (lambda _: None)
+        on_exception = on_exception or (lambda _: None)
+        on_finish = _resolve_handle_output(on_finish, handle_output) if handle_output else on_finish
+        return cls(on_finish=on_finish, on_exception=on_exception)
         
 
 
@@ -117,7 +131,7 @@ class LLMExecution[T]:
     thread_handler: ThreadExecutionHandler
     request: LLMExecutionRequest[T]
     status: LLMExecutionStatus = "created"
-    on_exit_emitter: EventEmitter[LLMExecutionExit] = field(default_factory=lambda: EventEmitter())
+    on_exit_emitter: EventEmitter[LLMExecutionExit[T]] = field(default_factory=lambda: EventEmitter())
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: float = field(default_factory=lambda: time.time())
 
@@ -130,22 +144,15 @@ class LLMExecution[T]:
 
     def start(self, hooks: LLMExecutionHooks) -> None:
         self.status = "running"
-        self.hooks = hooks
-
-        self.thread_handler.on_exit.subscribe(self._resolve_exit)
-                        
-
-    @property
-    def on_exit(self) -> Event[LLMExecutionExit]:
-        return self.on_exit_emitter.event
+        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_success).map(lambda success: success.value).once().subscribe(hooks.on_finish)
+        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(lambda error: error.exception).once().subscribe(hooks.on_exception)
+        self.thread_handler.start()
 
 
-    def _resolve_exit(self, exit_entity: ThreadExecutionExit[LLMExecutionExit, Exception]) -> None:
-        match exit_entity.outcome:
-            case Success(value):
-                llm_exit_entity = LLMExecutionExit(id=self.id, outcome=value.outcome)
-            case Error(error):
-                llm_exit_entity = LLMExecutionExit(id=self.id, outcome=Error(error))
-        self.on_exit_emitter.fire(llm_exit_entity)
+    @cached_property
+    def on_exit(self) -> Event[LLMExecutionExit[T]]:
+        def _convert(thread_exit: ThreadExecutionExit[T]) -> LLMExecutionExit[T]: 
+            return LLMExecutionExit(id=self.id, outcome=thread_exit.outcome)
+        return self.thread_handler.on_exit.map(_convert)
 
 

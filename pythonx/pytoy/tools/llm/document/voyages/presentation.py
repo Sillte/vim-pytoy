@@ -109,11 +109,11 @@ class DocumentVoyageUI:
     def evolve(self):
         evolve_request = self._construct_evolve_request()
         self._interaction_creator.create_evolve_interaction(
-            evolve_request, on_success=self.on_evolve, on_failure=self.on_failure
+            evolve_request, handle_output=self.on_evolve, on_failure=self.on_failure
         )
 
     def reflect(self):
         reflect_request = self._construct_reflect_request()
         self._interaction_creator.create_reflect_interaction(
-            reflect_request, on_success=self.on_reflect, on_failure=self.on_failure
+            reflect_request, handle_output=self.on_reflect, on_failure=self.on_failure
         )

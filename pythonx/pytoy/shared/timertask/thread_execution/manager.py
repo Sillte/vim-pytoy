@@ -3,7 +3,7 @@ import threading
 from threading import Thread
 from queue import Queue, Empty
 from pytoy.shared.lib.backend import can_use_vim
-from .models import  ThreadExecution, ThreadExecutionID, ThreadExecutionHooks, ThreadExecutionQuery, ThreadExecutionExit
+from .models import  ThreadExecution, ThreadExecutionID, ThreadExecutionQuery, ThreadExecutionExit
 
 from pytoy.shared.timertask.timer import TimerTask
 from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
@@ -27,7 +27,7 @@ class ThreadExecutionManager:
     def get_execution(self, execution_id: ThreadExecutionID) -> ThreadExecution | None:
         return self._executions.get(execution_id)
 
-    def submit_result(self, result: ThreadExecutionExit) -> None:
+    def submit_exit_entity(self, result: ThreadExecutionExit) -> None:
         self._queue.put(result)
 
     def select(self, query: ThreadExecutionQuery | None = None) -> Sequence[ThreadExecution]:

@@ -5,9 +5,9 @@ from typing import Self, Sequence
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
-from pytoy.shared.lib.outcome import Outcome, Success, Error, is_success
+from pytoy.shared.lib.outcome import Outcome, Success, Error, is_success, is_error
 
-from. models import  LLMExecutionID, LLMExecutionStatus, LLMExecutionRequest, LLMExecutionHooks, LLMExecutionQuery,  LLMExecutionContext
+from. models import  LLMExecutionID, LLMExecutionStatus, LLMExecutionRequest, LLMExecutionHooks, LLMExecutionQuery,  LLMExecutionContext, LLMExecutionExit
 from .manager import LLMExecutionManager
 from .factory import LLMExecutionFactory
 
@@ -25,7 +25,7 @@ def main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
 
     return wrapper
 
-class LLMExecutionHandler:
+class LLMExecutionHandler[T]:
     def __init__(self, id: LLMExecutionID, *, manager: LLMExecutionManager) -> None:
         self._id = id
         self._manager = manager
@@ -69,11 +69,20 @@ class LLMExecutionHandler:
             request=execution.request,
             hooks=hooks,
         )
-        self._manager.register_context(execution, context)
 
+        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_success).map(lambda success: success.value).once().subscribe(hooks.on_finish)
+        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(lambda error: error.exception).once().subscribe(hooks.on_exception)
+        self._manager.register_context(execution, context)
 
     @property
     def id(self) -> LLMExecutionID:
         return self._id
+
+    @property
+    def on_exit(self) -> Event[LLMExecutionExit[T]]:
+        execution = self._manager.get(self._id)
+        if execution is None:
+            raise ValueError(f"`execution` does not exist; {self._id=}")
+        return execution.on_exit
 
 

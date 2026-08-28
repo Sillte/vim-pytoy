@@ -7,12 +7,12 @@ from typing import Any
 from pytoy.shared.timertask.thread_execution import ThreadExecutionRequest, ThreadExecutor, ThreadExecutionHooks
 from pytoy_llm.event_sinks import LoggerEventSink
 from pytoy_llm.task import TaskRequest, TaskExecutor
-from pytoy.tools.llm.llm_execution.models import LLMExecutionRequest, LLMExecutionHooks, LLMExecution, ExecutionPolicy, LLMExecutionKind, LLMExecutionContext
+from pytoy.tools.llm.llm_execution.models import LLMExecutionRequest, LLMExecutionHooks, ExecutionPolicy, LLMExecutionKind, LLMExecutionQuery
 from pytoy.tools.llm.llm_execution.manager import LLMExecutionManager
 from .handler import LLMExecutionHandler
 
 
-class LLMExecutor:
+class LLMExecutor[T]:
     def __init__(self, *, ctx: GlobalPytoyContext | None = None): 
         if ctx is None:
             ctx = GlobalPytoyContext.get()
@@ -23,49 +23,16 @@ class LLMExecutor:
         return self._execution_manager
 
     def execute(
-        self, request: LLMExecutionRequest, hooks: LLMExecutionHooks | None = None
-    ) -> LLMExecution:
-        if hooks is None:
-            hooks = LLMExecutionHooks.from_any()
+        self, request: LLMExecutionRequest[T], hooks: LLMExecutionHooks[T] | None = None
+    ) -> LLMExecutionHandler:
+        handler = LLMExecutionHandler.create(request)
+        handler.start(hooks=hooks)
+        return handler
 
-        task_request = TaskRequest(spec=request.task_spec, input=request.input, context_state=request.context_state)
 
-        execution_end_emitter = EventEmitter[Any]()
-
-        def _on_finish(sync_output: Any):
-            try:
-                if hooks.on_success:
-                    hooks.on_success(sync_output)
-            except Exception as e:
-                print("Unhandled exception at `on_success`", e)
-            execution_end_emitter.fire(None)
-
-        def _on_error(exception: Exception):
-            try:
-                if hooks.on_failure:
-                    hooks.on_failure(exception)
-            except Exception as e:
-                print("Unhandled exception at `on_failure`", e)
-            execution_end_emitter.fire(None)
-
-        def _main(_) -> Any:
-            logger = request.logger
-            if logger:
-                event_sink = LoggerEventSink(request.logger)
-            else:
-                event_sink = None
-            
-            task_response = TaskExecutor().execute(request=task_request, event_sink=event_sink)
-            return task_response.output
-
-        execution_request = ThreadExecutionRequest(main_func=_main)
-        execution_hooks = ThreadExecutionHooks.from_any(on_finish=_on_finish, on_error=_on_error)
-        thread_handler = ThreadExecutor().execute(execution_request, hooks=execution_hooks)
-        llm_execution = LLMExecution(thread_handler=thread_handler, request=request)
-        llm_context = LLMExecutionContext(hooks=hooks, request=request)
-        self.execution_manager.register_context(llm_execution,  llm_context)
-        return llm_execution
-
-    def can_execute(self, _: LLMExecutionRequest, kind: LLMExecutionKind | None = None) -> bool:
-        policy = ExecutionPolicy(kind=kind)
-        return self._execution_manager.can_execute(policy)
+    def can_execute(self, kind: LLMExecutionKind | None = None) -> bool:
+        query = LLMExecutionQuery(kind=kind)
+        handlers = LLMExecutionHandler.query(query=query)
+        if handlers:
+            return False
+        return True

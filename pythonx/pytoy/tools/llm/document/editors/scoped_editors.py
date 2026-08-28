@@ -236,10 +236,10 @@ class ScopedEditDocumentRequester:
         kind = "ScopedEditor"
         llm_request = LLMExecutionRequest(task_spec=task_spec, input=document, logger=logger, kind=kind)
         executor = LLMExecutor()
-        if not executor.can_execute(llm_request, kind=kind):
+        if not executor.can_execute(kind=kind):
             raise RuntimeError("Already another request is executing for ScopedEditor.")
-        hooks = LLMExecutionHooks(on_success=lambda output: self._apply_output(buffer, output), 
-                               on_failure=lambda exc: self._handle_error(buffer, exc))
+        hooks = LLMExecutionHooks.from_any(handle_output=lambda output: self._apply_output(buffer, output), 
+                                           on_exception=lambda exc: self._handle_error(buffer, exc))
         executor.execute(llm_request, hooks=hooks)
 
 

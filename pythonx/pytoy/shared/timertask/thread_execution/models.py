@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Any, cast, Literal, Self, Sequence, assert_never
+from typing import Callable, cast, Literal, Self, Sequence, assert_never
 from threading import Thread
 from threading import Event as ThreadingEvent
 from dataclasses import dataclass, field
@@ -11,59 +11,58 @@ from pytoy.shared.lib.outcome import Outcome, Success, Error
 type ThreadExecutionID = str
 type CancelToken = ThreadingEvent
 type ThreadExecutionStatus = Literal["created", "running", "finished", "error"]
-type ResultType = Literal["Finished", "Error"]
 
 @dataclass(frozen=True)
-class ThreadExecutionExit[T, E]:
+class ThreadExecutionExit[T]:
     id: ThreadExecutionID
-    outcome: Outcome[T, E]
+    outcome: Outcome[T, Exception]
 
 
 @dataclass(frozen=True)
-class ThreadExecutionHooks:
-    on_finish: Callable[[Any], None]
-    on_error: Callable[[Exception], None]
+class ThreadExecutionHooks[T]:
+    on_finish: Callable[[T], None]
+    on_exception: Callable[[Exception], None]
 
     @classmethod
     def from_any(
-        cls, on_finish: Callable[[Any], None] | None = None, on_error: Callable[[Exception], None] | None = None
+        cls, on_finish: Callable[[T], None] | None = None, on_exception: Callable[[Exception], None] | None = None
     ) -> Self:
-        return cls(on_finish=(on_finish or (lambda _: None)), on_error=(on_error or (lambda _: None)))
+        return cls(on_finish=(on_finish or (lambda _: None)), on_exception=(on_exception or (lambda _: None)))
 
 
 @dataclass
-class ThreadExecution[T, E]:
+class ThreadExecution[T]:
     thread: Thread
     cancel_token: CancelToken
     id: ThreadExecutionID = field(default_factory=lambda: str(uuid.uuid4()))
     status: ThreadExecutionStatus = "created"
-    exit_emitter: EventEmitter[ThreadExecutionExit[T, E]] = field(default_factory=EventEmitter)
+    exit_emitter: EventEmitter[ThreadExecutionExit[T]] = field(default_factory=EventEmitter)
     kind: str = "$default"
 
     @property
-    def on_exit(self) -> Event[ThreadExecutionExit[T, E]]:
+    def on_exit(self) -> Event[ThreadExecutionExit[T]]:
         return self.exit_emitter.event
 
-    def start(self, hooks: ThreadExecutionHooks) -> None:
+    def start(self) -> None:
         if self.status != "created":
             raise RuntimeError(f"When `start` is called, `status` must be `created`, but `{self.status}`")
         self.status = "running"
         self.thread.start()
 
-    def notify_exit(self, execution_exit: ThreadExecutionExit) -> None:
+    def notify_exit(self, execution_exit: ThreadExecutionExit[T]) -> None:
         self.exit_emitter.fire(execution_exit)
 
 @dataclass(frozen=True)
-class ThreadExecutionRequest:
+class ThreadExecutionRequest[T]:
     """
     It is better for `main_func` to get the `CancelToken` and
     check periodically `is_set`.
     """
 
-    main_func: Callable[[CancelToken], Any]
+    main_func: Callable[[CancelToken], T]
 
     @staticmethod
-    def _solve_main_func(main_func: Callable[[CancelToken], Any] | Callable[[], Any]) -> Callable[[CancelToken], Any]:
+    def _solve_main_func(main_func: Callable[[CancelToken], T] | Callable[[], T]) -> Callable[[CancelToken], T]:
         """Wrap the function without the argument."""
         from inspect import signature, Parameter
         from functools import wraps
@@ -72,19 +71,19 @@ class ThreadExecutionRequest:
         params = list(sig.parameters.values())
 
         if len(params) == 0 or all(p.default is not Parameter.empty for p in params):
-            original = cast(Callable[[], Any], main_func)
+            original = cast(Callable[[], T], main_func)
 
             @wraps(original)
-            def wrapper(cancel_token: CancelToken) -> Any:
+            def wrapper(cancel_token: CancelToken) -> T:
                 return original()
 
-            return cast(Callable[[CancelToken], Any], wrapper)
-        return cast(Callable[[CancelToken], Any], main_func)
+            return cast(Callable[[CancelToken], T], wrapper)
+        return cast(Callable[[CancelToken], T], main_func)
 
     @classmethod
     def from_any(
         cls,
-        main_func: Callable[[CancelToken], Any] | Callable[[], Any],
+        main_func: Callable[[CancelToken], T] | Callable[[], T],
     ) -> Self:
         main_func = cls._solve_main_func(main_func)
         return cls(main_func=main_func)

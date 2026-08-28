@@ -362,7 +362,7 @@ class NaiveReviewDocumentRequester:
         self.review_contract = ReviewContract(self.review_buffer_name)
 
     def make_execution(self):
-        def on_success(output):
+        def on_success(output: str):
             self.review_contract.display_review(output)
 
         def on_failure(exception):
@@ -372,7 +372,7 @@ class NaiveReviewDocumentRequester:
 
         logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
         execution_request = LLMExecutionRequest(task_spec=task_spec, input=self.buffer.content, logger=logger)
-        return LLMExecutor().execute(request=execution_request, hooks=LLMExecutionHooks(on_success=on_success, on_failure=on_failure))
+        return LLMExecutor().execute(request=execution_request, hooks=LLMExecutionHooks.from_any(handle_output=on_success, on_exception=on_failure))
 
     def _make_task_spec(self, document: str) -> TaskSpec:
         preparation_spec = make_preparation_spec(document)

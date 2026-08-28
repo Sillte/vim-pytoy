@@ -23,7 +23,7 @@ def test_naive2():
         return 42
 
     executor = ThreadExecutor(manager=ThreadExecutionManager()) # type: ignore
-    hooks = ThreadExecutionHooks(on_finish=MagicMock(), on_error=MagicMock())
+    hooks = ThreadExecutionHooks(on_finish=MagicMock(), on_exception=MagicMock())
 
     request = ThreadExecutionRequest.from_any(
         main_func=simple_task,
@@ -36,5 +36,5 @@ def test_naive2():
     handler._manager._consumer._polling()
 
     hooks.on_finish.assert_called_once_with(42)  # type:ignore
-    hooks.on_error.assert_not_called() # type:ignore
+    hooks.on_exception.assert_not_called() # type:ignore
  
