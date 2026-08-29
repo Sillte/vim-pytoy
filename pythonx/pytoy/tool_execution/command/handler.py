@@ -122,3 +122,13 @@ class CommandExecutionHandler:
         if execution is None:
             raise ValueError(f"`execution` does not exist; {self._id=}")
         return execution.stderr
+
+    @property
+    def command(self) -> str:
+        """Resolved command,"""
+        execution = self._manager.get(self._id)
+        if execution is None:
+            raise ValueError(f"`execution` does not exist; {self._id=}")
+        if isinstance(execution.command, str):
+            return execution.command
+        return " ".join(execution.command)

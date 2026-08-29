@@ -2,23 +2,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Self
 
-from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.job_execution.utils import get_current_directory
 from pytoy.shared.ui import BufferSource, PytoyBuffer
 from pytoy.tool_execution.command import CommandExecutionHandler, CommandExecutionQuery
-from pytoy.tool_execution.command.launcher.quickfix import (
-    QuickfixProfile,  # NOQA
-    make_quickfix_hooks,  # noqa
-)
 from pytoy.tool_execution.command.models import (
     BufferRequest,
-    CommandExecution,
     CommandExecutionContext,
     CommandExecutionHooks,
     CommandExecutionKind,
     CommandExecutionRequest,
+    CommandExecutionResolvedParam,
+    CommandExecutionResult,
     CommandExecutionWrapperType,
-    PostProcessContext,
 )
 
 
@@ -33,22 +28,20 @@ class LaunchProfile:
         return cls(kind=arg)
 
 
-def hide_empty_error_buffer(post_process_context: PostProcessContext) -> None:
-    stderr = post_process_context.stderr
-    if stderr:
-        if not stderr.content.strip():
-            stderr.hide()
+def hide_empty_error_buffer(result: CommandExecutionResult) -> None:
+    stderr_buffer = result.stderr_buffer
+    if stderr_buffer:
+        if not stderr_buffer.content.strip():
+            stderr_buffer.hide()
 
 
-def append_command_hook(command_execution: CommandExecution) -> None:
-    command = command_execution.command
-    if not isinstance(command, str):
-        command = " ".join(command)
-    command_execution.runner.stdout.append(command)
+def append_command_hook(resolved_param: CommandExecutionResolvedParam) -> None:
+    command = resolved_param.command
+    resolved_param.stdout_buffer.append(command)
 
 
 def get_default_hooks() -> CommandExecutionHooks:
-    return CommandExecutionHooks(on_start=append_command_hook, on_post_process=hide_empty_error_buffer)
+    return CommandExecutionHooks(on_start=append_command_hook, on_result=hide_empty_error_buffer)
 
 
 class CommandLauncher:

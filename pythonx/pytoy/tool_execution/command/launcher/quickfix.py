@@ -5,7 +5,6 @@ from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, QuickfixCreator, Quick
 from pytoy.tool_execution.command.models import (
     CommandExecutionHooks,
     CommandExecutionResult,
-    PostProcessContext,
 )
 
 
@@ -37,13 +36,11 @@ def make_quickfix_hooks(quickfix_profile: QuickfixProfile) -> CommandExecutionHo
             case _:
                 assert_never(quickfix_profile.quickfix_source)
 
-    def on_post_process(post_process_context: PostProcessContext):
-        result = post_process_context.result
-        execution = post_process_context.execution
+    def on_post_process(result: CommandExecutionResult):
         quickfix_source = _decide_quickfix_source(result, quickfix_profile)
-        records = quickfix_creator(quickfix_source, execution.cwd)
+        records = quickfix_creator(quickfix_source, result.cwd)
         PytoyQuickfix().handle_records(records, is_open=False)
 
-    quickfix_hooks = CommandExecutionHooks(on_post_process=on_post_process)
+    quickfix_hooks = CommandExecutionHooks(on_result=on_post_process)
 
     return quickfix_hooks

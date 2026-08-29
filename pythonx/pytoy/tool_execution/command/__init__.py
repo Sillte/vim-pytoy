@@ -6,11 +6,13 @@ from pytoy.tool_execution.command.handler import CommandExecutionHandler
 from pytoy.tool_execution.command.models import (
     BufferRequest,
     CommandExecutionEvents,
+    CommandExecutionExit,
     CommandExecutionHooks,
     CommandExecutionID,
     CommandExecutionKind,
     CommandExecutionQuery,
     CommandExecutionRequest,
+    CommandExecutionResolvedParam,
     CommandExecutionResult,
     CommandExecutionStatus,
 )
@@ -28,6 +30,8 @@ __all__ = [
     "CommandExecutionID",
     "CommandExecutionStatus",
     "CommandExecutionKind",
+    "CommandExecutionResolvedParam",
+    "CommandExecutionExit",
 ]
 
 
