@@ -57,6 +57,9 @@ ignore = [
 [tool.ruff.lint.isort]
 known-first-party = ["pytoy", "pytoy-llm"]
 
+[tool.ty.rules]
+unused-ignore-comment = "ignore"
+
 
 [tool.ty.analysis]
 allowed-unresolved-imports = [

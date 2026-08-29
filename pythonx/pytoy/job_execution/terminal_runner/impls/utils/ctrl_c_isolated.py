@@ -11,7 +11,7 @@ import sys
 import time
 
 pid = int(sys.argv[1])
-kernel32 = ctypes.windll.kernel32
+kernel32 = ctypes.windll.kernel32  # type: ignore[unresolved-attribute]
 kernel32.FreeConsole()
 kernel32.AttachConsole(pid)
 kernel32.SetConsoleCtrlHandler(None, True)

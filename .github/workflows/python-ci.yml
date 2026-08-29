@@ -27,7 +27,7 @@ jobs:
         run: uv run ruff check
 
       - name: Run ty
-        run: uv run ty check --ignore unused-ignore-comment
+        run: uv run ty check --ignore
 
       - name: Run pytest
         run: uv run pytest

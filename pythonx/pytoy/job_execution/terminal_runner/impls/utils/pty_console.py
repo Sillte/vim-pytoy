@@ -30,7 +30,7 @@ class WinPtyAdapter(PtyConsoleProtocol):
     def __init__(
         self, cmd: str | list[str], cwd: str | Path | None, size: tuple[int, int], env: dict[str, str] | None = None
     ):
-        from winpty import PtyProcess
+        from winpty import PtyProcess  # type: ignore[unresolved-import]
 
         # Pathオブジェクトを文字列に正規化
         str_cwd = str(cwd) if cwd else None
