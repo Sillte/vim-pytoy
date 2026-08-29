@@ -1,19 +1,22 @@
 from __future__ import annotations
 
+import queue
 import subprocess
 import threading
 from pathlib import Path
+from typing import Any
 
 from pytoy.job_execution.command_runner.impls.core import OutputJobCore
 from pytoy.job_execution.command_runner.models import (
     JobEvents,
     JobID,
-    OutputJobProtocol,
     OutputJobRequest,
     Snapshot,
     SpawnOption,
 )
+from pytoy.job_execution.command_runner.protocol import OutputJobProtocol
 from pytoy.job_execution.process_utils import find_children_pids
+from pytoy.shared.timertask import TimerTask
 
 
 class OutputJobDummy(OutputJobProtocol):
@@ -31,23 +34,48 @@ class OutputJobDummy(OutputJobProtocol):
             cwd=self._cwd,
         )
         self._lock = threading.Lock()
+        self._notification_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
 
         threading.Thread(target=self._read_stdout, daemon=True).start()
         threading.Thread(target=self._read_stderr, daemon=True).start()
         threading.Thread(target=self._wait, daemon=True).start()
+        self._start_notification_dispatch()
 
-    def _read_stdout(self):
+    def _start_notification_dispatch(self) -> None:
+        """Dispatch worker-thread notifications to main thread via TimerTask.
+
+        Fulfills the main-thread event contract: all JobEvents must be emitted
+        from the main thread (see README.md Design section).
+        """
+
+        def _dispatch_pending() -> None:
+            while True:
+                try:
+                    event_type, data = self._notification_queue.get_nowait()
+                    if event_type == "stdout":
+                        self._core.emit_stdout(data)
+                    elif event_type == "stderr":
+                        self._core.emit_stderr(data)
+                    elif event_type == "exit":
+                        self._core.emit_exit(self, data)
+                except queue.Empty:
+                    break
+
+        TimerTask.register(_dispatch_pending, interval=10)
+
+    def _read_stdout(self) -> None:
         assert self._proc.stdout
         for line in self._proc.stdout:
-            self._core.emit_stdout(line.rstrip("\n"))
+            self._notification_queue.put(("stdout", line.rstrip("\n")))
 
-    def _read_stderr(self):
+    def _read_stderr(self) -> None:
         assert self._proc.stderr
         for line in self._proc.stderr:
-            self._core.emit_stderr(line.rstrip("\n"))
+            self._notification_queue.put(("stderr", line.rstrip("\n")))
 
-    def _wait(self):
+    def _wait(self) -> None:
         code = self._proc.wait()
+        self._notification_queue.put(("exit", code))
         self._finalize(code)
 
     @property
@@ -100,9 +128,9 @@ class OutputJobDummy(OutputJobProtocol):
     def events(self) -> JobEvents:
         return self._core.events
 
-    def _finalize(self, code):
+    def _finalize(self, code: int) -> None:
+        """Mark job as no longer alive (called from worker thread via Queue)."""
         with self._lock:
             if not self._alive:
                 return
             self._alive = False
-        self._core.emit_exit(self, code)

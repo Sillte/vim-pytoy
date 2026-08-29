@@ -6,9 +6,9 @@ from typing import Any
 from pytoy.job_execution.command_runner.models import (
     JobEvents,
     JobResult,
-    OutputJobProtocol,
     Snapshot,
 )
+from pytoy.job_execution.command_runner.protocol import OutputJobProtocol
 from pytoy.shared.lib.event.domain import EventEmitter
 
 
