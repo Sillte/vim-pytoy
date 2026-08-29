@@ -16,7 +16,6 @@ class CommandExecutor:
     def __init__(self, buffer_request: BufferRequest | str, *, ctx: GlobalPytoyContext | None = None):
         if isinstance(buffer_request, str):
             buffer_request = BufferRequest.from_str(buffer_request)
-        # Once implementation is ended.
         if ctx is None:
             from pytoy.contexts.pytoy import GlobalPytoyContext
 
