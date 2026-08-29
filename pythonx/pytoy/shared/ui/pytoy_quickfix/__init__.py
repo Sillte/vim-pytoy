@@ -3,6 +3,7 @@ it takes workaround.
 Due to specification, In case of VSCode, only quickfix-like code is used.
 """
 
+import re
 from pathlib import Path
 from typing import Callable, Sequence
 
@@ -128,25 +129,23 @@ type QuickfixCreator = Callable[[str, Path], Sequence[QuickfixRecord]]
 
 
 def to_quickfix_creator(regex: QuickfixRecordRegex | QuickfixCreator) -> QuickfixCreator:
-    if callable(regex):
+    if isinstance(regex, str):
+        pattern = re.compile(regex)
+
+        def creator_impl(content: str, cwd: Path) -> Sequence[QuickfixRecord]:
+            records = []
+            lines = content.split("\n")
+            for line in lines:
+                m = pattern.match(line)
+                if m:
+                    row = m.groupdict()
+                    record = QuickfixRecord.from_dict(row, cwd)
+                    records.append(record)
+            return records
+
+        return creator_impl
+    else:
         return regex
-
-    import re
-
-    pattern = re.compile(regex)
-
-    def creator(content: str, cwd: Path) -> Sequence[QuickfixRecord]:
-        records = []
-        lines = content.split("\n")
-        for line in lines:
-            m = pattern.match(line)
-            if m:
-                row = m.groupdict()
-                record = QuickfixRecord.from_dict(row, cwd)
-                records.append(record)
-        return records
-
-    return creator
 
 
 if __name__ == "__main__":

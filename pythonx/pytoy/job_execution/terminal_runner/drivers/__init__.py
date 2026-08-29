@@ -21,7 +21,7 @@ class TerminalDriverManager:
         self._drivers: dict[str, type[TerminalDriverProtocol]] = {}
 
     def register(self, driver_kind: str):
-        def _wrap(driver_class: type[TerminalDriverProtocol]):
+        def _wrap[T: TerminalDriverProtocol](driver_class: type[T]) -> type[T]:
             self._drivers[driver_kind] = driver_class
             return driver_class
 
@@ -135,7 +135,7 @@ class ShellDriver(TerminalDriverProtocol):
     def __init__(self, name: str = "shell"):
         import os
 
-        self._impl = CmdExeDriver(name) if os.name == "nt" else BashDriver(name)  # type: ignore
+        self._impl = CmdExeDriver(kind=name) if os.name == "nt" else BashDriver(name)
 
     @property
     def kind(self) -> str:

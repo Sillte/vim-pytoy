@@ -11,7 +11,6 @@ from pyte import Screen, Stream
 
 from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
-from pytoy.job_execution.terminal_runner.impls.utils import send_ctrl_c
 from pytoy.job_execution.terminal_runner.models import (
     ConsoleSnapshot,
     InputOperation,
@@ -61,9 +60,7 @@ class _InputSolverTask:
             try:
                 payload = TerminalJobCore.deal_operation(op, self.enter_eol, self.snapshot_getter)
                 if payload is not None:
-                    vim.session.threadsafe_call(  # type: ignore
-                        lambda: vim.call("chansend", self.job_id, str(payload))
-                    )
+                    vim.session.threadsafe_call(lambda: vim.call("chansend", self.job_id, str(payload)))
             except Exception:
                 pass
             finally:
@@ -149,9 +146,7 @@ class TerminalJobNvim(TerminalJobProtocol):
             return
         match i_code.preference:
             case "sigint":
-                vim.session.threadsafe_call(  # type: ignore
-                    lambda: vim.call("chansend", self.job_id, str("\x03\x03"))
-                )
+                vim.session.threadsafe_call(lambda: vim.call("chansend", self.job_id, str("\x03\x03")))
             case "kill_tree":
                 TerminalJobCore.kill_processes(self.children_pids)
 

@@ -50,3 +50,4 @@ tabpages: list[Tabpage]
 call: Any
 api: Any
 fn: Any
+session: Any

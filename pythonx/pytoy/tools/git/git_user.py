@@ -3,7 +3,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from subprocess import PIPE
-from typing import Callable, List
+from typing import Any, Callable, List
 from urllib import parse
 
 from pytoy.job_execution.utils import get_current_directory
@@ -50,13 +50,7 @@ class GitUser:
         return paths
 
     def _run(self, cmd: str, **kwargs):
-        default = dict()
-        default["text"] = True
-        default["cwd"] = self.cwd
-        default["stdout"] = PIPE
-        default["shell"] = True  # To prevent flickering.
-        default.update(kwargs)
-        return subprocess.run(cmd, **default)
+        return subprocess.run(cmd, text=True, cwd=self.cwd, stdout=PIPE, shell=True, **kwargs)
 
 
 @dataclass
@@ -133,7 +127,7 @@ def _to_azure_address(info: GitInfo, option: LinkOption):
         f"?path=/{parse.quote(relpath)}&version=GB{parse.quote(branch)}"
     )
 
-    queries = dict()
+    queries: dict[str, Any] = dict()
     if option.line_start:
         queries["line"] = option.line_start
     if option.line_end:

@@ -77,7 +77,7 @@ class CSpellOneFileChecker:
 
             def __post_init__(self):
                 self.line = int(self.line)
-                self.orig_tuple = tuple([int(elem) for elem in self.orig_tuple])
+                self.orig_tuple = (int(self.orig_tuple[0]), int(self.orig_tuple[1]))
 
         @dataclass
         class _Info:

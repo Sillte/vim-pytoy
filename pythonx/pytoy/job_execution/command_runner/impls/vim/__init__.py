@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Mapping
 
 import vim
 
@@ -54,7 +54,7 @@ class OutputJobVim(OutputJobProtocol):
 
         output_requests = set(job_request.outputs)
 
-        option = {
+        option: dict[str, str | Mapping[str, str]] = {
             "exit_cb": on_exit.impl_name,
             "mode": "nl",  # 行単位
         }
@@ -72,7 +72,7 @@ class OutputJobVim(OutputJobProtocol):
         option["cwd"] = self._cwd.absolute().as_posix()
 
         if env := spawn_option.env:
-            option["env"] = env  # type: ignore
+            option["env"] = env
 
         import json
 

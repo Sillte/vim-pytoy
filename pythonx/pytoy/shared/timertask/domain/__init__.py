@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from textwrap import dedent
-from typing import Any, Callable, Literal, Protocol, Self
+from typing import Callable, Literal, Protocol
 
 type TaskName = str
 type VimFuncName = str

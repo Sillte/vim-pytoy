@@ -11,8 +11,7 @@ from pytoy_llm.task.models import (
 )
 
 from pytoy.tools.llm.document.voyages.domain import Bearing, Compass, EvolvePolicy
-from pytoy.tools.llm.llm_execution.executor import LLMExecutor
-from pytoy.tools.llm.llm_execution.models import LLMExecution, LLMExecutionHooks, LLMExecutionRequest
+from pytoy.tools.llm.llm_execution import LLMExecutionHandler, LLMExecutionHooks, LLMExecutionRequest, LLMExecutor
 
 
 class EvolveRequest(BaseModel, frozen=True):
@@ -209,7 +208,7 @@ class VoyageInteractionCreator:
         on_failure: Callable[[Exception], None],
         llm_param: LLMParam | None = None,
         connection_name: str | None = None,
-    ) -> LLMExecution:
+    ) -> LLMExecutionHandler:
         """Create `evolve` interaction (asynchronous procedure call of `evolve`)"""
         task_spec = build_evolve_task_spec(
             llm_param=llm_param,
@@ -228,7 +227,7 @@ class VoyageInteractionCreator:
         on_failure: Callable[[Exception], None],
         llm_param: LLMParam | None = None,
         connection_name: str | None = None,
-    ) -> LLMExecution:
+    ) -> LLMExecutionHandler:
         """Create `evolve` interaction (asynchronous procedure call of `evolve`)"""
         task_spec = build_reflect_task_spec(
             llm_param=llm_param,

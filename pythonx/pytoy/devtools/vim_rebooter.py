@@ -69,7 +69,7 @@ def _start_vim_detached(cmd):
             cmd,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            preexec_fn=os.setpgrp,  # type: ignore
+            preexec_fn=os.setpgrp,  # pyright: ignore[reportAttributeAccessIssue]
             shell=False,
         )
 

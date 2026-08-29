@@ -4,11 +4,9 @@ from pathlib import Path
 from threading import Thread
 
 import vim
-from pyte import Screen, Stream
 
 from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
-from pytoy.job_execution.terminal_runner.impls.utils.pty_console import PtyConsole
 from pytoy.job_execution.terminal_runner.impls.utils.virtual_tty import VirtualTTY
 from pytoy.job_execution.terminal_runner.models import (
     JobEvents,
@@ -69,7 +67,7 @@ class TerminalJobVSCode(TerminalJobProtocol):
         self._tty = VirtualTTY(cmd, cwd=cwd, env=env, lines=lines, cols=cols, on_output=self._schedule_update)
 
     def _inner(self):
-        vim.session.threadsafe_call(lambda: vim.call(self._on_out.impl_name))  # type: ignore
+        vim.session.threadsafe_call(lambda: vim.call(self._on_out.impl_name))
 
     def send(self, input: str) -> None:
         def _send_thread():
@@ -78,7 +76,9 @@ class TerminalJobVSCode(TerminalJobProtocol):
                 enter_eol = self._driver.eol or TerminalJobCore.get_default_eol()
 
                 # snapshot_getter は pyte (メモリ) を見るだけなのでスレッドから呼んでも安全
-                snapshot_getter = lambda: self.snapshot
+                def snapshot_getter():
+                    return self.snapshot
+
                 for op in ops:
                     payload = TerminalJobCore.deal_operation(op, enter_eol, snapshot_getter)
                     if payload:

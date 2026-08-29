@@ -89,7 +89,7 @@ class PosixPtyAdapter(PtyConsoleProtocol):
     def __init__(
         self, cmd: str | list[str], cwd: str | Path | None, size: tuple[int, int], env: dict[str, str] | None = None
     ):
-        import pexpect
+        from pexpect import spawn  # ty: ignore[unresolved-import]
 
         # リスト形式なら安全にクォートして結合、文字列ならそのまま使用
         if isinstance(cmd, list):
@@ -99,7 +99,7 @@ class PosixPtyAdapter(PtyConsoleProtocol):
 
         str_cwd = str(cwd) if cwd else None
 
-        self._proc = pexpect.spawn(cmd_str, cwd=str_cwd, env=env, dimensions=size)  # type: ignore
+        self._proc = spawn(cmd_str, cwd=str_cwd, env=env, dimensions=size)
 
     def read(self, size: int = 4096) -> str:
         import pexpect
@@ -150,5 +150,12 @@ class PtyConsole:
         # WindowsかPOSIXかを判定して適切なAdapterを返す
         import platform
 
-        adapter_class = WinPtyAdapter if platform.system() == "Windows" else PosixPtyAdapter
+        system = platform.system()
+
+        if system == "Windows":
+            adapter_class = WinPtyAdapter
+        elif system == "Linux":
+            adapter_class = PosixPtyAdapter
+        else:
+            raise NotImplementedError(f"Unsupported platform: {system}")
         return adapter_class(cmd, cwd, size, env)

@@ -1,14 +1,16 @@
 from dataclasses import dataclass
-from typing import Self, Sequence
+from typing import Protocol, Self, Sequence, runtime_checkable
 
 
-@dataclass
-class BaseStatusNode:
+@runtime_checkable
+class BaseStatusNode(Protocol):
     def to_str(self) -> str: ...
 
 
-@dataclass
-class ControlStatusNode(BaseStatusNode):
+@runtime_checkable
+class ControlStatusNode(Protocol):
+    def to_str(self) -> str: ...
+
     @classmethod
     def get_prefix(cls) -> str: ...
 
@@ -128,7 +130,7 @@ class Text(BaseStatusNode):
         return cls(value=line), ""
 
 
-StatusNode = Highlight | VimExpr | Conditional | Align | Text
+StatusNode = ControlStatusNode | Text
 
 
 CONTROL_NODE_TYPES: list[type[ControlStatusNode]] = [Highlight, VimExpr, Conditional, Align]

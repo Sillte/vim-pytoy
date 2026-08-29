@@ -1,4 +1,5 @@
-from typing import Any, Callable
+import functools
+from typing import Callable, cast
 
 from pytoy.shared.lib.backend import can_use_vim
 from pytoy.shared.timertask.domain import (
@@ -10,21 +11,23 @@ from pytoy.shared.timertask.domain import (
 )
 
 
-def _wrap_to_one_argument_func(
-    func: Callable[[], Any] | Callable[[Any], Any],
-) -> Callable[[Any], Any]:
+def _wrap_to_one_argument_func[T, R](
+    func: Callable[[], R] | Callable[[T], R],
+) -> Callable[[T], R]:
     """Wrap the function to one accepting one argument."""
-    import inspect  # inspcet requires a little bit long
+    import inspect  # inspcet requires a little bit long time
 
     sig = inspect.signature(func)
     if len(sig.parameters) == 0:
+        zero_arg_func = cast(Callable[[], R], func)
 
-        def wrapper(_: Any) -> Any:
-            return func()  # type: ignore
+        @functools.wraps(zero_arg_func)
+        def wrapper(_: T) -> R:
+            return zero_arg_func()
 
         return wrapper
     elif len(sig.parameters) == 1:
-        return func  # type: ignore[return-value]
+        return cast(Callable[[T], R], func)
     else:
         raise ValueError("Function must accept either zero or one argument.")
 
@@ -68,16 +71,15 @@ class TimerTask:
         import inspect  # inspect requires a little bit long.
 
         interval = int(interval)
-        if on_finish:
-            on_finish = _wrap_to_one_argument_func(on_finish)
-        if on_error:
-            on_error = _wrap_to_one_argument_func(on_error)
+
+        finish_callback = _wrap_to_one_argument_func(on_finish) if on_finish is not None else None
+        error_callback = _wrap_to_one_argument_func(on_error) if on_error is not None else None
 
         if len(inspect.signature(func).parameters) != 0:
             raise ValueError("Task Callback must be without parameters.")
 
         impl = cls.get_impl()
-        return impl.register(func, interval, name, repeat, on_finish, on_error)
+        return impl.register(func, interval, name, repeat, finish_callback, error_callback)
 
     @classmethod
     def deregister(cls, name: TaskName, *, strict: bool = False):

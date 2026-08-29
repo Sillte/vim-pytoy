@@ -28,7 +28,7 @@ class QueueUpdater:
             try:
                 lines: list[str] = self._queue.get_nowait()
                 content = "\n".join(lines)
-                self._buffer.append(content)  # type: ignore
+                self._buffer.append(content)
             except Empty:
                 break
             except Exception as e:

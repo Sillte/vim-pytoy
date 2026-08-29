@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Protocol, Sequence
 
 from pytoy.shared.ui.status_line.impl_vim.expr_registry import RegistryView
 from pytoy.shared.ui.status_line.impl_vim.models import Highlight, StatusNode, Text, VimExpr
@@ -10,7 +10,7 @@ from pytoy.shared.ui.status_line.models import (
 )
 
 
-class VimStatusNodeConverter[T: StatusLineItem]:
+class VimStatusNodeConverter[T: StatusLineItem](Protocol):
     """
     Note that `StatusLineItem` 1 <-> 1 or2 `StatusNode`.
     """

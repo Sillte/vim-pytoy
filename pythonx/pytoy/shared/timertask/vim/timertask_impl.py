@@ -71,7 +71,7 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
         if get_backend_enum() == BackendEnum.VIM:
             _impl_function()
         else:
-            vim.session.threadsafe_call(lambda *args: _impl_function())  # type:ignore
+            vim.session.threadsafe_call(lambda *args: _impl_function())
 
         return taskname
 
@@ -175,7 +175,7 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
         if get_backend_enum() == BackendEnum.VIM:
             _impl_function()
         else:
-            vim.session.threadsafe_call(lambda *args: _impl_function())  # type:ignore
+            vim.session.threadsafe_call(lambda *args: _impl_function())
 
     def deregister(self, name: TaskName, *, strict: bool = False):
         if strict:

@@ -171,11 +171,11 @@ class CompleterModel:
     impl: CompletionFunction
 
     @classmethod
-    def from_any(cls, arg: Any) -> Self:
-        if callable(arg):
-            return cls(impl=arg)  # type: ignore
-        elif isinstance(arg, Sequence):
+    def from_any(cls, arg: CompletionFunction | Sequence[str]) -> Self:
+        if isinstance(arg, Sequence):
             return cls(impl=lambda: arg)
+        elif callable(arg):
+            return cls(impl=arg)
         raise TypeError(f"Cannot convert `{arg}` to `CompleterModel`")
 
     def __call__(self) -> Sequence[str]:
