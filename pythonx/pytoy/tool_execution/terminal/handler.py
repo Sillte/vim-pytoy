@@ -4,11 +4,13 @@ from functools import wraps
 from typing import Callable, Self, Sequence
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
+from pytoy.shared.lib.event import Event
 from pytoy.tool_execution.terminal.manager import TerminalExecutionManager
 from pytoy.tool_execution.terminal.models import (
     BufferRequest,
     TerminalExecution,
     TerminalExecutionContext,
+    TerminalExecutionExit,
     TerminalExecutionHooks,
     TerminalExecutionID,
     TerminalExecutionQuery,
@@ -43,6 +45,7 @@ class TerminalExecutionHandler:
         self._manager = manager
 
     @classmethod
+    @main_thread_only
     def create(
         cls,
         request: TerminalExecutionRequest,
@@ -90,6 +93,11 @@ class TerminalExecutionHandler:
         )
 
         self._manager.register_context(context)
+
+    @property
+    def event(self) -> Event[TerminalExecutionExit]:
+        execution = self._get_execution()
+        return execution.on_exit
 
     @main_thread_only
     def send(self, content: str) -> None:

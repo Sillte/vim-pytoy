@@ -1,4 +1,7 @@
+import threading
+from functools import wraps
 from pathlib import Path
+from typing import Callable
 
 from pytoy.shared.ui.pytoy_buffer import BufferSource
 from pytoy.tool_execution.terminal.models import (
@@ -14,7 +17,22 @@ from pytoy.tool_execution.terminal.models import (
 from .handler import TerminalExecutionHandler
 
 
+def assert_main_thread() -> None:
+    if threading.current_thread() is not threading.main_thread():
+        raise RuntimeError("This method must be called from the main thread.")
+
+
+def main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        assert_main_thread()
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
 class TerminalExecutionController:
+    @main_thread_only
     def __init__(
         self,
     ):
@@ -46,6 +64,7 @@ class TerminalExecutionController:
         for handler in handlers:
             handler.terminate()
 
+    @main_thread_only
     def get_or_create_handler(
         self,
         driver: TerminalDriverKind | TerminalDriverProtocol,
