@@ -28,4 +28,5 @@ class LLMExecutionFactory:
             return task_response.result
 
         thread_request = ThreadExecutionRequest.from_any(_main)
-        return LLMExecution.from_any(thread_request, llm_request=request)
+        execution = LLMExecution.from_any(thread_request, llm_request=request)
+        return execution

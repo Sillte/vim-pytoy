@@ -217,7 +217,7 @@ class VoyageInteractionCreator:
         execution_request = LLMExecutionRequest(task_spec=task_spec, input=evolve_request)
         executor = LLMExecutor()
         return executor.execute(
-            execution_request, hooks=LLMExecutionHooks.from_any(handle_output=handle_output, on_exception=on_failure)
+            execution_request, hooks=LLMExecutionHooks.from_any(on_output=handle_output, on_exception=on_failure)
         )
 
     def create_reflect_interaction(
@@ -236,5 +236,5 @@ class VoyageInteractionCreator:
         execution_request = LLMExecutionRequest(task_spec=task_spec, input=reflect_request)
         executor = LLMExecutor()
         return executor.execute(
-            execution_request, hooks=LLMExecutionHooks.from_any(handle_output=handle_output, on_exception=on_failure)
+            execution_request, hooks=LLMExecutionHooks.from_any(on_output=handle_output, on_exception=on_failure)
         )

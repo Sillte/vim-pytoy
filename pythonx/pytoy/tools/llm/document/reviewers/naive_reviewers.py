@@ -370,7 +370,7 @@ class NaiveReviewDocumentRequester:
         execution_request = LLMExecutionRequest(task_spec=task_spec, input=self.buffer.content, logger=logger)
         return LLMExecutor().execute(
             request=execution_request,
-            hooks=LLMExecutionHooks.from_any(handle_output=on_success, on_exception=on_failure),
+            hooks=LLMExecutionHooks.from_any(on_output=on_success, on_exception=on_failure),
         )
 
     def _make_task_spec(self, document: str) -> TaskSpec:

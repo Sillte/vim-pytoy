@@ -82,7 +82,7 @@ class LLMExecutionHandler[T]:
 
         self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_success).map(
             lambda success: success.value
-        ).once().subscribe(hooks.on_finish)
+        ).once().subscribe(hooks.on_result)
         self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(
             lambda error: error.exception
         ).once().subscribe(hooks.on_exception)

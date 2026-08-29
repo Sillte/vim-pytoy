@@ -7,10 +7,10 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Any, Callable, Self
 
-from pytoy_llm.task.models import TaskContextState, TaskResponse, TaskResult, TaskSpec
+from pytoy_llm.task.models import TaskContextState, TaskResult, TaskSpec
 
 from pytoy.shared.lib.event import Event, EventEmitter
-from pytoy.shared.lib.outcome import Outcome, is_error, is_success
+from pytoy.shared.lib.outcome import Error, Outcome, Success, is_error, is_success
 from pytoy.shared.timertask.thread_execution import (
     ThreadExecutionExit,
     ThreadExecutionHandler,
@@ -46,7 +46,7 @@ class LLMExecutionRequest[T]:
 @dataclass(frozen=True)
 class LLMExecutionContext[T]:
     request: LLMExecutionRequest[T]
-    hooks: LLMExecutionHooks
+    hooks: LLMExecutionHooks[T]
 
     @property
     def kind(self) -> LLMExecutionKind:
@@ -55,28 +55,32 @@ class LLMExecutionContext[T]:
 
 @dataclass(frozen=True)
 class LLMExecutionResult[T]:
-    execution_id: str
-    task_response: TaskResponse[T]
+    task_result: TaskResult[T]
 
+    @property
     def output(self) -> T:
-        return self.task_response.output
+        return self.task_result.output
+
+    @property
+    def context_state(self) -> TaskContextState:
+        return self.task_result.context_state
 
 
 @dataclass(frozen=True)
 class LLMExecutionExit[T]:
     id: str
-    outcome: Outcome[T, Exception]
+    outcome: Outcome[LLMExecutionResult[T], Exception]
 
 
 @dataclass(frozen=True)
 class LLMExecutionHooks[T]:
     """Recommendation policy... Use `on_finish` rather than on_success / on_failure."""
 
-    on_finish: Callable[[TaskResult[T]], None]
+    on_result: Callable[[T], None]
     on_exception: Callable[[Exception], None]
 
     @staticmethod
-    def merge(hook1: "LLMExecutionHooks", hook2: "LLMExecutionHooks") -> "LLMExecutionHooks":
+    def merge(hook1: LLMExecutionHooks[T], hook2: LLMExecutionHooks[T]) -> LLMExecutionHooks[T]:
         from dataclasses import fields
 
         merged_kwargs = {}
@@ -99,24 +103,25 @@ class LLMExecutionHooks[T]:
     @classmethod
     def from_any(
         cls,
-        on_finish: Callable[[TaskResult[T]], None] | None = None,
+        on_result: Callable[LLMExecutionResult[T], None] | None = None,
         on_exception: Callable[[Exception], None] | None = None,
-        handle_output: Callable[[T], None] | None = None,
+        on_output: Callable[[T], None] | None = None,
     ) -> Self:
         def _resolve_handle_output(
-            target: Callable[[TaskResult[T]], None],
-            handle_output: Callable[[T], None],
-        ) -> Callable[[TaskResult[T]], None]:
-            def handler(result: TaskResult[T]) -> None:
+            target: Callable[[LLMExecutionResult[T]], None],
+            on_output: Callable[[T], None],
+        ) -> Callable[[LLMExecutionResult[T]], None]:
+
+            def handler(result: LLMExecutionResult[T]) -> None:
                 target(result)
-                handle_output(result.output)
+                on_output(result.output)
 
             return handler
 
-        on_finish = on_finish or (lambda _: None)
+        on_result = on_result or (lambda _: None)
         on_exception = on_exception or (lambda _: None)
-        on_finish = _resolve_handle_output(on_finish, handle_output) if handle_output else on_finish
-        return cls(on_finish=on_finish, on_exception=on_exception)
+        on_result = _resolve_handle_output(on_result, on_output) if on_output else on_result
+        return cls(on_result=on_result, on_exception=on_exception)
 
 
 @dataclass(frozen=True)
@@ -133,7 +138,7 @@ class ExecutionPolicy:
 
 @dataclass
 class LLMExecution[T]:
-    thread_handler: ThreadExecutionHandler
+    thread_handler: ThreadExecutionHandler[TaskResult[T]]
     request: LLMExecutionRequest[T]
     status: LLMExecutionStatus = "created"
     on_exit_emitter: EventEmitter[LLMExecutionExit[T]] = field(default_factory=lambda: EventEmitter())
@@ -142,7 +147,9 @@ class LLMExecution[T]:
 
     @classmethod
     def from_any(
-        cls, thread_handler: ThreadExecutionHandler | ThreadExecutionRequest, llm_request: LLMExecutionRequest[T]
+        cls,
+        thread_handler: ThreadExecutionHandler[TaskResult[T]] | ThreadExecutionRequest[T],
+        llm_request: LLMExecutionRequest[T],
     ) -> Self:
         if isinstance(thread_handler, ThreadExecutionRequest):
             thread_handler = ThreadExecutionHandler.create(thread_handler)
@@ -153,15 +160,21 @@ class LLMExecution[T]:
         self.status = "running"
         self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_success).map(
             lambda success: success.value
-        ).once().subscribe(hooks.on_finish)
+        ).once().subscribe(hooks.on_result)
         self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(
             lambda error: error.exception
         ).once().subscribe(hooks.on_exception)
+
         self.thread_handler.start()
 
     @cached_property
     def on_exit(self) -> Event[LLMExecutionExit[T]]:
-        def _convert(thread_exit: ThreadExecutionExit[T]) -> LLMExecutionExit[T]:
-            return LLMExecutionExit(id=self.id, outcome=thread_exit.outcome)
+        def _convert(thread_exit: ThreadExecutionExit[TaskResult[T]]) -> LLMExecutionExit[T]:
+            match thread_exit.outcome:
+                case Success(value):
+                    outcome = Success(LLMExecutionResult(task_result=value))
+                case Error(exception):
+                    outcome = Error(exception)
+            return LLMExecutionExit(id=self.id, outcome=outcome)
 
         return self.thread_handler.on_exit.map(_convert)
