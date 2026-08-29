@@ -22,14 +22,14 @@ class ThreadExecutionExit[T]:
 
 @dataclass(frozen=True)
 class ThreadExecutionHooks[T]:
-    on_finish: Callable[[T], None]
+    on_result: Callable[[T], None]
     on_exception: Callable[[Exception], None]
 
     @classmethod
     def from_any(
         cls, on_finish: Callable[[T], None] | None = None, on_exception: Callable[[Exception], None] | None = None
     ) -> Self:
-        return cls(on_finish=(on_finish or (lambda _: None)), on_exception=(on_exception or (lambda _: None)))
+        return cls(on_result=(on_finish or (lambda _: None)), on_exception=(on_exception or (lambda _: None)))
 
 
 @dataclass

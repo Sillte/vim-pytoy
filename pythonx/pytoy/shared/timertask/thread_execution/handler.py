@@ -65,7 +65,7 @@ class ThreadExecutionHandler[T]:
 
         execution.on_exit.map(lambda exit: exit.outcome).filter(is_success).map(
             lambda success: success.value
-        ).once().subscribe(hooks.on_finish)
+        ).once().subscribe(hooks.on_result)
         execution.on_exit.map(lambda exit: exit.outcome).filter(is_error).map(
             lambda error: error.exception
         ).once().subscribe(hooks.on_exception)
