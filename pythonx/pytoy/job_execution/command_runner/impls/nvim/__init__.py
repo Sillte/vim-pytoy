@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import Any, Callable
 
 import vim
 
@@ -19,21 +19,18 @@ from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.shared.timertask import TimerTask
 
-if TYPE_CHECKING:
-    from pytoy.contexts.vim import GlobalVimContext
-
 
 class OutputJobNvim(OutputJobProtocol):
     def __init__(self, job_request: OutputJobRequest, spawn_option: SpawnOption, *, ctx: Any = None):
         self._name = job_request.name
         self._core = OutputJobCore(self._name)
         self._job_id_int: int = -1
-        self._start(job_request, spawn_option)
+        self._start_impl = self._build_start_impl(job_request, spawn_option)
 
-    def _start(self, job_request: OutputJobRequest, spawn_option: SpawnOption):
+    def _build_start_impl(self, job_request: OutputJobRequest, spawn_option: SpawnOption) -> Callable[[], None]:
         # Neovimのコールバック: (job_id, data, event)
         # dataは必ず文字列のリストで届く
-        def _on_event(job_id: int, data: list[str], event: str):
+        def _on_event(job_id: int, data: Any, event: str):
             def _emit(func: Callable, data: list[str]):
                 n_lines = len(data)
                 for i, line in enumerate(data):
@@ -77,15 +74,22 @@ class OutputJobNvim(OutputJobProtocol):
 
         cmd = job_request.command
 
-        # 実行
-        try:
-            self._job_id_int = vim.call("jobstart", cmd, option)
-        except Exception as e:
-            raise ValueError(f"Failed to start Neovim job: {e}")
+        def start_impl() -> None:
+            try:
+                self._job_id_int = vim.call("jobstart", cmd, option)
+            except Exception as e:
+                raise ValueError(f"Failed to start Neovim job: {e}")
 
-        if self._job_id_int <= 0:
-            # 0: invalid arguments, -1: executable not found
-            raise ValueError(f"Failed to execute the command, jobstart returned {self._job_id_int}")
+            if self._job_id_int <= 0:
+                # 0: invalid arguments, -1: executable not found
+                raise ValueError(f"Failed to execute the command, jobstart returned {self._job_id_int}")
+
+        return start_impl
+
+    def start(self) -> None:
+        if self._job_id_int != -1:
+            raise RuntimeError("OutputJob has already been started.")
+        self._start_impl()
 
     @property
     def alive(self) -> bool:
