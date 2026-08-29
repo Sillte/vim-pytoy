@@ -1,7 +1,7 @@
 from typing import Sequence
 
 from pytoy.shared.ui.pytoy_buffer import BufferSource
-from pytoy.tool_execution.terminal_executor.models import (
+from pytoy.tool_execution.terminal.models import (
     TerminalDriverKind,
     TerminalExecution,
     TerminalExecutionContext,

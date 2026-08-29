@@ -1,6 +1,6 @@
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.tool_execution.llm_execution.manager import LLMExecutionManager
-from pytoy.tool_execution.llm_execution.models import (
+from pytoy.tool_execution.llm.manager import LLMExecutionManager
+from pytoy.tool_execution.llm.models import (
     LLMExecutionHooks,
     LLMExecutionKind,
     LLMExecutionQuery,

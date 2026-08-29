@@ -9,8 +9,8 @@ from pytoy_llm.task.models import InvocationSpecMeta, LLMInvocationSpec, TaskSpe
 from pytoy.shared.pytoy_configuration import PytoyConfiguration
 from pytoy.shared.ui.notifications import EphemeralNotification
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer, make_buffer
-from pytoy.tool_execution.llm_execution.executor import LLMExecutor
-from pytoy.tool_execution.llm_execution.models import LLMExecutionHooks, LLMExecutionRequest
+from pytoy.tool_execution.llm.executor import LLMExecutor
+from pytoy.tool_execution.llm.models import LLMExecutionHooks, LLMExecutionRequest
 from pytoy.tools.llm.document.analyzers import DocumentProfile
 
 type DocumentQuality = Literal[

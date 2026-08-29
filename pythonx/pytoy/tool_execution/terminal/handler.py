@@ -4,8 +4,8 @@ from functools import wraps
 from typing import Callable, Self, Sequence
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.tool_execution.terminal_executor.manager import TerminalExecutionManager
-from pytoy.tool_execution.terminal_executor.models import (
+from pytoy.tool_execution.terminal.manager import TerminalExecutionManager
+from pytoy.tool_execution.terminal.models import (
     BufferRequest,
     TerminalExecution,
     TerminalExecutionContext,

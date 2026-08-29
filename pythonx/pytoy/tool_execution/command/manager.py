@@ -1,7 +1,7 @@
 from typing import Sequence
 
 from pytoy.shared.ui.pytoy_buffer import BufferSource
-from pytoy.tool_execution.command_executor.models import (
+from pytoy.tool_execution.command.models import (
     CommandExecution,
     CommandExecutionContext,
     CommandExecutionID,

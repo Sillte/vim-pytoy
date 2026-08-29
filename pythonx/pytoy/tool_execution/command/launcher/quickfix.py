@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Literal, assert_never
 
 from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, QuickfixCreator, QuickfixRecordRegex
-from pytoy.tool_execution.command_executor.models import (
+from pytoy.tool_execution.command.models import (
     CommandExecutionHooks,
     CommandExecutionResult,
     PostProcessContext,

@@ -5,12 +5,12 @@ from typing import Any, Mapping, Self
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.job_execution.utils import get_current_directory
 from pytoy.shared.ui import BufferSource, PytoyBuffer
-from pytoy.tool_execution.command_executor import CommandExecutionHandler, CommandExecutionQuery
-from pytoy.tool_execution.command_executor.launcher.quickfix import (
+from pytoy.tool_execution.command import CommandExecutionHandler, CommandExecutionQuery
+from pytoy.tool_execution.command.launcher.quickfix import (
     QuickfixProfile,  # NOQA
     make_quickfix_hooks,  # noqa
 )
-from pytoy.tool_execution.command_executor.models import (
+from pytoy.tool_execution.command.models import (
     BufferRequest,
     CommandExecution,
     CommandExecutionContext,

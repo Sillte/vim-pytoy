@@ -3,13 +3,13 @@ from typing import Literal
 from pytoy import TERM_STDOUT
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import make_buffer
-from pytoy.tool_execution.command_executor.launcher import (
+from pytoy.tool_execution.command.launcher import (
     CommandExecutionHooks,
     CommandLauncher,
     LaunchProfile,
     get_default_hooks,
 )
-from pytoy.tool_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
+from pytoy.tool_execution.command.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
 from pytoy.tools.python.path_resolver import PathResolver
 
 

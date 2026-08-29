@@ -10,7 +10,7 @@ from pytoy_llm.task.models import (
     TaskSpec,
 )
 
-from pytoy.tool_execution.llm_execution import LLMExecutionHandler, LLMExecutionHooks, LLMExecutionRequest, LLMExecutor
+from pytoy.tool_execution.llm import LLMExecutionHandler, LLMExecutionHooks, LLMExecutionRequest, LLMExecutor
 from pytoy.tools.llm.document.voyages.domain import Bearing, Compass, EvolvePolicy
 
 

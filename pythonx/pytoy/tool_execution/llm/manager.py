@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from pytoy.tool_execution.llm_execution.models import (
+from pytoy.tool_execution.llm.models import (
     ExecutionPolicy,
     LLMExecution,
     LLMExecutionContext,

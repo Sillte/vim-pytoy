@@ -18,8 +18,8 @@ from pytoy.shared.timertask.thread_execution import add_log_message
 from pytoy.shared.ui.notifications import EphemeralNotification
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_window import CharacterRange
-from pytoy.tool_execution.llm_execution.executor import LLMExecutor
-from pytoy.tool_execution.llm_execution.models import LLMExecutionHooks, LLMExecutionRequest
+from pytoy.tool_execution.llm.executor import LLMExecutor
+from pytoy.tool_execution.llm.models import LLMExecutionHooks, LLMExecutionRequest
 from pytoy.tools.llm.document.analyzers import LanguageKind
 from pytoy.tools.llm.document.editors.edit_rules import CompletionRuleSet, LanguageRuleSet, StyleRuleSet
 

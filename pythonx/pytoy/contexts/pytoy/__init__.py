@@ -11,9 +11,9 @@ from pytoy.contexts.vscode import GlobalVSCodeContext
 if TYPE_CHECKING:
     ...
     from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager
-    from pytoy.tool_execution.command_executor.manager import CommandExecutionManager
-    from pytoy.tool_execution.llm_execution.manager import LLMExecutionManager
-    from pytoy.tool_execution.terminal_executor.manager import TerminalExecutionManager
+    from pytoy.tool_execution.command.manager import CommandExecutionManager
+    from pytoy.tool_execution.llm.manager import LLMExecutionManager
+    from pytoy.tool_execution.terminal.manager import TerminalExecutionManager
     # from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
     # from pytoy.shared.autocmd.autocmd_manager import AutoCmdManager
 
@@ -29,13 +29,13 @@ class GlobalPytoyContext:
 
     @cached_property
     def command_execution_manager(self) -> CommandExecutionManager:
-        from pytoy.tool_execution.command_executor.manager import CommandExecutionManager
+        from pytoy.tool_execution.command.manager import CommandExecutionManager
 
         return CommandExecutionManager()
 
     @cached_property
     def terminal_execution_manager(self) -> TerminalExecutionManager:
-        from pytoy.tool_execution.terminal_executor.manager import TerminalExecutionManager
+        from pytoy.tool_execution.terminal.manager import TerminalExecutionManager
 
         return TerminalExecutionManager()
 
@@ -47,7 +47,7 @@ class GlobalPytoyContext:
 
     @cached_property
     def llm_execution_manager(self) -> LLMExecutionManager:
-        from pytoy.tool_execution.llm_execution.manager import LLMExecutionManager
+        from pytoy.tool_execution.llm.manager import LLMExecutionManager
 
         return LLMExecutionManager()
 

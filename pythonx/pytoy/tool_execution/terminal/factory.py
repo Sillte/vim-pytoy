@@ -11,7 +11,7 @@ from pytoy.job_execution.terminal_runner.models import (
     TerminalDriverProtocol,
 )
 from pytoy.job_execution.utils import get_current_directory
-from pytoy.tool_execution.terminal_executor.models import (
+from pytoy.tool_execution.terminal.models import (
     BufferRequest,
     TerminalDriverKind,
     TerminalExecution,

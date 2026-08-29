@@ -5,13 +5,13 @@ from pathlib import Path
 from typing import Sequence
 
 from pytoy.shared.ui import PytoyBuffer, QuickfixRecord
-from pytoy.tool_execution.command_executor.launcher import (
+from pytoy.tool_execution.command.launcher import (
     CommandExecutionHooks,
     CommandLauncher,
     LaunchProfile,
     get_default_hooks,
 )
-from pytoy.tool_execution.command_executor.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
+from pytoy.tool_execution.command.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
 
 
 class PythonExecutor:
