@@ -1,10 +1,10 @@
+from dataclasses import dataclass
 from typing import Any, Callable, Literal, Sequence, assert_never
 
 from pytoy.shared.lib.event.domain import Event, EventEmitter
 
 ArgumentSpec = Literal["count", "event", "abuf", "afile"]
 
-from dataclasses import dataclass
 
 type Group = str
 
@@ -44,7 +44,7 @@ class VimAutocmd[T: Any]:
 
     @property
     def event(self) -> Event[T]:
-        return self._emitter.event.map(self.payload_mapper.transform)  # noqa:  # notype
+        return self._emitter.event.map(self.payload_mapper.transform)
 
     def _to_args_str(self) -> str:
         """Return the arguments inside of the parentheses.

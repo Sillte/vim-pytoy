@@ -77,7 +77,9 @@ class TerminalJobDummy(TerminalJobProtocol):
                 enter_eol = self._driver.eol or TerminalJobCore.get_default_eol()
 
                 # snapshot_getter は pyte (メモリ) を見るだけなのでスレッドから呼んでも安全
-                snapshot_getter = lambda: self.snapshot
+                def snapshot_getter():
+                    return self.snapshot
+
                 for op in ops:
                     payload = TerminalJobCore.deal_operation(op, enter_eol, snapshot_getter)
                     if payload:

@@ -41,7 +41,7 @@ class MockBuffer:
 
 def test_window_creation(vim_env: MockVim):
     """Test window creation and basic properties"""
-    buf = vim_env.create_buffer(1, "test.txt")
+    vim_env.create_buffer(1, "test.txt")
 
     kernel_registry = dict()
     kernel_registry[1] = VimWindowKernel(1)

@@ -52,8 +52,8 @@ class LLMImportResolver:
 
     def _naive_import(self) -> None:
         try:
-            import litellm
-            from pytoy_llm import completion, run
+            import litellm  # noqa [F401]
+            from pytoy_llm import completion, run  # noqa [F401]
 
             self._imported = True
         except ImportError as e:
