@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Callable, Literal, Mapping, Self
 
 from pytoy.job_execution.command_runner import CommandRunner
-from pytoy.job_execution.command_runner.models import (
+from pytoy.job_execution.command_runner.domain.models import (
     JobEvents,
     JobID,
     JobResult,

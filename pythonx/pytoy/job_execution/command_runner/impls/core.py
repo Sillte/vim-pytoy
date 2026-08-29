@@ -3,12 +3,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from pytoy.job_execution.command_runner.models import (
-    JobEvents,
-    JobResult,
-    Snapshot,
-)
-from pytoy.job_execution.command_runner.protocol import OutputJobProtocol
+from pytoy.job_execution.command_runner.domain import JobEvents, JobResult, OutputJobProtocol, Snapshot
 from pytoy.shared.lib.event.domain import EventEmitter
 
 

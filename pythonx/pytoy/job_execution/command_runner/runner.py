@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
-from pytoy.job_execution.command_runner.models import OutputJobRequest, SpawnOption
-from pytoy.job_execution.command_runner.protocol import JobEvents, JobID, OutputJobProtocol
+from pytoy.job_execution.command_runner.domain.models import OutputJobRequest, SpawnOption
+from pytoy.job_execution.command_runner.domain.protocol import JobEvents, JobID, OutputJobProtocol
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer, make_duo_buffers
@@ -120,6 +120,7 @@ class CommandRunner:
         self._output_job = self._output_job_factory(request, spawn_option)
         self._job_disposables = []
         self._job_disposables += self._wire_events(request, self._output_job.events)
+        self._output_job.start()
         return self._output_job.job_id
 
     def _dispose_job(

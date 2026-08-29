@@ -1,39 +1,36 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING, Callable, Mapping
 
 import vim
 
-from pytoy.job_execution.command_runner.impls.core import OutputJobCore
-from pytoy.job_execution.command_runner.models import (
-    JobEvents,
-    JobID,
+from pytoy.job_execution.command_runner.domain.models import (
     OutputJobRequest,
-    Snapshot,
     SpawnOption,
 )
-from pytoy.job_execution.command_runner.protocol import OutputJobProtocol
+from pytoy.job_execution.command_runner.domain.protocol import JobEvents, JobID, OutputJobProtocol, Snapshot
+from pytoy.job_execution.command_runner.impls.core import OutputJobCore
 from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.shared.timertask import TimerTask
 
-if TYPE_CHECKING:
-    from pytoy.contexts.vim import GlobalVimContext
-
 
 class OutputJobVim(OutputJobProtocol):
-    def __init__(
-        self, job_request: OutputJobRequest, spawn_option: SpawnOption, *, ctx: GlobalVimContext | None = None
-    ):
+    def __init__(self, job_request: OutputJobRequest, spawn_option: SpawnOption):
         self._name = job_request.name
         self._core = OutputJobCore(self._name)
 
         self._stdout_lines = []
         self._stderr_lines = []
-        self._start(job_request, spawn_option)
 
-    def _start(self, job_request: OutputJobRequest, spawn_option: SpawnOption):
+        # _build events.
+        self._start_caller = self._build(job_request, spawn_option)
+
+    def _build(self, job_request: OutputJobRequest, spawn_option: SpawnOption) -> Callable[[], None]:
+        self._jobid = f"{self}_{id(self)}"
+
         on_out = FunctionRegistry.register(lambda _, line: self._core.emit_stdout(line), prefix="OutputJobOut")
         on_err = FunctionRegistry.register(lambda _, line: self._core.emit_stderr(line), prefix="OutputJobErr")
         on_exit = FunctionRegistry.register(
@@ -74,20 +71,22 @@ class OutputJobVim(OutputJobProtocol):
         if env := spawn_option.env:
             option["env"] = env
 
-        import json
-
-        self._jobid = f"{self._name}_{id(self)}"
-
-        vim.command(f"let g:{self._jobid} = job_start({json.dumps(job_request.command)}, {json.dumps(option)})")
         self._disposables.append(
             self.events.on_job_exit.subscribe(lambda _: vim.command(f"silent! unlet g:{self._jobid}"))
         )
 
-        debug_status = vim.eval(f"job_status(g:{self._jobid})")
-        if debug_status == "fail":
-            raise ValueError(
-                f"Failed to execute the command, `{job_request.command=}`, {option=}",
-            )
+        def start_impl() -> None:
+            vim.command(f"let g:{self._jobid} = job_start({json.dumps(job_request.command)}, {json.dumps(option)})")
+            debug_status = vim.eval(f"job_status(g:{self._jobid})")
+            if debug_status == "fail":
+                raise ValueError(
+                    f"Failed to execute the command, `{job_request.command=}`, {option=}",
+                )
+
+        return start_impl
+
+    def start(self) -> None:
+        self._start_caller()
 
     @property
     def cwd(self) -> Path:

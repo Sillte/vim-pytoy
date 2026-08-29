@@ -42,6 +42,7 @@ class JobEvents:
 
 
 class OutputJobProtocol(Protocol):
+    def start(self) -> None: ...
     @property
     def job_id(self) -> JobID | None: ...
 

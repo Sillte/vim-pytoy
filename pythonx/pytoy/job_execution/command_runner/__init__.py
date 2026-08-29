@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pytoy.job_execution.command_runner.models import (
+from pytoy.job_execution.command_runner.domain import (
     JobEvents,
     JobID,
     JobResult,
@@ -8,7 +8,7 @@ from pytoy.job_execution.command_runner.models import (
     Snapshot,
     SpawnOption,
 )
-from pytoy.job_execution.command_runner.protocol import OutputJobProtocol
+from pytoy.job_execution.command_runner.domain.protocol import OutputJobProtocol
 from pytoy.job_execution.command_runner.runner import CommandRunner
 
 __all__ = [
