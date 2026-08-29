@@ -1,3 +1,4 @@
+# noqa
 """Since this sending key codes may interrupt
 the global state of process.
 

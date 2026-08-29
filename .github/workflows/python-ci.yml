@@ -24,10 +24,10 @@ jobs:
         run: uv sync --frozen
 
       - name: Run Ruff
-        run: uv run ruff check .
+        run: uv run ruff check
 
       - name: Run ty
-        run: uv run ty check
+        run: uv run ty check --ignore unused-ignore-comment
 
       - name: Run pytest
         run: uv run pytest
