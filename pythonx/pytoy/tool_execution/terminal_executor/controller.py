@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from pytoy.job_execution.terminal_executor.models import (
+from pytoy.shared.ui.pytoy_buffer import BufferSource
+from pytoy.tool_execution.terminal_executor.models import (
     BufferRequest,
     CommandExecutionWrapperType,
     TerminalDriverKind,
@@ -9,7 +10,6 @@ from pytoy.job_execution.terminal_executor.models import (
     TerminalExecutionQuery,
     TerminalExecutionRequest,
 )
-from pytoy.shared.ui.pytoy_buffer import BufferSource
 
 from .handler import TerminalExecutionHandler
 

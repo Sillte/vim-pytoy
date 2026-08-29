@@ -3,12 +3,6 @@ from pathlib import Path
 from pytoy.contexts.core import GlobalCoreContext
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.job_execution.environment_manager import EnvironmentManager
-from pytoy.job_execution.terminal_executor.models import (
-    BufferRequest,
-    TerminalDriverKind,
-    TerminalExecution,
-    TerminalExecutionRequest,
-)
 from pytoy.job_execution.terminal_runner import TerminalJobRunner
 from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager
 from pytoy.job_execution.terminal_runner.models import (
@@ -17,6 +11,12 @@ from pytoy.job_execution.terminal_runner.models import (
     TerminalDriverProtocol,
 )
 from pytoy.job_execution.utils import get_current_directory
+from pytoy.tool_execution.terminal_executor.models import (
+    BufferRequest,
+    TerminalDriverKind,
+    TerminalExecution,
+    TerminalExecutionRequest,
+)
 
 
 class TerminalExecutionFactory:

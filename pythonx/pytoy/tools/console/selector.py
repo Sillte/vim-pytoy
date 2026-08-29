@@ -2,10 +2,10 @@ from pathlib import Path
 from typing import Literal
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.job_execution.terminal_executor.models import TerminalDriverKind, TerminalDriverProtocol
 from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager
 from pytoy.shared.lib.text import LineRange
 from pytoy.shared.ui.pytoy_window import PytoyWindow
+from pytoy.tool_execution.terminal_executor.models import TerminalDriverKind, TerminalDriverProtocol
 from pytoy.tools.markdown import MarkdownExtractor
 
 

@@ -1,13 +1,13 @@
 from typing import Sequence
 
-from pytoy.job_execution.command_executor.models import (
+from pytoy.shared.ui.pytoy_buffer import BufferSource
+from pytoy.tool_execution.command_executor.models import (
     CommandExecution,
     CommandExecutionContext,
     CommandExecutionID,
     CommandExecutionKind,
     CommandExecutionQuery,
 )
-from pytoy.shared.ui.pytoy_buffer import BufferSource
 
 
 class CommandExecutionManager:

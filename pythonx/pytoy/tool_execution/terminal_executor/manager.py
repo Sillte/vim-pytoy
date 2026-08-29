@@ -1,6 +1,7 @@
 from typing import Sequence
 
-from pytoy.job_execution.terminal_executor.models import (
+from pytoy.shared.ui.pytoy_buffer import BufferSource
+from pytoy.tool_execution.terminal_executor.models import (
     TerminalDriverKind,
     TerminalExecution,
     TerminalExecutionContext,
@@ -8,7 +9,6 @@ from pytoy.job_execution.terminal_executor.models import (
     TerminalExecutionPolicy,
     TerminalExecutionQuery,
 )
-from pytoy.shared.ui.pytoy_buffer import BufferSource
 
 
 class TerminalExecutionManager:
