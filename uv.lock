@@ -3053,7 +3053,7 @@ wheels = [
 [[package]]
 name = "pytoy-llm"
 version = "0.1.1"
-source = { git = "https://github.com/Sillte/pytoy-llm.git?rev=main#6b5392230c7850f4ed2bfc7e63140fa943d9a370" }
+source = { git = "https://github.com/Sillte/pytoy-llm.git?rev=main#41fe2f7a78011f3a8e478f8a875b159a038f6537" }
 dependencies = [
     { name = "gitpython" },
     { name = "litellm" },
