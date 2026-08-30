@@ -5,16 +5,18 @@ from threading import Thread
 
 from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.timertask import TimerTask
-from pytoy.tool_execution.terminal.infra.contract.models import (
-    JobEvents,
+from pytoy.tool_execution.terminal.contract.models import (
     JobID,
     Snapshot,
+)
+from pytoy.tool_execution.terminal.infra.runner.impls.core import TerminalJobCore
+from pytoy.tool_execution.terminal.infra.runner.impls.utils.virtual_tty import VirtualTTY
+from pytoy.tool_execution.terminal.infra.runner.models import (
+    JobEvents,
     SpawnOption,
     TerminalJobProtocol,
     TerminalJobRequest,
 )
-from pytoy.tool_execution.terminal.infra.runner.impls.core import TerminalJobCore
-from pytoy.tool_execution.terminal.infra.runner.impls.utils.virtual_tty import VirtualTTY
 
 
 class TerminalJobDummy(TerminalJobProtocol):

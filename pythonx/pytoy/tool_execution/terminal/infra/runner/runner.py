@@ -4,10 +4,12 @@ from typing import Callable
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer
-from pytoy.tool_execution.terminal.infra.contract.models import (
+from pytoy.tool_execution.terminal.contract.models import (
+    Snapshot,
+)
+from pytoy.tool_execution.terminal.infra.runner.models import (
     JobEvents,
     JobID,
-    Snapshot,
     SpawnOption,
     TerminalJobProtocol,
     TerminalJobRequest,

@@ -4,13 +4,14 @@ from pytoy.contexts.core import GlobalCoreContext
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.job_execution.environment_manager import EnvironmentManager
 from pytoy.job_execution.utils import get_current_directory
-from pytoy.tool_execution.terminal.infra import SpawnOption, TerminalJobRequest, TerminalJobRunner
-from pytoy.tool_execution.terminal.infra.contract.models import (
+from pytoy.tool_execution.terminal.contract.models import (
     CommandWrapperType,
     TerminalDriver,
     TerminalDriverProtocol,
 )
+from pytoy.tool_execution.terminal.infra import TerminalJobRunner
 from pytoy.tool_execution.terminal.infra.driver import TerminalDriverManager
+from pytoy.tool_execution.terminal.infra.runner.models import SpawnOption, TerminalJobRequest
 from pytoy.tool_execution.terminal.models import (
     BufferRequest,
     TerminalDriverKind,

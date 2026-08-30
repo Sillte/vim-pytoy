@@ -12,8 +12,8 @@ if __name__ == "__main__":
     # Simple Tests.
     from pytoy.shared.timertask import TimerTask
     from pytoy.shared.ui.pytoy_window.facade import PytoyWindowProvider
-    from pytoy.tool_execution.terminal.infra.contract.models import TerminalJobRequest
     from pytoy.tool_execution.terminal.infra.driver import IPythonDriver, ShellDriver
+    from pytoy.tool_execution.terminal.infra.runner.models import TerminalJobRequest
     # driver = ShellDriver("cmd.exe")
 
     driver = IPythonDriver()
