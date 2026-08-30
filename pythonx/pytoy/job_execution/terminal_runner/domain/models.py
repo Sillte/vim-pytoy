@@ -141,7 +141,6 @@ class ConsoleConfiguration:
 class TerminalJobRequest:
     driver: TerminalDriverProtocol
     name: str = "default"
-    on_exit: Callable[[Any], None] | None = None
     console: ConsoleConfiguration = field(default_factory=lambda: ConsoleConfiguration())
 
 

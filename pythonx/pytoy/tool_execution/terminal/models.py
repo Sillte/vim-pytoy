@@ -150,12 +150,10 @@ class TerminalExecution:
             ).filter(lambda result: result.exit_code != 0).once().subscribe(hooks.on_exit_code_non_zero)
 
         try:
-            job_request = TerminalJobRequest(driver=self.driver, on_exit=_on_exit)
+            job_request = TerminalJobRequest(driver=self.driver)
             spawn_option = SpawnOption(cwd=self.cwd, env=self.env)
-            self.runner.run(
-                job_request, spawn_option
-            )  # TODO: Improve the life cycle of `events` of runner and change the order of`subscribe` and `run`.
             self.runner.events.on_job_exit.subscribe(_on_exit)
+            self.runner.run(job_request, spawn_option)
         except Exception as e:
             self.exit_emitter.fire(TerminalExecutionExit(id=self.id, outcome=Error(exception=e)))
 

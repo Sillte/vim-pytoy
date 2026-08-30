@@ -93,9 +93,6 @@ class TerminalJobRunner:
         # 3. Job Exit logic
         disposables.append(job_events.on_job_exit.subscribe(lambda _: self._dispose_job()))
 
-        if request.on_exit:
-            disposables.append(job_events.on_job_exit.subscribe(request.on_exit))
-
         return disposables
 
     def run(self, request: TerminalJobRequest, spawn_option: SpawnOption | None = None) -> None:
@@ -180,7 +177,7 @@ if __name__ == "__main__":
     driver = IPythonDriver()
     window = PytoyWindowProvider().open_window("MOCK", "vertical")
 
-    request = TerminalJobRequest(driver=driver, on_exit=lambda _: print("END"))
+    request = TerminalJobRequest(driver=driver)
     runner = TerminalJobRunner(window.buffer)
     runner.run(request)
 
