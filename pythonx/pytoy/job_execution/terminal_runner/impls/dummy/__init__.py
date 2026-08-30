@@ -3,13 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from threading import Thread
 
-from pyte import Screen, Stream
-
 from pytoy.job_execution.process_utils import find_children_pids
-from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
-from pytoy.job_execution.terminal_runner.impls.utils.pty_console import PtyConsole
-from pytoy.job_execution.terminal_runner.impls.utils.virtual_tty import VirtualTTY
-from pytoy.job_execution.terminal_runner.models import (
+from pytoy.job_execution.terminal_runner.domain.models import (
     JobEvents,
     JobID,
     Snapshot,
@@ -17,7 +12,8 @@ from pytoy.job_execution.terminal_runner.models import (
     TerminalJobProtocol,
     TerminalJobRequest,
 )
-from pytoy.shared.lib.function import FunctionRegistry
+from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
+from pytoy.job_execution.terminal_runner.impls.utils.virtual_tty import VirtualTTY
 from pytoy.shared.timertask import TimerTask
 
 
@@ -53,22 +49,20 @@ class TerminalJobDummy(TerminalJobProtocol):
         self._core = TerminalJobCore(self._request, self._spawn_option)
 
         # 1. Setup Callbacks
-        cmd = self._driver.command
-        cwd = self._spawn_option.cwd
-        env = self._spawn_option.env
-        cols = self._request.console.cols or 80
-        lines = self._request.console.lines or 96
-        self._cwd = cwd
+        self._cwd = self._spawn_option.cwd
 
-        self._on_out = FunctionRegistry.register(self._on_update, prefix="CommonTTYOut")
+        self._tty = VirtualTTY(
+            self._driver.command,
+            cwd=self._spawn_option.cwd,
+            env=self._spawn_option.env,
+            lines=self._request.console.lines or 96,
+            cols=self._request.console.cols or 80,
+            on_output=self._schedule_update,
+            on_exit=self._on_tty_exit,
+        )
 
-        # Note: Curretly, `self._on_exit` is not used.
-        self._on_exit = FunctionRegistry.register(self._on_tty_exit, prefix="CommonTTYExit")
-
-        self._tty = VirtualTTY(cmd, cwd=cwd, env=env, lines=lines, cols=cols, on_output=self._schedule_update)
-
-    def _inner(self):
-        self._on_out()
+    def start(self) -> None:
+        self._tty.start()
 
     def send(self, input: str) -> None:
         def _send_thread():

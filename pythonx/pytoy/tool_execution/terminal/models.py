@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Any, Callable, Self
 
 from pytoy.job_execution.terminal_runner import TerminalJobRunner
-from pytoy.job_execution.terminal_runner.models import (
-    CommandExecutionWrapperType,
+from pytoy.job_execution.terminal_runner.domain.models import (
+    CommandWrapperType,
     JobEvents,
     SpawnOption,
     TerminalDriverProtocol,
@@ -47,7 +47,7 @@ class BufferRequest:
 @dataclass(frozen=True)
 class TerminalExecutionRequest:
     driver: TerminalDriverProtocol | TerminalDriverKind
-    command_wrapper: CommandExecutionWrapperType | None = None
+    command_wrapper: CommandWrapperType | None = None
     cwd: str | Path | None = None
     env: dict[str, str] | None = None
 

@@ -9,7 +9,7 @@ from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer, make_duo_buffers
 
 if TYPE_CHECKING:
-    from pytoy.contexts.pytoy import GlobalPytoyContext
+    pass
 
 
 def _solve_buffers(stdout: PytoyBuffer | str | BufferSource, stderr: PytoyBuffer | str | BufferSource | None):
@@ -57,7 +57,6 @@ class CommandRunner:
         *,
         init_buffer: bool = True,
         output_job_factory: Callable[..., OutputJobProtocol] = make_output_job,
-        ctx: GlobalPytoyContext | None = None,
     ) -> None:
         stdout, stderr = self.solve_buffers(stdout, stderr)
         if init_buffer:

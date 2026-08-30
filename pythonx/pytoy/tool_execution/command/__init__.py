@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from pytoy.job_execution.environment_manager import CommandExecutionWrapperType
+from pytoy.job_execution.environment_manager.models import CommandWrapperTypeLike
 from pytoy.tool_execution.command.executor import CommandExecutor
 from pytoy.tool_execution.command.handler import CommandExecutionHandler
 from pytoy.tool_execution.command.models import (
@@ -26,7 +26,7 @@ __all__ = [
     "CommandExecutionResult",
     "CommandExecutionQuery",
     "BufferRequest",
-    "CommandExecutionWrapperType",
+    "CommandWrapperTypeLike",
     "CommandExecutionID",
     "CommandExecutionStatus",
     "CommandExecutionKind",

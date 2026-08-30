@@ -13,14 +13,14 @@ from pytoy.tool_execution.command.models import (
     CommandExecutionRequest,
     CommandExecutionResolvedParam,
     CommandExecutionResult,
-    CommandExecutionWrapperType,
+    CommandWrapperTypeLike,
 )
 
 
 @dataclass(frozen=True)
 class LaunchProfile:
     kind: CommandExecutionKind = "$default"
-    command_wrapper: CommandExecutionWrapperType | None = "auto"
+    command_wrapper: CommandWrapperTypeLike | None = "auto"
     execution_hooks: CommandExecutionHooks | None = None
 
     @classmethod

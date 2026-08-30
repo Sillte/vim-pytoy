@@ -8,22 +8,19 @@ from typing import Any, Sequence
 import vim
 
 from pytoy.job_execution.process_utils import find_children_pids
-from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
-from pytoy.job_execution.terminal_runner.models import (
+from pytoy.job_execution.terminal_runner.domain.models import (
     ConsoleSnapshot,
     InputOperation,
     JobEvents,
     JobID,
-    LineStr,
     RawStr,
     Snapshot,
     SpawnOption,
     TerminalJobProtocol,
     TerminalJobRequest,
-    WaitOperation,
-    WaitUntilOperation,
 )
-from pytoy.shared.lib.function import FunctionRegistry
+from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
+from pytoy.shared.lib.function import FunctionRegistry, RegisteredFunction
 from pytoy.shared.lib.text import CursorPosition
 
 
@@ -35,9 +32,13 @@ class TerminalJobVim(TerminalJobProtocol):
         self._bufnr: int = -1
         self._core = TerminalJobCore(self._request, self._spawn_option)
 
-        self._start()
+        self._on_exit: None | RegisteredFunction = None
+        self._on_out: None | RegisteredFunction = None
 
-    def _start(self) -> None:
+    def start(self) -> None:
+        if self._bufnr > -1:
+            raise RuntimeError("Already `start` is called.")
+
         # 1. Register global Vim functions for callbacks
         self._on_exit = FunctionRegistry.register(self._on_vim_exit, prefix="VimTTYExit")
         self._on_out = FunctionRegistry.register(self._on_vim_output, prefix="VimTTYOut")
@@ -128,8 +129,12 @@ class TerminalJobVim(TerminalJobProtocol):
         from pytoy.shared.timertask import TimerTask
 
         def _inner():
-            FunctionRegistry.deregister(self._on_exit)
-            FunctionRegistry.deregister(self._on_out)
+            if self._on_exit:
+                FunctionRegistry.deregister(self._on_exit)
+                self._on_exit = None
+            if self._on_out:
+                FunctionRegistry.deregister(self._on_out)
+                self._on_out = None
 
         TimerTask.execute_oneshot(_inner, interval=0)
 

@@ -2,7 +2,7 @@ from pytoy.tool_execution.terminal.controller import TerminalExecutionController
 from pytoy.tool_execution.terminal.handler import TerminalExecutionHandler
 from pytoy.tool_execution.terminal.models import (
     BufferRequest,
-    CommandExecutionWrapperType,
+    CommandWrapperType,
     TerminalExecutionContext,
     TerminalExecutionExit,
     TerminalExecutionHooks,
@@ -19,7 +19,7 @@ __all__ = [
     "TerminalExecutionHooks",
     "TerminalExecutionQuery",
     "BufferRequest",
-    "CommandExecutionWrapperType",
+    "CommandWrapperType",
     "TerminalExecutionID",
     "TerminalExecutionResult",
     "TerminalExecutionExit",

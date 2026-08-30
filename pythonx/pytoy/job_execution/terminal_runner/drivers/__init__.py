@@ -2,7 +2,7 @@ from typing import Sequence
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.job_execution.process_utils import force_kill
-from pytoy.job_execution.terminal_runner.models import (
+from pytoy.job_execution.terminal_runner.domain.models import (
     InputOperation,
     InterruptionCode,
     LineStr,

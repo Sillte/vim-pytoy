@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Literal, Self, Sequence, assert_never
 
 from pytoy.job_execution.environment_manager.models import (
-    CommandExecutionWrapperType,
     CommandWrapperType,
+    CommandWrapperTypeLike,
     EnvironmentKind,
     EnvironmentSolverProtocol,
     ExecutionPreference,

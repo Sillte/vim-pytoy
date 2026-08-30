@@ -6,7 +6,7 @@ from typing import Callable
 from pytoy.shared.ui.pytoy_buffer import BufferSource
 from pytoy.tool_execution.terminal.models import (
     BufferRequest,
-    CommandExecutionWrapperType,
+    CommandWrapperType,
     TerminalDriverKind,
     TerminalDriverProtocol,
     TerminalExecutionHooks,
@@ -47,7 +47,7 @@ class TerminalExecutionController:
         buffer_name: str | Path | BufferSource,
         content: str,
         *,
-        command_wrapper: CommandExecutionWrapperType | None = None,
+        command_wrapper: CommandWrapperType | None = None,
         cwd: Path | None = None,
     ) -> TerminalExecutionHandler:
         handler = self.get_or_create_handler(driver, buffer_name, command_wrapper=command_wrapper, cwd=cwd)
@@ -71,7 +71,7 @@ class TerminalExecutionController:
         buffer_name: str | Path | BufferSource,
         *,
         hooks: TerminalExecutionHooks | None = None,
-        command_wrapper: CommandExecutionWrapperType | None = None,
+        command_wrapper: CommandWrapperType | None = None,
         cwd: Path | None = None,
     ) -> TerminalExecutionHandler:
         buffer_source = BufferSource.from_any(buffer_name)

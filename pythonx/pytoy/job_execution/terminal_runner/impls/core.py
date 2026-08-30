@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from pytoy.job_execution.process_utils import find_children_pids
-from pytoy.job_execution.terminal_runner.models import (
+from pytoy.job_execution.terminal_runner.domain.models import (
     InputOperation,
     JobEvents,
     LineStr,

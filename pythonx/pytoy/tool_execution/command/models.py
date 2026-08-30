@@ -13,12 +13,11 @@ from pytoy.job_execution.command_runner.domain import (
     OutputJobRequest,
     SpawnOption,
 )
-from pytoy.job_execution.environment_manager import CommandExecutionWrapperType
+from pytoy.job_execution.environment_manager.models import CommandWrapperTypeLike  # noqa
 from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.shared.lib.outcome import Outcome, Success, is_success
 from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
 
-# type CommandExecutionResult = JobResult
 type CommandExecutionID = JobID
 type CommandExecutionEvents = JobEvents
 
@@ -63,7 +62,7 @@ class BufferRequest:
 class CommandExecutionRequest:
     command: str | list[str]
     cwd: Path | None = None
-    command_wrapper: CommandExecutionWrapperType | None = None
+    command_wrapper: CommandWrapperTypeLike | None = None
     env: Mapping[str, str] | None = None
     kind: CommandExecutionKind = "$default"
     meta: Mapping[str, Any] = field(default_factory=dict)
@@ -73,7 +72,7 @@ class CommandExecutionRequest:
         cls,
         command: str | list[str],
         cwd: str | Path | None = None,
-        command_wrapper: CommandExecutionWrapperType | None = None,
+        command_wrapper: CommandWrapperTypeLike | None = None,
         env: Mapping[str, str] | None = None,
         kind: CommandExecutionKind = "$default",
         meta: Mapping[str, Any] | None = None,

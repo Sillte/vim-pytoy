@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import codecs
 import time
 from pathlib import Path
 from threading import Thread
@@ -8,8 +7,8 @@ from typing import Callable
 
 from pyte import Screen, Stream
 
+from pytoy.job_execution.terminal_runner.domain.models import ConsoleSnapshot, Snapshot
 from pytoy.job_execution.terminal_runner.impls.utils.pty_console import PtyConsole, PtyConsoleProtocol
-from pytoy.job_execution.terminal_runner.models import ConsoleSnapshot, Snapshot
 from pytoy.shared.lib.text import CursorPosition
 
 
@@ -35,7 +34,6 @@ class VirtualTTY:
 
         self._screen: Screen = Screen(cols, lines)
         self._stream: Stream = Stream(self._screen)
-        self._decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
 
         if isinstance(cwd, Path):
             cwd = cwd.as_posix()
@@ -49,16 +47,19 @@ class VirtualTTY:
 
         self._on_output = on_output
         self._on_exit = on_exit
-
-        self._reader_thread: Thread = Thread(
-            target=self._read_loop,
-            daemon=True,
-        )
-        self._reader_thread.start()
+        self._reader_thread: Thread | None = None
 
     # -------------------------
     # PTY interaction
     # -------------------------
+    def start(self) -> None:
+        self._pty.start()
+        if self._reader_thread is None:
+            self._reader_thread = Thread(
+                target=self._read_loop,
+                daemon=True,
+            )
+        self._reader_thread.start()
 
     def send(self, text: str) -> None:
         if self._pty.alive:

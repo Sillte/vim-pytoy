@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Mapping
 
-from pytoy.job_execution.terminal_runner.models import (
+from pytoy.job_execution.terminal_runner.domain.models import (
     JobEvents,
     JobID,
     Snapshot,
@@ -107,7 +107,12 @@ class TerminalJobRunner:
         self._terminal_job = self._terminal_job_factory(request, spawn_option)
 
         self._job_disposables = []
-        self._job_disposables += self._wire_events(request, self._terminal_job.events)
+        self._job_disposables += self._wire_events(
+            request,
+            self._terminal_job.events,
+        )
+
+        self._terminal_job.start()
 
     def send(self, input_str: str) -> None:
         """Send input to the running terminal driver."""

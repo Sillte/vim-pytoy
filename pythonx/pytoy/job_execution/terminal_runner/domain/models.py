@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Hashable, Literal, Protocol, Self, Sequence, runtime_checkable
 
-from pytoy.job_execution.environment_manager import CommandExecutionWrapperType, CommandWrapperType  # noqa
+from pytoy.job_execution.environment_manager import CommandWrapperType
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.text import CursorPosition
 
@@ -158,6 +158,8 @@ class JobEvents:
 
 
 class TerminalJobProtocol(Protocol):
+    def start(self) -> None: ...
+
     @property
     def job_id(self) -> JobID | None: ...
 

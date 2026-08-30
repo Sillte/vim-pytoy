@@ -6,9 +6,7 @@ from threading import Thread
 import vim
 
 from pytoy.job_execution.process_utils import find_children_pids
-from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
-from pytoy.job_execution.terminal_runner.impls.utils.virtual_tty import VirtualTTY
-from pytoy.job_execution.terminal_runner.models import (
+from pytoy.job_execution.terminal_runner.domain.models import (
     JobEvents,
     JobID,
     Snapshot,
@@ -16,14 +14,13 @@ from pytoy.job_execution.terminal_runner.models import (
     TerminalJobProtocol,
     TerminalJobRequest,
 )
+from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
+from pytoy.job_execution.terminal_runner.impls.utils.virtual_tty import VirtualTTY
 from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.shared.timertask import TimerTask
 
 
 class TerminalJobVSCode(TerminalJobProtocol):
-    def _on_update(self):
-        self._core.update_emitter.fire(self.pid)
-
     def _on_tty_exit(self):
         def _inner():
             self._core.exit_emitter.fire(0)
@@ -59,15 +56,12 @@ class TerminalJobVSCode(TerminalJobProtocol):
         lines = self._request.console.lines or 96
         self._cwd = cwd
 
-        self._on_out = FunctionRegistry.register(self._on_update, prefix="CommonTTYOut")
+        self._tty = VirtualTTY(
+            cmd, cwd=cwd, env=env, lines=lines, cols=cols, on_output=self._schedule_update, on_exit=self._on_tty_exit
+        )
 
-        # Note: Curretly, `self._on_exit` is not used.
-        self._on_exit = FunctionRegistry.register(self._on_tty_exit, prefix="CommonTTYExit")
-
-        self._tty = VirtualTTY(cmd, cwd=cwd, env=env, lines=lines, cols=cols, on_output=self._schedule_update)
-
-    def _inner(self):
-        vim.session.threadsafe_call(lambda: vim.call(self._on_out.impl_name))
+    def start(self) -> None:
+        self._tty.start()
 
     def send(self, input: str) -> None:
         def _send_thread():
@@ -97,7 +91,6 @@ class TerminalJobVSCode(TerminalJobProtocol):
 
     def dispose(self) -> None:
         self.terminate()
-        # Cleanup input thread
         self._core.dispose()
 
     @property

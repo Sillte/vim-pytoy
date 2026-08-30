@@ -8,7 +8,7 @@ from .models import (
     BufferRequest,
     CommandExecution,
     CommandExecutionRequest,
-    CommandExecutionWrapperType,
+    CommandWrapperTypeLike,
 )
 
 
@@ -48,7 +48,7 @@ class CommandExecutionFactory:
     def _solve_command(
         self,
         command: str | list[str] | tuple[str],
-        command_wrapper: CommandExecutionWrapperType | None,
+        command_wrapper: CommandWrapperTypeLike | None,
         cwd: str | Path,
     ) -> list[str] | str:
         if callable(command_wrapper):

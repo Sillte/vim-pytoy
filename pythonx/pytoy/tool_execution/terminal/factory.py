@@ -4,12 +4,12 @@ from pytoy.contexts.core import GlobalCoreContext
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.job_execution.environment_manager import EnvironmentManager
 from pytoy.job_execution.terminal_runner import TerminalJobRunner
-from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager
-from pytoy.job_execution.terminal_runner.models import (
-    CommandExecutionWrapperType,
+from pytoy.job_execution.terminal_runner.domain.models import (
+    CommandWrapperType,
     TerminalDriver,
     TerminalDriverProtocol,
 )
+from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager
 from pytoy.job_execution.utils import get_current_directory
 from pytoy.tool_execution.terminal.models import (
     BufferRequest,
@@ -68,7 +68,7 @@ class TerminalExecutionFactory:
     def _resolve_command_environment(
         self,
         driver: TerminalDriverProtocol,
-        command_wrapper: CommandExecutionWrapperType | None,
+        command_wrapper: CommandWrapperType | None,
         *,
         cwd: Path,
     ) -> TerminalDriverProtocol:
