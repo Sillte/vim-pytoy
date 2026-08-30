@@ -26,6 +26,15 @@ terminal executions.
 - Terminal execution completion is represented as an exit event, which is the
   central lifecycle boundary for completion-related notifications.
 
+### Concept of contract 
+
+Contract is a project-specific boundary for extension authors.
+
+In Clean Architecture terminology, some contracts may correspond to ports, while others may simply be shared data types or protocols required to implement an infrastructure extension.
+
+We use the contract package to make the extension boundary explicit, rather than relying solely on the architectural notion of a port.
+
+
 ## Rules
 
 - Main-thread operations that create or modify terminal executions must be

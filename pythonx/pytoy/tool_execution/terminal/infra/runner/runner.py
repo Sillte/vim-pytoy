@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Callable
 
-from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer
@@ -51,7 +50,6 @@ class TerminalJobRunner:
         *,
         init_buffer: bool = True,
         terminal_job_factory: Callable[..., TerminalJobProtocol] = make_terminal_job,
-        ctx: GlobalPytoyContext | None = None,
     ) -> None:
 
         # Terminal behaves on a single buffer

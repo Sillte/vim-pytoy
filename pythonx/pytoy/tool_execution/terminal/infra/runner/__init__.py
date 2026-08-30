@@ -1,18 +1,18 @@
+"""Terminal job runner."""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Mapping
-
-from pytoy.shared.ui.pytoy_buffer import make_duo_buffers
-from pytoy.tool_execution.terminal.infra.contract.models import (
-    TerminalJobRequest,
-)
-
 from .runner import TerminalJobRunner
+
+__all__ = [
+    "TerminalJobRunner",
+]
 
 if __name__ == "__main__":
     # Simple Tests.
     from pytoy.shared.timertask import TimerTask
     from pytoy.shared.ui.pytoy_window.facade import PytoyWindowProvider
+    from pytoy.tool_execution.terminal.infra.contract.models import TerminalJobRequest
     from pytoy.tool_execution.terminal.infra.driver import IPythonDriver, ShellDriver
     # driver = ShellDriver("cmd.exe")
 

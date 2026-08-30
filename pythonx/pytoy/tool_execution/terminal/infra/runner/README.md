@@ -33,6 +33,7 @@ The job model is independent of the terminal mechanism used by a backend.
 Public events requested by `TerminalJobRequest` are executed on the main
 thread.
 
+
 ## Rules
 
 - Construction does not start execution.
