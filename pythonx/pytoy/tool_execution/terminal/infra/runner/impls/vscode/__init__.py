@@ -3,8 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from threading import Thread
 
+import vim
+
 from pytoy.job_execution.process_utils import find_children_pids
-from pytoy.job_execution.terminal_runner.contract.models import (
+from pytoy.shared.timertask import TimerTask
+from pytoy.tool_execution.terminal.infra.contract.models import (
     JobEvents,
     JobID,
     Snapshot,
@@ -12,21 +15,17 @@ from pytoy.job_execution.terminal_runner.contract.models import (
     TerminalJobProtocol,
     TerminalJobRequest,
 )
-from pytoy.job_execution.terminal_runner.impls.core import TerminalJobCore
-from pytoy.job_execution.terminal_runner.impls.utils.virtual_tty import VirtualTTY
-from pytoy.shared.timertask import TimerTask
+from pytoy.tool_execution.terminal.infra.runner.impls.core import TerminalJobCore
+from pytoy.tool_execution.terminal.infra.runner.impls.utils.virtual_tty import VirtualTTY
 
 
-class TerminalJobDummy(TerminalJobProtocol):
-    def _on_update(self):
-        self._core.update_emitter.fire(self.pid)
-
+class TerminalJobVSCode(TerminalJobProtocol):
     def _on_tty_exit(self):
         def _inner():
             self._core.exit_emitter.fire(0)
             self.dispose()
 
-        TimerTask.execute_oneshot(lambda: _inner(), interval=0)
+        TimerTask.execute_oneshot(lambda: _inner())
 
     def _schedule_update(self):
         if self._update_scheduled:
@@ -38,7 +37,7 @@ class TerminalJobDummy(TerminalJobProtocol):
             self._update_scheduled = False
             self._core.update_emitter.fire(self.pid)
 
-        TimerTask.execute_oneshot(lambda: _fire())
+        TimerTask.execute_oneshot(lambda: _fire(), interval=500)
 
     def __init__(self, request: TerminalJobRequest, spawn_option: SpawnOption | None = None):
         self._request = request
@@ -49,16 +48,15 @@ class TerminalJobDummy(TerminalJobProtocol):
         self._core = TerminalJobCore(self._request, self._spawn_option)
 
         # 1. Setup Callbacks
-        self._cwd = self._spawn_option.cwd
+        cmd = self._driver.command
+        cwd = self._spawn_option.cwd
+        env = self._spawn_option.env
+        cols = self._request.console.cols or 80
+        lines = self._request.console.lines or 96
+        self._cwd = cwd
 
         self._tty = VirtualTTY(
-            self._driver.command,
-            cwd=self._spawn_option.cwd,
-            env=self._spawn_option.env,
-            lines=self._request.console.lines or 96,
-            cols=self._request.console.cols or 80,
-            on_output=self._schedule_update,
-            on_exit=self._on_tty_exit,
+            cmd, cwd=cwd, env=env, lines=lines, cols=cols, on_output=self._schedule_update, on_exit=self._on_tty_exit
         )
 
     def start(self) -> None:
@@ -92,7 +90,6 @@ class TerminalJobDummy(TerminalJobProtocol):
 
     def dispose(self) -> None:
         self.terminate()
-        # Cleanup input thread
         self._core.dispose()
 
     @property

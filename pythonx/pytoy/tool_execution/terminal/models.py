@@ -5,17 +5,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Self
 
-from pytoy.job_execution.terminal_runner import TerminalJobRunner
-from pytoy.job_execution.terminal_runner.contract.models import (
-    CommandWrapperType,
-    JobEvents,
-    SpawnOption,
-    TerminalDriverProtocol,
-    TerminalJobRequest,
-)
 from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.shared.lib.outcome import Error, Outcome, Success, is_success
 from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
+from pytoy.tool_execution.terminal.infra.contract.models import (
+    CommandWrapperType,
+    JobEvents,
+    TerminalDriverProtocol,
+)
+from pytoy.tool_execution.terminal.infra.runner.runner import TerminalJobRunner
 
 type TerminalExecutionID = str
 type TerminalExecutionEvents = JobEvents
@@ -150,12 +148,11 @@ class TerminalExecution:
             ).filter(lambda result: result.exit_code != 0).once().subscribe(hooks.on_exit_code_non_zero)
 
         try:
-            job_request = TerminalJobRequest(driver=self.driver)
-            spawn_option = SpawnOption(cwd=self.cwd, env=self.env)
             self.runner.events.on_job_exit.subscribe(_on_exit)
-            self.runner.run(job_request, spawn_option)
+            self.runner.run()
         except Exception as e:
             self.exit_emitter.fire(TerminalExecutionExit(id=self.id, outcome=Error(exception=e)))
+            print("CHECK", e)
 
 
 @dataclass(frozen=True)

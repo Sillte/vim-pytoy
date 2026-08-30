@@ -75,8 +75,8 @@ class WinPtyAdapter(PtyConsoleProtocol):
         """Unfortunately, this does not work in the environment
         VSCode + neovim extension.
         """
-        from pytoy.job_execution.terminal_runner.impls.utils import find_children
-        from pytoy.job_execution.terminal_runner.impls.utils import send_ctrl_c as func
+        from pytoy.tool_execution.terminal.infra.runner.impls.utils import find_children
+        from pytoy.tool_execution.terminal.infra.runner.impls.utils import send_ctrl_c as func
 
         self.proc.write("\x03\x03\x03")
         if self.pid:

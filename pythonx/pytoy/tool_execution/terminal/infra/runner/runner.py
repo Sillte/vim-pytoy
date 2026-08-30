@@ -1,9 +1,11 @@
-from __future__ import annotations
-
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Mapping
+from typing import Callable
 
-from pytoy.job_execution.terminal_runner.contract.models import (
+from pytoy.contexts.pytoy import GlobalPytoyContext
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
+from pytoy.shared.ui import PytoyBuffer
+from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer
+from pytoy.tool_execution.terminal.infra.contract.models import (
     JobEvents,
     JobID,
     Snapshot,
@@ -11,30 +13,24 @@ from pytoy.job_execution.terminal_runner.contract.models import (
     TerminalJobProtocol,
     TerminalJobRequest,
 )
-from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
-from pytoy.shared.ui import PytoyBuffer
-from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer, make_duo_buffers
-
-if TYPE_CHECKING:
-    from pytoy.contexts.pytoy import GlobalPytoyContext
 
 
 def make_terminal_job(job_request: TerminalJobRequest, spawn_option: SpawnOption) -> TerminalJobProtocol:
     backend_enum = get_backend_enum()
     if backend_enum == BackendEnum.VIM:
-        from pytoy.job_execution.terminal_runner.impls.vim import TerminalJobVim
+        from pytoy.tool_execution.terminal.infra.runner.impls.vim import TerminalJobVim
 
         return TerminalJobVim(job_request, spawn_option)
     elif backend_enum == BackendEnum.NVIM:
-        from pytoy.job_execution.terminal_runner.impls.nvim import TerminalJobNvim
+        from pytoy.tool_execution.terminal.infra.runner.impls.nvim import TerminalJobNvim
 
         return TerminalJobNvim(job_request, spawn_option)
     elif backend_enum == BackendEnum.VSCODE:
-        from pytoy.job_execution.terminal_runner.impls.vscode import TerminalJobVSCode
+        from pytoy.tool_execution.terminal.infra.runner.impls.vscode import TerminalJobVSCode
 
         return TerminalJobVSCode(job_request, spawn_option)
     else:
-        from pytoy.job_execution.terminal_runner.impls.dummy import TerminalJobDummy
+        from pytoy.tool_execution.terminal.infra.runner.impls.dummy import TerminalJobDummy
 
         return TerminalJobDummy(job_request, spawn_option)
 
@@ -49,7 +45,9 @@ class TerminalJobRunner:
 
     def __init__(
         self,
+        request: TerminalJobRequest,
         buffer: PytoyBuffer | str,
+        spawn_option: SpawnOption | None = None,
         *,
         init_buffer: bool = True,
         terminal_job_factory: Callable[..., TerminalJobProtocol] = make_terminal_job,
@@ -63,8 +61,8 @@ class TerminalJobRunner:
             self._buffer.init_buffer()
 
         self._terminal_job_factory = terminal_job_factory
-        self._terminal_job: TerminalJobProtocol | None = None
-        self._job_disposables: list[Any] = []
+        self._terminal_job = self._terminal_job_factory(request, spawn_option)
+        self._job_disposables = self._wire_events(request=request, job_events=self._terminal_job.events)
 
     @property
     def buffer(self) -> PytoyBuffer:
@@ -74,7 +72,7 @@ class TerminalJobRunner:
     def job_id(self) -> JobID:
         if self._terminal_job:
             return self._terminal_job.job_id
-        raise RuntimeError("TerminalJob is not created yet.")
+        raise RuntimeError("TerminalJob has disappers already.")
 
     def _wire_events(self, request: TerminalJobRequest, job_events: JobEvents):
         disposables = []
@@ -95,20 +93,9 @@ class TerminalJobRunner:
 
         return disposables
 
-    def run(self, request: TerminalJobRequest, spawn_option: SpawnOption | None = None) -> None:
-        if self._terminal_job:
-            raise RuntimeError("TerminalRunner is already running.")
-
-        spawn_option = spawn_option or SpawnOption()
-
-        self._terminal_job = self._terminal_job_factory(request, spawn_option)
-
-        self._job_disposables = []
-        self._job_disposables += self._wire_events(
-            request,
-            self._terminal_job.events,
-        )
-
+    def run(self) -> None:
+        if self._terminal_job is None:
+            raise RuntimeError("Already, job has disappers.")
         self._terminal_job.start()
 
     def send(self, input_str: str) -> None:
@@ -158,29 +145,10 @@ class TerminalJobRunner:
     @property
     def events(self) -> JobEvents:
         if not self._terminal_job:
-            raise ValueError("Terminal Job is not created.")
+            raise ValueError("Terminal Job is already dead.")
         return self._terminal_job.events
 
     def terminate(self) -> None:
         if not self._terminal_job:
             return
         self._terminal_job.terminate()
-
-
-if __name__ == "__main__":
-    # Simple Tests.
-    from pytoy.job_execution.terminal_runner.drivers import IPythonDriver, ShellDriver
-    from pytoy.shared.timertask import TimerTask
-    from pytoy.shared.ui.pytoy_window.facade import PytoyWindowProvider
-    # driver = ShellDriver("cmd.exe")
-
-    driver = IPythonDriver()
-    window = PytoyWindowProvider().open_window("MOCK", "vertical")
-
-    request = TerminalJobRequest(driver=driver)
-    runner = TerminalJobRunner(window.buffer)
-    runner.run(request)
-
-    TimerTask.execute_oneshot(lambda: runner.send("dir"), interval=500)
-    TimerTask.execute_oneshot(lambda: runner.send("echo BAfAFAF"), interval=1200)
-    TimerTask.execute_oneshot(lambda: print(runner.snapshot.content), interval=3000)  # type: ignore

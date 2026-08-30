@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from pytoy.job_execution.process_utils import find_children_pids
-from pytoy.job_execution.terminal_runner.contract.models import (
+from pytoy.shared.lib.events import EventEmitter
+from pytoy.tool_execution.terminal.infra.contract.models import (
     InputOperation,
     JobEvents,
     LineStr,
@@ -15,7 +16,6 @@ from pytoy.job_execution.terminal_runner.contract.models import (
     WaitOperation,
     WaitUntilOperation,
 )
-from pytoy.shared.lib.events import EventEmitter
 
 
 class TerminalJobCore:

@@ -3,19 +3,21 @@ from pathlib import Path
 from pytoy.contexts.core import GlobalCoreContext
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.job_execution.environment_manager import EnvironmentManager
-from pytoy.job_execution.terminal_runner import TerminalJobRunner
-from pytoy.job_execution.terminal_runner.contract.models import (
+from pytoy.job_execution.utils import get_current_directory
+from pytoy.tool_execution.terminal.infra.contract.models import (
     CommandWrapperType,
     TerminalDriver,
     TerminalDriverProtocol,
 )
-from pytoy.job_execution.terminal_runner.drivers import TerminalDriverManager
-from pytoy.job_execution.utils import get_current_directory
+from pytoy.tool_execution.terminal.infra.driver import TerminalDriverManager
+from pytoy.tool_execution.terminal.infra.runner.runner import TerminalJobRunner
 from pytoy.tool_execution.terminal.models import (
     BufferRequest,
+    SpawnOption,
     TerminalDriverKind,
     TerminalExecution,
     TerminalExecutionRequest,
+    TerminalJobRequest,
 )
 
 
@@ -52,12 +54,12 @@ class TerminalExecutionFactory:
             cwd=cwd,
         )
 
-        runner = TerminalJobRunner(buffer=stdout)
-
+        job_request = TerminalJobRequest(driver=driver)
+        spawn_option = SpawnOption(cwd=cwd, env=request.env)
+        runner = TerminalJobRunner(buffer=stdout, request=job_request, spawn_option=spawn_option)
         execution = TerminalExecution(
             request=request, buffer_request=buffer_request, runner=runner, driver=driver, cwd=cwd, env=request.env
         )
-
         return execution
 
     def _resolve_driver_protocol(self, driver: TerminalDriverKind | TerminalDriverProtocol) -> TerminalDriverProtocol:
