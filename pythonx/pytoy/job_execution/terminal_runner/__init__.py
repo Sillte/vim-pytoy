@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Mapping
 
-from pytoy.job_execution.terminal_runner.domain.models import (
+from pytoy.job_execution.terminal_runner.contract.models import (
     JobEvents,
     JobID,
     Snapshot,

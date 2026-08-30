@@ -7,7 +7,7 @@ from typing import Callable
 
 from pyte import Screen, Stream
 
-from pytoy.job_execution.terminal_runner.domain.models import ConsoleSnapshot, Snapshot
+from pytoy.job_execution.terminal_runner.contract.models import ConsoleSnapshot, Snapshot
 from pytoy.job_execution.terminal_runner.impls.utils.pty_console import PtyConsole, PtyConsoleProtocol
 from pytoy.shared.lib.text import CursorPosition
 

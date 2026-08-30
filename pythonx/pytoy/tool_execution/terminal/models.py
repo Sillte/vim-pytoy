@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Callable, Self
 
 from pytoy.job_execution.terminal_runner import TerminalJobRunner
-from pytoy.job_execution.terminal_runner.domain.models import (
+from pytoy.job_execution.terminal_runner.contract.models import (
     CommandWrapperType,
     JobEvents,
     SpawnOption,

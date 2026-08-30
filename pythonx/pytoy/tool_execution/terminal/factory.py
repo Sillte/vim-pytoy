@@ -4,7 +4,7 @@ from pytoy.contexts.core import GlobalCoreContext
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.job_execution.environment_manager import EnvironmentManager
 from pytoy.job_execution.terminal_runner import TerminalJobRunner
-from pytoy.job_execution.terminal_runner.domain.models import (
+from pytoy.job_execution.terminal_runner.contract.models import (
     CommandWrapperType,
     TerminalDriver,
     TerminalDriverProtocol,
