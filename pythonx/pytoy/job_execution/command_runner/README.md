@@ -13,6 +13,4 @@ notifications before invoking callbacks that may access the UI.
 
 ## Discussions
 
-The Dummy backend needs an application loop or dispatcher with the same
-properties. Whether that should be a dedicated Dummy loop or an `asyncio` loop
-is unresolved.
+The Dummy backend needs an application loop or dispatcher with the same properties. 
