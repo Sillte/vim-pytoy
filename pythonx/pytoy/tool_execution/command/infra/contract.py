@@ -1,37 +1,12 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Hashable, Protocol
+from typing import Protocol
 
 from pytoy.shared.lib.event import Event
 
-type JobID = Hashable
-
-
-@dataclass
-class Snapshot:
-    timestamp: float
-    stdout: str
-    stderr: str
-    name: str
-
-
-@dataclass(frozen=True)
-class JobResult:
-    job_id: JobID
-    status: int
-    snapshot: Snapshot
-
-    @property
-    def stdout(self) -> str:
-        return self.snapshot.stdout
-
-    @property
-    def stderr(self) -> str:
-        return self.snapshot.stderr
-
-    @property
-    def success(self) -> bool:
-        return self.status == 0
+from .models import JobID, JobResult, Snapshot
 
 
 @dataclass(frozen=True)
@@ -43,6 +18,7 @@ class JobEvents:
 
 class OutputJobProtocol(Protocol):
     def start(self) -> None: ...
+
     @property
     def job_id(self) -> JobID | None: ...
 
@@ -70,3 +46,6 @@ class OutputJobProtocol(Protocol):
 
     @property
     def events(self) -> JobEvents: ...
+
+
+__all__ = ["JobEvents", "JobID", "OutputJobProtocol"]

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
-from pytoy.job_execution.command_runner.domain.models import OutputJobRequest, SpawnOption
-from pytoy.job_execution.command_runner.domain.protocol import JobEvents, JobID, OutputJobProtocol
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer, make_duo_buffers
+from pytoy.tool_execution.command.infra.contract import JobEvents, JobID, OutputJobProtocol
+from pytoy.tool_execution.command.infra.models import OutputJobRequest, SpawnOption
 
 if TYPE_CHECKING:
     pass
@@ -30,15 +30,15 @@ def _solve_buffers(stdout: PytoyBuffer | str | BufferSource, stderr: PytoyBuffer
 def make_output_job(job_request: OutputJobRequest, spawn_option: SpawnOption) -> OutputJobProtocol:
     backend_enum = get_backend_enum()
     if backend_enum == BackendEnum.VIM:
-        from pytoy.job_execution.command_runner.impls.vim import OutputJobVim
+        from pytoy.tool_execution.command.infra.impls.vim import OutputJobVim
 
         return OutputJobVim(job_request, spawn_option)
     elif backend_enum in {BackendEnum.NVIM, BackendEnum.VSCODE}:
-        from pytoy.job_execution.command_runner.impls.nvim import OutputJobNvim
+        from pytoy.tool_execution.command.infra.impls.nvim import OutputJobNvim
 
         return OutputJobNvim(job_request, spawn_option)
     else:
-        from pytoy.job_execution.command_runner.impls.dummy import OutputJobDummy
+        from pytoy.tool_execution.command.infra.impls.dummy import OutputJobDummy
 
         return OutputJobDummy(job_request, spawn_option)
 

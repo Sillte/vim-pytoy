@@ -5,19 +5,13 @@ from typing import Any, Callable
 
 import vim
 
-from pytoy.job_execution.command_runner.domain import (
-    JobEvents,
-    JobID,
-    OutputJobProtocol,
-    OutputJobRequest,
-    Snapshot,
-    SpawnOption,
-)
-from pytoy.job_execution.command_runner.impls.core import OutputJobCore
 from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.shared.timertask import TimerTask
+from pytoy.tool_execution.command.infra.contract import JobEvents, JobID, OutputJobProtocol
+from pytoy.tool_execution.command.infra.impls.core import OutputJobCore
+from pytoy.tool_execution.command.infra.models import OutputJobRequest, Snapshot, SpawnOption
 
 
 class OutputJobNvim(OutputJobProtocol):

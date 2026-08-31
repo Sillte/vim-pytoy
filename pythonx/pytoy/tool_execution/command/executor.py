@@ -1,6 +1,6 @@
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.job_execution.command_runner import CommandRunner
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.tool_execution.command.infra import CommandRunner
 from pytoy.tool_execution.command.manager import CommandExecutionManager
 from pytoy.tool_execution.command.models import (
     BufferRequest,

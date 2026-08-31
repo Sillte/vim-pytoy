@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from pytoy.contexts.core import GlobalCoreContext
-from pytoy.job_execution.command_runner import CommandRunner
 from pytoy.job_execution.environment_manager import EnvironmentManager
+from pytoy.tool_execution.command.infra import CommandRunner
 
 from .models import (
     BufferRequest,
