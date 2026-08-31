@@ -1,12 +1,14 @@
 """Unit tests for PytoyBufferVim implementation."""
 
 # Now we can import our actual implementation
-from pytoy.shared.ui.pytoy_buffer.impls.vim import PytoyBufferVim, VimBufferKernel
-from tests.mocks.vim import MockVim
+
+from .mocks.vim import MockVim
 
 
 def test_buffer_init(vim_env: MockVim):
     """Test buffer initialization and content setting"""
+    from pytoy.shared.ui.pytoy_buffer.impls.vim import PytoyBufferVim, VimBufferKernel
+
     # Setup
     buf = vim_env.create_buffer(1, "test.txt")
     kernel_registry = dict()
@@ -34,6 +36,8 @@ def test_buffer_init(vim_env: MockVim):
 def test_buffer_valid(vim_env: MockVim):
     """Test valid property"""
     # Setup kernel registry
+    from pytoy.shared.ui.pytoy_buffer.impls.vim import PytoyBufferVim, VimBufferKernel
+
     kernel_registry = dict()
 
     # Create buffer first

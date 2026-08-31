@@ -39,7 +39,7 @@ def get_timer_task_impl() -> TimerTaskImplProtocol:
 
         return TimerTaskImplVim()
     else:
-        from pytoy.shared.timertask.domain import TimerTaskImplDummy
+        from pytoy.shared.timertask.dummy import TimerTaskImplDummy
 
         return TimerTaskImplDummy()
 

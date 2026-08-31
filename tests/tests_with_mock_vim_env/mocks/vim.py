@@ -39,7 +39,7 @@ class MockVim(MockVimModule):
         self.options = {}
         self.vars = {}
         self.windows = []
-        self.buffers = BufferDict()  # Changed to BufferDict
+        self.buffers = BufferDict()  # type: ignore
         self.tab_pages = []
         self._eval_results = {}
         self._commands = []

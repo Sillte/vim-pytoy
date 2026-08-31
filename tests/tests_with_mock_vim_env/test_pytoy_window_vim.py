@@ -1,7 +1,6 @@
 """Unit tests for PytoyWindowVim implementation."""
 
 # Import implementations
-from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
 
 from .mocks.vim import MockVim
 
@@ -42,6 +41,8 @@ class MockBuffer:
 def test_window_creation(vim_env: MockVim):
     """Test window creation and basic properties"""
     vim_env.create_buffer(1, "test.txt")
+
+    from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
 
     kernel_registry = dict()
     kernel_registry[1] = VimWindowKernel(1)

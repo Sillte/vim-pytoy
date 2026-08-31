@@ -36,37 +36,6 @@ class TimerTaskImplProtocol(Protocol):
     def is_registered(self, name: TaskName) -> bool: ...
 
 
-class TimerTaskImplDummy(TimerTaskImplProtocol):
-    """Currently, the registered `func` is not executed..."""
-
-    def __init__(self):
-        self.tasks: dict[TaskName, OnTaskCallback] = dict()
-
-    def register(
-        self,
-        func: OnTaskCallback,
-        interval: int = 100,
-        name: TaskName | None = None,
-        repeat: int = -1,
-        on_finish: Callable[[NormalStopReason], None] | None = None,
-        on_error: Callable[[Exception], None] | None = None,
-    ) -> TaskName:
-        taskname = name or f"AUTONAME{len(self.tasks) + 1}"
-        self.tasks[taskname] = func
-        return taskname
-
-    def deregister(self, name: TaskName, *, strict: bool = False) -> None:
-        if name not in self.tasks:
-            if strict:
-                raise KeyError(f"Task {name} is not registered.")
-            else:
-                return
-        del self.tasks[name]
-
-    def is_registered(self, name: TaskName) -> bool:
-        return name in self.tasks
-
-
 @dataclass(frozen=True)
 class RegisteredTask:
     name: TaskName
