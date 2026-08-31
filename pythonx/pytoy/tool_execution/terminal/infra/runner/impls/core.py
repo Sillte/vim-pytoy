@@ -7,13 +7,14 @@ from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.lib.events import EventEmitter
 from pytoy.tool_execution.terminal.contract.models import (
     InputOperation,
+    JobEvents,
     LineStr,
     RawStr,
     Snapshot,
     WaitOperation,
     WaitUntilOperation,
 )
-from pytoy.tool_execution.terminal.infra.runner.models import JobEvents, SpawnOption, TerminalJobRequest
+from pytoy.tool_execution.terminal.infra.runner.models import SpawnOption, TerminalJobRequest
 
 
 class TerminalJobCore:

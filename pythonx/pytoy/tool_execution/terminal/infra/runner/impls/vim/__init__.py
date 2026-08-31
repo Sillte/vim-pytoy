@@ -13,6 +13,7 @@ from pytoy.shared.lib.text import CursorPosition
 from pytoy.tool_execution.terminal.contract.models import (
     ConsoleSnapshot,
     InputOperation,
+    JobEvents,
     JobID,
     RawStr,
     Snapshot,
@@ -20,7 +21,6 @@ from pytoy.tool_execution.terminal.contract.models import (
 )
 from pytoy.tool_execution.terminal.infra.runner.impls.core import TerminalJobCore
 from pytoy.tool_execution.terminal.infra.runner.models import (
-    JobEvents,
     SpawnOption,
     TerminalJobRequest,
 )

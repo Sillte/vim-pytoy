@@ -5,13 +5,13 @@ from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer
 from pytoy.tool_execution.terminal.contract.models import (
+    JobEvents,
     JobID,
     Snapshot,
     TerminalJobProtocol,
 )
 
 from .models import (
-    JobEvents,
     SpawnOption,
     TerminalJobRequest,
 )

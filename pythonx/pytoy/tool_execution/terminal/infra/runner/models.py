@@ -1,15 +1,7 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
-from pytoy.shared.lib.event.domain import Event
 from pytoy.tool_execution.terminal.contract.models import TerminalDriverProtocol
-
-
-@dataclass(frozen=True)
-class JobEvents:
-    on_job_exit: Event[Any]
-    on_update: Event[int]
 
 
 @dataclass
