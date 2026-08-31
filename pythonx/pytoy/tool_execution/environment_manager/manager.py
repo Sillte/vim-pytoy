@@ -1,61 +1,14 @@
-# """EnvironmentManager.
-# This class handles the properties related to the `env` parameters of `subprocess`.
-# As of 2026/01, this class handles `uv`.
-# """
-
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Self, Sequence, assert_never
+from typing import Literal, Sequence
 
-from pytoy.job_execution.environment_manager.models import (
-    CommandWrapperType,
-    CommandWrapperTypeLike,
+from pytoy.tool_execution.environment_manager.models import (
     EnvironmentKind,
     EnvironmentSolverProtocol,
     ExecutionPreference,
     SystemEnvironmentSolver,
-    SystemStrategy,
-    ToolRunnerStrategyProtocol,
 )
-from pytoy.job_execution.environment_manager.uv_environment import UVEnvironmentSolver, UvStrategy
-
-
-@dataclass(frozen=True)
-class ToolRunnerStrategy:
-    impl: ToolRunnerStrategyProtocol
-
-    @property
-    def kind(self) -> EnvironmentKind:
-        return self.impl.kind
-
-    @property
-    def command_wrapper(self) -> CommandWrapperType:
-        return self.impl.wrap
-
-    @classmethod
-    def from_kind(cls, environment_kind: EnvironmentKind) -> Self:
-        match environment_kind:
-            case "system":
-                return cls(impl=SystemStrategy())
-            case "uv":
-                return cls(impl=UvStrategy())
-            case _:
-                assert_never(environment_kind)
-
-
-@dataclass(frozen=True)
-class ResolvedExecutionEnvironment:
-    tool_runner_strategy: ToolRunnerStrategy
-    workspace: Path | None
-    base_path: Path
-
-    @property
-    def kind(self) -> EnvironmentKind:
-        return self.tool_runner_strategy.kind
-
-    @property
-    def command_wrapper(self) -> CommandWrapperType:
-        return self.tool_runner_strategy.command_wrapper
+from pytoy.tool_execution.environment_manager.runner_strategy import ResolvedExecutionEnvironment, ToolRunnerStrategy
+from pytoy.tool_execution.environment_manager.uv_environment import UVEnvironmentSolver
 
 
 class EnvironmentManager:
@@ -131,7 +84,3 @@ class EnvironmentManager:
             solver = self._solvers[preference]
             return solver, solver.find_workspace(path)
         return None, None
-
-
-if __name__ == "__main__":
-    pass

@@ -20,10 +20,11 @@ def get_current_directory(buffer: PytoyBuffer | None = None) -> Path:
         filename = buffer.file_path
         current_folder = filename.parent
     else:
-        # TODO: Define the utility function for all backends.
-        import vim
+        try:
+            import vim
 
-        cwd = vim.eval("getcwd()")
-        current_folder = Path(cwd)
-
+            cwd = vim.eval("getcwd()")
+            current_folder = Path(cwd)
+        except Exception:
+            current_folder = Path(".")
     return current_folder

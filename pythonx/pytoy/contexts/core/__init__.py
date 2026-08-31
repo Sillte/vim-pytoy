@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, ClassVar
 # Only for lazy loading to speed up.
 if TYPE_CHECKING:
     from pytoy.bootstrap.import_resolvers import LLMImportResolver
-    from pytoy.job_execution.environment_manager import EnvironmentManager
     from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
+    from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
 
     ...
 
@@ -23,7 +23,7 @@ class GlobalCoreContext:
 
     @cached_property
     def environment_manager(self) -> EnvironmentManager:
-        from pytoy.job_execution.environment_manager import EnvironmentManager
+        from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
 
         return EnvironmentManager()
 

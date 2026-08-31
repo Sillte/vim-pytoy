@@ -5,13 +5,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Literal, Mapping, Self
 
-from pytoy.job_execution.environment_manager.models import CommandWrapperTypeLike  # noqa
 from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.shared.lib.outcome import Outcome, Success, is_success
 from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
 from pytoy.tool_execution.command.infra import CommandRunner
 from pytoy.tool_execution.command.infra.contract import JobEvents, JobID
 from pytoy.tool_execution.command.infra.models import JobResult, OutputJobRequest, SpawnOption
+from pytoy.tool_execution.environment_manager.models import CommandWrapperTypeLike  # noqa
 
 type CommandExecutionID = JobID
 type CommandExecutionEvents = JobEvents

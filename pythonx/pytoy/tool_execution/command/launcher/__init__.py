@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Self
 
-from pytoy.job_execution.utils import get_current_directory
 from pytoy.shared.ui import BufferSource, PytoyBuffer
 from pytoy.tool_execution.command import CommandExecutionHandler, CommandExecutionQuery
 from pytoy.tool_execution.command.models import (
@@ -15,6 +14,7 @@ from pytoy.tool_execution.command.models import (
     CommandExecutionResult,
     CommandWrapperTypeLike,
 )
+from pytoy.tool_execution.environment_manager.current import get_current_directory
 
 
 @dataclass(frozen=True)

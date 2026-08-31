@@ -13,7 +13,7 @@ def gather_text_files(
     from pytoy_llm.composers.materials import MaterialDataExplorerTaskComposer
     from pytoy_llm.materials.text_files import TextFilesCollector, TextFilesMaterialQuery
 
-    from pytoy.job_execution.environment_manager import EnvironmentManager
+    from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
 
     buffer = PytoyBuffer.get_current()
     if not buffer.is_file:
@@ -41,7 +41,7 @@ def gather_git_diffs():
     from pytoy_llm.materials.git_diffs.collectors import GitDiffCollector
     from pytoy_llm.materials.git_diffs.models import GitDiffMaterialQuery
 
-    from pytoy.job_execution.environment_manager import EnvironmentManager
+    from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
 
     buffer = PytoyBuffer.get_current()
     if not buffer.is_file:

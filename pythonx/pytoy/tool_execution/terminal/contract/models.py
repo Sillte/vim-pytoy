@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Hashable, Literal, Protocol, Self, Sequence, runtime_checkable
 
-from pytoy.job_execution.environment_manager import CommandWrapperType
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.text import CursorPosition
+from pytoy.tool_execution.environment_manager import CommandWrapperType
 
 type ReturnCode = int
 type JobID = Hashable

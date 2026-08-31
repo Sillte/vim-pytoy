@@ -2,8 +2,8 @@
 
 
 def workspace_func() -> str | None:
-    from pytoy.job_execution.environment_manager import EnvironmentManager
-    from pytoy.job_execution.utils import get_current_directory
+    from pytoy.tool_execution.environment_manager.current import get_current_directory
+    from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
 
     current_folder = get_current_directory()
     workspace = EnvironmentManager().find_workspace(current_folder, preference="auto")

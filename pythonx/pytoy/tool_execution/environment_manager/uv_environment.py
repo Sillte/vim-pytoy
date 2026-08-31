@@ -5,12 +5,12 @@ from functools import cache
 from pathlib import Path
 from typing import Sequence
 
-from pytoy.job_execution.environment_manager.models import (
+from pytoy.tool_execution.environment_manager.current import get_current_directory
+from pytoy.tool_execution.environment_manager.models import (
     EnvironmentKind,
     EnvironmentSolverProtocol,
     ToolRunnerStrategyProtocol,
 )
-from pytoy.job_execution.utils import get_current_directory
 
 
 @dataclass(frozen=True)

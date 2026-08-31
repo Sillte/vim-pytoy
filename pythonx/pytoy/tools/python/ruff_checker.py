@@ -4,7 +4,6 @@ from typing import Literal
 
 from pytoy import TERM_STDOUT
 from pytoy.contexts.core import GlobalCoreContext
-from pytoy.job_execution.environment_manager import EnvironmentManager
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import make_buffer
 from pytoy.tool_execution.command.launcher import (
@@ -14,6 +13,7 @@ from pytoy.tool_execution.command.launcher import (
     get_default_hooks,
 )
 from pytoy.tool_execution.command.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
+from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
 from pytoy.tools.python.path_resolver import PathResolver
 
 
