@@ -4,7 +4,9 @@ from pathlib import Path
 from typing import Callable
 
 from pytoy.shared.ui.pytoy_buffer import BufferSource
-from pytoy.tool_execution.terminal.models import (
+
+from .handler import TerminalExecutionHandler
+from .models import (
     BufferRequest,
     CommandWrapperType,
     TerminalDriverKind,
@@ -13,8 +15,6 @@ from pytoy.tool_execution.terminal.models import (
     TerminalExecutionQuery,
     TerminalExecutionRequest,
 )
-
-from .handler import TerminalExecutionHandler
 
 
 def assert_main_thread() -> None:

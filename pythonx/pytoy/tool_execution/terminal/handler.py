@@ -5,8 +5,10 @@ from typing import Callable, Self, Sequence
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
-from pytoy.tool_execution.terminal.manager import TerminalExecutionManager
-from pytoy.tool_execution.terminal.models import (
+
+from .factory import TerminalExecutionFactory
+from .manager import TerminalExecutionManager
+from .models import (
     BufferRequest,
     TerminalExecution,
     TerminalExecutionContext,
@@ -16,8 +18,6 @@ from pytoy.tool_execution.terminal.models import (
     TerminalExecutionQuery,
     TerminalExecutionRequest,
 )
-
-from .factory import TerminalExecutionFactory
 
 
 def assert_main_thread() -> None:
