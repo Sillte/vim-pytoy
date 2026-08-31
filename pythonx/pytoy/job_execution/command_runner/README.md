@@ -1,12 +1,18 @@
 # Design Policy
 
-## Purpose
+## Design
 
-`CommandRunner` provides a backend-independent interface for executing
-external commands and receiving their output.
+Job event callbacks belong to the backend's UI execution context. The relevant
+context is not necessarily `threading.main_thread()`; Vim and Neovim may impose
+their own event-loop or thread-affinity requirements.
 
-## Rules
+Process workers must remain separate from that context. They may perform I/O and
+transfer notifications, but must not access UI components or emit job events
+directly. The backend dispatcher is responsible for serializing those
+notifications before invoking callbacks that may access the UI.
 
-- An `OutputJob` must not start execution until its consumer has subscribed to its events.
-- `alive` must be `False` before `on_job_exit` is emitted.
-- `on_job_exit` must be emitted from the main thread.
+## Discussions
+
+The Dummy backend needs an application loop or dispatcher with the same
+properties. Whether that should be a dedicated Dummy loop or an `asyncio` loop
+is unresolved.
