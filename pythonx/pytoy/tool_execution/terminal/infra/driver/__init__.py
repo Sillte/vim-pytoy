@@ -1,7 +1,6 @@
 from typing import Sequence
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.job_execution.process_utils import force_kill
 from pytoy.tool_execution.terminal.contract.models import (
     InputOperation,
     InterruptionCode,

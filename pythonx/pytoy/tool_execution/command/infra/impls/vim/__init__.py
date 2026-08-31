@@ -6,7 +6,6 @@ from typing import Any, Callable, Mapping
 
 import vim
 
-from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.lib.function import FunctionRegistry
 from pytoy.shared.timertask import TimerTask
 from pytoy.tool_execution.command.infra.contract import JobEvents, JobID, OutputJobProtocol
@@ -16,6 +15,7 @@ from pytoy.tool_execution.command.infra.models import (
     Snapshot,
     SpawnOption,
 )
+from pytoy.tool_execution.command.infra.process import find_children_pids
 
 
 class OutputJobVim(OutputJobProtocol):

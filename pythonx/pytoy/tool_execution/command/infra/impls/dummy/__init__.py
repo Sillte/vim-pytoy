@@ -6,11 +6,11 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.timertask import TimerTask
 from pytoy.tool_execution.command.infra.contract import JobEvents, JobID, OutputJobProtocol
 from pytoy.tool_execution.command.infra.impls.core import OutputJobCore
 from pytoy.tool_execution.command.infra.models import OutputJobRequest, Snapshot, SpawnOption
+from pytoy.tool_execution.command.infra.process import find_children_pids
 
 
 class OutputJobDummy(OutputJobProtocol):

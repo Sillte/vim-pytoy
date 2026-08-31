@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
-from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.lib.events import EventEmitter
 from pytoy.tool_execution.terminal.contract.models import (
     InputOperation,
@@ -15,6 +14,7 @@ from pytoy.tool_execution.terminal.contract.models import (
     WaitUntilOperation,
 )
 from pytoy.tool_execution.terminal.infra.runner.models import SpawnOption, TerminalJobRequest
+from pytoy.tool_execution.terminal.infra.runner.process import find_children_pids
 
 
 class TerminalJobCore:
@@ -81,7 +81,7 @@ class TerminalJobCore:
 
     @staticmethod
     def kill_processes(pids: list[int]) -> None:
-        from pytoy.job_execution.process_utils import force_kill
+        from pytoy.tool_execution.terminal.infra.runner.process import force_kill
 
         for child in pids:
             force_kill(child)

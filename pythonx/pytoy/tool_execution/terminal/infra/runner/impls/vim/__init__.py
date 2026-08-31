@@ -7,7 +7,6 @@ from typing import Any, Sequence
 
 import vim
 
-from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.lib.function import FunctionRegistry, RegisteredFunction
 from pytoy.shared.lib.text import CursorPosition
 from pytoy.tool_execution.terminal.contract.models import (
@@ -24,6 +23,7 @@ from pytoy.tool_execution.terminal.infra.runner.models import (
     SpawnOption,
     TerminalJobRequest,
 )
+from pytoy.tool_execution.terminal.infra.runner.process import find_children_pids
 
 
 class TerminalJobVim(TerminalJobProtocol):

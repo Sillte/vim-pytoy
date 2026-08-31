@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from threading import Thread
 
-from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.timertask import TimerTask
 from pytoy.tool_execution.terminal.contract.models import (
     JobEvents,
@@ -17,6 +16,7 @@ from pytoy.tool_execution.terminal.infra.runner.models import (
     SpawnOption,
     TerminalJobRequest,
 )
+from pytoy.tool_execution.terminal.infra.runner.process import find_children_pids
 
 
 class TerminalJobDummy(TerminalJobProtocol):
