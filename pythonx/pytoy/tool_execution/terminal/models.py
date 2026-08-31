@@ -8,16 +8,11 @@ from typing import Any, Callable, Self
 from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.shared.lib.outcome import Error, Outcome, Success, is_success
 from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
-from pytoy.tool_execution.terminal.contract.models import (
-    CommandWrapperType,
-    TerminalDriverProtocol,
-)
+from pytoy.tool_execution.terminal.contract.models import CommandWrapperType, TerminalDriverKind, TerminalDriverProtocol
 from pytoy.tool_execution.terminal.infra import JobEvents, TerminalJobRunner
 
 type TerminalExecutionID = str
 type TerminalExecutionEvents = JobEvents
-
-type TerminalDriverKind = str
 
 
 @dataclass(frozen=True)

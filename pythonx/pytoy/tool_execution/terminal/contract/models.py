@@ -1,10 +1,13 @@
 from dataclasses import dataclass
-from typing import Callable, Literal, Protocol, Self, Sequence, runtime_checkable
+from pathlib import Path
+from typing import Callable, Hashable, Literal, Protocol, Self, Sequence, runtime_checkable
 
 from pytoy.job_execution.environment_manager import CommandWrapperType
 from pytoy.shared.lib.text import CursorPosition
+from pytoy.tool_execution.terminal.infra.runner.models import JobEvents
 
 type ReturnCode = int
+type JobID = Hashable
 
 
 @dataclass(frozen=True)
@@ -81,6 +84,9 @@ type ChildrenPids = list[int]
 type InputStr = str
 
 
+type TerminalDriverKind = str
+
+
 @runtime_checkable
 class TerminalDriverProtocol(Protocol):
     @property
@@ -126,3 +132,39 @@ class TerminalDriver:
             impl_is_busy=impl.is_busy,
             impl_interrupt=impl.interrupt,
         )
+
+
+class TerminalJobProtocol(Protocol):
+    def start(self) -> None: ...
+
+    @property
+    def job_id(self) -> JobID | None: ...
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def cwd(self) -> Path: ...
+
+    @property
+    def alive(self) -> bool: ...
+
+    def send(self, input: str, /) -> None: ...
+
+    def interrupt(self) -> None: ...
+
+    def terminate(self) -> None: ...
+
+    def dispose(self) -> None: ...
+
+    @property
+    def snapshot(self) -> Snapshot: ...
+
+    @property
+    def pid(self) -> int: ...
+
+    @property
+    def children_pids(self) -> list[int]: ...
+
+    @property
+    def events(self) -> JobEvents: ...

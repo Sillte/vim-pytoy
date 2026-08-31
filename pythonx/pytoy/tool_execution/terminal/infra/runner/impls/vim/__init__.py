@@ -16,12 +16,12 @@ from pytoy.tool_execution.terminal.contract.models import (
     JobID,
     RawStr,
     Snapshot,
+    TerminalJobProtocol,
 )
 from pytoy.tool_execution.terminal.infra.runner.impls.core import TerminalJobCore
 from pytoy.tool_execution.terminal.infra.runner.models import (
     JobEvents,
     SpawnOption,
-    TerminalJobProtocol,
     TerminalJobRequest,
 )
 

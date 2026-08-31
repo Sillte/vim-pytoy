@@ -9,6 +9,7 @@ from pytoy.job_execution.process_utils import find_children_pids
 from pytoy.shared.timertask import TimerTask
 from pytoy.tool_execution.terminal.contract.models import (
     Snapshot,
+    TerminalJobProtocol,
 )
 from pytoy.tool_execution.terminal.infra.runner.impls.core import TerminalJobCore
 from pytoy.tool_execution.terminal.infra.runner.impls.utils.virtual_tty import VirtualTTY
@@ -16,7 +17,6 @@ from pytoy.tool_execution.terminal.infra.runner.models import (
     JobEvents,
     JobID,
     SpawnOption,
-    TerminalJobProtocol,
     TerminalJobRequest,
 )
 

@@ -24,6 +24,7 @@ __all__ = [
     "TerminalExecutionResult",
     "TerminalExecutionExit",
     "TerminalExecutionContext",
+    "TerminalDriverManager",
 ]
 
 

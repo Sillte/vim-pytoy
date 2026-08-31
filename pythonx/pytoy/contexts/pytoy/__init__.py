@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     ...
     from pytoy.tool_execution.command.manager import CommandExecutionManager
     from pytoy.tool_execution.llm.manager import LLMExecutionManager
-    from pytoy.tool_execution.terminal.infra.driver import TerminalDriverManager
+    from pytoy.tool_execution.terminal.infra import TerminalDriverManager
     from pytoy.tool_execution.terminal.manager import TerminalExecutionManager
     # from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
     # from pytoy.shared.autocmd.autocmd_manager import AutoCmdManager

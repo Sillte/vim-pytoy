@@ -1,4 +1,3 @@
-from ..infra.runner.models import TerminalJobProtocol
 from .models import (
     ConsoleSnapshot,
     InputOperation,
@@ -7,7 +6,9 @@ from .models import (
     RawStr,
     Snapshot,
     TerminalDriver,
+    TerminalDriverKind,
     TerminalDriverProtocol,
+    TerminalJobProtocol,
     WaitOperation,
     WaitUntilOperation,
 )
@@ -20,8 +21,10 @@ __all__ = [
     "RawStr",
     "Snapshot",
     "TerminalDriver",
+    "TerminalDriverKind",
     "TerminalDriverProtocol",
     "TerminalJobProtocol",
+    "TerminalDriverKind",
     "WaitOperation",
     "WaitUntilOperation",
 ]

@@ -9,10 +9,14 @@ from pytoy.tool_execution.terminal.contract.models import (
     TerminalDriver,
     TerminalDriverProtocol,
 )
-from pytoy.tool_execution.terminal.infra import TerminalJobRunner
-from pytoy.tool_execution.terminal.infra.driver import TerminalDriverManager
-from pytoy.tool_execution.terminal.infra.runner.models import SpawnOption, TerminalJobRequest
-from pytoy.tool_execution.terminal.models import (
+from pytoy.tool_execution.terminal.infra import (
+    SpawnOption,
+    TerminalDriverManager,
+    TerminalJobRequest,
+    TerminalJobRunner,
+)
+
+from .models import (
     BufferRequest,
     TerminalDriverKind,
     TerminalExecution,
