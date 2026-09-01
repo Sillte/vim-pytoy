@@ -15,7 +15,7 @@ from pytoy.tool_execution.command.models import (
     CommandExecutionResult,
     CommandExecutionStatus,
 )
-from pytoy.tool_execution.environment_manager.models import CommandWrapperTypeLike
+from pytoy.tool_execution.execution_environment.models import CommandWrapperTypeLike
 
 __all__ = [
     "CommandExecutor",

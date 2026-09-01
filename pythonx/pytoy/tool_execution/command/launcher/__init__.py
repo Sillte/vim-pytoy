@@ -14,7 +14,7 @@ from pytoy.tool_execution.command.models import (
     CommandExecutionResult,
     CommandWrapperTypeLike,
 )
-from pytoy.tool_execution.environment_manager.current import get_current_directory
+from pytoy.tool_execution.execution_environment.current import get_current_directory
 
 
 @dataclass(frozen=True)

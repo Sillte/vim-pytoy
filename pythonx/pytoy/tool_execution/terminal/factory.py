@@ -2,8 +2,8 @@ from pathlib import Path
 
 from pytoy.contexts.core import GlobalCoreContext
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.tool_execution.environment_manager.current import get_current_directory
-from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
+from pytoy.tool_execution.execution_environment.current import get_current_directory
+from pytoy.tool_execution.execution_environment.manager import EnvironmentManager
 from pytoy.tool_execution.terminal.contract.models import (
     CommandWrapperType,
     TerminalDriver,

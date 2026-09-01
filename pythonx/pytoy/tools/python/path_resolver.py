@@ -2,8 +2,7 @@ from pathlib import Path
 from typing import Literal
 
 from pytoy.contexts.core import GlobalCoreContext
-from pytoy.tool_execution.environment_manager.current import get_current_directory
-from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
+from pytoy.tool_execution.execution_environment import EnvironmentManager, get_current_directory
 
 
 class PathResolver:

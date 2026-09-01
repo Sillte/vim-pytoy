@@ -13,7 +13,7 @@ from pytoy.tool_execution.command.launcher import (
     get_default_hooks,
 )
 from pytoy.tool_execution.command.launcher.quickfix import QuickfixProfile, make_quickfix_hooks
-from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
+from pytoy.tool_execution.execution_environment.manager import EnvironmentManager
 from pytoy.tools.python.path_resolver import PathResolver
 
 

@@ -1,9 +1,9 @@
 from pathlib import Path
 
 from pytoy.contexts.core import GlobalCoreContext
-from pytoy.tool_execution.command.infra import CommandRunner
-from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
+from pytoy.tool_execution.execution_environment import EnvironmentManager
 
+from .infra import CommandRunner
 from .models import (
     BufferRequest,
     CommandExecution,
@@ -27,7 +27,7 @@ class CommandExecutionFactory:
 
         if request.cwd is None:
             # [TODO: Implement `Current` object so that we can get the global state.]
-            from pytoy.tool_execution.environment_manager.current import get_current_directory
+            from pytoy.tool_execution.execution_environment.current import get_current_directory
 
             cwd = get_current_directory()
         else:

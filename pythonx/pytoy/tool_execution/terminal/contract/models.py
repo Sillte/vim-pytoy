@@ -4,7 +4,7 @@ from typing import Any, Callable, Hashable, Literal, Protocol, Self, Sequence, r
 
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.text import CursorPosition
-from pytoy.tool_execution.environment_manager import CommandWrapperType
+from pytoy.tool_execution.execution_environment import CommandWrapperType
 
 type ReturnCode = int
 type JobID = Hashable

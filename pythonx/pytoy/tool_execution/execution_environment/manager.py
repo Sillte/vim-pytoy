@@ -1,14 +1,14 @@
 from pathlib import Path
 from typing import Literal, Sequence
 
-from pytoy.tool_execution.execution_environment.models import (
+from .models import (
     EnvironmentKind,
     EnvironmentSolverProtocol,
     ExecutionPreference,
     SystemEnvironmentSolver,
 )
-from pytoy.tool_execution.execution_environment.runner_strategy import ResolvedExecutionEnvironment, ToolRunnerStrategy
-from pytoy.tool_execution.execution_environment.uv_environment import UVEnvironmentSolver
+from .runner_strategy import ResolvedExecutionEnvironment, ToolRunnerStrategy
+from .uv_environment import UVEnvironmentSolver
 
 
 class EnvironmentManager:

@@ -5,8 +5,8 @@ from functools import cache
 from pathlib import Path
 from typing import Sequence
 
-from pytoy.tool_execution.environment_manager.current import get_current_directory
-from pytoy.tool_execution.environment_manager.models import (
+from .current import get_current_directory
+from .models import (
     EnvironmentKind,
     EnvironmentSolverProtocol,
     ToolRunnerStrategyProtocol,

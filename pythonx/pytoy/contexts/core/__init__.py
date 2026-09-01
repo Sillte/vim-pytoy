@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, ClassVar
 if TYPE_CHECKING:
     from pytoy.bootstrap.import_resolvers import LLMImportResolver
     from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
-    from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
+    from pytoy.tool_execution.execution_environment import EnvironmentManager
 
     ...
 
@@ -23,7 +23,7 @@ class GlobalCoreContext:
 
     @cached_property
     def environment_manager(self) -> EnvironmentManager:
-        from pytoy.tool_execution.environment_manager.manager import EnvironmentManager
+        from pytoy.tool_execution.execution_environment.manager import EnvironmentManager
 
         return EnvironmentManager()
 

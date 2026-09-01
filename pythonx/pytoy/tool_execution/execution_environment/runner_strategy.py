@@ -2,13 +2,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Self, assert_never
 
-from pytoy.tool_execution.environment_manager.models import (
+from .models import (
     CommandWrapperType,
     EnvironmentKind,
     SystemStrategy,
     ToolRunnerStrategyProtocol,
 )
-from pytoy.tool_execution.environment_manager.uv_environment import UvStrategy
+from .uv_environment import UvStrategy
 
 
 @dataclass(frozen=True)

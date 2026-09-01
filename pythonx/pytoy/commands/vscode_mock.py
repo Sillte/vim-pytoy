@@ -12,7 +12,7 @@ def mywindow_func2():
     # print(window.buffer.content)
     # window.focus()
     from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
-    from pytoy.tool_execution.environment_manager.current import get_current_directory
+    from pytoy.tool_execution.execution_environment.current import get_current_directory
 
     Api().eval_with_return("vscode.env.remoteName")
     print("GETCURRENT", get_current_directory())
