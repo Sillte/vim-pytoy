@@ -4,8 +4,8 @@ from typing import Literal
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.text import LineRange
 from pytoy.shared.ui.pytoy_window import PytoyWindow
-from pytoy.tool_execution.terminal.infra.driver import TerminalDriverManager
-from pytoy.tool_execution.terminal.models import TerminalDriverKind, TerminalDriverProtocol
+from pytoy.tool_execution.terminal import TerminalDriverManager
+from pytoy.tool_execution.terminal.contract import TerminalDriverKind, TerminalDriverProtocol
 from pytoy.tools.markdown import MarkdownExtractor
 
 

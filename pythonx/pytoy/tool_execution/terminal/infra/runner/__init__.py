@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pytoy.tool_execution.terminal.drivers.shell import ShellDriver
+
 from .runner import TerminalJobRunner
 
 __all__ = [
@@ -12,7 +14,7 @@ if __name__ == "__main__":
     # Simple Tests.
     from pytoy.shared.timertask import TimerTask
     from pytoy.shared.ui.pytoy_window.facade import PytoyWindowProvider
-    from pytoy.tool_execution.terminal.infra.driver import IPythonDriver, ShellDriver
+    from pytoy.tool_execution.terminal.drivers.ipython import IPythonDriver
     from pytoy.tool_execution.terminal.infra.runner.models import TerminalJobRequest
     # driver = ShellDriver("cmd.exe")
 
