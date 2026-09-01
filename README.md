@@ -1,9 +1,25 @@
-# vim-pytoy 
+# vim-pytoy
 
 A Python-powered plugin framework for Vim/Neovim/VSCode,
 designed to run and integrate developer tools directly inside editor buffers.
-This project is not intended for public release.
-For now, it serves as a personal practice project for Vim plugin development.
+
+This project is currently a personal project rather than a public release.
+For now, it focuses on exploring Vim plugin development and software architecture.
+
+## Concept
+
+This project follows the following principles:
+
+* Python is the main programming language.
+    * Application code does not use `VimScript`, `Lua`, or `TypeScript`.
+* Most functionality is available across Vim/Neovim/VSCode using the same codebase.
+    * The same codebase works, almost in the same way, across these environments.
+
+These principles aim to provide high interoperability and ease of development
+for plugin authors.
+
+As a trade-off, platform-specific functionality and user experience are not
+always given the highest priority.
 
 ## Example of command
 
@@ -22,7 +38,7 @@ def hello(arg: Annotated[Literal["morning", "evening"] | None, Argument()] = Non
     print(f"{greeting.title()} from Pytoy!")
 ```
 
-2. Execute the python script or vim source
+2. Save the script and execute the python script from the current buffer
 
 ```vim-command
 :PytoyExecute
@@ -51,97 +67,84 @@ def hello(arg: Annotated[Literal["morning", "evening"] | None, Argument()] = Non
       ```json
       {
        "vscode-neovim.useWSL": true, 
-       "vscode-neovim.neovimExecutablePaths.linux": "<Path to `neovim`>",
+       "vscode-neovim.neovimExecutablePaths.linux": "<Path to `neovim`>"
       }
       ```
 * For specific dependency, please refer to [pyproject.toml](./pyproject.toml)
 
 ## Design Overview
 
-**vim-pytoy** is a Python utility framework that integrates with Vim/Neovim and VSCode, enabling users to leverage Python tools and scripts within their editor. 
+Pytoy is organized into two broad areas:
 
-### Architecture: Layered Design
+- **Application**: Commands and Tools that provide user-facing functionality.
+- **Library**: ToolExecution and Shared components that provide reusable execution
+  and editor-integration infrastructure.
 
-The framework follows a **3-layer architecture**:
+The main dependency direction is:
 
-1. **Commands Layer**: Vim `:Commands` exposed to users (`:Pytest`, `:RuffCheck`, etc.)
-2. **Tools Layer**: High-level integrations (Python executor, pytest runner, Git tools, LLM integration)  
-3. **Shared Infrastructure**: Core abstractions (Command framework, UI system, timers, config, logging)
-
-```
-Commands (:PytoyPytest, :PytoyGit, etc.)
+```text
+Commands
     ↓
-Tools (pytest, git, llm, python, cspell)
+Tools
     ↓
-Shared Infrastructure (command, ui, timertask, config)
+ToolExecution
+    ↓
+Shared
 ```
 
-### Detailed Module Reference
+### Application
+#### Commands
 
-#### **shared/command/** - Command Framework
-- Declarative Vim `:Command` definition using Python decorators
-- Key exports: `CommandApplication`, `CommandGroup`, `Argument`, `Option`, `Field`
-- Supports Vim ranges (`RangeParam`), counts (`CountParam`), and hierarchical grouping
+User-facing commands exposed through Vim/Neovim.
 
-#### **shared/ui/** - Unified UI Interface
-Cross-platform abstraction providing consistent APIs across all editors:
+Commands compose tools and invoke the functionality provided by the
+lower-level library.
 
-- **`pytoy_buffer`**: Text buffer/document abstraction
-  - Unified read/write/manipulation API
+#### Tools
 
-- **`pytoy_window`**: Editor window/editor abstraction
-  - Window navigation, splitting, layout management
+High-level integrations with developer tools such as Python, pytest, Git,
+and other external tools.
 
-- **`pytoy_quickfix`**: Error list abstraction  
-  - Primitive.
+Tools describe what Pytoy provides to users, while the lower layers
+provide how those operations are executed.
 
-- **`notifications`**: Cross-platform message display
-  - Very primitive.
+### Library
 
-#### **shared/timertask/** - Asynchronous Callbacks
-- Python functions as Vim timer callbacks (integrates with `timer_start`, `timer_stop`)
-- Non-blocking editor integration
+#### Tool Execution
 
-#### **shared/pytoy_configuration/** - Configuration Management
-- Setting persistence and retrieval of configurations
+Infrastructure for executing external tools and managing their execution lifecycle.
 
-#### **shared/loggers/** - Logging System
-- Unified logging across components
-- Production and debug levels
+The primary public API is the Handler, which represents a single execution
+from the perspective of its consumer.
 
-#### **job_execution/command_executor/** - Command Coordination
-- `CommandExecutionManager` singleton: Track and coordinate running commands
-- Non-blocking execution via event loop
+A typical execution follows this model:
 
-#### **job_execution/terminal_executor/** - Terminal Management  
-- `TerminalExecutionManager`: Manage interactive terminal sessions
+```text
+Request
+   ↓
+Handler
+   ↓
+Events / Results
+```
 
-#### **job_execution/environment_manager/** - Environment Isolation
-- Virtual environment management (uv)
+Consumers should depend on public handlers and contract types rather
+than on internal implementations.
 
-#### **job_execution/[command|terminal]_runner/** - Execution Primitives
-- Low-level command/process execution
-- Output stream capture and forwarding
 
-#### **commands/** - User-Facing Commands
-Vim command definitions that compose tools and infrastructure:
+Currently, the following types of executions are handled:
 
-- `console_command.py`: Interactive console (REPL)
-- `git_commands.py`: Git operations
-- `pytools_commands.py`: Python tools (pytest, execution, etc.)
+* command: execution of one command, such as `echo "hello, world"`.
+* terminal: execution of the interactive command such as `ipython`.
+* llm: execution of the one invocation of LLM. 
 
-## Design Patterns
 
-- **Decorator**: Commands defined via `@app.command()` decorators
-- **Lazy Loading**: Components initialized on-demand for startup performance
+#### Shared
 
-## Comments
+Common infrastructure used by the library and application layers.
 
-This project is primarily a personal exploration,
-but it aims to experiment with structured plugin design.
+This includes facilities such as:
 
-## TODO 
-
-* Explanation and usage of `VimReboot`. 
+* editor UI abstractions
+* editor thread abstraction
 
 

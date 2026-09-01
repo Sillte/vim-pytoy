@@ -25,7 +25,7 @@ execution lifecycle and completion notification.
 ## Rules
 
 - Command creation, handler creation, and execution start must be performed
-  from the main thread.
+  from the backend's required thread. 
 - Execution state queries may be performed from any thread.
 - External code must not depend on `CommandExecution` as part of the command
   execution interface.
