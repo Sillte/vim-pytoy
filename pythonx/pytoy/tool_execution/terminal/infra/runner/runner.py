@@ -77,21 +77,19 @@ class TerminalJobRunner:
 
     def _wire_events(self, request: TerminalJobRequest, job_events: JobEvents):
         disposables = []
-
         # 1. Update event: Triggered when terminal content changes
         # Terminal content is usually managed by the Vim/Nvim terminal buffer itself,
         # but we can hook this to update UI components or sidebars.
         d_upd = job_events.on_update.subscribe(self._on_terminal_update)
+        disposables.append(d_upd)
 
         # 2. Sync lifecycle with PytoyBuffer
         buffer_events = self._buffer.events
         d_buf_wiped = buffer_events.on_wiped.subscribe(lambda _: self.dispose())
-
-        disposables += [d_upd, d_buf_wiped]
+        disposables.append(d_buf_wiped)
 
         # 3. Job Exit logic
         disposables.append(job_events.on_job_exit.subscribe(lambda _: self._dispose_job()))
-
         return disposables
 
     def run(self) -> None:

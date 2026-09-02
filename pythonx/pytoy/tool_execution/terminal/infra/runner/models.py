@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Mapping
 
 from pytoy.tool_execution.terminal.contract.models import TerminalDriverProtocol
 
@@ -20,4 +21,4 @@ class TerminalJobRequest:
 @dataclass(frozen=True)
 class SpawnOption:
     cwd: str | Path | None = None
-    env: dict[str, str] | None = None
+    env: Mapping[str, str] | None = None

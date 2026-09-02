@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Literal, Self
+from typing import Any, Callable, Literal, Mapping, Self
 
 from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.shared.lib.outcome import Error, Outcome, Success, is_error, is_success
@@ -49,7 +49,7 @@ class TerminalExecutionRequest:
     driver: TerminalDriverProtocol | TerminalDriverKind
     command_wrapper: CommandWrapperType | None = None
     cwd: str | Path | None = None
-    env: dict[str, str] | None = None
+    env: Mapping[str, str] | None = None
 
 
 @dataclass(frozen=True)
@@ -116,7 +116,7 @@ class TerminalExecution:
     cwd: Path
     request: TerminalExecutionRequest
     buffer_request: BufferRequest
-    env: dict[str, str] | None = None
+    env: Mapping[str, str] | None = None
     id: TerminalExecutionID = field(default_factory=lambda: str(uuid.uuid4()))
     exit_emitter: EventEmitter[TerminalExecutionExit] = field(default_factory=EventEmitter)
     status: TerminalExecutionStatus = field(default="created")
@@ -165,6 +165,7 @@ class TerminalExecution:
         except Exception as e:
             self.status = "error"
             self.exit_emitter.fire(TerminalExecutionExit(id=self.id, outcome=Error(exception=e)))
+            raise
 
 
 @dataclass(frozen=True)
@@ -173,12 +174,6 @@ class TerminalExecutionContext:
     execution_request: TerminalExecutionRequest
     hooks: TerminalExecutionHooks
     kind: TerminalDriverKind
-
-
-@dataclass(frozen=True)
-class TerminalExecutionPolicy:
-    buffer_request: BufferRequest
-    kind: TerminalDriverKind | None = None
 
 
 @dataclass(frozen=True)

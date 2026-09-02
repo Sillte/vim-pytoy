@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import shlex
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Mapping, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -29,7 +29,7 @@ class PtyConsoleProtocol(Protocol):
 
 class WinPtyAdapter(PtyConsoleProtocol):
     def __init__(
-        self, cmd: str | list[str], cwd: str | Path | None, size: tuple[int, int], env: dict[str, str] | None = None
+        self, cmd: str | list[str], cwd: str | Path | None, size: tuple[int, int], env: Mapping[str, str] | None = None
     ):
         from winpty import PtyProcess  # ty: ignore[unresolved-import]
 
@@ -110,7 +110,7 @@ class WinPtyAdapter(PtyConsoleProtocol):
 
 class PosixPtyAdapter(PtyConsoleProtocol):
     def __init__(
-        self, cmd: str | list[str], cwd: str | Path | None, size: tuple[int, int], env: dict[str, str] | None = None
+        self, cmd: str | list[str], cwd: str | Path | None, size: tuple[int, int], env: Mapping[str, str] | None = None
     ):
         # リスト形式なら安全にクォートして結合、文字列ならそのまま使用
         if isinstance(cmd, list):
@@ -157,6 +157,7 @@ class PosixPtyAdapter(PtyConsoleProtocol):
 
     def resize(self, lines: int, cols: int) -> None:
         self.proc.setwinsize(lines, cols)
+        self._size = (lines, cols)
 
     def send_ctrl_c(self):
         # POSIXにおける Ctrl+C 送信
@@ -195,7 +196,7 @@ class PtyConsole:
     """
 
     def __new__(
-        cls, cmd: str | list[str], cwd: str | Path | None, size: tuple[int, int], env: dict[str, str] | None = None
+        cls, cmd: str | list[str], cwd: str | Path | None, size: tuple[int, int], env: Mapping[str, str] | None = None
     ) -> PtyConsoleProtocol:
         # WindowsかPOSIXかを判定して適切なAdapterを返す
         import platform

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from threading import Thread
+from threading import Lock, Thread
 
 from pytoy.shared.timertask import TimerTask
 from pytoy.tool_execution.terminal.contract.models import (
@@ -31,14 +31,14 @@ class TerminalJobDummy(TerminalJobProtocol):
         TimerTask.execute_oneshot(lambda: _inner(), interval=0)
 
     def _schedule_update(self):
-        if self._update_scheduled:
-            return
-
-        self._update_scheduled = True
+        with self._update_lock:
+            self._update_scheduled = True
 
         def _fire():
-            self._update_scheduled = False
-            self._core.update_emitter.fire(self.pid)
+            with self._update_lock:
+                self._update_scheduled = False
+            if not self._disposed:
+                self._core.update_emitter.fire(self.pid)
 
         TimerTask.execute_oneshot(lambda: _fire())
 
@@ -47,6 +47,7 @@ class TerminalJobDummy(TerminalJobProtocol):
         self._spawn_option = spawn_option or SpawnOption()
         self._driver = request.driver
         self._update_scheduled = False
+        self._update_lock = Lock()
         self._disposed = False
 
         self._core = TerminalJobCore(self._request, self._spawn_option)

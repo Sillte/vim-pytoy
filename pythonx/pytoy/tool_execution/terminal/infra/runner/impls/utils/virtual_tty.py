@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from threading import Thread
-from typing import Callable
+from threading import Lock, RLock, Thread
+from typing import Callable, Mapping
 
 from pyte import Screen, Stream
 
@@ -23,7 +23,7 @@ class VirtualTTY:
         cmd: str | list[str],
         *,
         cwd: Path | str | None = None,
-        env: dict[str, str] | None = None,
+        env: Mapping[str, str] | None = None,
         lines: int = 24,
         cols: int = 80,
         on_output: Callable[[], None] | None = None,
@@ -31,6 +31,10 @@ class VirtualTTY:
     ) -> None:
         self._lines: int = lines
         self._cols: int = cols
+        self._screen_lock = RLock()
+        self._lifecycle_lock = Lock()
+        self._started = False
+        self._terminated = False
 
         self._screen: Screen = Screen(cols, lines)
         self._stream: Stream = Stream(self._screen)
@@ -53,13 +57,16 @@ class VirtualTTY:
     # PTY interaction
     # -------------------------
     def start(self) -> None:
-        self._pty.start()
-        if self._reader_thread is None:
-            self._reader_thread = Thread(
-                target=self._read_loop,
-                daemon=True,
-            )
-        self._reader_thread.start()
+        with self._lifecycle_lock:
+            if self._started:
+                raise RuntimeError("Already started.")
+            if self._terminated:
+                raise RuntimeError("Already terminated.")
+
+            self._pty.start()
+            self._reader_thread = Thread(target=self._read_loop, daemon=True)
+            self._started = True
+            self._reader_thread.start()
 
     def send(self, text: str) -> None:
         if self._pty.alive:
@@ -70,9 +77,10 @@ class VirtualTTY:
             self._pty.send_ctrl_c()
 
     def resize(self, *, lines: int, cols: int) -> None:
-        self._lines = lines
-        self._cols = cols
-        self._screen.resize(lines, cols)
+        with self._screen_lock:
+            self._lines = lines
+            self._cols = cols
+            self._screen.resize(lines, cols)
         self._pty.resize(lines, cols)
 
     def interrupt(self) -> None:
@@ -80,9 +88,12 @@ class VirtualTTY:
             self._pty.send_ctrl_c()
 
     def terminate(self) -> None:
-
-        if self._pty.alive:
-            self._pty.terminate()
+        with self._lifecycle_lock:
+            if self._terminated:
+                return
+            self._terminated = True
+            if self._pty.alive:
+                self._pty.terminate()
 
     # -------------------------
     # State
@@ -98,33 +109,33 @@ class VirtualTTY:
 
     @property
     def snapshot(self) -> Snapshot:
-        # 1. 各行の右空白削除
-        # display は pyte の内部状態なので、念のためコピーを取るかリストの内包表記で処理
-        display_lines = self._screen.display
-        processed_lines = [line.rstrip() for line in display_lines]
+        with self._screen_lock:
+            # 1. 各行の右空白削除
+            display_lines = self._screen.display
+            processed_lines = [line.rstrip() for line in display_lines]
 
-        # 2. 末尾の空行を削除
-        while processed_lines and not processed_lines[-1]:
-            processed_lines.pop()
+            # 2. 末尾の空行を削除
+            while processed_lines and not processed_lines[-1]:
+                processed_lines.pop()
 
-        content = "\n".join(processed_lines)
+            content = "\n".join(processed_lines)
 
-        # 3. カーソル位置の補正
-        # pyte の cursor.y/x は 0-indexed
-        orig_y = self._screen.cursor.y
-        orig_x = self._screen.cursor.x
+            # 3. カーソル位置の補正
+            # pyte の cursor.y/x は 0-indexed
+            orig_y = self._screen.cursor.y
+            orig_x = self._screen.cursor.x
 
-        # コンテンツが存在するならその範囲内に、空なら 0 に固定
-        max_y = max(0, len(processed_lines) - 1)
-        safe_line = max(0, min(orig_y, max_y))
-        safe_col = max(0, orig_x)
+            # コンテンツが存在するならその範囲内に、空なら 0 に固定
+            max_y = max(0, len(processed_lines) - 1)
+            safe_line = max(0, min(orig_y, max_y))
+            safe_col = max(0, orig_x)
 
-        # 4. オブジェクトの構築
-        # ConsoleSnapshot には「現在の表示領域のサイズ」を渡す
-        console = ConsoleSnapshot(lines=self._lines, cols=self._cols, content=content)
+            # 4. オブジェクトの構築
+            # ConsoleSnapshot には「現在の表示領域のサイズ」を渡す
+            console = ConsoleSnapshot(lines=self._lines, cols=self._cols, content=content)
 
-        # CursorPosition の引数名は、クラスの定義（line, col）に合わせる
-        cursor = CursorPosition(line=safe_line, col=safe_col)
+            # CursorPosition の引数名は、クラスの定義（line, col）に合わせる
+            cursor = CursorPosition(line=safe_line, col=safe_col)
 
         return Snapshot(timestamp=time.time(), cursor=cursor, console=console)
 
@@ -138,7 +149,8 @@ class VirtualTTY:
             if not data:
                 time.sleep(0.01)
                 continue
-            self._stream.feed(data)
+            with self._screen_lock:
+                self._stream.feed(data)
 
             if self._on_output:
                 self._on_output()
