@@ -10,6 +10,7 @@ import vim  # (vscode-neovim extention)
 
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
+from pytoy.shared.ui.contract.buffer import BufferProtocol
 from pytoy.shared.ui.contract.window import (
     PytoyWindowID,
     PytoyWindowProtocol,
@@ -68,9 +69,9 @@ class PytoyWindowVSCode(PytoyWindowProtocol):
         return uri
 
     @property
-    def buffer(self) -> PytoyBuffer:
+    def buffer(self) -> BufferProtocol:
         impl = PytoyBufferVSCode.from_document(self.editor.document)
-        return PytoyBuffer(impl)
+        return impl
 
     @property
     def valid(self) -> bool:

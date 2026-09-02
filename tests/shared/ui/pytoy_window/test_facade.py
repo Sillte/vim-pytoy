@@ -1,5 +1,5 @@
 from pytoy.shared.lib.text import CharacterRange, CursorPosition
-from pytoy.shared.ui.pytoy_buffer import BufferSource
+from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
 from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
 
 
@@ -7,6 +7,7 @@ def test_window_facade_uses_product_selected_backend() -> None:
     window = PytoyWindow.get_current()
 
     assert window.valid
+    assert isinstance(window.buffer, PytoyBuffer)
     assert window.buffer.valid
     assert window.is_left()
     assert window.focus()

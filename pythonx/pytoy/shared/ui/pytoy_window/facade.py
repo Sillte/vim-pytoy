@@ -23,7 +23,7 @@ class PytoyWindow(PytoyWindowProtocol):
 
     @property
     def buffer(self) -> PytoyBuffer:
-        return self.impl.buffer
+        return PytoyBuffer(self.impl.buffer)
 
     def close(self) -> bool:
         return self.impl.close()

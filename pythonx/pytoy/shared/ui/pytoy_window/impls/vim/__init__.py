@@ -7,6 +7,7 @@ import vim
 
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
+from pytoy.shared.ui.contract.buffer import BufferProtocol
 from pytoy.shared.ui.contract.window import (
     PytoyWindowID,
     PytoyWindowProtocol,
@@ -50,12 +51,12 @@ class PytoyWindowVim(PytoyWindowProtocol):
         return self._kernel.winid
 
     @property
-    def buffer(self) -> PytoyBuffer:
+    def buffer(self) -> BufferProtocol:
         # [TODO]: After refactoring of buffer ended.
         if not (vim_buffer := self._kernel.buffer):
             raise RuntimeError("Already `Window` is deleted.")
         impl = PytoyBufferVim.from_buffer(vim_buffer)
-        return PytoyBuffer(impl)
+        return impl
 
     @property
     def window(self) -> "vim.Window | None":

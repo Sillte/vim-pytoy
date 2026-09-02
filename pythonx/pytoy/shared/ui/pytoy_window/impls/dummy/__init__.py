@@ -3,6 +3,7 @@ from typing import Literal, Sequence
 
 from pytoy.shared.lib.event.domain import Event, EventEmitter
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
+from pytoy.shared.ui.contract.buffer import BufferProtocol
 from pytoy.shared.ui.contract.window import (
     PytoyWindowID,
     PytoyWindowProtocol,
@@ -17,15 +18,15 @@ from pytoy.shared.ui.status_line.impl_dummy import StatusLineManagerDummy
 
 
 class PytoyWindowDummy(PytoyWindowProtocol):
-    def __init__(self, winid: PytoyWindowID, buffer: PytoyBuffer | None = None):
+    def __init__(self, winid: PytoyWindowID, buffer: BufferProtocol | None = None):
         self._winid = winid
-        self._buffer = buffer or PytoyBuffer(PytoyBufferDummy.get_current())
+        self._buffer = buffer or PytoyBufferDummy.get_current()
         self.on_closed_emitter = EventEmitter[PytoyWindowID]()
         self._closed = False
         self._cursor = CursorPosition(0, 0)
 
     @property
-    def buffer(self) -> PytoyBuffer:
+    def buffer(self) -> BufferProtocol:
         return self._buffer
 
     @property
@@ -96,7 +97,7 @@ class PytoyWindowProviderDummy(PytoyWindowProviderProtocol):
         self._initialized = True
         self._counter: int = 0
 
-    def _append_window(self, buffer: PytoyBuffer | None = None) -> PytoyWindowProtocol:
+    def _append_window(self, buffer: BufferProtocol | None = None) -> PytoyWindowProtocol:
         self._windows.append(PytoyWindowDummy(self._counter, buffer=buffer))
         self._counter += 1
         return self._windows[-1]
@@ -119,4 +120,4 @@ class PytoyWindowProviderDummy(PytoyWindowProviderProtocol):
         if not isinstance(source, BufferSource):
             source = BufferSource.from_any(source)
         impl = PytoyBufferDummy(buffer_source=source)
-        return self._append_window(buffer=PytoyBuffer(impl))
+        return self._append_window(buffer=impl)
