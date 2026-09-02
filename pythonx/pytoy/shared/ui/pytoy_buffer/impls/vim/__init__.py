@@ -8,14 +8,20 @@ import vim
 from pytoy.shared.lib.entity import EntityRegistry
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.action_events import KeyActionEvents
+from pytoy.shared.ui.contract.buffer import (
+    BufferProtocol as PytoyBufferProtocol,
+)
+from pytoy.shared.ui.contract.buffer import (
+    BufferProviderProtocol as PytoyBufferProviderProtocol,
+)
+from pytoy.shared.ui.contract.buffer import (
+    RangeOperatorProtocol,
+)
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.shared.ui.pytoy_buffer.impls.vim.range_operator import RangeOperatorVim
 from pytoy.shared.ui.pytoy_buffer.models import URI, BufferEvents, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.protocol import (
     BufferID,
-    PytoyBufferProtocol,
-    PytoyBufferProviderProtocol,
-    RangeOperatorProtocol,
 )
 
 VIM_ERROR = getattr(vim, "error", Exception)

@@ -1,7 +1,7 @@
 from typing import Sequence
 
 from pytoy.shared.lib.text import CharacterRange, LineRange
-from pytoy.shared.ui.pytoy_buffer.protocol import RangeOperatorProtocol
+from pytoy.shared.ui.contract.buffer import RangeOperatorProtocol
 
 
 class RangeOperator(RangeOperatorProtocol):

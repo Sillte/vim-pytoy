@@ -8,12 +8,18 @@ from pytoy.shared.lib.entity import EntityRegistry
 from pytoy.shared.lib.event.domain import Event, EventEmitter
 from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
+from pytoy.shared.ui.contract.buffer import (
+    BufferProtocol as PytoyBufferProtocol,
+)
+from pytoy.shared.ui.contract.buffer import (
+    BufferProviderProtocol as PytoyBufferProviderProtocol,
+)
+from pytoy.shared.ui.contract.buffer import (
+    RangeOperatorProtocol,
+)
 from pytoy.shared.ui.pytoy_buffer.models import URI, BufferEvents, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.protocol import (
     BufferID,
-    PytoyBufferProtocol,
-    PytoyBufferProviderProtocol,
-    RangeOperatorProtocol,
 )
 
 if TYPE_CHECKING:
@@ -42,7 +48,7 @@ class RangeOperatorDummy(RangeOperatorProtocol):
         start = self._cursor_to_offset(character_range.start)
         end = self._cursor_to_offset(character_range.end)
         new_text = full_text[:start] + text + full_text[end:]
-        self._lines = new_text.splitlines()
+        self._lines[:] = new_text.splitlines()
         end_cursor = self._offset_to_cursor(start + len(text))
         return CharacterRange(character_range.start, end_cursor)
 
@@ -129,12 +135,13 @@ class PytoyBufferDummy(PytoyBufferProtocol):
         return self._buffer_id
 
     def init_buffer(self, content: str = ""):
-        self._lines = content.splitlines()
+        self._lines[:] = content.splitlines()
 
     @property
     def uri(self) -> URI:
         return URI(scheme=self._buffer_source.type, path=self._buffer_source.name)
 
+    @property
     def source(self) -> BufferSource:
         return self._buffer_source
 

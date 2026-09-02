@@ -8,15 +8,21 @@ import vim
 from pytoy.shared.lib.entity import EntityRegistry
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.action_events import KeyActionEvents
+from pytoy.shared.ui.contract.buffer import (
+    BufferProtocol as PytoyBufferProtocol,
+)
+from pytoy.shared.ui.contract.buffer import (
+    BufferProviderProtocol as PytoyBufferProviderProtocol,
+)
+from pytoy.shared.ui.contract.buffer import (
+    RangeOperatorProtocol,
+)
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel, normalize_lf_code
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.range_operator import RangeOperatorVSCode
 from pytoy.shared.ui.pytoy_buffer.models import URI as PytoyURI
 from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.protocol import (
     BufferID,
-    PytoyBufferProtocol,
-    PytoyBufferProviderProtocol,
-    RangeOperatorProtocol,
 )
 from pytoy.shared.ui.utils import to_filepath
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver

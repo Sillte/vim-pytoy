@@ -1,7 +1,7 @@
 from queue import Empty, Queue
 
 from pytoy.shared.timertask import TimerTask
-from pytoy.shared.ui.pytoy_buffer.protocol import PytoyBufferProtocol
+from pytoy.shared.ui.contract.buffer import BufferProtocol as PytoyBufferProtocol
 
 
 class QueueUpdater:
