@@ -1,3 +1,4 @@
+import threading
 from typing import Sequence
 
 from pytoy.shared.ui.pytoy_buffer import BufferSource
@@ -12,35 +13,41 @@ from pytoy.tool_execution.command.models import (
 
 class CommandExecutionManager:
     def __init__(self):
+        self._lock = threading.RLock()
         self._executions: dict[CommandExecutionID, CommandExecution] = {}
         self._last_context_by_kind: dict[CommandExecutionKind, CommandExecutionContext] = {}
         self._last_context = None
 
     def register(self, execution: CommandExecution) -> None:
-        self._executions[execution.id] = execution
+        with self._lock:
+            self._executions[execution.id] = execution
 
         def _deregister(_):
-            self._executions.pop(execution.id, None)
+            with self._lock:
+                self._executions.pop(execution.id, None)
 
         execution.on_exit.subscribe(_deregister)
 
     def register_context(self, context: CommandExecutionContext) -> None:
-        self._last_context = context
-        self._last_context_by_kind[context.kind] = context
+        with self._lock:
+            self._last_context = context
+            self._last_context_by_kind[context.kind] = context
 
     def select(self, query: CommandExecutionQuery | None = None) -> Sequence[CommandExecution]:
-        target_ids = list(self._executions.keys())
         query = query or CommandExecutionQuery()
-        if query.kind is not None:
-            target_ids = [id_ for id_ in target_ids if self._executions[id_].kind == query.kind]
-        if query.stdout is not None:
-            target_ids = [id_ for id_ in target_ids if self._executions[id_].runner.stdout.source == query.stdout]
-        if query.status is not None:
-            target_ids = [id_ for id_ in target_ids if self._executions[id_].status == query.status]
-        return [self._executions[id_] for id_ in target_ids]
+        with self._lock:
+            executions = list(self._executions.values())
+            if query.kind is not None:
+                executions = [execution for execution in executions if execution.kind == query.kind]
+            if query.stdout is not None:
+                executions = [execution for execution in executions if execution.runner.stdout.source == query.stdout]
+            if query.status is not None:
+                executions = [execution for execution in executions if execution.status == query.status]
+            return executions
 
     def get(self, id_: CommandExecutionID) -> CommandExecution | None:
-        return self._executions.get(id_)
+        with self._lock:
+            return self._executions.get(id_)
 
     def get_running(
         self, kind: CommandExecutionKind | None = None, stdout: BufferSource | None = None
@@ -50,7 +57,9 @@ class CommandExecutionManager:
 
     @property
     def last_context(self) -> CommandExecutionContext | None:
-        return self._last_context
+        with self._lock:
+            return self._last_context
 
     def get_last_context_by_kind(self, kind: CommandExecutionKind) -> CommandExecutionContext | None:
-        return self._last_context_by_kind.get(kind)
+        with self._lock:
+            return self._last_context_by_kind.get(kind)
