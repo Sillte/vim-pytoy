@@ -6,6 +6,7 @@ from typing import Self, Sequence
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.tool_execution.execution_environment import EnvironmentManager
 
 from .factory import CommandExecutionFactory
 from .manager import CommandExecutionManager
@@ -36,6 +37,14 @@ def main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
 
 
 class CommandExecutionHandler:
+    """Public handle for a command execution.
+
+    Query results are best-effort observations rather than stable snapshots.
+    An execution may finish and be removed from its manager immediately after
+    a handler is returned, so callers must tolerate the handler becoming
+    invalid.
+    """
+
     def __init__(self, id: CommandExecutionID, *, manager: CommandExecutionManager) -> None:
         self._id = id
         self._manager = manager
@@ -48,10 +57,11 @@ class CommandExecutionHandler:
         buffer_request: BufferRequest,
         *,
         manager: CommandExecutionManager | None = None,
+        environment_manager: EnvironmentManager | None = None,
     ) -> Self:
         if manager is None:
             manager = GlobalPytoyContext.get().command_execution_manager
-        factory = CommandExecutionFactory()
+        factory = CommandExecutionFactory(environment_manager=environment_manager)
         execution = factory.create(request, buffer_request=buffer_request)
         manager.register(execution)
         return cls(id=execution.id, manager=manager)
@@ -69,6 +79,7 @@ class CommandExecutionHandler:
     def query(
         cls, query: CommandExecutionQuery | None = None, *, manager: CommandExecutionManager | None = None
     ) -> Sequence[Self]:
+        """Return best-effort handlers for executions matching the query."""
         query = query or CommandExecutionQuery()
         if manager is None:
             manager = GlobalPytoyContext.get().command_execution_manager
@@ -81,6 +92,8 @@ class CommandExecutionHandler:
         execution = self._manager.get(self._id)
         if execution is None:
             raise ValueError(f"`execution` does not exist; {self._id=}")
+        if execution.status != "created":
+            raise ValueError("`execution is not created status.")
         execution.start(hooks=hooks)
 
         context = CommandExecutionContext(

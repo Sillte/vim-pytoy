@@ -35,6 +35,8 @@ class CommandExecutionManager:
             target_ids = [id_ for id_ in target_ids if self._executions[id_].kind == query.kind]
         if query.stdout is not None:
             target_ids = [id_ for id_ in target_ids if self._executions[id_].runner.stdout.source == query.stdout]
+        if query.status is not None:
+            target_ids = [id_ for id_ in target_ids if self._executions[id_].status == query.status]
         return [self._executions[id_] for id_ in target_ids]
 
     def get(self, id_: CommandExecutionID) -> CommandExecution | None:
@@ -43,7 +45,7 @@ class CommandExecutionManager:
     def get_running(
         self, kind: CommandExecutionKind | None = None, stdout: BufferSource | None = None
     ) -> Sequence[CommandExecution]:
-        query = CommandExecutionQuery(kind=kind, stdout=stdout)
+        query = CommandExecutionQuery(kind=kind, stdout=stdout, status="running")
         return self.select(query)
 
     @property

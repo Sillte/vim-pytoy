@@ -119,7 +119,11 @@ class CommandRunner:
         self._output_job = self._output_job_factory(request, spawn_option)
         self._job_disposables = []
         self._job_disposables += self._wire_events(request, self._output_job.events)
-        self._output_job.start()
+        try:
+            self._output_job.start()
+        except Exception:
+            self._dispose_job()
+            raise
         return self._output_job.job_id
 
     def _dispose_job(

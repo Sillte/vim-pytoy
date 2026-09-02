@@ -29,3 +29,8 @@ execution lifecycle and completion notification.
 - Execution state queries may be performed from any thread.
 - External code must not depend on `CommandExecution` as part of the command
   execution interface.
+- Hook callbacks must not raise exceptions. A hook that raises is considered an implementation error in the caller's integration.
+
+## Discussions
+
+- Query results are best-effort observations rather than stable snapshots.

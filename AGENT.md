@@ -16,6 +16,9 @@ codebase.
 A `design_policy.md` applies to its directory and descendants.
 More specific policies refine broader policies.
 
+Before creating or modifying documentation, read the applicable `documentation_policy.md`,
+and avoid documenting information that can be reliably recovered from the code or other sources of truth.
+
 ## Architecture
 
 - Preserve dependency direction and responsibility boundaries.
@@ -31,3 +34,5 @@ More specific policies refine broader policies.
 - Use `threading.Event` for asynchronous execution instead of `sleep`.
 - Inspect the near tests before implementing tests.
 - Do not add tests merely to increase coverage.
+- Do not accept multiple exception types unless the public contract explicitly
+  allows those alternatives.

@@ -1,6 +1,8 @@
 import threading
 from pathlib import Path
 
+import pytest
+
 from pytoy.tool_execution.command import (
     BufferRequest,
     CommandExecutionHandler,
@@ -41,3 +43,23 @@ def test_start_runs_command_and_records_last_context() -> None:
     context = CommandExecutionHandler.get_last_context("test")
     assert context is not None
     assert stdout.content == "hello"
+
+
+def test_start_failure_does_not_leave_handler_running() -> None:
+    exceptions = []
+    handler = CommandExecutionHandler.create(
+        CommandExecutionRequest(
+            command=["__pytoy_command_that_does_not_exist__"],
+            command_wrapper="system",
+            cwd=Path.cwd(),
+            kind="failed-start",
+        ),
+        BufferRequest.from_str("failed-command-output"),
+    )
+
+    with pytest.raises(FileNotFoundError):
+        handler.start(CommandExecutionHooks(on_exception=exceptions.append))
+
+    assert len(exceptions) == 1
+    assert isinstance(exceptions[0], FileNotFoundError)
+    assert handler.status is None

@@ -33,7 +33,7 @@ class CommandExecutionFactory:
         else:
             cwd = Path(request.cwd)
         command = self._solve_command(request.command, request.command_wrapper, cwd=cwd)
-        env = request.env or {}
+        env = request.env
         execution = CommandExecution(
             runner=runner,
             command=command,
@@ -47,7 +47,7 @@ class CommandExecutionFactory:
 
     def _solve_command(
         self,
-        command: str | list[str] | tuple[str],
+        command: str | list[str],
         command_wrapper: CommandWrapperTypeLike | None,
         cwd: str | Path,
     ) -> list[str] | str:

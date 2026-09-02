@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Callable, Literal, Mapping, Self
 
 from pytoy.shared.lib.event import Event, EventEmitter
-from pytoy.shared.lib.outcome import Outcome, Success, is_success
+from pytoy.shared.lib.outcome import Error, Outcome, Success, is_error, is_success
 from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
 from pytoy.tool_execution.execution_environment import CommandWrapperTypeLike
 
@@ -89,7 +89,7 @@ class CommandExecutionResolvedParam:
     stderr_buffer: PytoyBuffer | None
     command: str
     cwd: Path
-    env: Mapping[str, Any]
+    env: Mapping[str, Any] | None
 
 
 @dataclass(frozen=True)
@@ -99,6 +99,7 @@ class CommandExecutionHooks:
     on_start: Callable[[CommandExecutionResolvedParam], None] | None = None
 
     on_result: Callable[[CommandExecutionResult], None] | None = None
+    on_exception: Callable[[Exception], None] | None = None
     on_exit_code_zero: Callable[[CommandExecutionResult], None] | None = None
     on_exit_code_non_zero: Callable[[CommandExecutionResult], None] | None = None
 
@@ -130,12 +131,14 @@ class CommandExecutionHooks:
         on_exit_code_zero: Callable[[CommandExecutionResult], None] | None = None,
         on_exit_code_non_zero: Callable[[CommandExecutionResult], None] | None = None,
         on_result: Callable[[CommandExecutionResult], None] | None = None,
+        on_exception: Callable[[Exception], None] | None = None,
         on_start: Callable[[CommandExecutionResolvedParam], None] | None = None,
     ) -> Self:
         return cls(
             on_exit_code_zero=on_exit_code_zero,
             on_exit_code_non_zero=on_exit_code_non_zero,
             on_result=on_result,
+            on_exception=on_exception,
             on_start=on_start,
         )
 
@@ -147,13 +150,13 @@ class CommandExecutionExit:
 
 
 @dataclass
-class CommandExecution[T, E]:
+class CommandExecution:
     runner: CommandRunner
     command: list[str] | str
     cwd: Path
     buffer_request: BufferRequest
     execution_request: CommandExecutionRequest
-    env: Mapping[str, str] = field(default_factory=dict)
+    env: Mapping[str, str] | None = None
     kind: CommandExecutionKind = "$default"
     status: CommandExecutionStatus | None = "created"
     id: CommandExecutionID = field(default_factory=lambda: str(uuid.uuid4()))
@@ -179,6 +182,7 @@ class CommandExecution[T, E]:
         self.status = "running"
 
         def _on_exit(job_result: JobResult) -> None:
+            self.status = "finished"
             result = CommandExecutionResult(
                 id=self.id,
                 status=job_result.status,
@@ -207,9 +211,19 @@ class CommandExecution[T, E]:
                 lambda outcome: outcome.value
             ).once().subscribe(hooks.on_result)
 
+        if hooks.on_exception:
+            self.exit_emitter.event.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(
+                lambda outcome: outcome.exception
+            ).once().subscribe(hooks.on_exception)
+
         job_request = OutputJobRequest(command=self.command, on_exit=lambda job_result: _on_exit(job_result))
         spawn_option = SpawnOption(cwd=self.cwd, env=self.env)
-        self.runner.run(job_request, spawn_option)
+        try:
+            self.runner.run(job_request, spawn_option)
+        except Exception as exception:
+            self.status = "error"
+            self.exit_emitter.fire(CommandExecutionExit(id=self.id, outcome=Error(exception)))
+            raise
 
         if hooks.on_start:
             resolved_param = CommandExecutionResolvedParam(
@@ -242,4 +256,5 @@ class CommandExecutionContext:
 @dataclass(frozen=True)
 class CommandExecutionQuery:
     kind: CommandExecutionKind | None = None
+    status: CommandExecutionStatus | None = None
     stdout: BufferSource | None = None

@@ -8,7 +8,6 @@ from pytoy.tool_execution.command.models import (
     CommandExecutionRequest,
 )
 
-from .factory import CommandExecutionFactory
 from .handler import CommandExecutionHandler
 
 
@@ -41,16 +40,16 @@ class CommandExecutor:
     def execute(
         self, request: CommandExecutionRequest, hooks: CommandExecutionHooks | None = None, *, init_buffer: bool = True
     ) -> CommandExecutionHandler:
-        factory = CommandExecutionFactory(environment_manager=self._environment_manager)
-        execution = factory.create(request, self._buffer_request)
-        self._execution_manager.register(execution)
-
+        handler = CommandExecutionHandler.create(
+            request,
+            buffer_request=self._buffer_request,
+            manager=self._execution_manager,
+            environment_manager=self._environment_manager,
+        )
         if init_buffer:
-            execution.stdout.init_buffer()
-            if execution.stderr:
-                execution.stderr.init_buffer()
-
-        handler = CommandExecutionHandler(id=execution.id, manager=self._execution_manager)
+            handler.stdout.init_buffer()
+            if handler.stderr:
+                handler.stderr.init_buffer()
         hooks = hooks or CommandExecutionHooks()
         handler.start(hooks=hooks)
         return handler
