@@ -111,9 +111,13 @@ class OutputJobNvim(OutputJobProtocol):
             return
         self._disposed = True
         self.terminate()
-        if self._on_event_vimfunc is not None:
-            FunctionRegistry.deregister(self._on_event_vimfunc)
-            self._on_event_vimfunc = None
+
+        def _deregister_event_vimfunc():
+            if self._on_event_vimfunc is not None:
+                FunctionRegistry.deregister(self._on_event_vimfunc)
+                self._on_event_vimfunc = None
+
+        TimerTask.execute_oneshot(_deregister_event_vimfunc, interval=0)
         self._core.dispose()
 
     # --- Protocol Implementation (Core 委譲) ---
