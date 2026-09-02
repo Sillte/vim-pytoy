@@ -7,7 +7,7 @@ from pytoy.shared.ui.status_line.models import StatusLineItem
 from pytoy.shared.ui.status_line.protocol import StatusLineManagerProtocol
 
 if TYPE_CHECKING:
-    from pytoy.shared.ui.pytoy_window.protocol import WindowEvents
+    from pytoy.shared.ui.contract.window import WindowEvents
 
 
 class StatusLineManager(StatusLineManagerProtocol):

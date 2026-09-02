@@ -8,7 +8,7 @@ from pytoy.shared.lib.text import CharacterRange, LineRange
 from pytoy.shared.ui.pytoy_buffer.models import URI, BufferEvents, BufferID, BufferSource
 
 if TYPE_CHECKING:
-    from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol as WindowProtocol
+    from pytoy.shared.ui.contract.window import WindowProtocol
 
 
 class BufferProtocol(Protocol):

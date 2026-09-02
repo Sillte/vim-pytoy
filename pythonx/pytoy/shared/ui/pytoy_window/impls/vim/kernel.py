@@ -6,7 +6,7 @@ import vim
 
 from pytoy.shared.lib.entity import MortalEntityProtocol
 from pytoy.shared.lib.event.domain import Event
-from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowID, WindowEvents
+from pytoy.shared.ui.contract.window import PytoyWindowID, WindowEvents
 from pytoy.shared.ui.pytoy_window.vim_window_utils import VimWinIDConverter
 
 if TYPE_CHECKING:

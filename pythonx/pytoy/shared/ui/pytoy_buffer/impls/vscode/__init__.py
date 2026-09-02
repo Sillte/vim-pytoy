@@ -30,7 +30,7 @@ from pytoy.shared.ui.vscode.document import Document
 
 if TYPE_CHECKING:
     from pytoy.contexts.vscode import GlobalVSCodeContext
-    from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol
+    from pytoy.shared.ui.contract.window import WindowProtocol as PytoyWindowProtocol
 
 
 class PytoyBufferVSCode(PytoyBufferProtocol):

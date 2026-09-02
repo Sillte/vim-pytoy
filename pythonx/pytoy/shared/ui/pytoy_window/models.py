@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Literal, Self, assert_never
 from pytoy.shared.lib.text import CursorPosition, LineRange
 
 if TYPE_CHECKING:
-    from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol
+    from pytoy.shared.ui.contract.window import WindowProtocol as PytoyWindowProtocol
 
 
 class ViewportMoveMode(StrEnum):

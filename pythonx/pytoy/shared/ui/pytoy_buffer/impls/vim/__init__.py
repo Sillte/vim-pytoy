@@ -28,7 +28,7 @@ VIM_ERROR = getattr(vim, "error", Exception)
 
 if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext
-    from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol
+    from pytoy.shared.ui.contract.window import WindowProtocol as PytoyWindowProtocol
 
 
 class PytoyBufferVim(PytoyBufferProtocol):

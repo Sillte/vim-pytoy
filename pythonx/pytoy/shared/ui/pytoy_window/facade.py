@@ -4,13 +4,13 @@ from typing import Literal, Sequence
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
-from pytoy.shared.ui.pytoy_buffer.models import BufferSource
-from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
-from pytoy.shared.ui.pytoy_window.protocol import (
+from pytoy.shared.ui.contract.window import (
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
 )
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+from pytoy.shared.ui.pytoy_buffer.models import BufferSource
+from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
 
 
 class PytoyWindow(PytoyWindowProtocol):

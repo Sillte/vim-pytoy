@@ -23,7 +23,7 @@ from pytoy.shared.ui.pytoy_buffer.protocol import (
 )
 
 if TYPE_CHECKING:
-    from pytoy.shared.ui.pytoy_window.protocol import PytoyWindowProtocol
+    from pytoy.shared.ui.contract.window import WindowProtocol as PytoyWindowProtocol
 
 
 class RangeOperatorDummy(RangeOperatorProtocol):
