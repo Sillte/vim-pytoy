@@ -5,6 +5,7 @@ from functools import wraps
 from typing import Self, Sequence
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
+from pytoy.shared.lib.event import Event
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.tool_execution.execution_environment import EnvironmentManager
 
@@ -13,6 +14,7 @@ from .manager import CommandExecutionManager
 from .models import (
     BufferRequest,
     CommandExecutionContext,
+    CommandExecutionExit,
     CommandExecutionHooks,
     CommandExecutionID,
     CommandExecutionKind,
@@ -145,3 +147,10 @@ class CommandExecutionHandler:
         if isinstance(execution.command, str):
             return execution.command
         return " ".join(execution.command)
+
+    @property
+    def on_exit(self) -> Event[CommandExecutionExit]:
+        execution = self._manager.get(self._id)
+        if execution is None:
+            raise ValueError(f"`execution` does not exist; {self._id=}")
+        return execution.on_exit

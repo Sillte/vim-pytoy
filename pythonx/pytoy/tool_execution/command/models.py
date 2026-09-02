@@ -165,7 +165,7 @@ class CommandExecution:
         return self.runner.events
 
     @property
-    def on_exit(self) -> Event:
+    def on_exit(self) -> Event[CommandExecutionExit]:
         return self.exit_emitter.event
 
     @property
