@@ -44,6 +44,7 @@ class TerminalJobVSCode(TerminalJobProtocol):
         self._spawn_option = spawn_option or SpawnOption()
         self._driver = request.driver
         self._update_scheduled = False
+        self._disposed = False
 
         self._core = TerminalJobCore(self._request, self._spawn_option)
 
@@ -89,6 +90,9 @@ class TerminalJobVSCode(TerminalJobProtocol):
         self._tty.terminate()
 
     def dispose(self) -> None:
+        if self._disposed:
+            return
+        self._disposed = True
         self.terminate()
         self._core.dispose()
 

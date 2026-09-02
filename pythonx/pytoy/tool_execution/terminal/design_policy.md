@@ -54,6 +54,9 @@ We use the contract package to make the extension boundary explicit, rather than
 - Main-thread operations that create or modify terminal executions must be
   performed from the main thread.
 - Terminal/process interaction is delegated to the `terminal_runner` package.
+- `TerminalJobProtocol.dispose()` must be safe to call before start, after exit,
+  or more than once. Each backend must release its backend-specific resources
+  and dispose its shared `TerminalJobCore`.
 
 ## Notes
 

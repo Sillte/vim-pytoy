@@ -84,6 +84,7 @@ class TerminalJobNvim(TerminalJobProtocol):
         self._on_out: RegisteredFunction | None = None
         self._on_exit: RegisteredFunction | None = None
         self._input_task: _InputSolverTask | None = None
+        self._disposed = False
 
     @property
     def input_task(self) -> _InputSolverTask:
@@ -164,6 +165,9 @@ class TerminalJobNvim(TerminalJobProtocol):
             self._job_id = None
 
     def dispose(self) -> None:
+        if self._disposed:
+            return
+        self._disposed = True
         self.terminate()
         # Cleanup input thread
         if self._input_task:

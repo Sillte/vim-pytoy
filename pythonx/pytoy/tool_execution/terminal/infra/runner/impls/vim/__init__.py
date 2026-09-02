@@ -36,6 +36,7 @@ class TerminalJobVim(TerminalJobProtocol):
 
         self._on_exit: None | RegisteredFunction = None
         self._on_out: None | RegisteredFunction = None
+        self._disposed = False
 
     def start(self) -> None:
         if self._bufnr > -1:
@@ -118,6 +119,9 @@ class TerminalJobVim(TerminalJobProtocol):
         self.dispose()
 
     def dispose(self) -> None:
+        if self._disposed:
+            return
+        self._disposed = True
         if self._bufnr > 0:
             # Check buffer existence before deleting
             if vim.eval(f"bufexists({self._bufnr})") == "1":

@@ -97,7 +97,11 @@ class TerminalJobRunner:
     def run(self) -> None:
         if self._terminal_job is None:
             raise RuntimeError("Already, job has disappers.")
-        self._terminal_job.start()
+        try:
+            self._terminal_job.start()
+        except Exception:
+            self._dispose_job()
+            raise
 
     def send(self, input_str: str) -> None:
         """Send input to the running terminal driver."""
@@ -123,15 +127,17 @@ class TerminalJobRunner:
 
     def _dispose_job(self):
         terminal_job = self._terminal_job
+        if terminal_job is None:
+            return
+
         self._terminal_job = None
 
-        if terminal_job:
-            terminal_job.terminate()
+        try:
             terminal_job.dispose()
-
-        for d in self._job_disposables:
-            d.dispose()
-        self._job_disposables.clear()
+        finally:
+            for disposable in self._job_disposables:
+                disposable.dispose()
+            self._job_disposables.clear()
 
     def dispose(self) -> None:
         self._dispose_job()

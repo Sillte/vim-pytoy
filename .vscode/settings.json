@@ -14,5 +14,8 @@
         "editor.codeActionsOnSave": {
             "source.organizeImports": "explicit"
         }
+    },
+    "chat.tools.terminal.autoApprove": {
+        "uv": true
     }
 }
