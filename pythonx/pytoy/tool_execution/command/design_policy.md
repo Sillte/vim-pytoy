@@ -32,6 +32,7 @@ execution lifecycle and completion notification.
 - Command creation, handler creation, execution start, and termination must be
   performed from the main thread.
 - Backend implementations must emit command events and invoke event callbacks
-  from the backend execution context defined by `TimerTask`.
+  from the backend execution context defined by `TimerTask`. This context is
+  backend-specific and is not required to be `threading.main_thread()`.
 - External code must not depend on `CommandExecution` as part of the command
   execution interface.

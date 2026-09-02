@@ -27,11 +27,7 @@ class OutputJobDummy(OutputJobProtocol):
         self._notification_task_name: str | None = None
 
     def _start_notification_dispatch(self) -> None:
-        """Dispatch worker-thread notifications to main thread via TimerTask.
-
-        Fulfills the main-thread event contract: all JobEvents must be emitted
-        from the main thread (see README.md Design section).
-        """
+        """Dispatch worker-thread notifications through the TimerTask context."""
 
         def _dispatch_pending() -> None:
             while True:
@@ -43,7 +39,10 @@ class OutputJobDummy(OutputJobProtocol):
                         self._core.emit_stderr(data)
                     elif event_type == "exit":
                         self._alive = False
-                        self._core.emit_exit(self, data)
+                        try:
+                            self._core.emit_exit(self, data)
+                        finally:
+                            self._stop_notification_dispatch()
                 except queue.Empty:
                     break
 
