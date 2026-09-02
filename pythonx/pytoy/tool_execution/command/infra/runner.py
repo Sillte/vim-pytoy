@@ -130,13 +130,17 @@ class CommandRunner:
         self,
     ):
         """Dispose the disposable related to `output_job`."""
-        if self._output_job and self._output_job.alive:
-            self._output_job.terminate()
+        output_job = self._output_job
+        if output_job is None:
+            return
 
-        for d in self._job_disposables:
-            d.dispose()
-        self._job_disposables.clear()
-        self._output_job = None
+        try:
+            output_job.dispose()
+        finally:
+            for disposable in self._job_disposables:
+                disposable.dispose()
+            self._job_disposables.clear()
+            self._output_job = None
 
     def dispose(self) -> None:
         self._dispose_job()

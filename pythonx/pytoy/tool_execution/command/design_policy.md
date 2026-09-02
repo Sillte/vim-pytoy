@@ -34,5 +34,7 @@ execution lifecycle and completion notification.
 - Backend implementations must emit command events and invoke event callbacks
   from the backend execution context defined by `TimerTask`. This context is
   backend-specific and is not required to be `threading.main_thread()`.
+- Hook callbacks are user-provided callbacks. They must not raise exceptions;
+  handling exceptions raised by hooks is the responsibility of the caller.
 - External code must not depend on `CommandExecution` as part of the command
   execution interface.

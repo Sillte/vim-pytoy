@@ -19,6 +19,7 @@ class OutputJobNvim(OutputJobProtocol):
         self._name = job_request.name
         self._core = OutputJobCore(self._name)
         self._job_id_int: int = -1
+        self._outputs = set(job_request.outputs)
         self._start_impl = self._build_start_impl(job_request, spawn_option)
 
     def _build_start_impl(self, job_request: OutputJobRequest, spawn_option: SpawnOption) -> Callable[[], None]:
@@ -58,11 +59,13 @@ class OutputJobNvim(OutputJobProtocol):
         self._cwd = str(spawn_option.cwd or Path().cwd().absolute())
         # Neovim の jobstart オプション
         option: dict[str, Any] = {
-            "on_stdout": on_event_vimfunc.impl_name,
-            "on_stderr": on_event_vimfunc.impl_name,
             "on_exit": on_event_vimfunc.impl_name,
             "cwd": self._cwd,
         }
+        if "stdout" in self._outputs:
+            option["on_stdout"] = on_event_vimfunc.impl_name
+        if "stderr" in self._outputs:
+            option["on_stderr"] = on_event_vimfunc.impl_name
         if spawn_option.env:
             option["env"] = spawn_option.env
 

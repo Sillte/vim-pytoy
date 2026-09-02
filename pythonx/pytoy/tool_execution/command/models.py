@@ -94,8 +94,6 @@ class CommandExecutionResolvedParam:
 
 @dataclass(frozen=True)
 class CommandExecutionHooks:
-    """Recommendation policy... Use `on_finish` rather than on_success / on_failure."""
-
     on_start: Callable[[CommandExecutionResolvedParam], None] | None = None
 
     on_result: Callable[[CommandExecutionResult], None] | None = None
@@ -179,8 +177,6 @@ class CommandExecution:
         return self.runner.stderr
 
     def start(self, hooks: CommandExecutionHooks) -> None:
-        self.status = "running"
-
         def _on_exit(job_result: JobResult) -> None:
             self.status = "finished"
             result = CommandExecutionResult(
@@ -195,6 +191,16 @@ class CommandExecution:
 
             exit_entity = CommandExecutionExit(id=self.id, outcome=Success(result))
             self.exit_emitter.fire(exit_entity)
+
+        if hooks.on_start:
+            resolved_param = CommandExecutionResolvedParam(
+                stdout_buffer=self.stdout,
+                stderr_buffer=self.stderr,
+                command=self.command if isinstance(self.command, str) else " ".join(self.command),
+                cwd=self.cwd,
+                env=self.env,
+            )
+            hooks.on_start(resolved_param)
 
         if hooks.on_exit_code_zero:
             self.exit_emitter.event.map(lambda exit_entity: exit_entity.outcome).filter(is_success).map(
@@ -216,24 +222,18 @@ class CommandExecution:
                 lambda outcome: outcome.exception
             ).once().subscribe(hooks.on_exception)
 
-        job_request = OutputJobRequest(command=self.command, on_exit=lambda job_result: _on_exit(job_result))
+        outputs = ("stdout", "stderr") if self.stderr is not None else ("stdout",)
+        job_request = OutputJobRequest(
+            command=self.command, on_exit=lambda job_result: _on_exit(job_result), outputs=outputs
+        )
         spawn_option = SpawnOption(cwd=self.cwd, env=self.env)
         try:
+            self.status = "running"
             self.runner.run(job_request, spawn_option)
         except Exception as exception:
             self.status = "error"
             self.exit_emitter.fire(CommandExecutionExit(id=self.id, outcome=Error(exception)))
             raise
-
-        if hooks.on_start:
-            resolved_param = CommandExecutionResolvedParam(
-                stdout_buffer=self.stdout,
-                stderr_buffer=self.stderr,
-                command=self.command if isinstance(self.command, str) else " ".join(self.command),
-                cwd=self.cwd,
-                env=self.env,
-            )
-            hooks.on_start(resolved_param)
 
     def terminate(self) -> None:
         self.runner.terminate()

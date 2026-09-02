@@ -22,9 +22,11 @@ class OutputJobDummy(OutputJobProtocol):
         self._cwd = Path(spawn_option.cwd or Path().cwd())
         self._env = spawn_option.env
         self._command = job_request.command
+        self._outputs = set(job_request.outputs)
         self._proc: None | subprocess.Popen = None
         self._notification_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
         self._notification_task_name: str | None = None
+        self._reader_threads: list[threading.Thread] = []
 
     def _start_notification_dispatch(self) -> None:
         """Dispatch worker-thread notifications through the TimerTask context."""
@@ -66,6 +68,8 @@ class OutputJobDummy(OutputJobProtocol):
 
     def _wait(self) -> None:
         code = self.proc.wait()
+        for reader_thread in self._reader_threads:
+            reader_thread.join()
         self._notification_queue.put(("exit", code))
 
     @property
@@ -79,15 +83,20 @@ class OutputJobDummy(OutputJobProtocol):
             raise RuntimeError("OutputJob has already been started.")
         self._proc = subprocess.Popen(
             self._command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE if "stdout" in self._outputs else subprocess.DEVNULL,
+            stderr=subprocess.PIPE if "stderr" in self._outputs else subprocess.DEVNULL,
             text=True,
             cwd=self._cwd,
             env=self._env,
         )
         self._alive = True
-        threading.Thread(target=self._read_stdout, daemon=True).start()
-        threading.Thread(target=self._read_stderr, daemon=True).start()
+        self._reader_threads = []
+        if "stdout" in self._outputs:
+            self._reader_threads.append(threading.Thread(target=self._read_stdout, daemon=True))
+        if "stderr" in self._outputs:
+            self._reader_threads.append(threading.Thread(target=self._read_stderr, daemon=True))
+        for reader_thread in self._reader_threads:
+            reader_thread.start()
         threading.Thread(target=self._wait, daemon=True).start()
         self._start_notification_dispatch()
 
