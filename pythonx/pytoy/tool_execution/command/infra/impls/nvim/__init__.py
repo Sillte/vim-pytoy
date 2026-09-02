@@ -15,11 +15,13 @@ from pytoy.tool_execution.command.infra.process import find_children_pids
 
 
 class OutputJobNvim(OutputJobProtocol):
-    def __init__(self, job_request: OutputJobRequest, spawn_option: SpawnOption, *, ctx: Any = None):
+    def __init__(self, job_request: OutputJobRequest, spawn_option: SpawnOption):
         self._name = job_request.name
         self._core = OutputJobCore(self._name)
         self._job_id_int: int = -1
         self._outputs = set(job_request.outputs)
+        self._on_event_vimfunc = None
+        self._disposed = False
         self._start_impl = self._build_start_impl(job_request, spawn_option)
 
     def _build_start_impl(self, job_request: OutputJobRequest, spawn_option: SpawnOption) -> Callable[[], None]:
@@ -46,9 +48,9 @@ class OutputJobNvim(OutputJobProtocol):
 
         # イベントハンドラの登録
         on_event_vimfunc = FunctionRegistry.register(_on_event, prefix="OutputJobNvim")
+        self._on_event_vimfunc = on_event_vimfunc
 
         def _cleanup():
-            FunctionRegistry.deregister(on_event_vimfunc)
             self.dispose()
 
         # 終了時クリーンアップ
@@ -105,7 +107,13 @@ class OutputJobNvim(OutputJobProtocol):
                 pass
 
     def dispose(self) -> None:
+        if self._disposed:
+            return
+        self._disposed = True
         self.terminate()
+        if self._on_event_vimfunc is not None:
+            FunctionRegistry.deregister(self._on_event_vimfunc)
+            self._on_event_vimfunc = None
         self._core.dispose()
 
     # --- Protocol Implementation (Core 委譲) ---

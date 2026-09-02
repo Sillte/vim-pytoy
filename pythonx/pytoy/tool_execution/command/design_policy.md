@@ -36,5 +36,8 @@ execution lifecycle and completion notification.
   backend-specific and is not required to be `threading.main_thread()`.
 - Hook callbacks are user-provided callbacks. They must not raise exceptions;
   handling exceptions raised by hooks is the responsibility of the caller.
+- `OutputJobProtocol.dispose()` must be safe to call before start, after exit,
+  or more than once. Each backend must release its backend-specific callbacks
+  and resources before disposing its shared `OutputJobCore`.
 - External code must not depend on `CommandExecution` as part of the command
   execution interface.

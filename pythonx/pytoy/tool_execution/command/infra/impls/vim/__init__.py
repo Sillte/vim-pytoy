@@ -22,6 +22,8 @@ class OutputJobVim(OutputJobProtocol):
     def __init__(self, job_request: OutputJobRequest, spawn_option: SpawnOption):
         self._name = job_request.name
         self._core = OutputJobCore(self._name)
+        self._vim_funcs = []
+        self._disposed = False
 
         # _build events.
         self._start_caller = self._build_start_impl(job_request, spawn_option)
@@ -39,6 +41,7 @@ class OutputJobVim(OutputJobProtocol):
         )
 
         vim_funcs = [on_out, on_err, on_exit]
+        self._vim_funcs = vim_funcs
 
         def _construct_option(
             job_request: OutputJobRequest, spawn_option: SpawnOption, cwd: Path
@@ -63,9 +66,6 @@ class OutputJobVim(OutputJobProtocol):
             return option
 
         def _cleanup():
-            for f in vim_funcs:
-                FunctionRegistry.deregister(f)
-            vim.command(f"silent! unlet g:{self._jobvar}")
             self.dispose()
 
         self._disposables = []
@@ -138,7 +138,15 @@ class OutputJobVim(OutputJobProtocol):
                 pass
 
     def dispose(self) -> None:
+        if self._disposed:
+            return
+        self._disposed = True
         self.terminate()
+
+        for function in self._vim_funcs:
+            FunctionRegistry.deregister(function)
+        self._vim_funcs.clear()
+        vim.command(f"silent! unlet g:{self._jobvar}")
 
         for d in self._disposables:
             d.dispose()

@@ -69,7 +69,7 @@ class OutputJobDummy(OutputJobProtocol):
     def _wait(self) -> None:
         code = self.proc.wait()
         for reader_thread in self._reader_threads:
-            reader_thread.join()
+            reader_thread.join(timeout=3.0)
         self._notification_queue.put(("exit", code))
 
     @property
@@ -119,11 +119,13 @@ class OutputJobDummy(OutputJobProtocol):
     def terminate(self) -> None:
         try:
             self.proc.terminate()
-        except Exception:
+        except ProcessLookupError:
             pass
 
     def dispose(self):
         self._stop_notification_dispatch()
+        self._alive = False
+
         if self._proc is not None:
             self.terminate()
             try:
