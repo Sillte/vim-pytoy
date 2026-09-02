@@ -24,6 +24,7 @@ class OutputJobDummy(OutputJobProtocol):
         self._command = job_request.command
         self._proc: None | subprocess.Popen = None
         self._notification_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
+        self._notification_task_name: str | None = None
 
     def _start_notification_dispatch(self) -> None:
         """Dispatch worker-thread notifications to main thread via TimerTask.
@@ -46,7 +47,13 @@ class OutputJobDummy(OutputJobProtocol):
                 except queue.Empty:
                     break
 
-        TimerTask.register(_dispatch_pending, interval=10)
+        self._notification_task_name = TimerTask.register(_dispatch_pending, interval=10)
+
+    def _stop_notification_dispatch(self) -> None:
+        if self._notification_task_name is None:
+            return
+        TimerTask.deregister(self._notification_task_name)
+        self._notification_task_name = None
 
     def _read_stdout(self) -> None:
         assert self.proc.stdout
@@ -108,6 +115,7 @@ class OutputJobDummy(OutputJobProtocol):
             pass
 
     def dispose(self):
+        self._stop_notification_dispatch()
         if self._proc is not None:
             self.terminate()
             try:
