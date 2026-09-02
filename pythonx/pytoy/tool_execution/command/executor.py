@@ -43,6 +43,7 @@ class CommandExecutor:
     ) -> CommandExecutionHandler:
         factory = CommandExecutionFactory(environment_manager=self._environment_manager)
         execution = factory.create(request, self._buffer_request)
+        self._execution_manager.register(execution)
 
         if init_buffer:
             execution.stdout.init_buffer()
