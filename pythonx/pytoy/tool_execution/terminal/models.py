@@ -130,6 +130,9 @@ class TerminalExecution:
         return self.exit_emitter.event
 
     def start(self, hooks: TerminalExecutionHooks) -> None:
+        if self.status != "created":
+            raise ValueError("`execution` is not in created status.")
+
         def _on_exit(result: Any) -> None:
             result = TerminalExecutionResult(exit_code=result, buffer=self.runner.buffer)
             self.status = "finished"
@@ -182,6 +185,7 @@ class TerminalExecutionPolicy:
 class TerminalExecutionQuery:
     buffer: BufferSource | None = None
     kind: TerminalDriverKind | None = None
+    status: TerminalExecutionStatus | None = None
 
     @classmethod
     def from_any(cls, buffer: str | Path | BufferSource | None = None, kind: TerminalDriverKind | None = None) -> Self:

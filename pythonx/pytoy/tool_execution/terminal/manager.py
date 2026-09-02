@@ -39,6 +39,8 @@ class TerminalExecutionManager:
             target_ids = [elem for elem in target_ids if self._executions[elem].runner.buffer.source == query.buffer]
         if query.kind is not None:
             target_ids = [elem for elem in target_ids if self._executions[elem].kind == query.kind]
+        if query.status is not None:
+            target_ids = [elem for elem in target_ids if self._executions[elem].status == query.status]
         return [self._executions[elem] for elem in target_ids]
 
     @property
