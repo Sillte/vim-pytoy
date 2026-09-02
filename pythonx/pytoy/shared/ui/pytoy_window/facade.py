@@ -49,7 +49,7 @@ class PytoyWindow(PytoyWindowProtocol):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PytoyWindow):
             return NotImplemented
-        return self.impl.__eq__(other)
+        return self.impl == other.impl
 
     @property
     def cursor(self) -> CursorPosition:
@@ -96,8 +96,7 @@ class PytoyWindow(PytoyWindowProtocol):
         param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place",
     ) -> "PytoyWindow":
         """Open or create PytoyWindow."""
-        impl = PytoyWindowProvider().open_window(source, param)
-        return PytoyWindow(impl)
+        return PytoyWindowProvider().open_window(source, param)
 
 
 class PytoyWindowProvider(PytoyWindowProviderProtocol):
@@ -122,15 +121,16 @@ class PytoyWindowProvider(PytoyWindowProviderProtocol):
     def impl(self) -> PytoyWindowProviderProtocol:
         return self._impl
 
-    def get_current(self) -> PytoyWindowProtocol:
-        return self._impl.get_current()
+    def get_current(self) -> PytoyWindow:
+        return PytoyWindow(self._impl.get_current())
 
-    def get_windows(self, only_normal_buffers: bool = True) -> Sequence[PytoyWindowProtocol]:
-        return self._impl.get_windows(only_normal_buffers=only_normal_buffers)
+    def get_windows(self, only_normal_buffers: bool = True) -> Sequence[PytoyWindow]:
+        return [PytoyWindow(window) for window in self._impl.get_windows(only_normal_buffers=only_normal_buffers)]
 
     def open_window(
         self,
         source: str | Path | BufferSource,
         param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place",
-    ) -> PytoyWindowProtocol:
-        return self._impl.open_window(source, param)
+    ) -> PytoyWindow:
+        impl_window = self._impl.open_window(source, param)
+        return PytoyWindow(impl_window)
