@@ -4,7 +4,7 @@ from typing import Literal
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.text import LineRange
 from pytoy.shared.ui.pytoy_window import PytoyWindow
-from pytoy.tool_execution.terminal import TerminalDriverManager
+from pytoy.tool_execution.terminal import BashDriver, CmdExeDriver, IPythonDriver, ShellDriver, TerminalDriverManager
 from pytoy.tool_execution.terminal.contract import TerminalDriverKind, TerminalDriverProtocol
 from pytoy.tools.markdown import MarkdownExtractor
 
@@ -13,6 +13,13 @@ class TerminalSelector:
     def __init__(self, driver_manager: TerminalDriverManager | None = None):
         ctx = GlobalPytoyContext.get()
         self._driver_manager = driver_manager or ctx.terminal_driver_manager
+        self._register(self._driver_manager)
+
+    def _register(self, driver_manager: TerminalDriverManager):
+        driver_manager.register("bash")(BashDriver)
+        driver_manager.register("ipython")(IPythonDriver)
+        driver_manager.register("shell")(ShellDriver)
+        driver_manager.register("cmd")(CmdExeDriver)
 
     def _to_driver_kind(self, driver: TerminalDriverKind | TerminalDriverProtocol) -> TerminalDriverKind:
         return driver if isinstance(driver, str) else driver.kind

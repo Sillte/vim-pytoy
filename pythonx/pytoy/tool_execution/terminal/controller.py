@@ -11,7 +11,6 @@ from .models import (
     CommandWrapperType,
     TerminalDriverKind,
     TerminalDriverProtocol,
-    TerminalExecutionHooks,
     TerminalExecutionQuery,
     TerminalExecutionRequest,
 )
@@ -51,6 +50,8 @@ class TerminalExecutionController:
         cwd: Path | None = None,
     ) -> TerminalExecutionHandler:
         handler = self.get_or_create_handler(driver, buffer_name, command_wrapper=command_wrapper, cwd=cwd)
+        if handler.status == "created":
+            handler.start()
         handler.send(content)
         return handler
 
@@ -70,7 +71,6 @@ class TerminalExecutionController:
         driver: TerminalDriverKind | TerminalDriverProtocol,
         buffer_name: str | Path | BufferSource,
         *,
-        hooks: TerminalExecutionHooks | None = None,
         command_wrapper: CommandWrapperType | None = None,
         cwd: Path | None = None,
     ) -> TerminalExecutionHandler:
@@ -85,5 +85,4 @@ class TerminalExecutionController:
             buffer_req = BufferRequest(source=buffer_source)
             execution_req = TerminalExecutionRequest(driver=driver, command_wrapper=command_wrapper, cwd=cwd)
             handler = TerminalExecutionHandler.create(request=execution_req, buffer_request=buffer_req)
-            handler.start(hooks=hooks)
         return handler

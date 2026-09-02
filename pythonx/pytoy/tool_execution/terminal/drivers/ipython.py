@@ -1,6 +1,5 @@
 from typing import Sequence
 
-from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.tool_execution.terminal.contract.models import (
     InputOperation,
     InterruptionCode,
@@ -11,10 +10,7 @@ from pytoy.tool_execution.terminal.contract.models import (
     WaitUntilOperation,
 )
 
-driver_manager = GlobalPytoyContext().get().terminal_driver_manager
 
-
-@driver_manager.register("ipython")
 class IPythonDriver(TerminalDriverProtocol):
     def __init__(self, command: str = "ipython --colors=NoColor", kind: str = "ipython"):
         self._command = command

@@ -1,15 +1,11 @@
 from typing import Sequence
 
-from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.tool_execution.terminal.contract import (
     InputOperation,
     InterruptionCode,
     Snapshot,
     TerminalDriverProtocol,
 )
-from pytoy.tool_execution.terminal.infra.driver import DEFAULT_SHELL_DRIVER_NAME
-
-driver_manager = GlobalPytoyContext().get().terminal_driver_manager
 
 
 def _shell_make_operations(input_str: str) -> Sequence[str]:
@@ -34,7 +30,6 @@ def _shell_make_operations(input_str: str) -> Sequence[str]:
     return joined_lines
 
 
-@driver_manager.register("windows_cmd")
 class CmdExeDriver:
     def __init__(self, kind: str = "cmd") -> None:
         self._command = "cmd.exe"
@@ -66,7 +61,6 @@ class CmdExeDriver:
         return InterruptionCode(preference="kill_tree")
 
 
-@driver_manager.register(DEFAULT_SHELL_DRIVER_NAME)
 class ShellDriver(TerminalDriverProtocol):
     WIN_DEFAULT_SHELL_COMMAND = "cmd.exe"
     LINUX_DEFAULT_SHELL_COMMAND = "bash"
@@ -101,7 +95,6 @@ class ShellDriver(TerminalDriverProtocol):
         return self._impl.interrupt(pid, children_pids)
 
 
-@driver_manager.register("bash")
 class BashDriver:
     def __init__(self, kind: str = "bash") -> None:
         self._kind = kind

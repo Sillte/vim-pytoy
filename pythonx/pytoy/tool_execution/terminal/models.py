@@ -3,10 +3,10 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Self
+from typing import Any, Callable, Literal, Self
 
 from pytoy.shared.lib.event import Event, EventEmitter
-from pytoy.shared.lib.outcome import Error, Outcome, Success, is_success
+from pytoy.shared.lib.outcome import Error, Outcome, Success, is_error, is_success
 from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
 
 from .contract.models import (
@@ -19,6 +19,8 @@ from .infra import TerminalJobRunner
 
 type TerminalExecutionID = str
 type TerminalExecutionEvents = JobEvents
+
+type TerminalExecutionStatus = Literal["created", "running", "finished", "error"]
 
 
 @dataclass(frozen=True)
@@ -107,7 +109,7 @@ class TerminalExecutionHooks:
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class TerminalExecution:
     runner: TerminalJobRunner
     driver: TerminalDriverProtocol
@@ -117,6 +119,7 @@ class TerminalExecution:
     env: dict[str, str] | None = None
     id: TerminalExecutionID = field(default_factory=lambda: str(uuid.uuid4()))
     exit_emitter: EventEmitter[TerminalExecutionExit] = field(default_factory=EventEmitter)
+    status: TerminalExecutionStatus = field(default="created")
 
     @property
     def kind(self) -> str:
@@ -127,9 +130,9 @@ class TerminalExecution:
         return self.exit_emitter.event
 
     def start(self, hooks: TerminalExecutionHooks) -> None:
-
         def _on_exit(result: Any) -> None:
             result = TerminalExecutionResult(exit_code=result, buffer=self.runner.buffer)
+            self.status = "finished"
             self.exit_emitter.fire(TerminalExecutionExit(id=self.id, outcome=Success(result)))
 
         if hooks.on_result:
@@ -147,12 +150,18 @@ class TerminalExecution:
                 lambda success: success.value
             ).filter(lambda result: result.exit_code != 0).once().subscribe(hooks.on_exit_code_non_zero)
 
+        if hooks.on_exception:
+            self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(
+                lambda error: error.exception
+            ).subscribe(hooks.on_exception)
+
+        self.runner.events.on_job_exit.subscribe(_on_exit)
+        self.status = "running"
         try:
-            self.runner.events.on_job_exit.subscribe(_on_exit)
             self.runner.run()
         except Exception as e:
+            self.status = "error"
             self.exit_emitter.fire(TerminalExecutionExit(id=self.id, outcome=Error(exception=e)))
-            print("CHECK", e)
 
 
 @dataclass(frozen=True)

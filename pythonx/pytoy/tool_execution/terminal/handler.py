@@ -17,6 +17,7 @@ from .models import (
     TerminalExecutionID,
     TerminalExecutionQuery,
     TerminalExecutionRequest,
+    TerminalExecutionStatus,
 )
 
 
@@ -60,7 +61,6 @@ class TerminalExecutionHandler:
         return cls(id=execution.id, manager=manager)
 
     @classmethod
-    @main_thread_only
     def query(cls, query: TerminalExecutionQuery, *, manager: TerminalExecutionManager | None = None) -> Sequence[Self]:
         if manager is None:
             manager = GlobalPytoyContext.get().terminal_execution_manager
@@ -95,7 +95,12 @@ class TerminalExecutionHandler:
         self._manager.register_context(context)
 
     @property
-    def event(self) -> Event[TerminalExecutionExit]:
+    def status(self) -> TerminalExecutionStatus:
+        execution = self._get_execution()
+        return execution.status
+
+    @property
+    def on_exit(self) -> Event[TerminalExecutionExit]:
         execution = self._get_execution()
         return execution.on_exit
 

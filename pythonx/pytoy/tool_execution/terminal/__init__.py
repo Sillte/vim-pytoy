@@ -1,5 +1,7 @@
 from .contract.models import CommandWrapperType
 from .controller import TerminalExecutionController
+from .drivers.ipython import IPythonDriver
+from .drivers.shell import BashDriver, CmdExeDriver, ShellDriver
 from .handler import TerminalExecutionHandler
 from .infra import TerminalDriverManager
 from .models import (
@@ -26,6 +28,10 @@ __all__ = [
     "TerminalExecutionExit",
     "TerminalExecutionContext",
     "TerminalDriverManager",
+    "ShellDriver",
+    "IPythonDriver",
+    "CmdExeDriver",
+    "BashDriver",
 ]
 
 

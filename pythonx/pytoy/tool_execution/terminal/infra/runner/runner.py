@@ -122,9 +122,12 @@ class TerminalJobRunner:
         pass
 
     def _dispose_job(self):
-        if self._terminal_job:
-            self._terminal_job.terminate()
+        terminal_job = self._terminal_job
         self._terminal_job = None
+
+        if terminal_job:
+            terminal_job.terminate()
+            terminal_job.dispose()
 
         for d in self._job_disposables:
             d.dispose()
