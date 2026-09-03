@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import Mapping
 
 from pytoy.shared.lib.function import FunctionName, FunctionRegistry, RegisteredFunction
-from pytoy.shared.ui.status_line.models import StatusLineItemFunction
+from pytoy.shared.ui.contract.status_line.models import StatusLineItemFunction
 
 
 class RegistryView:

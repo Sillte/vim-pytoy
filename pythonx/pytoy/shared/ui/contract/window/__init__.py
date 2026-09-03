@@ -8,8 +8,8 @@ from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.window_events import ScopedWindowEventProvider
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
 from pytoy.shared.ui.contract.buffer.models import BufferSource
+from pytoy.shared.ui.contract.status_line import StatusLineManagerProtocol
 from pytoy.shared.ui.contract.window.models import ViewportMoveMode, WindowCreationParam
-from pytoy.shared.ui.status_line.protocol import StatusLineManagerProtocol
 
 if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext

@@ -1,6 +1,7 @@
 from typing import List, Sequence
 
-from pytoy.shared.ui.status_line.protocol import StatusLineItem, StatusLineManagerProtocol
+from pytoy.shared.ui.contract.status_line import StatusLineManagerProtocol
+from pytoy.shared.ui.contract.status_line.models import StatusLineItem
 
 
 class StatusLineManagerDummy(StatusLineManagerProtocol):

@@ -2,6 +2,13 @@ from typing import Mapping, Sequence, cast
 
 import vim
 
+from pytoy.shared.ui.contract.status_line import StatusLineManagerProtocol
+from pytoy.shared.ui.contract.status_line.models import (
+    FunctionStatusLineItem,
+    StatusLineItem,
+    TextStatusLineItem,
+    UnknownStatusLineItem,
+)
 from pytoy.shared.ui.contract.window import WindowEvents
 from pytoy.shared.ui.pytoy_window.impls.vim_window_utils import VimWinIDConverter
 from pytoy.shared.ui.status_line.impl_vim.expr_registry import VimExprRegistry
@@ -12,13 +19,6 @@ from pytoy.shared.ui.status_line.impl_vim.node_converters import (
     VimStatusNodeConverter,
     VimTextNodeConverter,
 )
-from pytoy.shared.ui.status_line.models import (
-    FunctionStatusLineItem,
-    StatusLineItem,
-    TextStatusLineItem,
-    UnknownStatusLineItem,
-)
-from pytoy.shared.ui.status_line.protocol import StatusLineManagerProtocol
 
 
 class StatusLineManagerVim(StatusLineManagerProtocol):
@@ -145,7 +145,7 @@ class StatusLineManagerVim(StatusLineManagerProtocol):
 
 
 def test_func():
-    from pytoy.shared.ui.status_line.models import FunctionStatusLineItem
+    from pytoy.shared.ui.contract.status_line.models import FunctionStatusLineItem
 
     item = FunctionStatusLineItem(value=lambda: "AHA")
     # item = TextStatusLineItem(value="TEXTTEXT", side="right")
