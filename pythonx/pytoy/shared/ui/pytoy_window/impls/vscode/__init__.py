@@ -21,9 +21,9 @@ from pytoy.shared.ui.contract.window import (
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer.impls.vscode import PytoyBufferVSCode
 from pytoy.shared.ui.pytoy_buffer.models import BufferSource
+from pytoy.shared.ui.pytoy_window.impls.vim_window_utils import get_last_selection
 from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel, WindowURISolver
 from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
-from pytoy.shared.ui.pytoy_window.vim_window_utils import get_last_selection
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.shared.ui.vscode.document import Api, Document
 from pytoy.shared.ui.vscode.editor import Editor
@@ -31,7 +31,7 @@ from pytoy.shared.ui.vscode.editor.models import TextEditorRevealType
 from pytoy.shared.ui.vscode.uri import VSCodeUri
 from pytoy.shared.ui.vscode.utils import wait_until_true
 
-from ...vim_window_utils import VimWinIDConverter
+from ..vim_window_utils import VimWinIDConverter
 
 if TYPE_CHECKING:
     from pytoy.contexts.vscode import GlobalVSCodeContext

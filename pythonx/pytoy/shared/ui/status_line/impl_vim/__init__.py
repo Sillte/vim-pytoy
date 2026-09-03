@@ -3,7 +3,7 @@ from typing import Mapping, Sequence, cast
 import vim
 
 from pytoy.shared.ui.contract.window import WindowEvents
-from pytoy.shared.ui.pytoy_window.impls.vim import VimWinIDConverter
+from pytoy.shared.ui.pytoy_window.impls.vim_window_utils import VimWinIDConverter
 from pytoy.shared.ui.status_line.impl_vim.expr_registry import VimExprRegistry
 from pytoy.shared.ui.status_line.impl_vim.models import Align, Conditional, StatusNode, parse_statusline, to_statusline
 from pytoy.shared.ui.status_line.impl_vim.node_converters import (

@@ -41,16 +41,13 @@ def get_last_selection(winid: int) -> CharacterRange | None:
 
     match mode:
         case "v":
-            # Visual Mode
-            # `CharacterRange` is exclusize.
             p1 = _from_vim_coords(s_pos[1], s_pos[2])
             p2_inclusive = _from_vim_coords(e_pos[1], e_pos[2])
             p2 = CursorPosition(p2_inclusive.line, p2_inclusive.col + 1)
             return CharacterRange(p1, p2)
         case "V" | "\x16":
-            # Line Visual Mode or Block Visual Mode
             p1 = CursorPosition(s_pos[1] - 1, 0)
-            p2 = CursorPosition(e_pos[1], 0)  # 0-based, and next line's start.
+            p2 = CursorPosition(e_pos[1], 0)
             return CharacterRange(p1, p2)
     return None
 
