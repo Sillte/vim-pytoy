@@ -14,7 +14,8 @@ type OnErrorCallback = Callable[[Exception], None] | Callable[[], None]
 
 class TimerStopException(Exception):
     """Exception raised inside the timer callback to stop the registered loop.
-    Note that when this exception is raised, `on_finish` callback is invoked with 'stopped' reason.
+    When this exception is raised, the `on_finish` callback is invoked with
+    the ``"stopped"`` reason and `on_error` is not invoked.
     """
 
     pass

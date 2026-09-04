@@ -4,7 +4,7 @@ from typing import Callable, Sequence
 
 from pytoy.shared.lib.backend import can_use_vim
 from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
-from pytoy.shared.timertask.timer import TimerTask
+from pytoy.shared.timertask.timertask import TimerTask
 
 from .models import ThreadExecution, ThreadExecutionExit, ThreadExecutionID, ThreadExecutionQuery
 

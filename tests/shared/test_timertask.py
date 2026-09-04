@@ -2,19 +2,25 @@ import threading
 
 import pytest
 
+from pytoy.contexts.core import GlobalCoreContext
 from pytoy.shared.timertask import TimerStopException, TimerTask
 from pytoy.shared.timertask.impls.dummy import TimerTaskImplDummy
+from pytoy.shared.timertask.manager import TimerTaskManager
 
 
 @pytest.fixture
 def dummy_impl():
     impl = TimerTaskImplDummy()
-    previous_impl = TimerTask.impl
-    TimerTask.set_impl(impl)
+    context = GlobalCoreContext.get()
+    previous_manager = context.__dict__.get("timer_task_manager")
+    context.timer_task_manager = TimerTaskManager(impl)
     try:
         yield impl
     finally:
-        TimerTask.impl = previous_impl
+        if previous_manager is None:
+            context.__dict__.pop("timer_task_manager", None)
+        else:
+            context.timer_task_manager = previous_manager
 
 
 def test_execute_oneshot_runs_and_deregisters(dummy_impl):
@@ -43,6 +49,20 @@ def test_repeat_runs_requested_number_of_times_and_finishes(dummy_impl):
     assert calls == ["called", "called", "called"]
 
 
+def test_zero_repeat_runs_once_and_finishes(dummy_impl):
+    completed = threading.Event()
+    calls = []
+
+    def on_finish(reason):
+        assert reason == "finished"
+        completed.set()
+
+    TimerTask.register(lambda: calls.append("called"), interval=1, repeat=0, on_finish=on_finish)
+
+    assert completed.wait(1)
+    assert calls == ["called"]
+
+
 def test_callback_error_invokes_on_error_and_deregisters(dummy_impl):
     failed = threading.Event()
     errors = []
@@ -66,6 +86,13 @@ def test_deregister_strict_rejects_unknown_name(dummy_impl):
         TimerTask.deregister("missing", strict=True)
 
 
+def test_register_rejects_duplicate_name(dummy_impl):
+    TimerTask.register(lambda: None, interval=1000, name="duplicate")
+
+    with pytest.raises(ValueError, match="already registered"):
+        TimerTask.register(lambda: None, interval=1000, name="duplicate")
+
+
 def test_timer_stop_exception_finishes_as_stopped(dummy_impl):
     completed = threading.Event()
     reasons = []
@@ -81,3 +108,20 @@ def test_timer_stop_exception_finishes_as_stopped(dummy_impl):
 
     assert completed.wait(1)
     assert reasons == ["stopped"]
+
+
+def test_finish_callback_error_does_not_invoke_error_callback(dummy_impl):
+    finished = threading.Event()
+    errors = []
+
+    def on_finish(_reason):
+        finished.set()
+        raise RuntimeError("finish callback failed")
+
+    def on_error(error):
+        errors.append(error)
+
+    TimerTask.register(lambda: None, interval=1, repeat=1, on_finish=on_finish, on_error=on_error)
+
+    assert finished.wait(1)
+    assert errors == []

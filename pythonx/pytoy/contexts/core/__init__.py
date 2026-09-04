@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, ClassVar
 # Only for lazy loading to speed up.
 if TYPE_CHECKING:
     from pytoy.bootstrap.import_resolvers import LLMImportResolver
+    from pytoy.shared.timertask.manager import TimerTaskManager
     from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
     from pytoy.tool_execution.execution_environment import EnvironmentManager
 
@@ -32,6 +33,12 @@ class GlobalCoreContext:
         from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
 
         return ThreadExecutionManager()
+
+    @cached_property
+    def timer_task_manager(self) -> TimerTaskManager:
+        from pytoy.shared.timertask.manager import TimerTaskManager
+
+        return TimerTaskManager()
 
     @cached_property
     def llm_import_resolver(sefl) -> LLMImportResolver:

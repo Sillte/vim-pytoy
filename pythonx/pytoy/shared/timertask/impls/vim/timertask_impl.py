@@ -59,6 +59,8 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
 
         def _impl_function():
             with self._lock:
+                if taskname in self.tasks:
+                    raise ValueError(f"Task {taskname!r} is already registered.")
                 vim.command(vim_code)
                 # Vim側の repeat オプションは常に -1 (無限) に設定し、管理は Python 側で行う
                 vim_repeat_opt = -1
@@ -87,33 +89,43 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
 
         try:
             func()
-        except TimerStopException as tse:
+        except TimerStopException:
             self._schedule_deregister(name)
-            cause = tse.__cause__
-            if on_finish and (not cause):
-                on_finish("stopped")
-            elif on_error and cause:
-                on_error(cause)  # type: ignore
-            elif cause:
-                raise cause
+            self._invoke_finish(on_finish, "stopped")
             return
-        except Exception as e:
+        except Exception as exception:
             self._schedule_deregister(name)
-            if on_error:
-                on_error(e)
-            raise e
+            self._invoke_error(on_error, exception)
+            return
 
         is_finished = False
         with self._lock:
-            if status.repeat > 0:
+            if status.repeat >= 0:
                 status.repeat -= 1
-                if status.repeat == 0:
+                if status.repeat <= 0:
                     is_finished = True
 
         if is_finished:
             self._schedule_deregister(name)
-            if on_finish:
-                on_finish("finished")
+            self._invoke_finish(on_finish, "finished")
+
+    @staticmethod
+    def _invoke_finish(on_finish: Callable[[NormalStopReason], None] | None, reason: NormalStopReason) -> None:
+        if on_finish is None:
+            return
+        try:
+            on_finish(reason)
+        except Exception:
+            pass
+
+    @staticmethod
+    def _invoke_error(on_error: Callable[[Exception], None] | None, exception: Exception) -> None:
+        if on_error is None:
+            return
+        try:
+            on_error(exception)
+        except Exception:
+            pass
 
     def _create_vim_code(self, taskname: TaskName, impl_function_name: FunctionName) -> str:
         """Helper to generate the complex VimL function block with error/repeat logic."""
@@ -179,7 +191,7 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
     def deregister(self, name: TaskName, *, strict: bool = False):
         if strict:
             if not self.is_registered(name):
-                raise ValueError(f"No timer task registered with name: '{name}'")
+                raise KeyError(f"No timer task registered with name: '{name}'")
         self._schedule_deregister(name)
 
     def is_registered(self, name: str):

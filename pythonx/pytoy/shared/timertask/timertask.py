@@ -1,32 +1,17 @@
+from pytoy.contexts.core import GlobalCoreContext
 from pytoy.shared.timertask.domain import (
     OnErrorCallback,
     OnFinishCallback,
     OnTaskCallback,
     TaskName,
-    TimerTaskImplProtocol,
 )
 from pytoy.shared.timertask.manager import TimerTaskManager
 
 
 class TimerTask:
-    impl: None | TimerTaskImplProtocol = None
-    manager: None | TimerTaskManager = None
-
-    @classmethod
-    def set_impl(cls, impl: TimerTaskImplProtocol) -> None:
-        cls.impl = impl
-        cls.manager = TimerTaskManager(impl)
-
     @classmethod
     def get_manager(cls) -> TimerTaskManager:
-        if cls.manager is None:
-            cls.manager = TimerTaskManager(cls.impl)
-            cls.impl = cls.manager.impl
-        return cls.manager
-
-    @classmethod
-    def get_impl(cls) -> "TimerTaskImplProtocol":
-        return cls.get_manager().impl
+        return GlobalCoreContext.get().timer_task_manager
 
     @classmethod
     def register(
@@ -38,6 +23,12 @@ class TimerTask:
         on_finish: OnFinishCallback | None = None,
         on_error: OnErrorCallback | None = None,
     ) -> str:
+        """Register a task and optionally repeat it.
+
+        ``repeat=-1`` runs indefinitely. ``repeat=0`` and ``repeat=1`` both
+        run the task once; positive values greater than one run it that many
+        times.
+        """
         return cls.get_manager().register(func, interval, name, repeat, on_finish, on_error)
 
     @classmethod

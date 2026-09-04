@@ -35,8 +35,6 @@ class _Task:
 
 
 class TimerTaskImplDummy(TimerTaskImplProtocol):
-    """Currently, the registered `func` is not executed..."""
-
     def __init__(self) -> None:
         self.tasks: dict[TaskName, _Task] = {}
         self._scheduled: list[tuple[float, int, TaskName]] = []
@@ -57,6 +55,8 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
         with self._condition:
             self._sequence += 1
             taskname = name or f"AUTONAME{self._sequence}_{id(func)}"
+            if taskname in self.tasks:
+                raise ValueError(f"Task {taskname!r} is already registered.")
             task = _Task(func, interval / 1000, repeat, on_finish, on_error)
             self.tasks[taskname] = task
             heapq.heappush(self._scheduled, (task.next_run, self._sequence, taskname))
@@ -105,11 +105,7 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
             except Exception as exception:
                 with self._condition:
                     self.tasks.pop(task_name, None)
-                if task.on_error:
-                    try:
-                        task.on_error(exception)
-                    except Exception:
-                        pass
+                self._invoke_error(task, exception)
                 continue
 
             with self._condition:
@@ -139,9 +135,15 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
             return
         try:
             on_finish(reason)
-        except Exception as exception:
-            if task.on_error:
-                try:
-                    task.on_error(exception)
-                except Exception:
-                    pass
+        except Exception:
+            pass
+
+    @staticmethod
+    def _invoke_error(task: _Task, exception: Exception) -> None:
+        on_exception = task.on_error
+        if on_exception is None:
+            return
+        try:
+            on_exception(exception)
+        except Exception:
+            pass

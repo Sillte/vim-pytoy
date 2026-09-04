@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 import vim
 from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
-from pytoy.shared.timertask.timer import TimerTask
+from pytoy.shared.timertask.timertask import TimerTask
 
 
 # If you would like to Thread,
