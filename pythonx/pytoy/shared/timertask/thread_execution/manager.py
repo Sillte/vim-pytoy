@@ -64,13 +64,13 @@ def add_log_message(message: str) -> None:
 def get_backend_thread_util() -> BackendThreadUtilProtocol:
     """Get the backend thread util implementation."""
     if can_use_vim():
-        from pytoy.shared.timertask.vim.stdout_rescuer import VimThreadUtil
+        from pytoy.shared.timertask.impls.vim.stdout_rescuer import VimThreadUtil
 
         return VimThreadUtil()
     else:
-        from pytoy.shared.timertask.domain import FakeThreadUtil
+        from pytoy.shared.timertask.impls.dummy import DummyThreadUtil
 
-        return FakeThreadUtil()
+        return DummyThreadUtil()
 
 
 class _ThreadExecutionConsumer:

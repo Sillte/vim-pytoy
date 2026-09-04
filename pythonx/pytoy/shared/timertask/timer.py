@@ -35,11 +35,11 @@ def _wrap_to_one_argument_func[T, R](
 def get_timer_task_impl() -> TimerTaskImplProtocol:
     """Get the timer task implementation."""
     if can_use_vim():
-        from pytoy.shared.timertask.vim.timertask_impl import TimerTaskImplVim
+        from pytoy.shared.timertask.impls.vim.timertask_impl import TimerTaskImplVim
 
         return TimerTaskImplVim()
     else:
-        from pytoy.shared.timertask.dummy import TimerTaskImplDummy
+        from pytoy.shared.timertask.impls.dummy import TimerTaskImplDummy
 
         return TimerTaskImplDummy()
 

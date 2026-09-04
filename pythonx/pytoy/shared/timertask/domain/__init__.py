@@ -56,13 +56,3 @@ class TaskStatus:
 class BackendThreadUtilProtocol(Protocol):
     def prepare(self) -> None: ...
     def add_message(self, message: str) -> None: ...
-
-
-class FakeThreadUtil(BackendThreadUtilProtocol):
-    """Fake implementation of BackendThreadUtilProtocol for testing purposes."""
-
-    def prepare(self) -> None:
-        pass
-
-    def add_message(self, message: str) -> None:
-        print(message, flush=True)

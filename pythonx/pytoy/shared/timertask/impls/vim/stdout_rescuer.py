@@ -3,7 +3,6 @@ from queue import Empty, Full, Queue
 from typing import Any, Literal
 
 import vim
-
 from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
 from pytoy.shared.timertask.timer import TimerTask
 

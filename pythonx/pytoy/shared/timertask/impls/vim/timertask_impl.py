@@ -3,7 +3,6 @@ from textwrap import dedent
 from typing import Callable, Self
 
 import vim
-
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.timertask.domain import (
     FunctionName,

@@ -5,11 +5,20 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from pytoy.shared.timertask.domain import (
+    BackendThreadUtilProtocol,
     NormalStopReason,
     OnTaskCallback,
     TaskName,
     TimerTaskImplProtocol,
 )
+
+
+class DummyThreadUtil(BackendThreadUtilProtocol):
+    def prepare(self) -> None:
+        pass
+
+    def add_message(self, message: str) -> None:
+        print(message, flush=True)
 
 
 @dataclass
