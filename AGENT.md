@@ -3,17 +3,17 @@
 This repository is a personal project for exploring Python-based
 editor plugin development and software architecture.
 
-Follow the applicable `design_policy.md` files when modifying the
+Follow the applicable `DESIGN_POLICY.md` files when modifying the
 codebase.
 
 ## Documentation
 
 - `README.md`: project overview and user-facing documentation.
-- `design_policy.md`: design principles and architectural decisions.
+- `DESIGN_POLICY.md`: design principles and architectural decisions.
 - `documentation_policy.md`: rules for what and how to document.
 - `AGENTS.md`: instructions for AI agents working in this repository.
 
-A `design_policy.md` applies to its directory and descendants.
+A `DESIGN_POLICY.md` applies to its directory and descendants.
 More specific policies refine broader policies.
 
 Before creating or modifying documentation, read the applicable `documentation_policy.md`,
