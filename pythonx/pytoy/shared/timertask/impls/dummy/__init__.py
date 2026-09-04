@@ -9,6 +9,7 @@ from pytoy.shared.timertask.domain import (
     NormalStopReason,
     OnTaskCallback,
     TaskName,
+    TimerStopException,
     TimerTaskImplProtocol,
 )
 
@@ -96,6 +97,11 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
 
             try:
                 task.func()
+            except TimerStopException:
+                with self._condition:
+                    self.tasks.pop(task_name, None)
+                self._invoke_finish(task, "stopped")
+                continue
             except Exception as exception:
                 with self._condition:
                     self.tasks.pop(task_name, None)

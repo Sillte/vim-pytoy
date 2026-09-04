@@ -4,6 +4,7 @@ from .manager import add_log_message
 from .models import (
     ThreadExecutionExit,
     ThreadExecutionHooks,
+    ThreadExecutionQuery,
     ThreadExecutionRequest,
     ThreadExecutionStatus,
 )
@@ -13,6 +14,7 @@ __all__ = [
     "ThreadExecutor",
     "ThreadExecutionHandler",
     "ThreadExecutionHooks",
+    "ThreadExecutionQuery",
     "ThreadExecutionRequest",
     "ThreadExecutionStatus",
     "ThreadExecutionExit",
