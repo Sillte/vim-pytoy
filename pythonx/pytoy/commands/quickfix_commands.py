@@ -7,8 +7,7 @@ app = App()
 
 @app.command("Quickfix")
 def quickfix_command(kind: Annotated[Literal["open", "next", "prev"] | None, Argument()] = None):
-    from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix
-    from pytoy.shared.ui.pytoy_quickfix.presenter import QuickfixPresenter
+    from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, QuickfixPresenter
 
     quickfix = PytoyQuickfix()
     if not quickfix.records:

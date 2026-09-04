@@ -8,7 +8,7 @@ from pytoy.shared.lib.entity import MortalEntityProtocol
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.lib.events.buffer_events import ScopedBufferEventProvider
-from pytoy.shared.ui.pytoy_buffer.models import BufferEvents
+from pytoy.shared.ui.contract.buffer.models import BufferEvents
 
 if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext

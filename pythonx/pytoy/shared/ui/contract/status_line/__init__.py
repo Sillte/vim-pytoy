@@ -12,4 +12,4 @@ class StatusLineManagerProtocol(Protocol):
     def items(self) -> Sequence[StatusLineItem]: ...
 
 
-__all__ = ["StatusLineManagerProtocol"]
+__all__ = ["StatusLineItem", "StatusLineManagerProtocol"]

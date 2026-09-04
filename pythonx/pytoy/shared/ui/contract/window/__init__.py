@@ -85,3 +85,13 @@ class WindowEvents:
 PytoyWindowID = WindowID
 PytoyWindowProtocol = WindowProtocol
 PytoyWindowProviderProtocol = WindowProviderProtocol
+
+__all__ = [
+    "PytoyWindowID",
+    "PytoyWindowProtocol",
+    "PytoyWindowProviderProtocol",
+    "WindowEvents",
+    "WindowID",
+    "WindowProtocol",
+    "WindowProviderProtocol",
+]

@@ -10,13 +10,13 @@ from pytoy.shared.ui.contract.buffer import (
     PytoyBufferProviderProtocol,
     RangeOperatorProtocol,
 )
-from pytoy.shared.ui.pytoy_buffer.models import URI, BufferEvents, BufferQuery, BufferSource
+from pytoy.shared.ui.contract.buffer.models import URI, BufferEvents, BufferQuery, BufferSource
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window import PytoyWindow
 
 
-class PytoyBuffer(PytoyBufferProtocol):
+class PytoyBuffer:
     def __init__(self, impl: PytoyBufferProtocol):
         self._impl = impl
 
@@ -142,7 +142,7 @@ class PytoyBuffer(PytoyBufferProtocol):
         return None
 
 
-class PytoyBufferProvider(PytoyBufferProviderProtocol):
+class PytoyBufferProvider:
     def __init__(self, impl: PytoyBufferProviderProtocol | None = None):
         self._impl = impl or _get_provider_impl()
 
@@ -170,8 +170,8 @@ class PytoyBufferProvider(PytoyBufferProviderProtocol):
 
 
 def make_buffer(source: str | Path | BufferSource, mode: Literal["vertical", "horizontal"] = "vertical") -> PytoyBuffer:
+    from pytoy.shared.ui.contract.window.models import WindowCreationParam
     from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
-    from pytoy.shared.ui.pytoy_window.models import WindowCreationParam
 
     source = BufferSource.from_any(source)
     param = WindowCreationParam.for_split(mode, try_reuse=True, anchor=None)
@@ -186,8 +186,8 @@ def make_duo_buffers(
     source1 = BufferSource.from_any(source1)
     source2 = BufferSource.from_any(source2)
 
+    from pytoy.shared.ui.contract.window.models import WindowCreationParam
     from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
-    from pytoy.shared.ui.pytoy_window.models import WindowCreationParam
 
     provider = PytoyWindowProvider()
     param = WindowCreationParam.for_split("vertical", try_reuse=True, anchor=None)

@@ -17,10 +17,10 @@ from pytoy.shared.ui.contract.buffer import (
 from pytoy.shared.ui.contract.buffer import (
     RangeOperatorProtocol,
 )
+from pytoy.shared.ui.contract.buffer.models import URI as PytoyURI
+from pytoy.shared.ui.contract.buffer.models import BufferEvents, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel, normalize_lf_code
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.range_operator import RangeOperatorVSCode
-from pytoy.shared.ui.pytoy_buffer.models import URI as PytoyURI
-from pytoy.shared.ui.pytoy_buffer.models import BufferEvents, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.protocol import (
     BufferID,
 )

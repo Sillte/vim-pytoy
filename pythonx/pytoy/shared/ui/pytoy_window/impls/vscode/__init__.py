@@ -11,6 +11,7 @@ import vim  # (vscode-neovim extention)
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
 from pytoy.shared.ui.contract.buffer import BufferProtocol
+from pytoy.shared.ui.contract.buffer.models import BufferSource
 from pytoy.shared.ui.contract.window import (
     PytoyWindowID,
     PytoyWindowProtocol,
@@ -18,12 +19,11 @@ from pytoy.shared.ui.contract.window import (
     StatusLineManagerProtocol,
     WindowEvents,
 )
+from pytoy.shared.ui.contract.window.models import ViewportMoveMode, WindowCreationParam
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer.impls.vscode import PytoyBufferVSCode
-from pytoy.shared.ui.pytoy_buffer.models import BufferSource
 from pytoy.shared.ui.pytoy_window.impls.vim_window_utils import get_last_selection
 from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel, WindowURISolver
-from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.shared.ui.vscode.document import Api, Document
 from pytoy.shared.ui.vscode.editor import Editor

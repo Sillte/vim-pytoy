@@ -3,8 +3,8 @@ from typing import Sequence
 
 import vim
 
+from pytoy.shared.ui.contract.buffer.models import BufferSource
 from pytoy.shared.ui.contract.quickfix import PytoyQuickfixUIProtocol, QuickfixRecord, QuickfixState
-from pytoy.shared.ui.pytoy_buffer.models import BufferSource
 from pytoy.shared.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam
 
 

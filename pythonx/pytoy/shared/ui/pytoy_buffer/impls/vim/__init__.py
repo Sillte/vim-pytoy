@@ -17,9 +17,9 @@ from pytoy.shared.ui.contract.buffer import (
 from pytoy.shared.ui.contract.buffer import (
     RangeOperatorProtocol,
 )
+from pytoy.shared.ui.contract.buffer.models import URI, BufferEvents, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.shared.ui.pytoy_buffer.impls.vim.range_operator import RangeOperatorVim
-from pytoy.shared.ui.pytoy_buffer.models import URI, BufferEvents, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.protocol import (
     BufferID,
 )

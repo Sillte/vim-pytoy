@@ -85,8 +85,7 @@ app = App()
 
 @app.command("HideTemporary")
 def hide_temporary():
-    from pytoy.shared.ui import PytoyBufferProvider
-    from pytoy.shared.ui.pytoy_buffer.models import BufferQuery, BufferSource
+    from pytoy.shared.ui.pytoy_buffer import BufferQuery, BufferSource, PytoyBufferProvider
 
     source1 = BufferSource.from_no_file(name=TERM_STDOUT)
     source2 = BufferSource.from_no_file(name=TERM_STDERR)

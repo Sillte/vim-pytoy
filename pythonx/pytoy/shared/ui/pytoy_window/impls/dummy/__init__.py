@@ -4,16 +4,16 @@ from typing import Literal, Sequence
 from pytoy.shared.lib.event.domain import Event, EventEmitter
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
 from pytoy.shared.ui.contract.buffer import BufferProtocol
+from pytoy.shared.ui.contract.buffer.models import BufferSource
 from pytoy.shared.ui.contract.window import (
     PytoyWindowID,
     PytoyWindowProtocol,
     PytoyWindowProviderProtocol,
     StatusLineManagerProtocol,
 )
+from pytoy.shared.ui.contract.window.models import ViewportMoveMode, WindowCreationParam
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer.impls.dummy import PytoyBufferDummy
-from pytoy.shared.ui.pytoy_buffer.models import BufferSource
-from pytoy.shared.ui.pytoy_window.models import ViewportMoveMode, WindowCreationParam
 from pytoy.shared.ui.status_line.impl_dummy import StatusLineManagerDummy
 
 

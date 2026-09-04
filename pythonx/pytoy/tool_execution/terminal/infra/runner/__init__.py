@@ -13,7 +13,7 @@ __all__ = [
 if __name__ == "__main__":
     # Simple Tests.
     from pytoy.shared.timertask import TimerTask
-    from pytoy.shared.ui.pytoy_window.facade import PytoyWindowProvider
+    from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
     from pytoy.tool_execution.terminal.drivers.ipython import IPythonDriver
     from pytoy.tool_execution.terminal.infra.runner.models import TerminalJobRequest
     # driver = ShellDriver("cmd.exe")
