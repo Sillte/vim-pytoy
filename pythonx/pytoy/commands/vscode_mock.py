@@ -18,17 +18,11 @@ def mywindow_func2():
     print("GETCURRENT", get_current_directory())
     return
 
-    from pytoy.shared.ui.pytoy_window.impl_vscode import (
-        PytoyBufferVSCode,
-    )
-
-    PytoyBufferVSCode
-
     windows = PytoyWindowProvider().get_windows()
     for elem in windows:
-        print(elem.buffer._impl.document)
+        print(elem.buffer.content)
     for elem in PytoyWindowProvider().get_windows():
-        print(elem.buffer._impl.document.uri.path)
+        print(elem.buffer.uri.path)
 
 
 @app.command(name="IsRemote")
@@ -44,9 +38,9 @@ def mywindow_func():
 
     windows = PytoyWindowProvider().get_windows()
     for elem in windows:
-        print(elem.buffer._impl.uri)
+        print(elem.buffer.uri)
     for elem in PytoyWindowProvider().get_windows():
-        print(elem.buffer._impl.uri.path)
+        print(elem.buffer.uri.path)
 
     # windows[0].impl.editor.focus()
     # print(window.valid, window.impl.editor.document.uri)

@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 import vim
 
 from pytoy.shared.lib.entity import MortalEntityProtocol
+from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.ui.contract.buffer.models import URI, BufferEvents
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
-from pytoy.shared.ui.pytoy_buffer.protocol import Event
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver, VSCodeUri
 from pytoy.shared.ui.vscode.document import Document
 

@@ -17,10 +17,7 @@ from pytoy.shared.ui.contract.buffer import (
 from pytoy.shared.ui.contract.buffer import (
     RangeOperatorProtocol,
 )
-from pytoy.shared.ui.contract.buffer.models import URI, BufferEvents, BufferQuery, BufferSource
-from pytoy.shared.ui.pytoy_buffer.protocol import (
-    BufferID,
-)
+from pytoy.shared.ui.contract.buffer.models import URI, BufferEvents, BufferID, BufferQuery, BufferSource
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.contract.window import WindowProtocol as PytoyWindowProtocol

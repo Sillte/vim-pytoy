@@ -5,19 +5,17 @@
 `shared/ui` is the boundary between the application and editor-specific UI
 backends such as Vim, Neovim, VSCode, and Dummy.
 
-## Package Boundaries
+## Boundaries
 
-The UI package has separate boundaries for separate audiences:
+The UI package has two intentional external boundaries:
 
-- `__init__.py`: API for ordinary users of the UI package.
-- `contract/`: API that backend and extension authors must understand.
-- `pytoy_buffer/`, `pytoy_window/`, and other feature packages: user-facing
-  facades and feature-specific implementation boundaries.
-- `impls/`: backend-specific implementation details within a feature package.
+- the ordinary user-facing API;
+- the `contract/` API for backend and extension authors.
 
-`contract/` is an explicit extension boundary. It may contain protocols and
-shared data types required to implement or extend a UI backend. It is not merely
-an alternative name for an internal module named `protocol.py`.
+`contract/` is explicit because the concepts required to implement a backend
+are not necessarily part of the ordinary user-facing API. It may contain
+protocols and the shared data needed to implement them. It is not merely an
+alternative name for an internal module named `protocol.py`.
 
 ## Dependency Direction
 
@@ -38,13 +36,20 @@ providers rather than to the peer objects themselves.
 
 ## Rules
 
-- Ordinary users should import from the UI package or feature package public
-  APIs, not from backend implementation modules.
-- Backend and extension authors may depend on the explicitly designated
-  `contract/` boundary.
+- Ordinary users depend on the public facade, not on backend implementation
+  modules.
+- Backend and extension authors depend on the explicitly designated `contract/`
+  boundary.
 - Backend-specific kernels, registries, editor adapters, and conversion
-  helpers remain outside the contract.
+  helpers are not part of the contract.
 - Do not move UI integration concepts into a generic domain package solely to
   fit Clean Architecture terminology.
-- Keep the distinction between ordinary public API and extension contract
-  explicit when changing package structure.
+
+Facades return facade objects to ordinary callers. Backend implementations
+return contract objects to their facades; wrapping occurs at the public
+boundary.
+
+The `contexts` packages are intentionally outside the current import cleanup.
+They construct backend kernel registries and therefore have a separate
+initialization responsibility. Their dependency boundary must be decided
+before changing their imports.
