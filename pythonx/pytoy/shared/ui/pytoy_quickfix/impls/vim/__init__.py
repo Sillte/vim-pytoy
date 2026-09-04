@@ -5,8 +5,12 @@ from typing import Any, Mapping, Sequence
 
 import vim
 
-from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
-from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixProtocol, PytoyQuickfixUIProtocol
+from pytoy.shared.ui.contract.quickfix import (
+    PytoyQuickfixProtocol,
+    PytoyQuickfixUIProtocol,
+    QuickfixRecord,
+    QuickfixState,
+)
 
 
 class PytoyQuickfixVimUI(PytoyQuickfixUIProtocol):

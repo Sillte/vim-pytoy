@@ -2,16 +2,15 @@ import re
 from pathlib import Path
 from typing import Final
 
+from pytoy.shared.lib.text import CursorPosition, LineRange
+from pytoy.shared.ui.contract.quickfix import PytoyQuickfixProtocol, QuickfixRecord
 from pytoy.shared.ui.pytoy_buffer import (
     BufferQuery,
     BufferSource,
-    LineRange,
     PytoyBuffer,
     PytoyBufferProvider,
 )
-from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord
-from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixProtocol
-from pytoy.shared.ui.pytoy_window import CursorPosition, PytoyWindow, PytoyWindowProvider, WindowCreationParam
+from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider, WindowCreationParam
 
 
 class _LineCodec:

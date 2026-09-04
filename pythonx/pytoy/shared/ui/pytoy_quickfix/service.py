@@ -1,7 +1,6 @@
 from typing import Sequence
 
-from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
-from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixUIProtocol
+from pytoy.shared.ui.contract.quickfix import PytoyQuickfixUIProtocol, QuickfixRecord, QuickfixState
 from pytoy.shared.ui.pytoy_quickfix.state_resolvers import PytoyQuickfixStateResolver
 
 

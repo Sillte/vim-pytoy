@@ -3,8 +3,7 @@ from pathlib import Path
 from typing import Callable, Sequence
 
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
-from pytoy.shared.ui.pytoy_quickfix.models import QuickfixRecord, QuickfixState
-from pytoy.shared.ui.pytoy_quickfix.protocol import PytoyQuickfixProtocol
+from pytoy.shared.ui.contract.quickfix import PytoyQuickfixProtocol, QuickfixRecord, QuickfixState
 from pytoy.shared.ui.pytoy_quickfix.service import PytoyQuickfixService
 from pytoy.shared.ui.pytoy_quickfix.state_resolvers import PytoyQuickfixStateResolver
 
