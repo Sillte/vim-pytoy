@@ -12,11 +12,11 @@ not own those mechanisms.
   the application: buffer lifecycle events, window lifecycle events, and key
   actions.
 - `buffer_events.py` and `window_events.py` adapt Vim autocmds into those
-  semantic events. They may depend on `autocmd/` and context objects.
+  semantic events. They may depend on `infra/autocmd/` and context objects.
 - `action_events.py` adapts keymaps into semantic action events. It may depend
   on `keymap/`.
-- `autocmd/` owns Vim autocmd registration, dispatch, payload extraction, and
-  Vim-specific event specifications.
+- `infra/autocmd/` owns Vim autocmd registration, dispatch, payload extraction,
+  and Vim-specific event specifications used by this package.
 - `keymap/` owns key sequence registration, Vim mapping commands, and the
   implementation details needed to emit key action events.
 

@@ -3,8 +3,8 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager, EmitSpec, PayloadMapper
 from pytoy.shared.lib.event.global_event import GlobalEvent
+from pytoy.shared.lib.events.infra.autocmd import AutoCmdManager, EmitSpec, PayloadMapper
 
 if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext

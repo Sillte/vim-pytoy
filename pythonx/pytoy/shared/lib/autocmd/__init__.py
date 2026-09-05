@@ -1,1 +1,1 @@
-from pytoy.shared.lib.autocmd.vim_autocmd import ArgumentSpec  # NOQA
+from pytoy.shared.lib.events.infra.autocmd import ArgumentSpec  # NOQA

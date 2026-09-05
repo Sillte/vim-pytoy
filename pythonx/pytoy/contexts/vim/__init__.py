@@ -7,7 +7,7 @@ from pytoy.shared.lib.entity import EntityRegistry
 
 # Only for lazy loading to speed up.
 if TYPE_CHECKING:
-    from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager
+    from pytoy.shared.lib.events.infra.autocmd import AutoCmdManager
     from pytoy.shared.lib.keymap.keymap_manager import KeymapManager
     from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
     from pytoy.shared.ui.pytoy_window.impls.vim.kernel import VimWindowKernel
@@ -42,7 +42,7 @@ class GlobalVimContext:
 
     @cached_property
     def autocmd_manager(self) -> AutoCmdManager:
-        from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager
+        from pytoy.shared.lib.events.infra.autocmd import AutoCmdManager
 
         return AutoCmdManager()
 

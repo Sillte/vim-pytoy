@@ -1,0 +1,73 @@
+from dataclasses import dataclass
+from typing import Any, Callable, Literal, Sequence, assert_never
+
+from pytoy.shared.lib.event.domain import Event, EventEmitter
+
+ArgumentSpec = Literal["count", "event", "abuf", "afile"]
+type Group = str
+
+
+@dataclass(frozen=True)
+class EmitSpec:
+    event: str
+    pattern: str = "*"
+    once: bool = False
+
+
+EmitterPayload = tuple[Any, ...]
+
+
+@dataclass(frozen=True)
+class PayloadMapper[T]:
+    arguments: Sequence[ArgumentSpec]
+    transform: Callable[[EmitterPayload], T]
+
+
+ArgumentSpecs = Sequence[ArgumentSpec]
+DispatcherFuncName = str
+
+
+@dataclass
+class VimAutocmd[T: Any]:
+    group: str
+    event_spec: EmitSpec
+    payload_mapper: PayloadMapper[T]
+
+    def __post_init__(self) -> None:
+        self._emitter = EventEmitter[EmitterPayload]()
+
+    @property
+    def emitter(self) -> EventEmitter[EmitterPayload]:
+        return self._emitter
+
+    @property
+    def event(self) -> Event[T]:
+        return self._emitter.event.map(self.payload_mapper.transform)
+
+    def _to_args_str(self) -> str:
+        def _to_arg_str(argument: ArgumentSpec) -> str:
+            match argument:
+                case "count":
+                    return "v:count"
+                case "event":
+                    return "v:event"
+                case "abuf":
+                    return "expand('<abuf>')"
+                case "afile":
+                    return "expand('<afile>')"
+                case _:
+                    assert_never(argument)
+
+        return ",".join(_to_arg_str(arg) for arg in self.payload_mapper.arguments)
+
+    def make_command(self, dispatcher_funcname: DispatcherFuncName) -> str:
+        emitter_spec = self.event_spec
+        once_flag = "++once" if self.event_spec.once else ""
+        arg_list_str = self._to_args_str()
+        return (
+            f"augroup {self.group} | "
+            "autocmd! | "
+            f"autocmd {emitter_spec.event} {emitter_spec.pattern} {once_flag} "
+            f"call {dispatcher_funcname}('{self.group}', {arg_list_str}) | "
+            "augroup END"
+        )

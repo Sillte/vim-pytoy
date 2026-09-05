@@ -1,9 +1,11 @@
+from pytoy.shared.lib.events.infra.autocmd.autocmd_manager import (
+    AutoCmdManager,
+    AutocmdManagerProvider,
+    get_autocmd_manager,
+)
 from pytoy.shared.lib.events.infra.autocmd.vim_autocmd import (
     ArgumentSpec,
-    ArgumentSpecs,
-    DispatcherFuncName,
     EmitSpec,
-    EmitterPayload,
     Group,
     PayloadMapper,
     VimAutocmd,
@@ -11,11 +13,11 @@ from pytoy.shared.lib.events.infra.autocmd.vim_autocmd import (
 
 __all__ = [
     "ArgumentSpec",
-    "ArgumentSpecs",
-    "DispatcherFuncName",
+    "AutoCmdManager",
+    "AutocmdManagerProvider",
     "EmitSpec",
-    "EmitterPayload",
     "Group",
     "PayloadMapper",
     "VimAutocmd",
+    "get_autocmd_manager",
 ]
