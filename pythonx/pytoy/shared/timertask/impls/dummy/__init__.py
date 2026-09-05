@@ -5,10 +5,12 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from pytoy.shared.lib.event import Event, EventEmitter
+from pytoy.shared.lib.outcome import Error, Success
 from pytoy.shared.timertask.domain import (
     BackendThreadUtilProtocol,
     NormalStopReason,
     OnTaskCallback,
+    TaskExit,
     TaskName,
     TimerStopException,
     TimerTaskImplProtocol,
@@ -28,8 +30,6 @@ class _Task:
     func: OnTaskCallback
     interval: float
     repeat: int
-    on_finish: Callable[[NormalStopReason], None] | None = None
-    on_error: Callable[[Exception], None] | None = None
     next_run: float = field(default_factory=time.monotonic)
     count: int = 0
     stopped: bool = False
@@ -39,12 +39,17 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
     def __init__(self) -> None:
         self._registered_emitter = EventEmitter[TaskName]()
         self._deregistered_emitter = EventEmitter[TaskName]()
+        self._exit_emitter = EventEmitter[TaskExit]()
         self.tasks: dict[TaskName, _Task] = {}
         self._scheduled: list[tuple[float, int, TaskName]] = []
         self._sequence = 0
         self._condition = threading.Condition()
         self._scheduler = threading.Thread(target=self._run, name="TimerTaskDummyScheduler", daemon=True)
         self._scheduler.start()
+
+    @property
+    def on_exit(self) -> Event[TaskExit]:
+        return self._exit_emitter.event
 
     @property
     def on_registered(self) -> Event[TaskName]:
@@ -60,15 +65,13 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
         interval: int = 100,
         name: TaskName | None = None,
         repeat: int = -1,
-        on_finish: Callable[[NormalStopReason], None] | None = None,
-        on_error: Callable[[Exception], None] | None = None,
     ) -> TaskName:
         with self._condition:
             self._sequence += 1
             taskname = name or f"AUTONAME{self._sequence}_{id(func)}"
             if taskname in self.tasks:
                 raise ValueError(f"Task {taskname!r} is already registered.")
-            task = _Task(func, interval / 1000, repeat, on_finish, on_error)
+            task = _Task(func, interval / 1000, repeat)
             self.tasks[taskname] = task
             heapq.heappush(self._scheduled, (task.next_run, self._sequence, taskname))
             self._condition.notify()
@@ -113,14 +116,14 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
             except TimerStopException:
                 with self._condition:
                     self.tasks.pop(task_name, None)
+                self._exit_emitter.fire(TaskExit(task_name, Success("stopped")))
                 self._deregistered_emitter.fire(task_name)
-                self._invoke_finish(task, "stopped")
                 continue
             except Exception as exception:
                 with self._condition:
                     self.tasks.pop(task_name, None)
+                self._exit_emitter.fire(TaskExit(task_name, Error(exception)))
                 self._deregistered_emitter.fire(task_name)
-                self._invoke_error(task, exception)
                 continue
 
             with self._condition:
@@ -137,30 +140,9 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
                         task.next_run = time.monotonic() + task.interval
                         self._sequence += 1
                         heapq.heappush(self._scheduled, (task.next_run, self._sequence, task_name))
-                if finished:
-                    self._deregistered_emitter.fire(task_name)
 
-            if stopped and task.on_finish:
-                self._invoke_finish(task, "stopped")
-            elif finished and task.on_finish:
-                self._invoke_finish(task, "finished")
-
-    @staticmethod
-    def _invoke_finish(task: _Task, reason: NormalStopReason) -> None:
-        on_finish = task.on_finish
-        if on_finish is None:
-            return
-        try:
-            on_finish(reason)
-        except Exception:
-            pass
-
-    @staticmethod
-    def _invoke_error(task: _Task, exception: Exception) -> None:
-        on_exception = task.on_error
-        if on_exception is None:
-            return
-        try:
-            on_exception(exception)
-        except Exception:
-            pass
+            if stopped:
+                self._exit_emitter.fire(TaskExit(task_name, Success("stopped")))
+            elif finished:
+                self._exit_emitter.fire(TaskExit(task_name, Success("finished")))
+                self._deregistered_emitter.fire(task_name)

@@ -1,11 +1,13 @@
 import functools
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, cast
 
 from pytoy.shared.lib.backend import can_use_vim
-from pytoy.shared.lib.event import Disposable
+from pytoy.shared.lib.event import Disposable, EventProtocol
+from pytoy.shared.lib.outcome import is_error, is_success
 from pytoy.shared.timertask.domain import (
+    NormalStopReason,
     OnErrorCallback,
     OnFinishCallback,
     OnTaskCallback,
@@ -33,6 +35,20 @@ def _wrap_to_one_argument_func[T, R](
     raise ValueError("Function must accept either zero or one argument.")
 
 
+def _bypass_exception[T, R](func: Callable[[T], R]) -> Callable[[T], R | None]:
+    """If the exception occurs, it supresses the exception."""
+
+    @functools.wraps(func)
+    def wrapper(*arg, **kwargs) -> R | None:
+        try:
+            result = func(*arg, **kwargs)
+            return result
+        except Exception:
+            return None
+
+    return wrapper
+
+
 def get_timer_task_impl() -> TimerTaskImplProtocol:
     if can_use_vim():
         from pytoy.shared.timertask.impls.vim.timertask_impl import TimerTaskImplVim
@@ -47,6 +63,7 @@ def get_timer_task_impl() -> TimerTaskImplProtocol:
 class _ImplTask:
     impl_name: str
     deregister_requested: bool = False
+    callback_subscriptions: list[Disposable] = field(default_factory=list)
 
 
 class TimerTaskManager:
@@ -75,7 +92,10 @@ class TimerTaskManager:
         with self._lock:
             public_name = self._impl_to_public.pop(impl_name, None)
             if public_name is not None:
-                self._tasks.pop(public_name, None)
+                task = self._tasks.pop(public_name, None)
+                if task is not None:
+                    for subscription in task.callback_subscriptions:
+                        subscription.dispose()
 
     def _allocate_names(self, requested_name: TaskName | None) -> tuple[TaskName, TaskName]:
         public_name = requested_name
@@ -102,17 +122,45 @@ class TimerTaskManager:
     ) -> TaskName:
         import inspect
 
+        if len(inspect.signature(func).parameters) != 0:
+            raise ValueError("Task Callback must be without parameters.")
+
         interval = int(interval)
         finish_callback = _wrap_to_one_argument_func(on_finish) if on_finish is not None else None
         error_callback = _wrap_to_one_argument_func(on_error) if on_error is not None else None
 
-        if len(inspect.signature(func).parameters) != 0:
-            raise ValueError("Task Callback must be without parameters.")
-
         public_name, impl_name = self._allocate_names(name)
+        task = self._tasks[public_name]
         try:
-            self.impl.register(func, interval, impl_name, repeat, finish_callback, error_callback)
+            if finish_callback:
+                # TODO: Once type-inference is improved at `Outcome` (TypeGuard -> TypeIs), then revise this.
+                finish_callback = _bypass_exception(finish_callback)
+                task.callback_subscriptions.append(
+                    cast(
+                        EventProtocol[NormalStopReason],
+                        self.impl.on_exit.filter(lambda exit_entity: exit_entity.id == impl_name)
+                        .map(lambda exit_entity: exit_entity.outcome)
+                        .filter(is_success)
+                        .map(lambda success: success.value)
+                        .once(),
+                    ).subscribe(finish_callback)
+                )
+
+            if error_callback:
+                error_callback = _bypass_exception(error_callback)
+                task.callback_subscriptions.append(
+                    self.impl.on_exit.filter(lambda exit_entity: exit_entity.id == impl_name)
+                    .map(lambda exit_entity: exit_entity.outcome)
+                    .filter(is_error)
+                    .map(lambda error: error.exception)
+                    .once()
+                    .subscribe(error_callback)
+                )
+
+            self.impl.register(func, interval, impl_name, repeat)
         except Exception:
+            for subscription in task.callback_subscriptions:
+                subscription.dispose()
             with self._lock:
                 self._tasks.pop(public_name, None)
                 self._impl_to_public.pop(impl_name, None)
@@ -127,6 +175,8 @@ class TimerTaskManager:
                     raise KeyError(f"No timer task registered with name: '{name}'")
                 return
             self._impl_to_public.pop(task.impl_name, None)
+            for subscription in task.callback_subscriptions:
+                subscription.dispose()
         self.impl.deregister(task.impl_name, strict=False)
 
     def is_registered(self, name: TaskName) -> bool:

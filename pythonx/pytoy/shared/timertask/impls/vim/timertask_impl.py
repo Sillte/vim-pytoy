@@ -1,15 +1,16 @@
 import threading
 from textwrap import dedent
-from typing import Callable, Self
+from typing import Self
 
 import vim
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.lib.event import Event, EventEmitter
+from pytoy.shared.lib.outcome import Error, Success
 from pytoy.shared.timertask.domain import (
     FunctionName,
-    NormalStopReason,
     OnTaskCallback,
     RegisteredTask,
+    TaskExit,
     TaskName,
     TaskStatus,
     TimerStopException,
@@ -33,6 +34,11 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
         self._lock = threading.RLock()
         self._registered_emitter = EventEmitter[TaskName]()
         self._deregistered_emitter = EventEmitter[TaskName]()
+        self._exit_emitter = EventEmitter[TaskExit]()
+
+    @property
+    def on_exit(self) -> Event[TaskExit]:
+        return self._exit_emitter.event
 
     @property
     def on_registered(self) -> Event[TaskName]:
@@ -48,8 +54,6 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
         interval: int = 100,
         name: TaskName | None = None,
         repeat: int = -1,
-        on_finish: Callable[[NormalStopReason], None] | None = None,
-        on_error: Callable[[Exception], None] | None = None,
     ) -> TaskName:
         self._counter += 1
 
@@ -60,8 +64,6 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
             name=taskname,
             function=func,
             impl_function_name=vim_funcname,
-            on_finish=on_finish,
-            on_error=on_error,
             initial_repeat=repeat,
         )
 
@@ -96,18 +98,16 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
             return
 
         func = task.function
-        on_finish = task.on_finish
-        on_error = task.on_error
 
         try:
             func()
         except TimerStopException:
             self._schedule_deregister(name)
-            self._invoke_finish(on_finish, "stopped")
+            self._exit_emitter.fire(TaskExit(name, Success("stopped")))
             return
         except Exception as exception:
             self._schedule_deregister(name)
-            self._invoke_error(on_error, exception)
+            self._exit_emitter.fire(TaskExit(name, Error(exception)))
             return
 
         is_finished = False
@@ -119,25 +119,7 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
 
         if is_finished:
             self._schedule_deregister(name)
-            self._invoke_finish(on_finish, "finished")
-
-    @staticmethod
-    def _invoke_finish(on_finish: Callable[[NormalStopReason], None] | None, reason: NormalStopReason) -> None:
-        if on_finish is None:
-            return
-        try:
-            on_finish(reason)
-        except Exception:
-            pass
-
-    @staticmethod
-    def _invoke_error(on_error: Callable[[Exception], None] | None, exception: Exception) -> None:
-        if on_error is None:
-            return
-        try:
-            on_error(exception)
-        except Exception:
-            pass
+            self._exit_emitter.fire(TaskExit(name, Success("finished")))
 
     def _create_vim_code(self, taskname: TaskName, impl_function_name: FunctionName) -> str:
         """Helper to generate the complex VimL function block with error/repeat logic."""

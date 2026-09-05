@@ -61,10 +61,9 @@ known-first-party = ["pytoy", "pytoy-llm"]
 [tool.ty.rules]
 unused-ignore-comment = "ignore"
 
-
-[tool.ty.analysis]
-allowed-unresolved-imports = [
-    "vim",
+[tool.ty.environment]
+extra-paths = [
+    "typings",
 ]
 
 [tool.ty.src]

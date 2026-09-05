@@ -3,6 +3,7 @@ import threading
 import pytest
 
 from pytoy.contexts.core import GlobalCoreContext
+from pytoy.shared.lib.outcome import is_error, is_success
 from pytoy.shared.timertask import TimerStopException, TimerTask
 from pytoy.shared.timertask.impls.dummy import TimerTaskImplDummy
 from pytoy.shared.timertask.manager import TimerTaskManager
@@ -79,6 +80,69 @@ def test_callback_error_invokes_on_error_and_deregisters(dummy_impl):
     assert failed.wait(1)
     assert isinstance(errors[0], ValueError)
     assert not TimerTask.is_registered(name)
+
+
+def test_callbacks_are_not_mixed_between_tasks(dummy_impl):
+    first_finished = threading.Event()
+    second_finished = threading.Event()
+    first_reasons = []
+    second_reasons = []
+
+    def on_first_finish(reason):
+        first_reasons.append(reason)
+        first_finished.set()
+
+    def on_second_finish(reason):
+        second_reasons.append(reason)
+        second_finished.set()
+
+    TimerTask.register(lambda: None, interval=1, name="first", repeat=1, on_finish=on_first_finish)
+    TimerTask.register(lambda: None, interval=10, name="second", repeat=1, on_finish=on_second_finish)
+
+    assert first_finished.wait(1)
+    assert second_finished.wait(1)
+    assert first_reasons == ["finished"]
+    assert second_reasons == ["finished"]
+
+
+def test_finished_callback_subscription_is_released(dummy_impl):
+    first_finished = threading.Event()
+    second_finished = threading.Event()
+    first_reasons = []
+
+    def on_first_finish(reason):
+        first_reasons.append(reason)
+        if len(first_reasons) == 1:
+            first_finished.set()
+        else:
+            second_finished.set()
+
+    TimerTask.register(lambda: None, interval=1, name="first", repeat=1, on_finish=on_first_finish)
+    assert first_finished.wait(1)
+
+    TimerTask.register(lambda: None, interval=1, name="second", repeat=1)
+    assert not second_finished.wait(0.2)
+    assert first_reasons == ["finished"]
+
+
+def test_exit_event_contains_outcome_without_legacy_callbacks(dummy_impl):
+    completed = threading.Event()
+    exits = []
+
+    dummy_impl.on_exit.subscribe(lambda exit: (exits.append(exit), completed.set()))
+    dummy_impl.register(lambda: None, interval=1, repeat=1, name="event_success")
+
+    assert completed.wait(1)
+    assert is_success(exits[0].outcome)
+    assert exits[0].outcome.value == "finished"
+
+    failed = threading.Event()
+    dummy_impl.on_exit.subscribe(lambda exit: (exits.append(exit), failed.set()))
+    dummy_impl.register(lambda: (_ for _ in ()).throw(ValueError("failed")), interval=1, name="event_error")
+
+    assert failed.wait(1)
+    assert is_error(exits[-1].outcome)
+    assert isinstance(exits[-1].outcome.exception, ValueError)
 
 
 def test_deregister_strict_rejects_unknown_name(dummy_impl):

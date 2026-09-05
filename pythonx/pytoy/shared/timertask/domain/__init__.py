@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Callable, Literal, Protocol
 
 from pytoy.shared.lib.event import EventProtocol
+from pytoy.shared.lib.outcome import Outcome
 
 type TaskName = str
 type VimFuncName = str
@@ -12,6 +13,12 @@ type NormalStopReason = Literal["finished", "stopped"]  # `repeat` is comsued or
 type OnTaskCallback = Callable[[], None]
 type OnFinishCallback = Callable[[NormalStopReason], None] | Callable[[], None]
 type OnErrorCallback = Callable[[Exception], None] | Callable[[], None]
+
+
+@dataclass(frozen=True)
+class TaskExit:
+    id: TaskName
+    outcome: Outcome[NormalStopReason, Exception]
 
 
 class TimerStopException(Exception):
@@ -25,6 +32,9 @@ class TimerStopException(Exception):
 
 class TimerTaskImplProtocol(Protocol):
     @property
+    def on_exit(self) -> EventProtocol[TaskExit]: ...
+
+    @property
     def on_registered(self) -> EventProtocol[TaskName]: ...
 
     @property
@@ -36,8 +46,6 @@ class TimerTaskImplProtocol(Protocol):
         interval: int = 100,
         name: TaskName | None = None,
         repeat: int = -1,
-        on_finish: Callable[[NormalStopReason], None] | None = None,
-        on_error: Callable[[Exception], None] | None = None,
     ) -> TaskName: ...
 
     def deregister(self, name: TaskName, *, strict: bool = False) -> None: ...
@@ -50,8 +58,6 @@ class RegisteredTask:
     name: TaskName
     function: Callable[[], None]
     impl_function_name: FunctionName
-    on_finish: Callable[[NormalStopReason], None] | None = None
-    on_error: Callable[[Exception], None] | None = None
     initial_repeat: int = -1
 
 
