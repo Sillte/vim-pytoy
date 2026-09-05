@@ -1,64 +1,49 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Self, cast
 
-from pytoy.shared.lib.autocmd.autocmd_manager import AutoCmdManager, EmitSpec, PayloadMapper
+from pytoy.shared.lib.backend import can_use_vim
 from pytoy.shared.lib.event.global_event import GlobalEvent
+from pytoy.shared.lib.events.domain import GlobalBufferEventProviderImpl
+from pytoy.shared.lib.events.impls.dummy.buffer_events import GlobalBufferEventProviderDummy
+from pytoy.shared.lib.events.impls.vim.buffer_events import GlobalBufferEventProviderVim
 
 if TYPE_CHECKING:
-    from pytoy.contexts.vim import GlobalVimContext
+    from pytoy.contexts.pytoy import GlobalPytoyContext
 
 
 from pytoy.shared.lib.event.domain import Event
 
 
-# NOTE:
-# Since the transform of PayloadMapper uses the functions for identity check.
-# So, the instance function is not appropriate`.
-def _to_bufnr(args) -> int:
-    return int(args[0])
+def get_impl(ctx: GlobalPytoyContext | None = None) -> GlobalBufferEventProviderImpl:
+    from pytoy.contexts.pytoy import GlobalPytoyContext
+
+    ctx = ctx or GlobalPytoyContext.get()
+    if can_use_vim():
+        impl = GlobalBufferEventProviderVim(ctx.vim_context)
+    else:
+        impl = GlobalBufferEventProviderDummy()
+
+    return cast(GlobalBufferEventProviderImpl, impl)
 
 
 class GlobalBufferEventProvider:
-    """
-    NOTE: Since the `transform` of PayaloadMapper is regardes as the value
-    for checking the equivalentness, so `DO NOT lambda function here`
-
-    NOTE: SSOT of the events are `AutoCmdManager`.
-    Hence, `cached_property` is intended for only speeds.
-    """
-
-    def __init__(self, ctx: GlobalVimContext | None = None) -> None:
-        if ctx is None:
-            from pytoy.contexts.vim import GlobalVimContext
-
-            ctx = GlobalVimContext.get()
-        self._manager: AutoCmdManager = ctx.autocmd_manager
+    def __init__(self, impl: GlobalBufferEventProviderImpl | None = None) -> None:
+        self._impl = impl or get_impl()
 
     @property
-    def manager(self):
-        return self._manager
-
-    @cached_property
     def wipeout(self) -> GlobalEvent[int]:
-        group: str = "PytoyAnyBufferClosedGroupAutocmd"
-        emit_spec: EmitSpec = EmitSpec(event="BufWipeout", pattern="*")
-        payload_mapper: PayloadMapper = PayloadMapper(arguments=["abuf"], transform=_to_bufnr)
-        autocmd = self.manager.register(group, emit_spec, payload_mapper)
-        return GlobalEvent(autocmd.event)
+        return self._impl.wipeout
 
     @cached_property
     def write_pre(self) -> GlobalEvent[int]:
-        group = "PytoyAnyBufferBufWritePreAutocmd"
-        emit_spec = EmitSpec(event="BufWritePre", pattern="*")
-        payload_mapper = PayloadMapper(arguments=["abuf"], transform=_to_bufnr)
-        autocmd = self.manager.register(group, emit_spec, payload_mapper)
-        return GlobalEvent(autocmd.event)
+        return self._impl.write_pre
 
 
 class ScopedBufferEventProvider:
-    def __init__(self, global_provider: GlobalBufferEventProvider) -> None:
+    def __init__(self, global_provider: GlobalBufferEventProvider | None = None) -> None:
+        global_provider = global_provider or GlobalBufferEventProvider()
         self.global_provider = global_provider
 
     def get_wipeout_event(self, bufnr: int) -> Event[int]:
@@ -69,5 +54,6 @@ class ScopedBufferEventProvider:
         return self.global_provider.write_pre.at(bufnr)
 
     @classmethod
-    def from_ctx(cls, ctx: GlobalVimContext) -> Self:
-        return cls(GlobalBufferEventProvider(ctx=ctx))
+    def from_ctx(cls, ctx: GlobalPytoyContext) -> Self:
+        global_provider = GlobalBufferEventProvider(get_impl(ctx))
+        return cls(global_provider)

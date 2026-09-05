@@ -36,6 +36,12 @@ contexts, or UI implementations.
 - Event payloads in `domain` must represent the semantic identity exposed to
   consumers, such as a buffer number or window ID, rather than raw Vim
   callback arguments.
+- Buffer and window IDs are currently part of the public contract as `int`.
+  Do not add backend-specific ID adapters for this boundary.
+- If a future backend requires a different ID representation, introduce a
+  domain value type such as `BufferID` first, then update the domain Protocols,
+  providers, and consumers together. Keep the contract change explicit rather
+  than hiding it behind an adapter.
 - Providers may implement domain protocols structurally; inheritance is not
   required merely to satisfy the contract.
 - `events/__init__.py` and `events/domain/__init__.py` are the intentional
