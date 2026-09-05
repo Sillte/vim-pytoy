@@ -82,13 +82,11 @@ class PytoyWindow:
 
     @staticmethod
     def get_current() -> "PytoyWindow":
-        impl = PytoyWindowProvider().get_current()
-        return PytoyWindow(impl)
+        return PytoyWindowProvider().get_current()
 
     @staticmethod
-    def get_windows() -> list["PytoyWindow"]:
-        impls = PytoyWindowProvider().get_windows()
-        return [PytoyWindow(elem) for elem in impls]
+    def get_windows() -> Sequence["PytoyWindow"]:
+        return PytoyWindowProvider().get_windows()
 
     @staticmethod
     def open(

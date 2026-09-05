@@ -17,8 +17,7 @@ not own those mechanisms.
   on `keymap/`.
 - `infra/autocmd/` owns Vim autocmd registration, dispatch, payload extraction,
   and Vim-specific event specifications used by this package.
-- `keymap/` owns key sequence registration, Vim mapping commands, and the
-  implementation details needed to emit key action events.
+
 
 ```text
 events/domain  <- events providers <- autocmd / keymap

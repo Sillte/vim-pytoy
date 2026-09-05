@@ -55,3 +55,5 @@ call: Any
 api: Any
 fn: Any
 session: Any
+lua: Any
+exec_lua: Any
