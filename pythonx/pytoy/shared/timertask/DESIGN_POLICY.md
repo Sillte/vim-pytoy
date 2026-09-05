@@ -25,11 +25,15 @@ Provide timer-based execution shared by Vim, Neovim, and non-editor environments
 
 - Users must not raise exceptions from `on_finish` or `on_error` callbacks.
 - `on_finish` and `on_error` callbacks are notification hooks, not part of task control flow.
+- TimerTask notification hooks and Event notifications must execute on the
+	thread guaranteed by TimerTask.
+- This includes `on_finish`, `on_error`, and the `TimerTask` implementation's
+	registration, deregistration, and exit Event notifications.
+- Each TimerTask implementation is responsible for defining and maintaining
+	the thread on which its callbacks and Event notifications are executed.
+- Consumers may rely on the TimerTask guarantee and must not need to know which
+	concrete thread a TimerTask implementation uses.
 
+## Discussion
 
-## Discussions 
-
-- The Dummy backend should defensively prevent exceptions from notification
-	callbacks (`on_finish` / `on_error`) from terminating its scheduler thread.
-    - Other backends execute callbacks on the main thread, so callback exceptions
-	    remain observable by the caller and are a lower-priority defensive concern.
+- Whether exceptions raised by `on_finish` and `on_error` should be exposed is unresolved.

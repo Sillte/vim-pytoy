@@ -1,4 +1,3 @@
-import threading
 from queue import Empty, Queue
 from typing import Callable, Sequence
 
@@ -42,16 +41,10 @@ class ThreadExecutionManager:
         return [self._executions[id_] for id_ in target_ids]
 
     def _consume(self, execution_exit: ThreadExecutionExit) -> None:
-        self.assert_main_thread()
-
         execution = self._executions.get(execution_exit.id)
         if not execution:
             return
-        execution.notify_exit(execution_exit)
-
-    def assert_main_thread(self) -> None:
-        if threading.current_thread() is not threading.main_thread():
-            raise RuntimeError("ThreadExecutionConsumer methods must be called from the main thread.")
+        TimerTask.execute_oneshot(lambda: execution.notify_exit(execution_exit), interval=0)
 
 
 def add_log_message(message: str) -> None:

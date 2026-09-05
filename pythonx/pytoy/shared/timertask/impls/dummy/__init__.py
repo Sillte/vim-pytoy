@@ -17,7 +17,7 @@ from pytoy.shared.timertask.domain import (
 )
 
 
-class DummyThreadUtil(BackendThreadUtilProtocol):
+class DummyThreadUtil:
     def prepare(self) -> None:
         pass
 
