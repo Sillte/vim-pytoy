@@ -4,6 +4,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable
 
+from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.shared.timertask.domain import (
     BackendThreadUtilProtocol,
     NormalStopReason,
@@ -36,12 +37,22 @@ class _Task:
 
 class TimerTaskImplDummy(TimerTaskImplProtocol):
     def __init__(self) -> None:
+        self._registered_emitter = EventEmitter[TaskName]()
+        self._deregistered_emitter = EventEmitter[TaskName]()
         self.tasks: dict[TaskName, _Task] = {}
         self._scheduled: list[tuple[float, int, TaskName]] = []
         self._sequence = 0
         self._condition = threading.Condition()
         self._scheduler = threading.Thread(target=self._run, name="TimerTaskDummyScheduler", daemon=True)
         self._scheduler.start()
+
+    @property
+    def on_registered(self) -> Event[TaskName]:
+        return self._registered_emitter.event
+
+    @property
+    def on_deregistered(self) -> Event[TaskName]:
+        return self._deregistered_emitter.event
 
     def register(
         self,
@@ -61,6 +72,7 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
             self.tasks[taskname] = task
             heapq.heappush(self._scheduled, (task.next_run, self._sequence, taskname))
             self._condition.notify()
+        self._registered_emitter.fire(taskname)
         return taskname
 
     def deregister(self, name: TaskName, *, strict: bool = False) -> None:
@@ -72,6 +84,7 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
                 return
             task.stopped = True
             self._condition.notify()
+        self._deregistered_emitter.fire(name)
 
     def is_registered(self, name: TaskName) -> bool:
         with self._condition:
@@ -100,11 +113,13 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
             except TimerStopException:
                 with self._condition:
                     self.tasks.pop(task_name, None)
+                self._deregistered_emitter.fire(task_name)
                 self._invoke_finish(task, "stopped")
                 continue
             except Exception as exception:
                 with self._condition:
                     self.tasks.pop(task_name, None)
+                self._deregistered_emitter.fire(task_name)
                 self._invoke_error(task, exception)
                 continue
 
@@ -122,6 +137,8 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
                         task.next_run = time.monotonic() + task.interval
                         self._sequence += 1
                         heapq.heappush(self._scheduled, (task.next_run, self._sequence, task_name))
+                if finished:
+                    self._deregistered_emitter.fire(task_name)
 
             if stopped and task.on_finish:
                 self._invoke_finish(task, "stopped")

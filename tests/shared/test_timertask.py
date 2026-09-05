@@ -93,6 +93,15 @@ def test_register_rejects_duplicate_name(dummy_impl):
         TimerTask.register(lambda: None, interval=1000, name="duplicate")
 
 
+def test_manager_maps_public_name_to_unique_impl_name(dummy_impl):
+    TimerTask.register(lambda: None, interval=1000, name="same")
+    TimerTask.register(lambda: None, interval=1000, name="other")
+
+    assert set(dummy_impl.tasks) != {"same", "other"}
+    assert TimerTask.is_registered("same")
+    assert TimerTask.is_registered("other")
+
+
 def test_timer_stop_exception_finishes_as_stopped(dummy_impl):
     completed = threading.Event()
     reasons = []

@@ -4,6 +4,7 @@ from typing import Callable, Self
 
 import vim
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
+from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.shared.timertask.domain import (
     FunctionName,
     NormalStopReason,
@@ -30,6 +31,16 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
             raise RuntimeError("TimerTaskImplVim already instantiated")
         TimerTaskImplVim.instance = self
         self._lock = threading.RLock()
+        self._registered_emitter = EventEmitter[TaskName]()
+        self._deregistered_emitter = EventEmitter[TaskName]()
+
+    @property
+    def on_registered(self) -> Event[TaskName]:
+        return self._registered_emitter.event
+
+    @property
+    def on_deregistered(self) -> Event[TaskName]:
+        return self._deregistered_emitter.event
 
     def register(
         self,
@@ -68,6 +79,7 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
                 self.tasks[taskname] = task
                 self.statuses[taskname] = TaskStatus(repeat=repeat)
                 self._timer_map[taskname] = timer_id
+                self._registered_emitter.fire(taskname)
 
         if get_backend_enum() == BackendEnum.VIM:
             _impl_function()
@@ -182,6 +194,7 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
                 self.tasks.pop(name)
                 self.statuses.pop(name)
                 self._timer_map.pop(name)
+                self._deregistered_emitter.fire(name)
 
         if get_backend_enum() == BackendEnum.VIM:
             _impl_function()

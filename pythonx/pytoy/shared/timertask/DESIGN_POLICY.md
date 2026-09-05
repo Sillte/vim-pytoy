@@ -12,6 +12,14 @@ Provide timer-based execution shared by Vim, Neovim, and non-editor environments
 - A task that raises `TimerStopException` finishes with the `"stopped"` reason.
 - Other task exceptions are delivered through `on_error` and do not finish through `on_finish`.
 - A task that reaches its repeat limit finishes with the `"finished"` reason.
+- `TimerTaskManager` owns public task names. It maps each public name to a
+	unique implementation name before calling a backend implementation.
+- As a Manager-to-implementation contract, every `TaskName` passed from
+	`TimerTaskManager` to a backend implementation is unique among active tasks.
+- Backend implementations publish registration and deregistration events.
+	`TimerTaskManager` subscribes to these events and protects its public-name
+	mapping with an `RLock`, because backend registration may complete on a
+	different thread.
 
 ## Rules
 

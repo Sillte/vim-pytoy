@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Callable, Literal, Protocol
 
+from pytoy.shared.lib.event import EventProtocol
+
 type TaskName = str
 type VimFuncName = str
 type FunctionName = str
@@ -22,6 +24,12 @@ class TimerStopException(Exception):
 
 
 class TimerTaskImplProtocol(Protocol):
+    @property
+    def on_registered(self) -> EventProtocol[TaskName]: ...
+
+    @property
+    def on_deregistered(self) -> EventProtocol[TaskName]: ...
+
     def register(
         self,
         func: OnTaskCallback,
