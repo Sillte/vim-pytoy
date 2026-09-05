@@ -2,6 +2,8 @@ import re
 from textwrap import dedent
 from typing import Callable, Self
 
+import vim
+
 from pytoy.shared.lib.function.domain import FunctionName, FunctionRegistryProtocol, RegisteredFunction, StrCallable
 
 _VIM_FUNC_NAME_RE = re.compile(r"[^0-9A-Za-z_]")
@@ -27,7 +29,6 @@ class FunctionRegistryVim(FunctionRegistryProtocol):
         self.id = id(self)
         self.functions: dict[FunctionName, RegisteredFunction] = dict()
         self.return_map: dict[FunctionName, str] = dict()
-        import vim
 
         self.vim = vim
 
