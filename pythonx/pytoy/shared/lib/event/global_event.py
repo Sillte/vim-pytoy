@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Callable, Hashable, Self, Sequence
+from typing import Callable, Hashable, Self, Sequence
 
 from pytoy.shared.lib.event.domain import Disposable, Event, EventProtocol, Listener
 
@@ -39,7 +39,11 @@ class GlobalEvent[T: Hashable](EventProtocol):
             self._cached[entity_id].add(listener)
 
             def dispose() -> None:
-                self._cached[entity_id].remove(listener)
+                # Idempotency.
+                try:
+                    self._cached[entity_id].remove(listener)
+                except ValueError:
+                    pass
                 if not self._cached[entity_id]:
                     del self._cached[entity_id]
 
@@ -47,8 +51,11 @@ class GlobalEvent[T: Hashable](EventProtocol):
 
         return Event(subscribe)
 
-    def map(self, transform: Callable[[T], Any]) -> "EventProtocol":
+    def map[R](self, transform: Callable[[T], R]) -> Event[R]:
         return self._event.map(transform)
 
-    def filter(self, predicate: Callable[[T], bool]) -> "EventProtocol":
+    def filter(self, predicate: Callable[[T], bool]):
         return self._event.filter(predicate)
+
+    def once(self) -> Event[T]:
+        return self._event.once()

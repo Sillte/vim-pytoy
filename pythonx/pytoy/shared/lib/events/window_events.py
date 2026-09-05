@@ -41,9 +41,9 @@ class ScopedWindowEventProvider:
     def __init__(self, global_provider: GlobalWindowEventProvider) -> None:
         self.global_provider = global_provider
 
-    def get_winclosed_event(self, bufnr: int) -> Event[int]:
+    def get_winclosed_event(self, winid: int) -> Event[int]:
         winclosed = self.global_provider.winclosed
-        return winclosed.at(bufnr)
+        return winclosed.at(winid)
 
     @classmethod
     def from_ctx(cls, ctx: GlobalVimContext) -> Self:

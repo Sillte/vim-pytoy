@@ -29,8 +29,9 @@ class CharacterRange:
 
     def __post_init__(self):
         if (self.end.line, self.end.col) < (self.start.line, self.start.col):
-            object.__setattr__(self, "start", self.end)
-            object.__setattr__(self, "end", self.start)
+            start, end = self.end, self.start
+            object.__setattr__(self, "start", start)
+            object.__setattr__(self, "end", end)
 
     @property
     def is_empty(self) -> bool:
