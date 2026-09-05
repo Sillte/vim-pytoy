@@ -31,8 +31,8 @@ contexts, or UI implementations.
 
 - Add a new event to `events/domain` when it describes a stable semantic event
   that consumers can use without knowing how the event is produced.
-- Keep source-specific details in the source package. A new Vim autocmd belongs
-  in `autocmd/`; a new key mapping belongs in `keymap/`.
+- Keep source-specific details in the source package. Currently, a new Vim autocmd belongs
+  in `autocmd/`.
 - Event payloads in `domain` must represent the semantic identity exposed to
   consumers, such as a buffer number or window ID, rather than raw Vim
   callback arguments.
@@ -69,6 +69,3 @@ ownership is being established:
   unified after Action and Keymap have been reorganized.
 - `cast` at the backend selection boundary is acceptable for now. Revisit it
   when backend selection is shared by all event providers.
-- Dummy providers currently keep private emitters for test and non-editor
-  execution. Expose an explicit trigger API only if a consumer needs to
-  generate those events.

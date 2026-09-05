@@ -25,7 +25,7 @@ class VimBufferKernel(MortalEntityProtocol):
         scoped_buffer_event_provider = ScopedBufferEventProvider.from_ctx(ctx)
         self._wipeout_event = scoped_buffer_event_provider.get_wipeout_event(bufnr)
         self._write_pre_event = scoped_buffer_event_provider.get_write_pre(bufnr)
-        self._key_action_events = KeyActionEvents(ctx.keymap_manager, bufnr)
+        self._key_action_events = KeyActionEvents(bufnr)
         self.on_wipeout = self.on_end
 
         self.on_wipeout.subscribe(lambda _: self._key_action_events.clear())
