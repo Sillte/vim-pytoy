@@ -53,3 +53,22 @@ When adding an event, first decide its semantic owner, payload, and provider.
 Add the domain contract before adding a concrete source adapter. This keeps
 future event additions consistent and prevents `events/` from becoming a
 collection of unrelated Vim callbacks.
+
+## Discussions
+
+### Deferred Cleanup
+
+The following points are intentionally deferred while Buffer and Window event
+ownership is being established:
+
+- `from_ctx()` remains as a compatibility entry point. New code should prefer
+  implementation selection through `get_impl()` and constructor injection.
+  Remove `from_ctx()` after its callers have migrated.
+- The names and placement of implementation Protocols such as
+  `GlobalBufferEventProviderImpl` and `GlobalWindowEventProviderImpl` may be
+  unified after Action and Keymap have been reorganized.
+- `cast` at the backend selection boundary is acceptable for now. Revisit it
+  when backend selection is shared by all event providers.
+- Dummy providers currently keep private emitters for test and non-editor
+  execution. Expose an explicit trigger API only if a consumer needs to
+  generate those events.
