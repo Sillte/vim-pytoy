@@ -11,6 +11,7 @@ from pytoy.shared.lib.events.impls.dummy.window_events import GlobalWindowEventP
 from pytoy.shared.lib.events.impls.vim.window_events import GlobalWindowEventProviderVim
 
 if TYPE_CHECKING:
+    from pytoy.contexts.pytoy import GlobalPytoyContext
     from pytoy.contexts.vim import GlobalVimContext
 
 
@@ -28,6 +29,17 @@ class GlobalWindowEventProvider:
     def winclosed(self) -> GlobalEvent[int]:
         return self._impl.winclosed
 
+    @classmethod
+    def from_ctx(cls, ctx: GlobalVimContext | GlobalPytoyContext) -> Self:
+        # [TODO] This function should be considered to eliminate.
+        from pytoy.contexts.vim import GlobalVimContext
+
+        if isinstance(ctx, GlobalVimContext):
+            impl = cast(GlobalWindowEventProviderImpl, GlobalWindowEventProviderVim(ctx))
+        else:
+            impl = cast(GlobalWindowEventProviderImpl, GlobalWindowEventProviderDummy())
+        return cls(impl)
+
 
 class ScopedWindowEventProvider:
     def __init__(self, global_provider: GlobalWindowEventProvider | None = None) -> None:
@@ -39,4 +51,6 @@ class ScopedWindowEventProvider:
 
     @classmethod
     def from_ctx(cls, ctx: GlobalVimContext) -> Self:
-        return cls(GlobalWindowEventProvider(get_impl(ctx)))
+        # [TODO] This function should be considered to eliminate.
+        global_provider = GlobalWindowEventProvider.from_ctx(ctx)
+        return cls(global_provider)

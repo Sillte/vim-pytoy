@@ -11,6 +11,7 @@ from pytoy.shared.lib.events.impls.vim.buffer_events import GlobalBufferEventPro
 
 if TYPE_CHECKING:
     from pytoy.contexts.pytoy import GlobalPytoyContext
+    from pytoy.contexts.vim import GlobalVimContext
 
 
 from pytoy.shared.lib.event.domain import Event
@@ -54,6 +55,13 @@ class ScopedBufferEventProvider:
         return self.global_provider.write_pre.at(bufnr)
 
     @classmethod
-    def from_ctx(cls, ctx: GlobalPytoyContext) -> Self:
-        global_provider = GlobalBufferEventProvider(get_impl(ctx))
+    def from_ctx(cls, ctx: GlobalPytoyContext | GlobalVimContext) -> Self:
+        # [TODO] This function should be considered to eliminate.
+        from pytoy.contexts.vim import GlobalVimContext
+
+        if isinstance(ctx, GlobalVimContext):
+            impl = cast(GlobalBufferEventProviderImpl, GlobalBufferEventProviderVim(ctx=ctx))
+        else:
+            impl = get_impl(ctx)
+        global_provider = GlobalBufferEventProvider(impl=impl)
         return cls(global_provider)

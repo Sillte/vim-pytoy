@@ -11,21 +11,21 @@ from pytoy.shared.lib.events.buffer_events import ScopedBufferEventProvider
 from pytoy.shared.ui.contract.buffer.models import BufferEvents
 
 if TYPE_CHECKING:
-    from pytoy.contexts.pytoy import GlobalPytoyContext
+    from pytoy.contexts.vim import GlobalVimContext
 
 
 class VimBufferKernel(MortalEntityProtocol):
-    def __init__(self, bufnr: int, *, ctx: GlobalPytoyContext | None = None) -> None:
+    def __init__(self, bufnr: int, *, ctx: GlobalVimContext | None = None) -> None:
         self._bufnr = bufnr
 
         if ctx is None:
-            from pytoy.contexts.pytoy import GlobalPytoyContext
+            from pytoy.contexts.vim import GlobalVimContext
 
-            ctx = GlobalPytoyContext.get()
+            ctx = GlobalVimContext.get()
         scoped_buffer_event_provider = ScopedBufferEventProvider.from_ctx(ctx)
         self._wipeout_event = scoped_buffer_event_provider.get_wipeout_event(bufnr)
         self._write_pre_event = scoped_buffer_event_provider.get_write_pre(bufnr)
-        self._key_action_events = KeyActionEvents(ctx.vim_context.keymap_manager, bufnr)
+        self._key_action_events = KeyActionEvents(ctx.keymap_manager, bufnr)
         self.on_wipeout = self.on_end
 
         self.on_wipeout.subscribe(lambda _: self._key_action_events.clear())
