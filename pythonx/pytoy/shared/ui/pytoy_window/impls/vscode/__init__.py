@@ -208,7 +208,6 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
 
         if isinstance(anchor, PytoyWindow):
             anchor = anchor.impl
-        print("anchoer", type(anchor))
 
         anchor = cast(PytoyWindowVSCode, anchor)
         editor = self._create_editor(source, param, anchor)
