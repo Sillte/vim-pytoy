@@ -2,8 +2,8 @@ from queue import Empty, Queue
 from typing import Callable, Sequence
 
 from pytoy.shared.lib.backend import can_use_vim
+from pytoy.shared.timertask import TimerTask, backend_thread_dispatch
 from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
-from pytoy.shared.timertask.timertask import TimerTask
 
 from .models import ThreadExecution, ThreadExecutionExit, ThreadExecutionID, ThreadExecutionQuery
 
@@ -44,7 +44,7 @@ class ThreadExecutionManager:
         execution = self._executions.get(execution_exit.id)
         if not execution:
             return
-        TimerTask.execute_oneshot(lambda: execution.notify_exit(execution_exit), interval=0)
+        backend_thread_dispatch(lambda: execution.notify_exit(execution_exit))
 
 
 def add_log_message(message: str) -> None:

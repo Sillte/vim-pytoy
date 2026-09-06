@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from threading import Lock, Thread
 
-from pytoy.shared.timertask import TimerTask
+from pytoy.shared.timertask import TimerTask, backend_thread_dispatch
 from pytoy.tool_execution.terminal.contract.models import (
     JobEvents,
     JobID,
@@ -28,7 +28,7 @@ class TerminalJobDummy(TerminalJobProtocol):
             self._core.exit_emitter.fire(0)
             self.dispose()
 
-        TimerTask.execute_oneshot(lambda: _inner(), interval=0)
+        backend_thread_dispatch(_inner)
 
     def _schedule_update(self):
         with self._update_lock:

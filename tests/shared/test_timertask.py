@@ -4,7 +4,7 @@ import pytest
 
 from pytoy.contexts.core import GlobalCoreContext
 from pytoy.shared.lib.outcome import is_error, is_success
-from pytoy.shared.timertask import TimerStopException, TimerTask
+from pytoy.shared.timertask import TimerStopException, TimerTask, backend_thread_dispatch
 from pytoy.shared.timertask.impls.dummy import TimerTaskImplDummy
 from pytoy.shared.timertask.manager import TimerTaskManager
 
@@ -34,6 +34,21 @@ def test_execute_oneshot_runs_and_deregisters(dummy_impl):
     assert completed.wait(1)
     assert calls == ["called"]
     assert not TimerTask.is_registered(name)
+
+
+def test_backend_thread_dispatch_runs_callback_and_returns_none(dummy_impl):
+    completed = threading.Event()
+    callback_threads = []
+
+    def callback() -> None:
+        callback_threads.append(threading.current_thread())
+        completed.set()
+
+    result = backend_thread_dispatch(callback)
+
+    assert result is None
+    assert completed.wait(1)
+    assert callback_threads == [dummy_impl._scheduler]
 
 
 def test_repeat_runs_requested_number_of_times_and_finishes(dummy_impl):

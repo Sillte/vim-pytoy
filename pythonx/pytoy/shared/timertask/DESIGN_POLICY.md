@@ -33,6 +33,12 @@ Provide timer-based execution shared by Vim, Neovim, and non-editor environments
 	the thread on which its callbacks and Event notifications are executed.
 - Consumers may rely on the TimerTask guarantee and must not need to know which
 	concrete thread a TimerTask implementation uses.
+- `backend_thread_dispatch` is the public utility for scheduling a
+	no-argument, no-return-value backend operation on the TimerTask execution
+	thread.
+- Backend operations in the Dummy backend must use
+	`backend_thread_dispatch`, so the Dummy backend follows the same dispatch
+	boundary as editor backends.
 
 ## Discussion
 

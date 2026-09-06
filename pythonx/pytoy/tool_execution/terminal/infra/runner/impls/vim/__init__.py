@@ -9,6 +9,7 @@ import vim
 
 from pytoy.shared.lib.function import FunctionRegistry, RegisteredFunction
 from pytoy.shared.lib.text import CursorPosition
+from pytoy.shared.timertask import backend_thread_dispatch
 from pytoy.tool_execution.terminal.contract.models import (
     ConsoleSnapshot,
     InputOperation,
@@ -132,8 +133,6 @@ class TerminalJobVim(TerminalJobProtocol):
         self._core.exit_emitter.dispose()
 
         # Asyncronous hack is important, since this must be called after `Job` `on_exit` is called.
-        from pytoy.shared.timertask import TimerTask
-
         def _inner():
             if self._on_exit:
                 FunctionRegistry.deregister(self._on_exit)
@@ -142,7 +141,7 @@ class TerminalJobVim(TerminalJobProtocol):
                 FunctionRegistry.deregister(self._on_out)
                 self._on_out = None
 
-        TimerTask.execute_oneshot(_inner, interval=0)
+        backend_thread_dispatch(_inner)
 
     @property
     def snapshot(self) -> Snapshot:

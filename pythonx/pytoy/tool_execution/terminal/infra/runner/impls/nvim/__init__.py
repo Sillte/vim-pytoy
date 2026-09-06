@@ -175,7 +175,7 @@ class TerminalJobNvim(TerminalJobProtocol):
             self._input_task.queue.put(None)
         self._core.dispose()
 
-        from pytoy.shared.timertask import TimerTask
+        from pytoy.shared.timertask import backend_thread_dispatch
 
         def _inner():
             if self._on_exit is not None:
@@ -183,7 +183,7 @@ class TerminalJobNvim(TerminalJobProtocol):
             if self._on_out is not None:
                 FunctionRegistry.deregister(self._on_out)
 
-        TimerTask.execute_oneshot(_inner, interval=0)
+        backend_thread_dispatch(_inner)
 
     @property
     def snapshot(self) -> Snapshot:

@@ -44,6 +44,8 @@ providers rather than to the peer objects themselves.
   helpers are not part of the contract.
 - Do not move UI integration concepts into a generic domain package solely to
   fit Clean Architecture terminology.
+- In case of `Dummy`, UI state changes that need backend-thread dispatch must use
+  `pytoy.shared.timertask.backend_thread_dispatch` or `TimerTask`.
 
 Facades return facade objects to ordinary callers. Backend implementations
 return contract objects to their facades; wrapping occurs at the public

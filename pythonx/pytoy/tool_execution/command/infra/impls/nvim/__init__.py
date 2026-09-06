@@ -7,7 +7,7 @@ import vim
 
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.function import FunctionRegistry
-from pytoy.shared.timertask import TimerTask
+from pytoy.shared.timertask import TimerTask, backend_thread_dispatch
 from pytoy.tool_execution.command.infra.contract import JobEvents, JobID, OutputJobProtocol
 from pytoy.tool_execution.command.infra.impls.core import OutputJobCore
 from pytoy.tool_execution.command.infra.models import OutputJobRequest, Snapshot, SpawnOption
@@ -54,9 +54,7 @@ class OutputJobNvim(OutputJobProtocol):
             self.dispose()
 
         # 終了時クリーンアップ
-        self._core.disposables.append(
-            self.events.on_job_exit.subscribe(lambda _: TimerTask.execute_oneshot(_cleanup, interval=0))
-        )
+        self._core.disposables.append(self.events.on_job_exit.subscribe(lambda _: backend_thread_dispatch(_cleanup)))
 
         self._cwd = str(spawn_option.cwd or Path().cwd().absolute())
         # Neovim の jobstart オプション
@@ -117,7 +115,7 @@ class OutputJobNvim(OutputJobProtocol):
                 FunctionRegistry.deregister(self._on_event_vimfunc)
                 self._on_event_vimfunc = None
 
-        TimerTask.execute_oneshot(_deregister_event_vimfunc, interval=0)
+        backend_thread_dispatch(_deregister_event_vimfunc)
         self._core.dispose()
 
     # --- Protocol Implementation (Core 委譲) ---

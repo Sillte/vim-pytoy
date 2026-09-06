@@ -7,7 +7,7 @@ from typing import Any, Callable, Mapping
 import vim
 
 from pytoy.shared.lib.function import FunctionRegistry
-from pytoy.shared.timertask import TimerTask
+from pytoy.shared.timertask import TimerTask, backend_thread_dispatch
 from pytoy.tool_execution.command.infra.contract import JobEvents, JobID, OutputJobProtocol
 from pytoy.tool_execution.command.infra.impls.core import OutputJobCore
 from pytoy.tool_execution.command.infra.models import (
@@ -69,9 +69,7 @@ class OutputJobVim(OutputJobProtocol):
             self.dispose()
 
         self._disposables = []
-        self._disposables.append(
-            self.events.on_job_exit.subscribe(lambda _: TimerTask.execute_oneshot(_cleanup, interval=0))
-        )
+        self._disposables.append(self.events.on_job_exit.subscribe(lambda _: backend_thread_dispatch(_cleanup)))
         option = _construct_option(job_request=job_request, spawn_option=spawn_option, cwd=self._cwd)
 
         self._disposables.append(
