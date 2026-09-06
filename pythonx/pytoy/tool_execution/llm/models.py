@@ -1,26 +1,19 @@
 from __future__ import annotations
 
 import logging
-import time
-import uuid
-from dataclasses import dataclass, field
-from functools import cached_property
+from dataclasses import dataclass
 from typing import Any, Callable, Self
 
+from pytoy_llm.task.execution import TaskExecutionHandler
+from pytoy_llm.task.execution.models import TaskExecutionID, TaskExecutionStatus
 from pytoy_llm.task.models import TaskContextState, TaskResult, TaskSpec
 
 from pytoy.shared.lib.event import Event, EventEmitter
-from pytoy.shared.lib.outcome import Error, Outcome, Success, is_error, is_success
-from pytoy.shared.timertask.thread_execution import (
-    ThreadExecutionExit,
-    ThreadExecutionHandler,
-    ThreadExecutionRequest,
-    ThreadExecutionStatus,
-)
+from pytoy.shared.lib.outcome import Outcome
 
-type LLMExecutionID = str
-type LLMExecutionStatus = ThreadExecutionStatus
+type LLMExecutionID = TaskExecutionID
 type LLMExecutionKind = str
+type LLMExecutionStatus = TaskExecutionStatus
 
 
 @dataclass(frozen=True)
@@ -41,6 +34,25 @@ class LLMExecutionRequest[T]:
         logger: logging.Logger | None = None,
     ) -> Self:
         return cls(task_spec=task_spec, input=input, context_state=context_state, kind=kind, logger=logger)
+
+
+@dataclass(frozen=True)
+class LLMExecution[T]:
+    request: LLMExecutionRequest[T]
+    task_handler: TaskExecutionHandler[T]
+    exit_emitter: EventEmitter[LLMExecutionExit[T]]
+
+    @property
+    def kind(self) -> LLMExecutionKind:
+        return self.request.kind
+
+    @property
+    def id(self) -> LLMExecutionID:
+        return self.task_handler.id
+
+    @property
+    def on_exit(self) -> Event[LLMExecutionExit[T]]:
+        return self.exit_emitter.event
 
 
 @dataclass(frozen=True)
@@ -128,53 +140,3 @@ class LLMExecutionHooks[T]:
 class LLMExecutionQuery:
     kind: LLMExecutionKind | None = None
     status: LLMExecutionStatus | None = None
-
-
-@dataclass(frozen=True)
-class ExecutionPolicy:
-    kind: LLMExecutionKind | None = None
-    allow_parallel: bool = False
-
-
-@dataclass
-class LLMExecution[T]:
-    thread_handler: ThreadExecutionHandler[TaskResult[T]]
-    request: LLMExecutionRequest[T]
-    status: LLMExecutionStatus = "created"
-    on_exit_emitter: EventEmitter[LLMExecutionExit[T]] = field(default_factory=lambda: EventEmitter())
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: float = field(default_factory=lambda: time.time())
-
-    @classmethod
-    def from_any(
-        cls,
-        thread_handler: ThreadExecutionHandler[TaskResult[T]] | ThreadExecutionRequest[T],
-        llm_request: LLMExecutionRequest[T],
-    ) -> Self:
-        if isinstance(thread_handler, ThreadExecutionRequest):
-            thread_handler = ThreadExecutionHandler.create(thread_handler)
-
-        return cls(thread_handler=thread_handler, request=llm_request)
-
-    def start(self, hooks: LLMExecutionHooks) -> None:
-        self.status = "running"
-        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_success).map(
-            lambda success: success.value
-        ).once().subscribe(hooks.on_result)
-        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(
-            lambda error: error.exception
-        ).once().subscribe(hooks.on_exception)
-
-        self.thread_handler.start()
-
-    @cached_property
-    def on_exit(self) -> Event[LLMExecutionExit[T]]:
-        def _convert(thread_exit: ThreadExecutionExit[TaskResult[T]]) -> LLMExecutionExit[T]:
-            match thread_exit.outcome:
-                case Success(value):
-                    outcome = Success(LLMExecutionResult(task_result=value))
-                case Error(exception):
-                    outcome = Error(exception)
-            return LLMExecutionExit(id=self.id, outcome=outcome)
-
-        return self.thread_handler.on_exit.map(_convert)

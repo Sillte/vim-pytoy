@@ -38,13 +38,13 @@ class LLMExecutor[T]:
     def execute(
         self, request: LLMExecutionRequest[T], hooks: LLMExecutionHooks[T] | None = None
     ) -> LLMExecutionHandler:
-        handler = LLMExecutionHandler.create(request)
+        handler = LLMExecutionHandler.create(request, manager=self.execution_manager)
         handler.start(hooks=hooks)
         return handler
 
     def can_execute(self, kind: LLMExecutionKind | None = None) -> bool:
         query = LLMExecutionQuery(kind=kind)
-        handlers = LLMExecutionHandler.query(query=query)
+        handlers = LLMExecutionHandler.query(query=query, manager=self.execution_manager)
         if handlers:
             return False
         return True

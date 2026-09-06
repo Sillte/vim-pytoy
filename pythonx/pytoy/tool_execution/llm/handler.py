@@ -1,7 +1,9 @@
 import threading
 from collections.abc import Callable
-from functools import wraps
+from functools import cached_property, wraps
 from typing import Self, Sequence
+
+from pytoy_llm.task.execution import TaskExecutionHandler
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
@@ -10,6 +12,7 @@ from pytoy.shared.lib.outcome import is_error, is_success
 from .factory import LLMExecutionFactory
 from .manager import LLMExecutionManager
 from .models import (
+    LLMExecution,
     LLMExecutionContext,
     LLMExecutionExit,
     LLMExecutionHooks,
@@ -45,9 +48,9 @@ class LLMExecutionHandler[T]:
         if manager is None:
             manager = GlobalPytoyContext.get().llm_execution_manager
         factory = LLMExecutionFactory()
-        execution = factory.create(request)
-        manager.register(execution)
-        return cls(id=execution.id, manager=manager)
+        llm_execution = factory.create(request)
+        manager.register(llm_execution)
+        return cls(id=llm_execution.id, manager=manager)
 
     @classmethod
     def query(
@@ -61,40 +64,51 @@ class LLMExecutionHandler[T]:
 
     @property
     def status(self) -> LLMExecutionStatus | None:
-        execution = self._manager.get(self._id)
-        if execution is None:
-            return None
-        return execution.status
+        return self._require_task_handler().status
 
     @main_thread_only
     def start(self, hooks: LLMExecutionHooks | None = None) -> None:
         hooks = hooks or LLMExecutionHooks.from_any()
-        execution = self._manager.get(self._id)
-        if execution is None:
-            raise ValueError(f"`execution` does not exist; {self._id=}")
 
-        execution.start(hooks=hooks)
-
-        context = LLMExecutionContext(
-            request=execution.request,
-            hooks=hooks,
+        disposables = []
+        disposables.append(
+            self.on_exit.map(lambda exit_entity: exit_entity.outcome)
+            .filter(is_success)
+            .map(lambda success: success.value)
+            .once()
+            .subscribe(hooks.on_result)
+        )
+        disposables.append(
+            self.on_exit.map(lambda exit_entity: exit_entity.outcome)
+            .filter(is_error)
+            .map(lambda error: error.exception)
+            .once()
+            .subscribe(hooks.on_exception)
         )
 
-        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_success).map(
-            lambda success: success.value
-        ).once().subscribe(hooks.on_result)
-        self.on_exit.map(lambda exit_entity: exit_entity.outcome).filter(is_error).map(
-            lambda error: error.exception
-        ).once().subscribe(hooks.on_exception)
-        self._manager.register_context(execution, context)
+        execution = self._require_execution()
+        context = LLMExecutionContext(request=execution.request, hooks=hooks)
+        self._manager.register_context(context)
+        try:
+            execution.task_handler.start()
+        except Exception:
+            for disposable in disposables:
+                disposable.dispose()
+            raise
 
     @property
     def id(self) -> LLMExecutionID:
         return self._id
 
-    @property
+    @cached_property
     def on_exit(self) -> Event[LLMExecutionExit[T]]:
+        return self._require_execution().exit_emitter.event
+
+    def _require_execution(self) -> LLMExecution[T]:
         execution = self._manager.get(self._id)
         if execution is None:
-            raise ValueError(f"`execution` does not exist; {self._id=}")
-        return execution.on_exit
+            raise ValueError(f"`LLMExecution` does not exist; {self._id=}")
+        return execution
+
+    def _require_task_handler(self) -> TaskExecutionHandler[T]:
+        return self._require_execution().task_handler

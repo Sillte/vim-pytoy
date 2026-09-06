@@ -94,7 +94,7 @@ class EventProtocol[T](Protocol):
     def filter(self, predicate: Callable[[T], bool]) -> "EventProtocol[Any]": ...
 
 
-class Event[T]:
+class Event[T](EventProtocol[T]):
     def __init__(self, subscribe: Subscribe[T]):
         self._subscribe = subscribe
 

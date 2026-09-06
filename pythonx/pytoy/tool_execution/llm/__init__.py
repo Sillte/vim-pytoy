@@ -1,7 +1,6 @@
 from .executor import LLMExecutor
 from .handler import LLMExecutionHandler
 from .models import (
-    ExecutionPolicy,
     LLMExecutionContext,
     LLMExecutionExit,
     LLMExecutionHooks,
@@ -25,5 +24,4 @@ __all__ = [
     "LLMExecutionID",
     "LLMExecutionKind",
     "LLMExecutionQuery",
-    "ExecutionPolicy",
 ]
