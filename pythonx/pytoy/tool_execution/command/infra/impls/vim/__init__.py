@@ -141,9 +141,12 @@ class OutputJobVim(OutputJobProtocol):
         self._disposed = True
         self.terminate()
 
-        for function in self._vim_funcs:
-            FunctionRegistry.deregister(function)
-        self._vim_funcs.clear()
+        def _deregister_vim_funcs():
+            for function in self._vim_funcs:
+                FunctionRegistry.deregister(function)
+            self._vim_funcs.clear()
+
+        backend_thread_dispatch(_deregister_vim_funcs)
         vim.command(f"silent! unlet g:{self._jobvar}")
 
         for d in self._disposables:

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
+from pytoy.shared.timertask import backend_thread_dispatch
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer, make_duo_buffers
 from pytoy.tool_execution.command.infra.contract import JobEvents, JobID, OutputJobProtocol
@@ -88,7 +89,7 @@ class CommandRunner:
             )
             d_err_wiped = self._stderr.events.on_wiped.subscribe(lambda _: d_err.dispose())
             disposables += [d_err, d_err_wiped]
-        disposables.append(job_events.on_job_exit.subscribe(lambda _: self._dispose_job()))
+        disposables.append(job_events.on_job_exit.subscribe(lambda _: backend_thread_dispatch(self._dispose_job)))
         if request.on_exit:
             disposables.append(job_events.on_job_exit.subscribe(request.on_exit))
         return disposables
