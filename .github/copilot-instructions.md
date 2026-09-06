@@ -178,7 +178,7 @@ make the uncertainty explicit rather than inventing a new abstraction.
 
 ## Design Policy
 
-Package-specific `Design Policy` documents (`README.md` in the package root) are authoritative for the
+Package-specific `Design Policy` documents (`DESIGN_POLICY.md` in the package root) are authoritative for the
 corresponding package.
 
 When a package-specific policy provides a more precise rule than these general

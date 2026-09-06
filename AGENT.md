@@ -10,14 +10,12 @@ codebase.
 
 - `README.md`: project overview and user-facing documentation.
 - `DESIGN_POLICY.md`: design principles and architectural decisions.
-- `documentation_policy.md`: rules for what and how to document.
 - `AGENTS.md`: instructions for AI agents working in this repository.
 
 A `DESIGN_POLICY.md` applies to its directory and descendants.
 More specific policies refine broader policies.
 
-Before creating or modifying documentation, read the applicable `documentation_policy.md`,
-and avoid documenting information that can be reliably recovered from the code or other sources of truth.
+Avoid documenting information that can be reliably recovered from the code or other sources of truth.
 
 ## Architecture
 

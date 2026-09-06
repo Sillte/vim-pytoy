@@ -1,5 +1,5 @@
-from pytoy_llm.event_sinks import LoggerEventSink
-from pytoy_llm.task import TaskExecutor, TaskRequest
+from pytoy_llm.activity_sinks import LoggerActivitySink
+from pytoy_llm.task import TaskRequest, TaskSyncExecutor
 from pytoy_llm.task.models import TaskResult
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
@@ -16,15 +16,20 @@ class LLMExecutionFactory:
         self._manager = manager
 
     def create[T](self, request: LLMExecutionRequest[T]) -> LLMExecution[T]:
-        task_request = TaskRequest(spec=request.task_spec, input=request.input, context_state=request.context_state)
+        logger = request.logger
+        if logger:
+            activity_sink = LoggerActivitySink(request.logger)
+        else:
+            activity_sink = None
+        task_request = TaskRequest(
+            spec=request.task_spec,
+            input=request.input,
+            context_state=request.context_state,
+            activity_sink=activity_sink,
+        )
 
         def _main(_) -> TaskResult[T]:
-            logger = request.logger
-            if logger:
-                event_sink = LoggerEventSink(request.logger)
-            else:
-                event_sink = None
-            task_response = TaskExecutor().execute(request=task_request, event_sink=event_sink)
+            task_response = TaskSyncExecutor().execute(request=task_request)
             return task_response.result
 
         thread_request = ThreadExecutionRequest.from_any(_main)

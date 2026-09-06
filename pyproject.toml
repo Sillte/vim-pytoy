@@ -18,10 +18,10 @@ dependencies = [
     "requests>=2.31",
     "pywinpty; sys_platform == 'win32'",
     "pexpect; sys_platform == 'linux'",
+    "typing_extensions>=4.13",
     "pytoy-llm @ git+https://github.com/Sillte/pytoy-llm.git@main",
 ]
 requires-python = ">=3.12"
-
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -32,14 +32,7 @@ addopts = "-v"
 where = ["pythonx"]
 
 [dependency-groups]
-dev = [
-    "pytest>=7.0.0",
-    "ruff>=0.15",
-    "ty", 
-    "mypy>=1.14.1",
-    "prek",
-    "pexpect",
-]
+dev = ["pytest>=7.0.0", "ruff>=0.15", "ty", "mypy>=1.14.1", "prek", "pexpect"]
 
 [tool.ruff]
 fix = true
@@ -62,15 +55,11 @@ known-first-party = ["pytoy", "pytoy-llm"]
 unused-ignore-comment = "ignore"
 
 [tool.ty.environment]
-extra-paths = [
-    "typings",
-]
+extra-paths = ["typings"]
 
 [tool.ty.src]
-exclude = [
-    "tests_vim",
-    "tests/mocks"
-]
+exclude = ["tests_vim", "tests/mocks"]
 
-
-
+[tool.uv]
+exclude-newer = "1 week"
+exclude-newer-package = { pytoy-llm = false }
