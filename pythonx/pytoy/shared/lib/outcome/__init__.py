@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import TypeGuard
+
+from typing_extensions import TypeIs
 
 
 @dataclass(frozen=True)
@@ -15,9 +16,9 @@ class Error[E]:
 type Outcome[T, E] = Success[T] | Error[E]
 
 
-def is_success[T, E](outcome: Outcome[T, E]) -> TypeGuard[Success[T]]:
+def is_success[T, E](outcome: Outcome[T, E]) -> TypeIs[Success[T]]:
     return isinstance(outcome, Success)
 
 
-def is_error[T, E](outcome: Outcome[T, E]) -> TypeGuard[Error[E]]:
+def is_error[T, E](outcome: Outcome[T, E]) -> TypeIs[Error[E]]:
     return isinstance(outcome, Error)

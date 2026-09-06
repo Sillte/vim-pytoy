@@ -76,7 +76,7 @@ class LLMExecutionExit[T]:
 class LLMExecutionHooks[T]:
     """Recommendation policy... Use `on_finish` rather than on_success / on_failure."""
 
-    on_result: Callable[[T], None]
+    on_result: Callable[[LLMExecutionResult[T]], None]
     on_exception: Callable[[Exception], None]
 
     @staticmethod
@@ -103,7 +103,7 @@ class LLMExecutionHooks[T]:
     @classmethod
     def from_any(
         cls,
-        on_result: Callable[LLMExecutionResult[T], None] | None = None,
+        on_result: Callable[[LLMExecutionResult[T]], None] | None = None,
         on_exception: Callable[[Exception], None] | None = None,
         on_output: Callable[[T], None] | None = None,
     ) -> Self:
