@@ -38,13 +38,9 @@ class LLMExecutionRequest[T]:
 
 @dataclass(frozen=True)
 class LLMExecution[T]:
-    request: LLMExecutionRequest[T]
+    kind: LLMExecutionKind
     task_handler: TaskExecutionHandler[T]
     exit_emitter: EventEmitter[LLMExecutionExit[T]]
-
-    @property
-    def kind(self) -> LLMExecutionKind:
-        return self.request.kind
 
     @property
     def id(self) -> LLMExecutionID:
@@ -57,12 +53,8 @@ class LLMExecution[T]:
 
 @dataclass(frozen=True)
 class LLMExecutionContext[T]:
-    request: LLMExecutionRequest[T]
+    kind: LLMExecutionKind
     hooks: LLMExecutionHooks[T]
-
-    @property
-    def kind(self) -> LLMExecutionKind:
-        return self.request.kind
 
 
 @dataclass(frozen=True)

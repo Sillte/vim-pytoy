@@ -183,7 +183,7 @@ def make_scoped_edit_spec(
         supplementary_sections = None
         return composer.compose_message(user_prompt=document, supplementary_sections=supplementary_sections)
 
-    return LLMInvocationSpec(
+    return LLMInvocationSpec.from_any(
         create_messages=create_message,
         output_type=str,
         meta=InvocationSpecMeta(name=name, intent="Scoped edit of the document."),

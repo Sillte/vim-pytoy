@@ -70,7 +70,7 @@ class ReferenceInfo(BaseModel):
 
     @field_validator("uri", mode="before")
     @classmethod
-    def validate(cls, value: Any) -> ResourceUri:
+    def _validate(cls, value: Any) -> ResourceUri:
         return ResourceUri.from_any(value)
 
     @classmethod

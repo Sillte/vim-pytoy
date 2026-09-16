@@ -17,6 +17,7 @@ from .models import (
     LLMExecutionExit,
     LLMExecutionHooks,
     LLMExecutionID,
+    LLMExecutionKind,
     LLMExecutionQuery,
     LLMExecutionRequest,
     LLMExecutionStatus,
@@ -49,6 +50,24 @@ class LLMExecutionHandler[T]:
             manager = GlobalPytoyContext.get().llm_execution_manager
         factory = LLMExecutionFactory()
         llm_execution = factory.create(request)
+        manager.register(llm_execution)
+        return cls(id=llm_execution.id, manager=manager)
+
+    @classmethod
+    @main_thread_only
+    def create_from_task_handler(
+        cls,
+        task_handler: TaskExecutionHandler,
+        kind: LLMExecutionKind,
+        *,
+        manager: LLMExecutionManager | None = None,
+    ) -> Self:
+        if manager is None:
+            manager = GlobalPytoyContext.get().llm_execution_manager
+        if task_handler.status != "created":
+            raise ValueError(f"Only `created` task_handler is accepted, but `{task_handler.status=}`")
+        factory = LLMExecutionFactory()
+        llm_execution = factory.create_from_task_handler(task_handler, kind)
         manager.register(llm_execution)
         return cls(id=llm_execution.id, manager=manager)
 
@@ -87,7 +106,7 @@ class LLMExecutionHandler[T]:
         )
 
         execution = self._require_execution()
-        context = LLMExecutionContext(request=execution.request, hooks=hooks)
+        context = LLMExecutionContext(kind=execution.kind, hooks=hooks)
         self._manager.register_context(context)
         try:
             execution.task_handler.start()

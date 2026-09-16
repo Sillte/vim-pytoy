@@ -10,7 +10,7 @@ from pytoy_llm.task.shared.outcome import Success as TaskSuccess
 from pytoy.shared.lib.event import EventEmitter
 from pytoy.shared.lib.outcome import Error, Success
 from pytoy.shared.timertask import backend_thread_dispatch
-from pytoy.tool_execution.llm.models import LLMExecutionExit, LLMExecutionResult
+from pytoy.tool_execution.llm.models import LLMExecutionExit, LLMExecutionKind, LLMExecutionResult
 
 from .models import LLMExecution, LLMExecutionRequest
 
@@ -46,11 +46,15 @@ class LLMExecutionFactory:
             activity_sink=activity_sink,
         )
         task_handler = TaskExecutionHandler.create(task_request)
+        return self.create_from_task_handler(task_handler, request.kind)
 
+    def create_from_task_handler[T](
+        self, task_handler: TaskExecutionHandler[T], kind: LLMExecutionKind
+    ) -> LLMExecution[T]:
+        if task_handler.status != "created":
+            raise ValueError(f"Only `created` task_handler is accepted, but `{task_handler.status=}`")
         exit_emitter = EventEmitter()
-
-        execution = LLMExecution(request=request, task_handler=task_handler, exit_emitter=exit_emitter)
-
+        execution = LLMExecution(kind=kind, task_handler=task_handler, exit_emitter=exit_emitter)
         execution.task_handler.on_exit.map(transform).once().subscribe(
             lambda execution_exit: backend_thread_dispatch(lambda: execution.exit_emitter.fire(execution_exit))
         )

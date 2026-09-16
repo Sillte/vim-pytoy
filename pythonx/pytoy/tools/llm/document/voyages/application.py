@@ -121,7 +121,7 @@ def build_evolve_task_spec(
     connection_name: str | None = None,
 ) -> TaskSpec:
     meta = InvocationSpecMeta(name="EvolveInvocation", intent="Evolve the manuscript")
-    invocation_spec = LLMInvocationSpec(
+    invocation_spec = LLMInvocationSpec.from_any(
         meta=meta,
         output_type=EvolveResponse,
         create_messages=_evolve_create_message,
@@ -185,7 +185,7 @@ def build_reflect_task_spec(
 ) -> TaskSpec:
     """Construct an TaskRequest for the Reflect task."""
     meta = InvocationSpecMeta(name="ReflectInvocation", intent="Reflect on the manuscript")
-    invocation_spec = LLMInvocationSpec(
+    invocation_spec = LLMInvocationSpec.from_any(
         meta=meta,
         output_type=ReflectResponse,
         create_messages=_reflect_create_messages,

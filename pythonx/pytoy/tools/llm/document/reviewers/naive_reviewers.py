@@ -164,7 +164,7 @@ def make_preparation_spec(document: str) -> LLMInvocationSpec:
     def create_message(_: str) -> LLMMessage:
         return composer.compose_message(user_prompt=document)
 
-    return LLMInvocationSpec(meta=meta, output_type=ReviewPreparation, create_messages=create_message)
+    return LLMInvocationSpec.from_any(meta=meta, output_type=ReviewPreparation, create_messages=create_message)
 
 
 class ReviewContract:
@@ -346,7 +346,7 @@ def make_review_spec(document: str) -> LLMInvocationSpec:
     def create_message(input: ReviewPreparation) -> LLMMessage:
         return make_review_llm_message(input, document=document)
 
-    return LLMInvocationSpec(meta=meta, output_type=str, create_messages=create_message)
+    return LLMInvocationSpec.from_any(meta=meta, output_type=str, create_messages=create_message)
 
 
 class NaiveReviewDocumentRequester:

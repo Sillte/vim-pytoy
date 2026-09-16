@@ -14,8 +14,7 @@ if TYPE_CHECKING:
     from pytoy.tool_execution.llm.manager import LLMExecutionManager
     from pytoy.tool_execution.terminal import TerminalDriverManager
     from pytoy.tool_execution.terminal.manager import TerminalExecutionManager
-    # from pytoy.shared.ui.pytoy_window.impls.vscode.kernel import VSCodeWindowKernel
-    # from pytoy.shared.autocmd.autocmd_manager import AutoCmdManager
+    from pytoy.tool_session.llm.manager import IdeaSpaceLLMManager
 
 
 class GlobalPytoyContext:
@@ -50,6 +49,12 @@ class GlobalPytoyContext:
         from pytoy.tool_execution.llm.manager import LLMExecutionManager
 
         return LLMExecutionManager()
+
+    @cached_property
+    def idea_space_llm_session_manager(self) -> IdeaSpaceLLMManager:
+        from pytoy.tool_session.llm.manager import IdeaSpaceLLMManager
+
+        return IdeaSpaceLLMManager()
 
     @property
     def vim_context(self) -> GlobalVimContext:
