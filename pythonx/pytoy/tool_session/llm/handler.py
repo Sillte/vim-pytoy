@@ -5,7 +5,7 @@ from pytoy_llm.task.models import TaskRequest
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.tool_execution.llm import LLMExecutionHandler
 
-from .manager import IdeaSpaceLLMManager
+from .manager import LLMSessionManager
 from .models import (
     LLMSession,
     LLMSessionBufferProvider,
@@ -16,20 +16,20 @@ from .models import (
 
 
 class LLMSessionHandler:
-    def __init__(self, id: LLMSessionID, *, manager: IdeaSpaceLLMManager):
+    def __init__(self, id: LLMSessionID, *, manager: LLMSessionManager):
         self._id = id
         self._manager = manager
 
     @classmethod
-    def create(cls, request: LLMSessionRequest, *, manager: IdeaSpaceLLMManager | None = None) -> Self:
-        manager = manager or GlobalPytoyContext.get().idea_space_llm_session_manager
+    def create(cls, request: LLMSessionRequest, *, manager: LLMSessionManager | None = None) -> Self:
+        manager = manager or GlobalPytoyContext.get().llm_session_manager
         session = LLMSession.from_request(request)
         manager.register(session)
         return cls(id=session.id, manager=manager)
 
     @classmethod
-    def query(cls, query: LLMSessionQuery, *, manager: IdeaSpaceLLMManager | None = None) -> Sequence[Self]:
-        manager = manager or GlobalPytoyContext.get().idea_space_llm_session_manager
+    def query(cls, query: LLMSessionQuery, *, manager: LLMSessionManager | None = None) -> Sequence[Self]:
+        manager = manager or GlobalPytoyContext.get().llm_session_manager
         sessions = manager.select(query)
         return [cls(id=session.id, manager=manager) for session in sessions]
 

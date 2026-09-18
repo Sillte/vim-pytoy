@@ -146,7 +146,7 @@ class PytoyBuffer:
         return None
 
     @property
-    def metaddata(self) -> BufferMetadata:
+    def metadata(self) -> BufferMetadata:
         return self._impl.metadata
 
 
@@ -177,13 +177,21 @@ class PytoyBufferProvider:
         return result
 
 
-def make_buffer(source: str | Path | BufferSource, mode: Literal["vertical", "horizontal"] = "vertical") -> PytoyBuffer:
+def make_buffer(
+    source: str | Path | BufferSource,
+    mode: Literal["vertical", "horizontal"] = "vertical",
+    metadata: BufferMetadata | None = None,
+) -> PytoyBuffer:
     from pytoy.shared.ui.contract.window.models import WindowCreationParam
     from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
 
     source = BufferSource.from_any(source)
     param = WindowCreationParam.for_split(mode, try_reuse=True, anchor=None)
     stdout_window = PytoyWindowProvider().open_window(source, param)
+
+    if metadata is not None:
+        stdout_window.buffer.metadata.kind = metadata.kind
+        stdout_window.buffer.metadata.data = dict(metadata.data)
     return stdout_window.buffer
 
 

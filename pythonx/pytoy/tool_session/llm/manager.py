@@ -4,7 +4,7 @@ from typing import Sequence
 from .models import LLMSession, LLMSessionID, LLMSessionQuery
 
 
-class IdeaSpaceLLMManager:
+class LLMSessionManager:
     def __init__(self) -> None:
         self._lock = RLock()
         self._sessions: dict[LLMSessionID, LLMSession] = dict()

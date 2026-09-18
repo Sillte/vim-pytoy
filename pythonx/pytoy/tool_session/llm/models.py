@@ -6,7 +6,7 @@ from pytoy_llm.task.models import TaskContextState, TaskRequest
 from pytoy_llm.task.session import TaskSessionHandler, TaskSessionRequest
 
 from pytoy.shared.lib.event import Event, EventEmitter
-from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer, make_buffer
+from pytoy.shared.ui.pytoy_buffer import BufferMetadata, BufferSource, PytoyBuffer, make_buffer
 from pytoy.tool_execution.llm import LLMExecutionHandler
 
 type LLMSessionKind = str
@@ -39,7 +39,7 @@ class LLMSessionBufferProvider:
 
     @property
     def buffer(self) -> PytoyBuffer:
-        buffer = make_buffer(source=self._buffer_source)
+        buffer = make_buffer(source=self._buffer_source, metadata=BufferMetadata(kind="llm-session"))
         self._hooks.apply(buffer)
         return buffer
 

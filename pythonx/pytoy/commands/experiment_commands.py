@@ -77,3 +77,21 @@ def three_word_story(user_prompt: Annotated[str | None, Option()] = None):
         lines = PytoyBuffer.get_current().get_lines(line_range)
         user_prompt = "\n".join(lines)
     controller.make_progress(user_prompt)
+
+
+@app.command("LLMSend")
+def llm_send(user_prompt: Annotated[str | None, Option()] = None):
+    from pytoy.tool_execution.execution_environment import EnvironmentManager
+    from pytoy.tools.llm.stories.three_word_story import ThreeWordsStoryController
+
+    manager = EnvironmentManager()
+    workspace = manager.find_workspace(__file__)
+    if workspace is None:
+        raise ValueError("Apt folder is not found")
+    folder = workspace / "mybag" / "ThreeWordStory"
+    controller = ThreeWordsStoryController.from_any(folder)
+    if user_prompt is None:
+        line_range = PytoyWindow.get_current().selected_line_range
+        lines = PytoyBuffer.get_current().get_lines(line_range)
+        user_prompt = "\n".join(lines)
+    controller.make_progress(user_prompt)

@@ -72,7 +72,6 @@ class ThreeWordStoryDriver(LLMSessionDriverProtocol):
 
         actions[Keys.ENTER] = lambda buffer: _open_file()
         actions["<leader>m"] = lambda buffer: _open_file()
-        actions["<F4>"] = lambda buffer: _open_file()
 
         return LLMSessionBufferHooks(actions=actions)
 

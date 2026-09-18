@@ -21,6 +21,14 @@ class URI:
     authority: str | None = None
 
 
+@dataclass
+class BufferMetadata:
+    """Metadata of Buffer"""
+
+    kind: BufferKind | None = None
+    data: dict[str, Any] = field(default_factory=dict)
+
+
 @dataclass(frozen=True)
 class BufferSource:
     type: Literal["file", "nofile"]
@@ -52,14 +60,6 @@ class BufferSource:
         if isinstance(arg, cls):
             return arg
         raise ValueError("Type is invalid in `BufferSource`")
-
-
-@dataclass
-class BufferMetadata:
-    """Metadata of Buffer"""
-
-    kind: BufferKind | None = None
-    data: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
