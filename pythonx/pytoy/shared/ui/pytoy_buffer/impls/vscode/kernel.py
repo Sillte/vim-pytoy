@@ -7,7 +7,7 @@ import vim
 from pytoy.shared.lib.entity import MortalEntityProtocol
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.action_events import KeyActionEvents
-from pytoy.shared.ui.contract.buffer.models import URI, BufferEvents
+from pytoy.shared.ui.contract.buffer import URI, BufferEvents, BufferMetadata
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver, VSCodeUri
 from pytoy.shared.ui.vscode.document import Document
@@ -77,6 +77,10 @@ class VSCodeBufferKernel(MortalEntityProtocol):
     @property
     def lines(self) -> list[str]:
         return self._vim_kernel.lines
+
+    @property
+    def metadata(self) -> BufferMetadata:
+        return self._vim_kernel._metadata
 
 
 def normalize_lf_code(text: str) -> str:

@@ -9,15 +9,20 @@ from pytoy.shared.lib.event.domain import Event, EventEmitter
 from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
 from pytoy.shared.ui.contract.buffer import (
+    URI,
+    BufferEvents,
+    BufferID,
+    BufferMetadata,
+    BufferQuery,
+    BufferSource,
+    RangeOperatorProtocol,
+)
+from pytoy.shared.ui.contract.buffer import (
     BufferProtocol as PytoyBufferProtocol,
 )
 from pytoy.shared.ui.contract.buffer import (
     BufferProviderProtocol as PytoyBufferProviderProtocol,
 )
-from pytoy.shared.ui.contract.buffer import (
-    RangeOperatorProtocol,
-)
-from pytoy.shared.ui.contract.buffer.models import URI, BufferEvents, BufferID, BufferQuery, BufferSource
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.contract.window import WindowProtocol as PytoyWindowProtocol
@@ -105,6 +110,7 @@ class PytoyBufferDummy(PytoyBufferProtocol):
         self._events = BufferEvents(on_wiped=self.on_wiped_emitter.event, on_pre_buf=self.on_pre_buf_emitter.event)
         self._range_operator = RangeOperatorDummy(self._lines)
         self._is_file = bool(buffer_source.type == "file")
+        self._metadata = BufferMetadata()
 
     @classmethod
     def get_current(cls) -> PytoyBufferDummy:
@@ -170,12 +176,16 @@ class PytoyBufferDummy(PytoyBufferProtocol):
     def hide(self) -> None:
         pass
 
+    @property
+    def metadata(self) -> BufferMetadata:
+        return self._metadata
+
     def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindowProtocol"]:
         # TODO: this is temporary.
         from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
         from pytoy.shared.ui.pytoy_window.impls.dummy import PytoyWindowDummy
 
-        return [PytoyWindowDummy(winid=id(self), buffer=PytoyBuffer(self))]
+        return [PytoyWindowDummy(winid=id(self), buffer=self)]
 
 
 class PytoyBufferProviderDummy(PytoyBufferProviderProtocol):

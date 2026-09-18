@@ -8,7 +8,7 @@ from pytoy.shared.lib.entity import MortalEntityProtocol
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.lib.events.buffer_events import ScopedBufferEventProvider
-from pytoy.shared.ui.contract.buffer.models import BufferEvents
+from pytoy.shared.ui.contract.buffer import BufferEvents, BufferMetadata
 
 if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 class VimBufferKernel(MortalEntityProtocol):
     def __init__(self, bufnr: int, *, ctx: GlobalVimContext | None = None) -> None:
         self._bufnr = bufnr
+        self._metadata = BufferMetadata()
 
         if ctx is None:
             from pytoy.contexts.vim import GlobalVimContext
@@ -74,3 +75,7 @@ class VimBufferKernel(MortalEntityProtocol):
     def lines(self) -> list[str]:
         buffer = self.buffer
         return buffer[:] if buffer else []
+
+    @property
+    def metadata(self) -> BufferMetadata:
+        return self._metadata

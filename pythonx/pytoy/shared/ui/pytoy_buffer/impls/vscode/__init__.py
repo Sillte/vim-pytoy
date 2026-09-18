@@ -18,7 +18,7 @@ from pytoy.shared.ui.contract.buffer import (
     RangeOperatorProtocol,
 )
 from pytoy.shared.ui.contract.buffer.models import URI as PytoyURI
-from pytoy.shared.ui.contract.buffer.models import BufferEvents, BufferID, BufferQuery, BufferSource
+from pytoy.shared.ui.contract.buffer.models import BufferEvents, BufferID, BufferMetadata, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel, normalize_lf_code
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.range_operator import RangeOperatorVSCode
 from pytoy.shared.ui.utils import to_filepath
@@ -182,6 +182,10 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         res = vim.eval(f"win_findbuf({self.bufnr})")
         winids = [int(wid) for wid in res] if res else []
         return [PytoyWindowVSCode(winid) for winid in winids]
+
+    @property
+    def metadata(self) -> BufferMetadata:
+        return self._kernel.metadata
 
 
 class PytoyBufferProviderVSCode(PytoyBufferProviderProtocol):

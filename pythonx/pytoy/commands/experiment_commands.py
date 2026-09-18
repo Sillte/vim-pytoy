@@ -64,14 +64,14 @@ def gather_git_diffs():
 @app.command("ThreeWordStoryExperiment")
 def three_word_story(user_prompt: Annotated[str | None, Option()] = None):
     from pytoy.tool_execution.execution_environment import EnvironmentManager
-    from pytoy.tools.llm.stories.three_word_story import ThreeWordsStoryControllerOld
+    from pytoy.tools.llm.stories.three_word_story import ThreeWordsStoryController
 
     manager = EnvironmentManager()
     workspace = manager.find_workspace(__file__)
     if workspace is None:
         raise ValueError("Apt folder is not found")
     folder = workspace / "mybag" / "ThreeWordStory"
-    controller = ThreeWordsStoryControllerOld.from_any(folder)
+    controller = ThreeWordsStoryController.from_any(folder)
     if user_prompt is None:
         line_range = PytoyWindow.get_current().selected_line_range
         lines = PytoyBuffer.get_current().get_lines(line_range)

@@ -5,7 +5,14 @@ from typing import TYPE_CHECKING, Protocol, Sequence
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.lib.text import CharacterRange, LineRange
-from pytoy.shared.ui.contract.buffer.models import URI, BufferEvents, BufferID, BufferQuery, BufferSource
+from pytoy.shared.ui.contract.buffer.models import (
+    URI,
+    BufferEvents,
+    BufferID,
+    BufferMetadata,
+    BufferQuery,
+    BufferSource,
+)
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.contract.window import WindowProtocol
@@ -61,6 +68,9 @@ class BufferProtocol(Protocol):
     @property
     def actions(self) -> KeyActionEvents: ...
 
+    @property
+    def metadata(self) -> BufferMetadata: ...
+
 
 class BufferProviderProtocol(Protocol):
     def get_buffers(self, is_normal_type: bool = True) -> Sequence[BufferProtocol]: ...
@@ -100,6 +110,7 @@ __all__ = [
     "BufferProviderProtocol",
     "BufferQuery",
     "BufferSource",
+    "BufferMetadata",
     "PytoyBufferProtocol",
     "PytoyBufferProviderProtocol",
     "RangeOperatorProtocol",

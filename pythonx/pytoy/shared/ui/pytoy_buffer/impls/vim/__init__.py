@@ -9,15 +9,20 @@ from pytoy.shared.lib.entity import EntityRegistry
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.ui.contract.buffer import (
+    URI,
+    BufferEvents,
+    BufferID,
+    BufferMetadata,
+    BufferQuery,
+    BufferSource,
+    RangeOperatorProtocol,
+)
+from pytoy.shared.ui.contract.buffer import (
     BufferProtocol as PytoyBufferProtocol,
 )
 from pytoy.shared.ui.contract.buffer import (
     BufferProviderProtocol as PytoyBufferProviderProtocol,
 )
-from pytoy.shared.ui.contract.buffer import (
-    RangeOperatorProtocol,
-)
-from pytoy.shared.ui.contract.buffer.models import URI, BufferEvents, BufferID, BufferQuery, BufferSource
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.shared.ui.pytoy_buffer.impls.vim.range_operator import RangeOperatorVim
 
@@ -186,6 +191,10 @@ class PytoyBufferVim(PytoyBufferProtocol):
     @property
     def actions(self) -> KeyActionEvents:
         return self._kernel.actions
+
+    @property
+    def metadata(self) -> BufferMetadata:
+        return self._kernel.metadata
 
 
 class PytoyBufferProviderVim(PytoyBufferProviderProtocol):

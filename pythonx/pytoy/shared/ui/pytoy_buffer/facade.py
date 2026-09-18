@@ -4,13 +4,17 @@ from typing import TYPE_CHECKING, Literal, Sequence
 from pytoy.shared.lib.events.action_events import KeyActionEvents
 from pytoy.shared.lib.text import CharacterRange, LineRange
 from pytoy.shared.ui.contract.buffer import (
+    URI,
+    BufferEvents,
     BufferID,
+    BufferMetadata,
+    BufferQuery,
+    BufferSource,
     Event,
     PytoyBufferProtocol,
     PytoyBufferProviderProtocol,
     RangeOperatorProtocol,
 )
-from pytoy.shared.ui.contract.buffer.models import URI, BufferEvents, BufferQuery, BufferSource
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window import PytoyWindow
@@ -141,6 +145,10 @@ class PytoyBuffer:
             return windows[0]
         return None
 
+    @property
+    def metaddata(self) -> BufferMetadata:
+        return self._impl.metadata
+
 
 class PytoyBufferProvider:
     def __init__(self, impl: PytoyBufferProviderProtocol | None = None):
@@ -193,7 +201,7 @@ def make_duo_buffers(
     param = WindowCreationParam.for_split("vertical", try_reuse=True, anchor=None)
     stdout_window = provider.open_window(source1, param)
 
-    param = WindowCreationParam.for_split("horizontal", try_reuse=True, anchor=stdout_window)
+    param = WindowCreationParam.for_split("horizontal", try_reuse=True, anchor=stdout_window.impl)
     stderr_window = provider.open_window(source2, param)
 
     return (stdout_window.buffer, stderr_window.buffer)

@@ -1,10 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Hashable, Literal, Self, Sequence
+from typing import Any, Hashable, Literal, Self, Sequence
 
 from pytoy.shared.lib.event.domain import Event
 
 type BufferID = Hashable
+type BufferKind = str
 
 
 @dataclass
@@ -51,6 +52,14 @@ class BufferSource:
         if isinstance(arg, cls):
             return arg
         raise ValueError("Type is invalid in `BufferSource`")
+
+
+@dataclass
+class BufferMetadata:
+    """Metadata of Buffer"""
+
+    kind: BufferKind | None = None
+    data: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
