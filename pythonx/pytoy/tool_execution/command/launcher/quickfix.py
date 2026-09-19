@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal, assert_never
 
-from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, QuickfixCreator, QuickfixRecordRegex
+from pytoy.shared.ui.pytoy_quickfix import Quickfix, QuickfixCreator, QuickfixRecordRegex
 from pytoy.tool_execution.command.models import (
     CommandExecutionHooks,
     CommandExecutionResult,
@@ -39,7 +39,7 @@ def make_quickfix_hooks(quickfix_profile: QuickfixProfile) -> CommandExecutionHo
     def on_post_process(result: CommandExecutionResult):
         quickfix_source = _decide_quickfix_source(result, quickfix_profile)
         records = quickfix_creator(quickfix_source, result.cwd)
-        PytoyQuickfix().handle_records(records, is_open=False)
+        Quickfix.from_any(records, try_reuse=True, working_directory=result.cwd)
 
     quickfix_hooks = CommandExecutionHooks(on_result=on_post_process)
 

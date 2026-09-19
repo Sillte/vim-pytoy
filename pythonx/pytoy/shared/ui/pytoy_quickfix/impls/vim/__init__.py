@@ -10,7 +10,9 @@ from pytoy.shared.ui.contract.quickfix import (
     PytoyQuickfixUIProtocol,
     QuickfixRecord,
     QuickfixState,
+    QuickfixViewerProtocol,
 )
+from pytoy.shared.ui.pytoy_quickfix.entity import QuickfixEntity
 
 
 class PytoyQuickfixVimUI(PytoyQuickfixUIProtocol):
@@ -168,4 +170,59 @@ class PytoyLocationListVimUI(PytoyQuickfixUIProtocol):
             data["valid"] = False
         # Estimated `cwd`, if `filename` is absolute, it is not necessary.
         cwd = Path(vim.eval(f"getcwd({self.win_id})"))
+        return QuickfixRecord.from_dict(data, cwd)
+
+
+class QuickfixVimViewer(QuickfixViewerProtocol):
+    def __init__(self, entity: QuickfixEntity) -> None:
+        self._entity = entity
+
+    def show(self) -> None:
+        vim.command("copen")
+
+    def close(self) -> None:
+        vim.command("cclose")
+
+    def jump(self, *, with_focus: bool = False) -> QuickfixRecord | None:
+        record = self._entity.current_record
+        if record is None:
+            return None
+
+        self.sync_to_ui()
+        vim.command("cc")
+        return record
+
+    def sync_to_ui(self, only_index: bool = True) -> None:
+        if not only_index:
+            records = self._entity.records
+            rows = [record.to_dict() for record in records]
+            safe_literal = vim.eval(f"string({json.dumps(rows)})")
+            vim.command(f"call setqflist({safe_literal})")
+
+        state = self._entity.state
+        if state.index is not None:
+            vim_index = state.index + 1
+            vim.command(f"call setqflist([], 'r', {{'idx': {vim_index}}})")
+
+    def sync_from_ui(self, only_index: bool = True) -> None:
+        if not only_index:
+            dict_list = vim.eval("getqflist()")
+            records = [self._from_dict_to_record(elem) for elem in dict_list]
+            self._entity.set_records(records)
+            size = len(records)
+        else:
+            size = len(self._entity.records)
+
+        qf_info = vim.eval("getqflist({'idx': 0, 'size': 0})")
+        v_idx = int(qf_info["idx"])  # 1-based
+        index = v_idx - 1 if v_idx > 0 else None
+        state = QuickfixState(index=index, size=size)
+        self._entity.set_state(state)
+
+    def _from_dict_to_record(self, data: dict[str, Any]) -> QuickfixRecord:
+        bufnr = data.get("bufnr", 0)
+        if bufnr == 0:
+            data["valid"] = False
+        data["filename"] = data.get("filename", vim.eval(f"fnamemodify(bufname({bufnr}), ':p')"))
+        cwd = self._entity.working_directory or Path(vim.eval("getcwd()"))
         return QuickfixRecord.from_dict(data, cwd)

@@ -73,6 +73,10 @@ class QuickfixRecord:
     def cursor(self) -> CursorPosition:
         return CursorPosition(self.lnum - 1, self.col - 1)
 
+    @property
+    def file_path(self) -> Path:
+        return Path(self.filename)
+
 
 @dataclass
 class QuickfixState:

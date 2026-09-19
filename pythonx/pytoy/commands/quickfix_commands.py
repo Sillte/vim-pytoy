@@ -7,15 +7,15 @@ app = App()
 
 @app.command("Quickfix")
 def quickfix_command(kind: Annotated[Literal["open", "next", "prev"] | None, Argument()] = None):
-    from pytoy.shared.ui.pytoy_quickfix import PytoyQuickfix, QuickfixPresenter
+    from pytoy.shared.ui.pytoy_quickfix import Quickfix
 
-    quickfix = PytoyQuickfix()
+    quickfix = Quickfix.current()
     if not quickfix.records:
         raise ValueError("No quickfix records.")
 
     match kind:
         case "open":
-            viewer = QuickfixPresenter(quickfix)
+            viewer = quickfix.provide_ui("pytoy")
             viewer.show()
         case "next":
             quickfix.next()

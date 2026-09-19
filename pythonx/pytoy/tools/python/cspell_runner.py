@@ -1,7 +1,6 @@
 from pathlib import Path
 
-from pytoy.shared.ui import PytoyQuickfix
-from pytoy.shared.ui.pytoy_quickfix import to_quickfix_creator
+from pytoy.shared.ui.pytoy_quickfix import Quickfix, to_quickfix_creator
 from pytoy.tools.cspell import CSpellOneFileChecker
 
 
@@ -22,4 +21,4 @@ class CSpellRunner:
         regex = r"(?P<filename>.+):(?P<lnum>\d+):(?P<col>\d+).*\((?P<text>(.+))\)"
         maker = to_quickfix_creator(regex)
         records = maker(output, path.parent)
-        PytoyQuickfix().handle_records(records)
+        Quickfix.from_any(records, try_reuse=True, working_directory=path.parent)

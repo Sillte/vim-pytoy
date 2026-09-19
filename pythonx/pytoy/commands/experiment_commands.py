@@ -120,7 +120,10 @@ def llm_dialog():
 def idea_recent():
     from pytoy_llm.idea import IdeaSpace
 
-    from pytoy.shared.ui.pytoy_quickfix import QuickfixPresenter, QuickfixRecord, get_pytoy_quickfix, handle_records
+    from pytoy.shared.ui.pytoy_quickfix import (
+        Quickfix,
+        QuickfixRecord,
+    )
 
     def get_rececnt_idea_notes(idea_space: IdeaSpace):
         notes = idea_space.get_notes(depth=None)
@@ -136,7 +139,5 @@ def idea_recent():
             raise ValueError()
     notes = get_rececnt_idea_notes(idea_space)
     records = [QuickfixRecord(filename=note.file_path.as_posix(), lnum=1) for note in notes]
-    quick_fix = get_pytoy_quickfix("idea-space-quickfix")
-    handle_records(quick_fix, records)
-    presenter = QuickfixPresenter(quick_fix)
-    presenter.show()
+    quick_fix = Quickfix.from_any(records, kind="idea-space-quickfix", try_reuse=True)
+    quick_fix.provide_ui("pytoy").show()

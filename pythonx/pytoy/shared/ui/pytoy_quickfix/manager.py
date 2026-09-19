@@ -1,76 +1,69 @@
+from pathlib import Path
+from typing import Sequence
+
 from pytoy.shared.lib.event import Event
-from pytoy.shared.ui.pytoy_quickfix.entity import QuickfixEntity
+from pytoy.shared.ui.pytoy_quickfix.entity import QuickfixEntity, QuickfixEntityID, QuickfixEntityQuery
 
 
-class _NO_ENTITY_NAME: ...
+class _NO_ENTITY: ...
 
 
 class QuickfixEntityManager:
     def __init__(self) -> None:
-        self._entities: dict[str | None, QuickfixEntity] = {}
-        self._current_name: str | None | _NO_ENTITY_NAME = _NO_ENTITY_NAME()
+        self._entities: dict[QuickfixEntityID, QuickfixEntity] = {}
+        self._current_id: QuickfixEntityID | _NO_ENTITY = _NO_ENTITY()
 
-    def create(self, name: str | None = "$default", *, owner_end: Event | None = None) -> QuickfixEntity:
-        if name in self._entities:
-            raise ValueError(f"Quickfix already exists: {name!r}")
-        entity = QuickfixEntity(name=name, owner_end=owner_end)
-        return self.register(entity, name=name)
+    def create(
+        self, kind: str = "$default", *, owner_end: Event | None = None, working_directory: Path | None = None
+    ) -> QuickfixEntity:
+        entity = QuickfixEntity(kind=kind, owner_end=owner_end, working_directory=working_directory)
+        return self.register(entity)
 
-    def register(self, entity: QuickfixEntity, *, name: str | None = None) -> QuickfixEntity:
-        name = name or entity.name
+    def register(self, entity: QuickfixEntity) -> QuickfixEntity:
+        if entity.id in self._entities:
+            raise ValueError(f"Quickfix already exists: {entity.id!r}")
 
-        if name in self._entities:
-            raise ValueError(f"Quickfix already exists: {name!r}")
+        def _dispose(_id: QuickfixEntityID) -> None:
+            self._entities.pop(_id, None)
+            if self._current_id == _id:
+                self._current_id = next(iter(self._entities), _NO_ENTITY())
 
-        self._register(entity, name)
-        return entity
-
-    def update(self, name: str | None, *, owner_end: Event | None = None) -> QuickfixEntity:
-        old_entity = self._entities.get(name)
-        if old_entity is None:
-            return self.create(name, owner_end=owner_end)
-
-        self._entities.pop(name)
-        old_entity.dispose()
-        return self._register(QuickfixEntity(name=name, owner_end=owner_end), name)
-
-    def _register(self, entity: QuickfixEntity, name: str | None) -> QuickfixEntity:
-        def _dispose(_name: str | None) -> None:
-            if self._entities.get(name) is not entity:
-                return
-            self._entities.pop(name, None)
-            if self._current_name == name:
-                self._current_name = next(iter(self._entities), _NO_ENTITY_NAME())
-
+        self._entities[entity.id] = entity
         entity.on_end.subscribe(_dispose)
-        self._entities[name] = entity
 
-        if isinstance(self._current_name, _NO_ENTITY_NAME):
-            self._current_name = name
+        if isinstance(self._current_id, _NO_ENTITY):
+            self._current_id = entity.id
 
         return entity
 
-    def get(self, name: str | None = "$default") -> QuickfixEntity | None:
-        return self._entities.get(name)
+    def get(self, id_: QuickfixEntityID) -> QuickfixEntity | None:
+        return self._entities.get(id_)
+
+    def query(self, query: QuickfixEntityQuery | None = None) -> Sequence[QuickfixEntity]:
+        query = query or QuickfixEntityQuery.from_any()
+        entities = tuple(self._entities.values())
+        if query.kind is not None:
+            entities = [elem for elem in entities if elem.kind == query.kind]
+        return entities
 
     @property
     def current(self) -> QuickfixEntity | None:
-        if isinstance(self._current_name, _NO_ENTITY_NAME):
+        if isinstance(self._current_id, _NO_ENTITY):
             return None
-        return self._entities[self._current_name]
+        return self._entities[self._current_id]
 
-    def set_current(self, name: str) -> QuickfixEntity:
-        entity = self._entities.get(name)
+    def set_current(self, id_: QuickfixEntityID) -> QuickfixEntity:
+        entity = self._entities.get(id_)
         if entity is None:
-            raise KeyError(name)
-        self._current_name = name
-        return self._entities[name]
+            raise KeyError(id_)
+        self._current_id = id_
+        return self._entities[id_]
 
-    def remove(self, name: str | None) -> QuickfixEntity | None:
-        entity = self._entities.pop(name, None)
+    def remove(self, id_: QuickfixEntityID) -> QuickfixEntity | None:
+        entity = self._entities.pop(id_, None)
         if entity is None:
             return None
-        if self._current_name == name:
-            self._current_name = next(iter(self._entities), _NO_ENTITY_NAME())
+        if self._current_id == id_:
+            self._current_id = next(iter(self._entities), _NO_ENTITY())
         entity.dispose()
         return entity

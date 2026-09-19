@@ -47,32 +47,26 @@ def test_quickfix_manager_creates_and_tracks_named_quickfixes() -> None:
     default = manager.create()
     named = manager.create("named")
 
-    assert manager.get() is default
-    assert manager.get("named") is named
+    assert manager.get(default.id) is default
+    assert manager.get(named.id) is named
     assert manager.current is default
 
 
-def test_quickfix_manager_changes_and_replaces_current_quickfix() -> None:
+def test_quickfix_manager_changes_and_removes_current_quickfix() -> None:
     manager = QuickfixEntityManager()
     default = manager.create()
     named = manager.create("named")
 
-    assert manager.set_current("named") is named
+    assert manager.set_current(named.id) is named
     assert manager.current is named
 
-    updated = manager.update("named")
-
-    assert updated is not named
-    assert manager.get("named") is updated
-    assert named.on_end is not updated.on_end
-
-    assert manager.remove("named") is updated
+    assert manager.remove(named.id) is named
     assert manager.current is default
 
 
-def test_quickfix_manager_rejects_duplicate_names() -> None:
+def test_quickfix_manager_rejects_duplicate_entity_ids() -> None:
     manager = QuickfixEntityManager()
-    manager.create("named")
+    entity = manager.create("named")
 
     with pytest.raises(ValueError):
-        manager.create("named")
+        manager.register(entity)
