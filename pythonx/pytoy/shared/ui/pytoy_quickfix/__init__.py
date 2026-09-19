@@ -4,6 +4,7 @@ from pytoy.shared.ui.contract.quickfix.models import QuickfixRecord, QuickfixSta
 from pytoy.shared.ui.pytoy_quickfix.facade import (
     Quickfix,
 )
+from pytoy.shared.ui.pytoy_quickfix.models import QuickfixQuery
 from pytoy.shared.ui.pytoy_quickfix.records_creator import (
     QuickfixRecordRegex,
     QuickfixRecordsCreator,
@@ -20,6 +21,7 @@ __all__ = [
     "QuickfixRecordsCreator",
     "QuickfixRecordsCreatorLike",
     "QuickfixRecordsCreatorProtocol",
+    "QuickfixQuery",
     "PytoyQuickfixViewer",
     "QuickfixState",
 ]

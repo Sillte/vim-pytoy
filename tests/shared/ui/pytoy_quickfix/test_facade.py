@@ -7,6 +7,7 @@ from pytoy.shared.ui.pytoy_quickfix import (
     QuickfixRecord,
 )
 from pytoy.shared.ui.pytoy_quickfix.manager import QuickfixEntityManager
+from pytoy.shared.ui.pytoy_quickfix.models import QuickfixQuery
 
 
 def make_records() -> list[QuickfixRecord]:
@@ -53,6 +54,18 @@ def test_quickfix_provides_public_viewer_adapters() -> None:
     assert isinstance(quickfix.provide_ui("backend"), BackendQuickfixViewer)
 
 
+def test_quickfix_get_or_create_reuses_existing_quickfix_in_given_manager() -> None:
+    manager = QuickfixEntityManager()
+    existing = Quickfix.create(kind="named", entity_manager=manager)
+    existing.set_records(make_records())
+
+    quickfix = Quickfix.get_or_create(kind="named", entity_manager=manager)
+
+    assert quickfix.records == existing.records
+    assert manager.current is not None
+    assert manager.current.records == existing.records
+
+
 def test_quickfix_manager_creates_and_tracks_named_quickfixes() -> None:
     manager = QuickfixEntityManager()
 
@@ -62,6 +75,15 @@ def test_quickfix_manager_creates_and_tracks_named_quickfixes() -> None:
     assert manager.get(default.id) is default
     assert manager.get(named.id) is named
     assert manager.current is default
+
+
+def test_quickfix_manager_query_filters_by_kind() -> None:
+    manager = QuickfixEntityManager()
+    errors = manager.create("errors")
+    manager.create("warnings")
+
+    assert manager.query(QuickfixQuery.from_any(kind="errors")) == (errors,)
+    assert manager.query() == tuple(manager.query(QuickfixQuery.from_any()))
 
 
 def test_quickfix_manager_changes_and_removes_current_quickfix() -> None:

@@ -3,7 +3,7 @@ from typing import Self
 
 
 @dataclass(frozen=True)
-class QuickfixEntityQuery:
+class QuickfixQuery:
     kind: str | None = None
 
     @classmethod

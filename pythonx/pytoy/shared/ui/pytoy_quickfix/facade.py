@@ -9,7 +9,7 @@ from pytoy.shared.ui.contract.quickfix import (
 )
 from pytoy.shared.ui.pytoy_quickfix.entity import QuickfixEntity, QuickfixID
 from pytoy.shared.ui.pytoy_quickfix.manager import QuickfixEntityManager
-from pytoy.shared.ui.pytoy_quickfix.models import QuickfixEntityQuery
+from pytoy.shared.ui.pytoy_quickfix.models import QuickfixQuery
 from pytoy.shared.ui.pytoy_quickfix.viewers import QUICKFIX_UI_KIND, BackendQuickfixViewer, PytoyQuickfixViewer
 
 
@@ -17,9 +17,31 @@ class Quickfix:
     def __init__(self, *, entity: QuickfixEntity) -> None:
         self._entity = entity
 
+    @staticmethod
+    def _get_entity_manager(entity_manager: QuickfixEntityManager | None) -> QuickfixEntityManager:
+        return entity_manager or GlobalPytoyContext.get().quickfix_entity_manager
+
+    @classmethod
+    def _from_entity(
+        cls,
+        entity: QuickfixEntity,
+        *,
+        entity_manager: QuickfixEntityManager,
+        current_update: bool,
+    ) -> Self:
+        if current_update:
+            entity_manager.set_current(entity.id)
+        return cls(entity=entity)
+
+    @staticmethod
+    def _find_by_kind(kind: str, entity_manager: QuickfixEntityManager) -> QuickfixEntity | None:
+        if entities := entity_manager.query(QuickfixQuery.from_any(kind=kind)):
+            return entities[0]
+        return None
+
     @classmethod
     def current(cls, *, entity_manager: QuickfixEntityManager | None = None) -> Self:
-        entity_manager = entity_manager or GlobalPytoyContext.get().quickfix_entity_manager
+        entity_manager = cls._get_entity_manager(entity_manager)
         entity = entity_manager.current
         if entity is None:
             raise ValueError("No current Quickfix entity.")
@@ -35,11 +57,48 @@ class Quickfix:
         current_update: bool = True,
         entity_manager: QuickfixEntityManager | None = None,
     ) -> Self:
-        entity_manager = entity_manager or GlobalPytoyContext.get().quickfix_entity_manager
+        entity_manager = cls._get_entity_manager(entity_manager)
         entity = entity_manager.create(kind=kind, owner_end=owner_end, working_directory=working_directory)
-        if current_update:
-            entity_manager.set_current(entity.id)
-        return cls(entity=entity)
+        return cls._from_entity(entity, entity_manager=entity_manager, current_update=current_update)
+
+    @classmethod
+    def get_or_create(
+        cls,
+        *,
+        kind: str = "$default",
+        owner_end: Event | None = None,
+        working_directory: Path | None = None,
+        current_update: bool = True,
+        entity_manager: QuickfixEntityManager | None = None,
+    ) -> Self:
+
+        if quickfix := cls.get_from_kind(
+            kind=kind,
+            current_update=current_update,
+            entity_manager=entity_manager,
+        ):
+            return quickfix
+        return cls.create(
+            kind=kind,
+            owner_end=owner_end,
+            working_directory=working_directory,
+            current_update=current_update,
+            entity_manager=entity_manager,
+        )
+
+    @classmethod
+    def get_from_kind(
+        cls,
+        kind: str,
+        current_update: bool = True,
+        *,
+        entity_manager: QuickfixEntityManager | None = None,
+    ) -> Self | None:
+        entity_manager = cls._get_entity_manager(entity_manager)
+        entity = cls._find_by_kind(kind, entity_manager)
+        if entity is None:
+            return None
+        return cls._from_entity(entity, entity_manager=entity_manager, current_update=current_update)
 
     @classmethod
     def from_any(
@@ -53,20 +112,14 @@ class Quickfix:
         *,
         entity_manager: QuickfixEntityManager | None = None,
     ) -> Self:
-        entity_manager = entity_manager or GlobalPytoyContext.get().quickfix_entity_manager
+        entity_manager = cls._get_entity_manager(entity_manager)
+        entity = None
         if try_reuse:
-            if entities := entity_manager.query(QuickfixEntityQuery.from_any(kind=kind)):
-                entity = entities[0]
-                entity.set_records(records)
-                quickfix = cls(entity=entity)
-                if current_update:
-                    entity_manager.set_current(entity.id)
-                return quickfix
-        entity = entity_manager.create(kind=kind, owner_end=owner_end, working_directory=working_directory)
+            entity = cls._find_by_kind(kind, entity_manager)
+        if entity is None:
+            entity = entity_manager.create(kind=kind, owner_end=owner_end, working_directory=working_directory)
         entity.set_records(records)
-        if current_update:
-            entity_manager.set_current(entity.id)
-        return cls(entity=entity)
+        return cls._from_entity(entity, entity_manager=entity_manager, current_update=current_update)
 
     @property
     def kind(self) -> str:
