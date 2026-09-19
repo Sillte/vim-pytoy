@@ -96,7 +96,9 @@ class QuickfixPresenter:
         current_window = PytoyWindow.get_current()
         q_buffer = self._quickfix_buffer_provider.provide()
         if current_window.buffer.source != q_buffer.source:
-            raise ValueError("Current window does not handle `QuickfixBuffer`.")
+            raise ValueError(
+                f"Current window does not handle `QuickfixBuffer`. `{current_window.buffer.source=}`, `{q_buffer.source=}`"
+            )
         cursor = current_window.cursor
         line = cursor.line
         text = "".join(q_buffer.get_lines(LineRange(line, line + 1)))

@@ -65,6 +65,9 @@ class ThreeWordStoryDriver(LLMSessionDriverProtocol):
         # TODO: We have to condier the special handling of the links based on the `idea_space`
         actions = dict()
 
+        def on_creation(buffer):
+            buffer.metadata.data["idea-space"] = idea_space
+
         def _open_file():
             convention = idea_space.convention
             if convention:
@@ -73,7 +76,7 @@ class ThreeWordStoryDriver(LLMSessionDriverProtocol):
         actions[Keys.ENTER] = lambda buffer: _open_file()
         actions["<leader>m"] = lambda buffer: _open_file()
 
-        return LLMSessionBufferHooks(actions=actions)
+        return LLMSessionBufferHooks(actions=actions, on_creation=on_creation)
 
 
 class ThreeWordsStoryController:

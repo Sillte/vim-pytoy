@@ -16,10 +16,14 @@ type LLMSessionID = str
 
 @dataclass(frozen=True)
 class LLMSessionBufferHooks:
+    on_creation: Callable[[PytoyBuffer], None] | None = None
     on_wiped: Callable[[PytoyBuffer], None] | None = None
     actions: dict[str, Callable[[PytoyBuffer], None]] | None = None
 
     def apply(self, buffer: PytoyBuffer) -> None:
+        if self.on_creation:
+            self.on_creation(buffer)
+
         if self.on_wiped:
             on_wiped = self.on_wiped
             buffer.on_wiped.subscribe(lambda _: on_wiped(buffer))
