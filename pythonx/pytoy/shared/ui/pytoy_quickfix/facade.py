@@ -1,11 +1,93 @@
 import re
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Callable, Self, Sequence
 
+from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
+from pytoy.shared.lib.event import Event
 from pytoy.shared.ui.contract.quickfix import PytoyQuickfixProtocol, QuickfixRecord, QuickfixState
+from pytoy.shared.ui.pytoy_quickfix.entity import QuickfixEntity
+from pytoy.shared.ui.pytoy_quickfix.manager import QuickfixEntityManager
 from pytoy.shared.ui.pytoy_quickfix.service import PytoyQuickfixService
 from pytoy.shared.ui.pytoy_quickfix.state_resolvers import PytoyQuickfixStateResolver
+
+
+class Quickfix:
+    def __init__(self, *, entity: QuickfixEntity) -> None:
+        self._entity = entity
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        name: str | None = "$default",
+        owner_end: Event | None = None,
+        entity_manager: QuickfixEntityManager | None = None,
+    ) -> Self:
+        entity_manager = entity_manager or GlobalPytoyContext.get().quickfix_entity_manager
+        entity = entity_manager.create(name=name, owner_end=owner_end)
+        return cls(entity=entity)
+
+    @classmethod
+    def from_any(
+        cls,
+        records: Sequence[QuickfixRecord],
+        name: str | None = "$default",
+        owner_end: Event | None = None,
+        try_reuse: bool = False,
+        *,
+        entity_manager: QuickfixEntityManager | None = None,
+    ) -> Self:
+        entity_manager = entity_manager or GlobalPytoyContext.get().quickfix_entity_manager
+        if try_reuse:
+            if entity := entity_manager.get(name):
+                entity.set_records(records)
+                quickfix = cls(entity=entity)
+                return quickfix
+        entity = entity_manager.create(name=name, owner_end=owner_end)
+        entity.set_records(records)
+        return cls(entity=entity)
+
+    @property
+    def name(self) -> str | None:
+        return self._entity.name
+
+    def set_records(self, records: Sequence[QuickfixRecord]) -> None:
+        self._entity.set_records(records)
+
+    def clear(self) -> None:
+        self._entity.clear()
+
+    @property
+    def records(self) -> Sequence[QuickfixRecord]:
+        return self._entity.records
+
+    @property
+    def state(self) -> QuickfixState:
+        return self._entity.state
+
+    @property
+    def current_record(self) -> QuickfixRecord | None:
+        return self._entity.current_record
+
+    def jump(self, index: int) -> QuickfixRecord | None:
+        return self._entity.jump(index)
+
+    def move(self, diff_index: int) -> QuickfixRecord | None:
+        return self._entity.move(diff_index)
+
+    def next(self) -> QuickfixRecord | None:
+        return self._entity.next()
+
+    def prev(self) -> QuickfixRecord | None:
+        return self._entity.prev()
+
+    def dispose(self) -> None:
+        self._entity.dispose()
+
+    @property
+    def on_end(self) -> Event[str | None]:
+        return self._entity.on_end
 
 
 class PytoyQuickfix:

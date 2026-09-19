@@ -10,6 +10,7 @@ from pytoy.contexts.vscode import GlobalVSCodeContext
 # Only for lazy loading to speed up.
 if TYPE_CHECKING:
     ...
+    from pytoy.shared.ui.pytoy_quickfix.manager import QuickfixEntityManager
     from pytoy.tool_execution.command.manager import CommandExecutionManager
     from pytoy.tool_execution.llm.manager import LLMExecutionManager
     from pytoy.tool_execution.terminal import TerminalDriverManager
@@ -55,6 +56,12 @@ class GlobalPytoyContext:
         from pytoy.tool_session.llm.manager import LLMSessionManager
 
         return LLMSessionManager()
+
+    @cached_property
+    def quickfix_entity_manager(self) -> QuickfixEntityManager:
+        from pytoy.shared.ui.pytoy_quickfix.manager import QuickfixEntityManager
+
+        return QuickfixEntityManager()
 
     @property
     def vim_context(self) -> GlobalVimContext:
