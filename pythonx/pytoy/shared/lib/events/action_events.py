@@ -21,8 +21,8 @@ class KeyEventManager:
     def register(self, spec: KeymapSpec) -> Event[int | None]:
         return self._impl.register(spec)
 
-    def deregister(self, spec: KeymapSpec):
-        self._impl.deregister(spec)
+    def deregister(self, spec: KeymapSpec, *, owner_disposed: bool = False) -> None:
+        self._impl.deregister(spec, owner_disposed=owner_disposed)
 
     @property
     def specs(self) -> Sequence[KeymapSpec]:
@@ -49,7 +49,7 @@ class KeyActionEvents:
         spec = KeymapSpec(key=key, buffer=self._buffer)
         self._manager.deregister(spec)
 
-    def clear(self) -> None:
+    def clear(self, *, owner_disposed: bool = False) -> None:
         for spec in tuple(self._manager.specs):
             if spec.buffer == self._buffer:
-                self._manager.deregister(spec)
+                self._manager.deregister(spec, owner_disposed=owner_disposed)

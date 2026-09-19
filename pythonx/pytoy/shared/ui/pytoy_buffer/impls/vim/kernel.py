@@ -29,7 +29,7 @@ class VimBufferKernel(MortalEntityProtocol):
         self._key_action_events = KeyActionEvents(bufnr)
         self.on_wipeout = self.on_end
 
-        self.on_wipeout.subscribe(lambda _: self._key_action_events.clear())
+        self.on_wipeout.subscribe(lambda _: self._key_action_events.clear(owner_disposed=True))
 
     @property
     def entity_id(self) -> int:

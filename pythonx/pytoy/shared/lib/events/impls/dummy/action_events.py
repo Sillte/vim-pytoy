@@ -15,7 +15,7 @@ class DummyKeyEventManager:
         self._emitters[spec] = EventEmitter[int]()
         return self._emitters[spec].event
 
-    def deregister(self, spec: KeymapSpec):
+    def deregister(self, spec: KeymapSpec, *, owner_disposed: bool = False) -> None:
         self._emitters.pop(spec, None)
 
     @property

@@ -44,12 +44,13 @@ class VimKeyEventManager:
         self._keymaps[spec] = keymap
         return keymap.event
 
-    def deregister(self, spec: KeymapSpec) -> None:
+    def deregister(self, spec: KeymapSpec, *, owner_disposed: bool = False) -> None:
         keymap = self._keymaps.pop(spec, None)
         if keymap is None:
             return
 
-        self._execute_command(spec, self._make_deregister_command(spec))
+        if not owner_disposed:
+            self._execute_command(spec, self._make_deregister_command(spec))
         FunctionRegistry.deregister(keymap.function)
 
     @property
