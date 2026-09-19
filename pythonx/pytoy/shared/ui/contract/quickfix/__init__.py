@@ -1,40 +1,6 @@
-from typing import Protocol, Sequence
+from typing import Protocol
 
 from pytoy.shared.ui.contract.quickfix.models import QuickfixRecord, QuickfixState
-
-
-class PytoyQuickfixProtocol(Protocol):
-    def set_records(self, records: Sequence[QuickfixRecord]) -> QuickfixState: ...
-
-    def open(self) -> None: ...
-
-    def close(self) -> None: ...
-
-    def jump(self, state: int | QuickfixState | None = None) -> QuickfixRecord | None: ...
-
-    def move(self, diff_index: int) -> QuickfixRecord | None: ...
-
-    @property
-    def records(self) -> Sequence[QuickfixRecord]: ...
-
-    @property
-    def state(self) -> QuickfixState | None: ...
-
-
-class PytoyQuickfixUIProtocol(Protocol):
-    def set_records(self, records: Sequence[QuickfixRecord]) -> QuickfixState: ...
-
-    def open(self) -> None: ...
-
-    def close(self) -> None: ...
-
-    def jump(self, state: QuickfixState) -> QuickfixRecord | None: ...
-
-    @property
-    def records(self) -> Sequence[QuickfixRecord]: ...
-
-    @property
-    def state(self) -> QuickfixState | None: ...
 
 
 class QuickfixViewerProtocol(Protocol):
@@ -50,8 +16,6 @@ class QuickfixViewerProtocol(Protocol):
 
 
 __all__ = [
-    "PytoyQuickfixProtocol",
-    "PytoyQuickfixUIProtocol",
     "QuickfixViewerProtocol",
     "QuickfixRecord",
     "QuickfixState",

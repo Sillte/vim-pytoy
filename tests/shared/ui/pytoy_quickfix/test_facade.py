@@ -1,6 +1,11 @@
 import pytest
 
-from pytoy.shared.ui.pytoy_quickfix import Quickfix, QuickfixRecord
+from pytoy.shared.ui.pytoy_quickfix import (
+    BackendQuickfixViewer,
+    PytoyQuickfixViewer,
+    Quickfix,
+    QuickfixRecord,
+)
 from pytoy.shared.ui.pytoy_quickfix.manager import QuickfixEntityManager
 
 
@@ -39,6 +44,13 @@ def test_quickfix_clear_removes_records_and_selection() -> None:
 
     assert quickfix.records == []
     assert quickfix.current_record is None
+
+
+def test_quickfix_provides_public_viewer_adapters() -> None:
+    quickfix = Quickfix.create(entity_manager=QuickfixEntityManager())
+
+    assert isinstance(quickfix.provide_ui("pytoy"), PytoyQuickfixViewer)
+    assert isinstance(quickfix.provide_ui("backend"), BackendQuickfixViewer)
 
 
 def test_quickfix_manager_creates_and_tracks_named_quickfixes() -> None:

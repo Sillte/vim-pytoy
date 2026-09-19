@@ -1,7 +1,8 @@
 import re
 from pathlib import Path
-from typing import Final, Self
+from typing import Final, Literal, Self
 
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.lib.text import CursorPosition, LineRange
 from pytoy.shared.ui.contract.quickfix import QuickfixRecord, QuickfixViewerProtocol
 from pytoy.shared.ui.pytoy_buffer import (
@@ -13,6 +14,8 @@ from pytoy.shared.ui.pytoy_buffer import (
 from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider, WindowCreationParam
 
 from .entity import QuickfixEntity
+
+type QUICKFIX_UI_KIND = Literal["pytoy", "backend"]
 
 
 class _LineCodec:
@@ -147,3 +150,59 @@ class PytoyQuickfixViewer(QuickfixViewerProtocol):
         if with_focus:
             window.focus()
         return record
+
+
+def _create_backend_viewer(entity: QuickfixEntity) -> QuickfixViewerProtocol:
+    backend = get_backend_enum()
+
+    def make_vim():
+        from pytoy.shared.ui.pytoy_quickfix.impls.vim import QuickfixVimViewer
+
+        return QuickfixVimViewer(entity=entity)
+
+    def make_vscode():
+        from pytoy.shared.ui.pytoy_quickfix.impls.vscode import QuickfixVSCodeViewer
+
+        return QuickfixVSCodeViewer(entity=entity)
+
+    def make_dummy():
+        from pytoy.shared.ui.pytoy_quickfix.impls.dummy import QuickfixDummyViewer
+
+        return QuickfixDummyViewer(entity=entity)
+
+    creators = {
+        BackendEnum.VSCODE: make_vscode,
+        BackendEnum.DUMMY: make_dummy,
+        BackendEnum.VIM: make_vim,
+        BackendEnum.NVIM: make_vim,
+    }
+    return creators[backend]()
+
+
+class BackendQuickfixViewer:
+    def __init__(self, entity: QuickfixEntity, *, impl: QuickfixViewerProtocol) -> None:
+        self._entity = entity
+        self._impl = impl
+
+    @classmethod
+    def create(
+        cls,
+        entity: QuickfixEntity,
+    ) -> Self:
+        impl = _create_backend_viewer(entity)
+        return cls(entity=entity, impl=impl)
+
+    def show(self) -> None:
+        self._impl.show()
+
+    def close(self) -> None:
+        self._impl.close()
+
+    def sync_to_ui(self, only_index: bool = True) -> None:
+        self._impl.sync_to_ui(only_index=only_index)
+
+    def sync_from_ui(self, only_index: bool = True) -> None:
+        self._impl.sync_from_ui(only_index=only_index)
+
+    def jump(self, *, with_focus: bool = False) -> QuickfixRecord | None:
+        return self._impl.jump(with_focus=with_focus)

@@ -1,22 +1,11 @@
 import uuid
 from collections.abc import Sequence
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Self
 
 from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.shared.ui.contract.quickfix import QuickfixRecord, QuickfixState
 
-type QuickfixEntityID = str
-
-
-@dataclass(frozen=True)
-class QuickfixEntityQuery:
-    kind: str | None = None
-
-    @classmethod
-    def from_any(cls, kind: str | None = None) -> Self:
-        return cls(kind=kind)
+from .models import QuickfixID
 
 
 class QuickfixEntity:
@@ -33,7 +22,7 @@ class QuickfixEntity:
         self._disposed = False
 
     @property
-    def id(self) -> QuickfixEntityID:
+    def id(self) -> QuickfixID:
         return self._id
 
     @property
@@ -106,7 +95,7 @@ class QuickfixEntity:
         return self._working_directory
 
     @property
-    def on_end(self) -> Event[QuickfixEntityID]:
+    def on_end(self) -> Event[QuickfixID]:
         return self._on_end_emitter.event
 
     def _check_alive(self) -> None:

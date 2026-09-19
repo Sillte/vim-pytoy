@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal, assert_never
 
-from pytoy.shared.ui.pytoy_quickfix import Quickfix, QuickfixCreator, QuickfixRecordRegex
+from pytoy.shared.ui.pytoy_quickfix import Quickfix, QuickfixRecordsCreatorLike
 from pytoy.tool_execution.command.models import (
     CommandExecutionHooks,
     CommandExecutionResult,
@@ -10,7 +10,7 @@ from pytoy.tool_execution.command.models import (
 
 @dataclass(frozen=True)
 class QuickfixProfile:
-    quickfix_creator: QuickfixCreator | QuickfixRecordRegex
+    quickfix_creator: QuickfixRecordsCreatorLike
     quickfix_source: Literal["stdout", "stderr", "both", "auto"] = "auto"
 
     @property
@@ -19,9 +19,9 @@ class QuickfixProfile:
 
 
 def make_quickfix_hooks(quickfix_profile: QuickfixProfile) -> CommandExecutionHooks:
-    from pytoy.shared.ui.pytoy_quickfix import to_quickfix_creator
+    from pytoy.shared.ui.pytoy_quickfix import QuickfixRecordsCreator
 
-    quickfix_creator = to_quickfix_creator(quickfix_profile.quickfix_creator)
+    records_creator = QuickfixRecordsCreator.from_any(quickfix_profile.quickfix_creator)
 
     def _decide_quickfix_source(result: CommandExecutionResult, quickfix_profile: QuickfixProfile):
         match quickfix_profile.quickfix_source:
@@ -38,7 +38,7 @@ def make_quickfix_hooks(quickfix_profile: QuickfixProfile) -> CommandExecutionHo
 
     def on_post_process(result: CommandExecutionResult):
         quickfix_source = _decide_quickfix_source(result, quickfix_profile)
-        records = quickfix_creator(quickfix_source, result.cwd)
+        records = records_creator.create(quickfix_source, result.cwd)
         Quickfix.from_any(records, try_reuse=True, working_directory=result.cwd)
 
     quickfix_hooks = CommandExecutionHooks(on_result=on_post_process)
