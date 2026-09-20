@@ -41,6 +41,16 @@ style, completion, and other editing rules.
 Information is passed across the boundary through the smallest representation
 required by the receiving layer.
 
+The package public API is exposed from `scoped_edit.__init__`. Consumers use
+`ScopedEditAction`, `DefaultScopedEditTaskMaker`, and the scoped-edit contract
+types through that package API rather than importing implementation modules.
+
+When execution fails, the action removes only the reconstruction markers.
+The selected document content is preserved for user inspection or retry.
+
+LLM output that contains an incomplete, reversed, or nested marker pair is
+rejected before it can replace the scoped document content.
+
 ## Design Decisions
 
 ### Keep the operational contract separate from the LLM contract

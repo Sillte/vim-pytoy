@@ -1,8 +1,3 @@
-import json
-from typing import Any, Mapping
-
-import vim
-
 from pytoy.shared.ui.notifications.models import LEVEL, NotificationParam
 from pytoy.shared.ui.notifications.protocol import EphemeralNotificationProtocol
 

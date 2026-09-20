@@ -34,46 +34,6 @@ class LanguageRuleSet(BaseModel, frozen=True):
         return cls(rules=[])
 
 
-class ConceptCoherenceRuleSet(BaseModel, frozen=True):
-    """Rules ensuring conceptual and logical coherence of document content,
-    excluding formatting or style concerns."""
-
-    consistent_terms: bool = True
-    paragraph_flow: bool = True
-    avoid_conflicts: bool = False
-    cross_check: bool = False
-
-    rules: Sequence[str]
-
-    @classmethod
-    def from_flags(
-        cls,
-        consistent_terms: bool = True,
-        paragraph_flow: bool = True,
-        avoid_conflicts: bool = False,
-        cross_check: bool = False,
-    ) -> Self:
-        """Generate a ContentCoherenceRuleSet with specific checks enabled."""
-
-        rules = []
-        if consistent_terms:
-            rules.append("Use consistent terminology for the same concepts throughout the document.")
-        if paragraph_flow:
-            rules.append("Ensure logical coherence between sentences and paragraphs.")
-        if avoid_conflicts:
-            rules.append("Avoid contradictions in information across different sections.")
-        if cross_check:
-            rules.append("Cross-check related statements to ensure consistency of facts and numbers.")
-
-        return cls(
-            consistent_terms=consistent_terms,
-            paragraph_flow=paragraph_flow,
-            avoid_conflicts=avoid_conflicts,
-            cross_check=cross_check,
-            rules=rules,
-        )
-
-
 type CompletionMode = Literal["conservative", "clarifying", "expansive"]
 
 

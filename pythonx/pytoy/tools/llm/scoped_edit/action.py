@@ -93,10 +93,15 @@ class ScopedReconstructionContract:
             if line.find(self.query_end.strip()) == 0:
                 e_index = i
                 break
-        if s_index is not None and e_index is not None and s_index < e_index:
-            output_in_concern = "\n".join(lines[s_index + 1 : e_index])
-        else:
-            output_in_concern = content
+        contains_markers = self.query_start in content or self.query_end in content
+        if not contains_markers:
+            return content
+        if s_index is None or e_index is None or s_index >= e_index:
+            raise ValueError("LLM output contains an incomplete or invalid scoped edit marker pair.")
+
+        output_in_concern = "\n".join(lines[s_index + 1 : e_index])
+        if self.query_start in output_in_concern or self.query_end in output_in_concern:
+            raise ValueError("LLM output contains scoped edit markers inside the reconstructed content.")
         return output_in_concern
 
     @property
@@ -110,8 +115,16 @@ class ScopedReconstructionContract:
 
 class ScopedEditAction:
     def __init__(
-        self, buffer: PytoyBuffer, character_range: CharacterRange, task_maker: ScopedEditTaskMakerProtocol
+        self,
+        task_maker: ScopedEditTaskMakerProtocol,
+        buffer: PytoyBuffer,
+        character_range: CharacterRange | None = None,
     ) -> None:
+        if character_range is None:
+            if window := buffer.window:
+                character_range = window.selection
+            else:
+                raise ValueError(f"Buffer does not have `Selection`. {buffer=}")
         self._buffer = buffer
         self._character_range = character_range
         self._task_maker = task_maker
@@ -134,28 +147,34 @@ class ScopedEditAction:
         if buffer.window is None:
             raise ValueError("Cannot execute because Selection cannot be obtained.")
         self.scoped_edit_contract.insert_markers(buffer, self._character_range)
+        try:
+            document = buffer.content
+            llm_contract = self.scoped_edit_contract.llm_contract
+            task_spec = self._task_maker.make_task(document, contract=llm_contract)
 
-        document = buffer.content
-        llm_contract = self.scoped_edit_contract.llm_contract
-        task_spec = self._task_maker.make_task(document, contract=llm_contract)
+            logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
+            logger.info("Preparation of `ScopeEdit`.")
 
-        logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
-        logger.info("Preparation of `ScopeEdit`.")
-
-        kind = "ScopedEditor"
-        llm_request = LLMExecutionRequest(task_spec=task_spec, input=document, logger=logger, kind=kind)
-        executor = LLMExecutor()
-        if not executor.can_execute(kind=kind):
-            raise RuntimeError("Already another request is executing for ScopedEditor.")
-        hooks = LLMExecutionHooks.from_any(
-            on_output=lambda output: self._apply_output(buffer, output),
-            on_exception=lambda exc: self._handle_error(buffer, exc),
-        )
-        executor.execute(llm_request, hooks=hooks)
+            kind = "ScopedEditor"
+            llm_request = LLMExecutionRequest(task_spec=task_spec, input=document, logger=logger, kind=kind)
+            executor = LLMExecutor()
+            if not executor.can_execute(kind=kind):
+                raise RuntimeError("Already another request is executing for ScopedEditor.")
+            hooks = LLMExecutionHooks.from_any(
+                on_output=lambda output: self._apply_output(buffer, output),
+                on_exception=lambda exc: self._handle_error(buffer, exc),
+            )
+            executor.execute(llm_request, hooks=hooks)
+        except Exception as exception:
+            self._handle_error(buffer, exception)
+            raise
 
     def _apply_output(self, buffer: PytoyBuffer, output: str) -> None:
-        output_str = str(output)
-        self.scoped_edit_contract.override_target(buffer, output_str)
+        try:
+            output_str = str(output)
+            self.scoped_edit_contract.override_target(buffer, output_str)
+        except ValueError as exception:
+            self._handle_error(buffer, exception)
 
     def _handle_error(self, buffer: PytoyBuffer, exception: Exception) -> None:
         self.scoped_edit_contract.revert_markers(buffer)
