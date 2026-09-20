@@ -2,7 +2,7 @@ from typing import Literal, Self, Sequence, assert_never
 
 from pydantic import BaseModel
 
-from pytoy.tools.llm.document.core import LanguageKind
+type LanguageKind = Literal["python", "english", "japanese"]
 
 
 class LanguageRuleSet(BaseModel, frozen=True):

@@ -1,17 +1,6 @@
 import logging
-import re
 import uuid
-from typing import Sequence
-
-from pytoy_llm.composer import InvocationComposer, OutputSpec, SystemPromptSpec
-from pytoy_llm.models import LLMMessage
-from pytoy_llm.task.models import (
-    FunctionInvocationSpec,
-    InvocationSpecMeta,
-    LLMInvocationSpec,
-    TaskSpec,
-    TaskSpecMeta,
-)
+from typing import Self, Sequence
 
 from pytoy.shared.lib.text import CharacterRange
 from pytoy.shared.pytoy_configuration import PytoyConfiguration
@@ -19,40 +8,8 @@ from pytoy.shared.timertask.thread_execution import add_log_message
 from pytoy.shared.ui.notifications import EphemeralNotification
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.tool_execution.llm import LLMExecutionHooks, LLMExecutionRequest, LLMExecutor
-from pytoy.tools.llm.document.analyzers import LanguageKind
-from pytoy.tools.llm.document.editors.edit_rules import CompletionRuleSet, LanguageRuleSet, StyleRuleSet
-
-
-def select_language_kind(document: str) -> LanguageKind:
-    ...
-    if not document.strip():
-        return "english"
-
-    # --- 1. Python detection ---
-    python_patterns = [
-        r"\bdef\b",
-        r"\bclass\b",
-        r"\bimport\b",
-        r"\bfrom\b",
-        r"\breturn\b",
-        r"if __name__",
-        r":\s*$",
-        r"```",
-    ]
-
-    python_hits = sum(bool(re.search(p, document, re.MULTILINE)) for p in python_patterns)
-    if python_hits >= 2:
-        return "python"
-
-    # --- 2. Japanese detection ---
-    japanese_chars = re.findall(r"[\u3040-\u30FF\u4E00-\u9FFF]", document)
-    ratio = len(japanese_chars) / max(len(document), 1)
-
-    if ratio > 0.15:
-        return "japanese"
-
-    # --- 3. Default to English ---
-    return "english"
+from pytoy.tools.llm.scoped_edit.contract import ScopedEditLLMContract, ScopedEditTaskMakerProtocol
+from pytoy.tools.llm.scoped_edit.task_specs.default_spec import DefaultScopedEditTaskMaker
 
 
 class ScopedReconstructionContract:
@@ -93,6 +50,10 @@ class ScopedReconstructionContract:
             "- The directive line MUST be completely removed before reconstruction begins.",
         ]
 
+    @property
+    def llm_contract(self) -> ScopedEditLLMContract:
+        return ScopedEditLLMContract(rules=self.rules, override_rules=self.override_directive_rules)
+
     def insert_markers(self, buffer: PytoyBuffer, selection: CharacterRange) -> None:
         text = buffer.get_text(selection)
         new_text = f"{self.query_start}\n{text}\n{self.query_end}"
@@ -115,7 +76,7 @@ class ScopedReconstructionContract:
         end_range = buffer.range_operator.find_first(self.query_end)
 
         if not start_range or not end_range:
-            EphemeralNotification().notify("Request is gone, so no operations.")
+            EphemeralNotification().notify("Request is gone, so no operations from `ScopedEdit`.")
             return
         cr = CharacterRange(start_range.start, end_range.end)
         buffer.range_operator.replace_text(cr, content)
@@ -147,80 +108,37 @@ class ScopedReconstructionContract:
         return self._query_end
 
 
-def make_scoped_edit_spec(
-    document: str,
-    scoped_edit_contract: ScopedReconstructionContract,
-) -> LLMInvocationSpec:
-    """Based on the `DocumentAnalysis`. provide the edit."""
+class ScopedEditAction:
+    def __init__(
+        self, buffer: PytoyBuffer, character_range: CharacterRange, task_maker: ScopedEditTaskMakerProtocol
+    ) -> None:
+        self._buffer = buffer
+        self._character_range = character_range
+        self._task_maker = task_maker
 
-    name = "Edit or generation of the part of document inside markers"
-    output_description = "A part of the document, focusing on the specified scope between markers."
-
-    def create_message(language_kind: LanguageKind) -> LLMMessage:
-        language = language_kind
-        guidance_role = "An expert writer and editor"
-        intent = "Recontruction of the part of the document while preserving intent, structure, and coherence."
-        language_ruleset = LanguageRuleSet.from_document_kind(language)
-        style_ruleset = StyleRuleSet.from_language_and_uniformity_mode(language, "structure")
-        completion_ruleset = CompletionRuleSet.from_completion_mode(completion_mode="conservative")
-
-        rules = [
-            *language_ruleset.rules,
-            *scoped_edit_contract.rules,
-            *style_ruleset.rules,
-            *completion_ruleset.rules,
-            *scoped_edit_contract.override_directive_rules,
-        ]
-
-        system_prompt = SystemPromptSpec.from_any(
-            name=name,
-            output_spec=OutputSpec(output_type=str, description=output_description),
-            intent=intent,
-            rules=rules,
-            guidance_role=guidance_role,
-        )
-        composer = InvocationComposer(system_prompt)
-        supplementary_sections = None
-        return composer.compose_message(user_prompt=document, supplementary_sections=supplementary_sections)
-
-    return LLMInvocationSpec.from_any(
-        create_messages=create_message,
-        output_type=str,
-        meta=InvocationSpecMeta(name=name, intent="Scoped edit of the document."),
-    )
-
-
-class ScopedEditDocumentRequester:
-    def __init__(self, pytoy_buffer: PytoyBuffer):
         self._id = uuid.uuid4().hex[:8]
         self.scoped_edit_contract = ScopedReconstructionContract.from_id(self._id)
-        self.pytoy_buffer = pytoy_buffer
 
-    @property
-    def query_start(self) -> str:
-        return self.scoped_edit_contract.query_start
+    @classmethod
+    def from_default(cls, buffer: PytoyBuffer | None = None) -> Self:
+        buffer = buffer or PytoyBuffer.get_current()
+        if window := buffer.window:
+            character_range = window.selection
+        else:
+            raise ValueError(f"Buffer does not have `Selection`. {buffer=}")
+        task_maker = DefaultScopedEditTaskMaker()
+        return cls(buffer=buffer, character_range=character_range, task_maker=task_maker)
 
-    @property
-    def query_end(self) -> str:
-        return self.scoped_edit_contract.query_end
-
-    def _apply_output(self, buffer: PytoyBuffer, output: str) -> None:
-        output_str = str(output)
-        self.scoped_edit_contract.override_target(buffer, output_str)
-
-    def _handle_error(self, buffer: PytoyBuffer, exception: Exception) -> None:
-        self.scoped_edit_contract.revert_markers(buffer)
-        add_log_message(str(exception))
-        EphemeralNotification().notify("LLM Error. See `:messages`.")
-
-    def execute_request(self) -> None:
-        buffer = self.pytoy_buffer
+    def execute(self) -> None:
+        buffer = self._buffer
         if buffer.window is None:
             raise ValueError("Cannot execute because Selection cannot be obtained.")
-        self.scoped_edit_contract.insert_markers(buffer, buffer.window.selection)
+        self.scoped_edit_contract.insert_markers(buffer, self._character_range)
 
         document = buffer.content
-        task_spec = self._make_task_spec(document)
+        llm_contract = self.scoped_edit_contract.llm_contract
+        task_spec = self._task_maker.make_task(document, contract=llm_contract)
+
         logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
         logger.info("Preparation of `ScopeEdit`.")
 
@@ -235,9 +153,11 @@ class ScopedEditDocumentRequester:
         )
         executor.execute(llm_request, hooks=hooks)
 
-    def _make_task_spec(self, document: str) -> TaskSpec:
-        select_language_spec = FunctionInvocationSpec.from_any(select_language_kind)
-        edit_spec = make_scoped_edit_spec(document, self.scoped_edit_contract)
-        meta = TaskSpecMeta(name="ScopedEditDocument")
-        task_spec = TaskSpec.from_specs(invocation_specs=[select_language_spec, edit_spec], meta=meta)
-        return task_spec
+    def _apply_output(self, buffer: PytoyBuffer, output: str) -> None:
+        output_str = str(output)
+        self.scoped_edit_contract.override_target(buffer, output_str)
+
+    def _handle_error(self, buffer: PytoyBuffer, exception: Exception) -> None:
+        self.scoped_edit_contract.revert_markers(buffer)
+        add_log_message(str(exception))
+        EphemeralNotification().notify("LLM Error at `ScopedEdit`. See `:messages`.")

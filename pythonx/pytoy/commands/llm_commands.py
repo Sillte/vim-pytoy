@@ -1,50 +1,32 @@
-from typing import TYPE_CHECKING, Annotated, ClassVar, Literal, assert_never
+from typing import Annotated, Literal, assert_never
 
 from pytoy.shared.command import App, Argument
-from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_window import PytoyWindow, WindowCreationParam
-
-if TYPE_CHECKING:
-    from pytoy.tools.llm.document.voyages.presentation import DocumentVoyageUI
-
 
 app = App()
 
 
 @app.command("PytoyLLM")
-def pytoy_llm(kind: Annotated[Literal["config", "review", "edit"] | None, Argument()] = None):
+def pytoy_llm(kind: Annotated[Literal["config", "edit"] | None, Argument()] = None):
     from pytoy_llm import get_configuration_path
 
-    from pytoy.tools.llm.document.editors.scoped_editors import ScopedEditDocumentRequester
-    from pytoy.tools.llm.document.reviewers.naive_reviewers import NaiveReviewDocumentRequester
-
-    # If you would like to use ...
-    # if ctx is None:
-    #    ctx = GlobalPytoyContext.get()
+    from pytoy.tools.llm.scoped_edit.action import ScopedEditAction
 
     def _open_config():
         path = get_configuration_path()
         param = WindowCreationParam.for_split("vertical", try_reuse=True)
         PytoyWindow.open(path, param=param)
 
-    def _make_review():
-        current_window = PytoyWindow.get_current()
-        review_doc = NaiveReviewDocumentRequester(current_window.buffer)
-        review_doc.make_execution()
-
     def _edit_scope():
         current_window = PytoyWindow.get_current()
         current_buffer = current_window.buffer
 
         # Edit operation.
-        requester = ScopedEditDocumentRequester(current_buffer)
-        requester.execute_request()
+        ScopedEditAction.from_default(current_buffer).execute()
 
     match kind:
         case "config":
             _open_config()
-        case "review":
-            _make_review()
         case "edit":
             _edit_scope()
         case None:
@@ -53,85 +35,10 @@ def pytoy_llm(kind: Annotated[Literal["config", "review", "edit"] | None, Argume
             assert_never(kind)
 
 
-class PytoyVoyageDocument:
-    _voyage_ui: ClassVar["None | DocumentVoyageUI"] = None  # noqa
-
-    @classmethod
-    def has_ui(cls) -> bool:
-        return cls._voyage_ui is not None
-
-    @classmethod
-    def _ensure_ui(cls) -> "DocumentVoyageUI":
-        if not cls._voyage_ui:
-            cls.reset()
-        if cls._voyage_ui is None:
-            raise ValueError("DocumentVoyageUI cannot be obtained.")
-        return cls._voyage_ui
-
-    @classmethod
-    def open_config(cls):
-        from pytoy_llm import get_configuration_path
-
-        path = get_configuration_path()
-        param = WindowCreationParam.for_split("vertical", try_reuse=True)
-        PytoyWindow.open(path, param=param)
-
-    @classmethod
-    def get_manuscript_buffer(cls) -> "PytoyBuffer | None":
-        if not cls._voyage_ui:
-            return None
-        return cls._voyage_ui.pytoy_buffer
-
-    @classmethod
-    def reset(cls):
-        from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
-        from pytoy.tools.llm.document.voyages.presentation import DocumentVoyageUI
-
-        buffer = PytoyBuffer.get_current()
-        if not buffer.is_file:
-            raise ValueError("`manuscript buffer must be `FILE`.`")
-        cls._voyage_ui = DocumentVoyageUI(buffer)
-        return cls._voyage_ui
-
-    @classmethod
-    def evolve(cls):
-        voyage_ui = cls._ensure_ui()
-        voyage_ui.evolve()
-
-    @classmethod
-    def reflect(cls):
-        voyage_ui = cls._ensure_ui()
-        voyage_ui.reflect()
-
-    @classmethod
-    def check_state(cls):
-        if not cls._voyage_ui:
-            raise ValueError("No `VoyageUI` yet.")
-
-        voyage_ui = cls._ensure_ui()
-        voyage_ui.check_state()
-
-
-@app.command("PytoyVoyage")
-def pytoy_voyage(
-    kind: Annotated[Literal["config", "evolve", "reflect", "reset", "check-state"] | None, Argument()] = None,
-):
-    match kind:
-        case "config":
-            PytoyVoyageDocument.open_config()
-        case "evolve":
-            PytoyVoyageDocument.evolve()
-        case "reflect":
-            PytoyVoyageDocument.reflect()
-        case "reset":
-            PytoyVoyageDocument.reset()
-        case "check-state":
-            PytoyVoyageDocument.check_state()
-        case None:
-            if not PytoyVoyageDocument.has_ui():
-                if PytoyBuffer.get_current().is_file:
-                    return PytoyVoyageDocument.evolve()
-            else:
-                return PytoyVoyageDocument.reflect()
-        case _:
-            assert_never(kind)
+# Comment
+# This package provides Pytoy LLM integration.
+# It supports configuration management and scoped document editing.
+# The package exposes commands for opening the configuration and editing
+# the current document scope.
+# ....
+# ....

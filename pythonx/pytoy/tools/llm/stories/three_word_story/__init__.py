@@ -47,8 +47,10 @@ class ThreeWordStoryDriver(LLMSessionDriverProtocol):
 
     def on_start(self, user_prompt: str, llm_buffer_provider: LLMSessionBufferProvider):
         buffer = llm_buffer_provider.provide()
-        buffer.append("--" * 10)
-        buffer.append(user_prompt)
+        lines = user_prompt.splitlines()
+        length = max((len(elem) for elem in lines), default=5)
+        lines = ["-" * length, *lines, "-" * length]
+        buffer.append("\n".join(lines))
 
     def on_exit(self, exit_entity: LLMExecutionExit, llm_buffer_provider: LLMSessionBufferProvider) -> None:
         buffer = llm_buffer_provider.provide()
@@ -104,48 +106,3 @@ class ThreeWordsStoryController:
 
     def make_progress(self, user_prompt: str):
         self.idea_space_llm_handler.make_progress(user_prompt)
-
-
-class ThreeWordsStoryControllerOld:
-    kind = "ThreeWordStory"
-
-    def __init__(self, studio: ThreeWordStoryStudio) -> None:
-        self._studio = studio
-        self._source = BufferSource.from_no_file("__llm_dialog__")
-
-    @property
-    def studio(self) -> ThreeWordStoryStudio:
-        return self._studio
-
-    @property
-    def idea_space(self) -> IdeaSpace:
-        return self._studio.idea_space
-
-    @classmethod
-    def from_any(cls, space_path: Path | str) -> Self:
-        idea_space = IdeaSpace.from_path(space_path)
-        studio = ThreeWordStoryStudio.from_any(idea_space.folder_path)
-        return cls(studio=studio)
-
-    def make_progress(self, user_prompt: str):
-        task_spec = self.studio.make_task_spec(usage_limit=None)
-        request = LLMExecutionRequest.from_any(task_spec=task_spec, input=user_prompt, kind=self.kind)
-        llm_handler = LLMExecutionHandler.create(request)
-        hooks = LLMExecutionHooks(on_result=self.on_result, on_exception=self.on_exception)
-        self.on_start(user_prompt)
-        llm_handler.start(hooks=hooks)
-
-    def on_start(self, user_prompt: str):
-        buffer = make_buffer(self._source)
-        buffer.append("--" * 10)
-        buffer.append(user_prompt)
-
-    def on_result(self, result: LLMExecutionResult):
-        buffer = make_buffer(self._source)
-        buffer.append(result.output)
-        buffer.show()
-
-    def on_exception(self, exception: Exception):
-        buffer = make_buffer(self._source)
-        buffer.append(str(exception))
-        buffer.show()
