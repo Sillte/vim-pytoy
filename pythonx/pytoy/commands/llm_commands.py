@@ -62,3 +62,25 @@ def llm_dialog():
         param = WindowCreationParam.for_in_place(try_reuse=True, anchor=current_window.impl)
     window = PytoyWindowProvider().open_window(buffer_source, param)
     window.focus()
+
+
+@app.command("IdeaLLMChatExperiment")
+def idea_llm_chat():
+    from pytoy.tool_execution.execution_environment import EnvironmentManager
+    from pytoy.tools.llm.idea_chat import IdeaChatHandler
+
+    manager = EnvironmentManager()
+    workspace = manager.find_workspace(__file__)
+    if workspace is None:
+        raise ValueError("Apt folder is not found")
+    folder = workspace / "mybag" / "IdeaLLMDialog"
+    IdeaChatHandler.from_any(folder)
+    llm_dialog()
+    # buffer = handler.provide_buffer()
+    # buffer.show()
+
+    # current_window = PytoyWindow.get_current()
+    # line_range = current_window.selected_line_range
+    # lines = current_window.buffer.get_current().get_lines(line_range)
+    # user_prompt = "\n".join(lines)
+    # handler.make_progress(user_prompt)
