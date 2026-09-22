@@ -27,8 +27,18 @@ class LLMSessionManager:
                 sessions = [session for session in sessions if session.kind == query.kind]
             if query.buffer_source is not None:
                 sessions = [session for session in sessions if session.buffer_source == query.buffer_source]
+            if query.metadata is not None:
+                sessions = [
+                    session
+                    for session in sessions
+                    if all(session.metadata.get(key) == value for key, value in query.metadata.items())
+                ]
             return sessions
 
     def get(self, id_: LLMSessionID) -> LLMSession | None:
         with self._lock:
             return self._sessions.get(id_)
+
+    def remove(self, id_: LLMSessionID) -> LLMSession | None:
+        with self._lock:
+            return self._sessions.pop(id_, None)

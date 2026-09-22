@@ -1,5 +1,7 @@
+from dataclasses import replace
 from typing import Self, Sequence
 
+from pytoy_llm.activity_sinks import LoggerActivitySink
 from pytoy_llm.task.models import TaskRequest
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
@@ -10,6 +12,7 @@ from .models import (
     LLMSession,
     LLMSessionBufferProvider,
     LLMSessionID,
+    LLMSessionMetadata,
     LLMSessionQuery,
     LLMSessionRequest,
 )
@@ -37,6 +40,10 @@ class LLMSessionHandler:
     def buffer_provider(self) -> LLMSessionBufferProvider:
         return self._require_session().buffer_provider
 
+    @property
+    def metadata(self) -> LLMSessionMetadata:
+        return self._require_session().metadata
+
     def make_progress(self, user_prompt: str) -> None:
         session = self._require_session()
         session.driver.make_progress(
@@ -47,8 +54,21 @@ class LLMSessionHandler:
 
     def make_execution_handler(self, task_request: TaskRequest) -> LLMExecutionHandler:
         session = self._require_session()
+        if task_request.activity_sink is None:
+            task_request = replace(
+                task_request,
+                activity_sink=LoggerActivitySink(session.logger),
+            )
         task_execution_handler = session.task_session_handler.create_task(task_request)
-        return LLMExecutionHandler.create_from_task_handler(task_execution_handler, kind=session.kind)
+        return LLMExecutionHandler.create_from_task_handler(
+            task_execution_handler, kind=session.kind, logger=session.logger
+        )
+
+    def terminate(self) -> None:
+        session = self._manager.remove(self._id)
+        if session is None:
+            return
+        session.terminate()
 
     def _require_session(self) -> LLMSession:
         session = self._manager.get(self._id)

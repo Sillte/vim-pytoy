@@ -1,7 +1,7 @@
-from typing import Literal, Sequence, assert_never
+from typing import Sequence, assert_never
 
 from pytoy_llm.models import LLMMessage, LLMMessagesLike
-from pytoy_llm.models.parts import Part, Role, TextPart
+from pytoy_llm.models.parts import Role, TextPart
 
 
 class _PartCodec:
@@ -75,18 +75,6 @@ class LLMMessagesCodec:
     def __init__(self) -> None:
         self._part_codec = _PartCodec()
 
-    def _is_target_part(self, part: Part, kind: Literal["request", "response"]) -> bool:
-        if not isinstance(part, TextPart):
-            return False
-
-        if kind == "request":
-            if part.role == "user":
-                return True
-        elif kind == "response":
-            if part.role == "assistant":
-                return True
-        return False
-
     def encode(self, messages: LLMMessagesLike) -> str:
         part_texts = []
         if not messages:
@@ -94,11 +82,13 @@ class LLMMessagesCodec:
 
         for message in LLMMessage.to_messages(messages):
             for part in message.parts:
-                if not self._is_target_part(part, message.kind):
-                    continue
                 match part:
                     case TextPart():
-                        part_texts.append(self._part_codec.encode(part))
+                        if part.role in ("user", "assistant"):
+                            try:
+                                part_texts.append(self._part_codec.encode(part))
+                            except ValueError:
+                                part_texts.append("<INTERNAL-ERROR-OCCURS in LLMMessagesCodec>")
                     case _:
                         pass
         return "\n".join(part_texts)

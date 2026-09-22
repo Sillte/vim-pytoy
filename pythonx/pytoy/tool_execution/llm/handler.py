@@ -1,3 +1,4 @@
+import logging
 import threading
 from collections.abc import Callable
 from functools import cached_property, wraps
@@ -60,6 +61,7 @@ class LLMExecutionHandler[T]:
         task_handler: TaskExecutionHandler,
         kind: LLMExecutionKind,
         *,
+        logger: logging.Logger | None = None,
         manager: LLMExecutionManager | None = None,
     ) -> Self:
         if manager is None:
@@ -67,7 +69,7 @@ class LLMExecutionHandler[T]:
         if task_handler.status != "created":
             raise ValueError(f"Only `created` task_handler is accepted, but `{task_handler.status=}`")
         factory = LLMExecutionFactory()
-        llm_execution = factory.create_from_task_handler(task_handler, kind)
+        llm_execution = factory.create_from_task_handler(task_handler, kind, logger=logger)
         manager.register(llm_execution)
         return cls(id=llm_execution.id, manager=manager)
 

@@ -36,12 +36,14 @@ def llm_send(user_prompt: Annotated[str | None, Option()] = None):
     if not handlers:
         raise ValueError("No LLMSessions started.")
     handler = handlers[0]
+
     if user_prompt is None:
         window = PytoyWindow.get_current()
         line_range = window.selected_line_range
         lines = window.buffer.get_lines(line_range)
         user_prompt = "\n".join(lines)
         window.buffer.range_operator.replace_lines(line_range, [])
+
     handler.make_progress(user_prompt)
 
 
@@ -74,7 +76,8 @@ def idea_llm_chat():
     if workspace is None:
         raise ValueError("Apt folder is not found")
     folder = workspace / "mybag" / "IdeaLLMDialog"
-    IdeaChatHandler.from_any(folder)
+
+    IdeaChatHandler.from_any(folder, workspace=workspace)
     llm_dialog()
     # buffer = handler.provide_buffer()
     # buffer.show()

@@ -31,6 +31,12 @@ Manage asynchronous LLM operations through a handler-based execution model.
   successful `Result`.
 - Lifecycle events must identify the execution that produced them.
 - Public execution entry points are currently restricted to the main thread.
+- Standard LLM execution lifecycle events are logged through the global LLM
+  logger by default.
+- Feature-specific diagnostics may use a feature logger, but must not replace
+  the standard lifecycle log.
+- Lifecycle records include the execution kind and, when available, the
+  execution id and exception.
 
 ## Discussions
 

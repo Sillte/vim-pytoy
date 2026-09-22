@@ -4,6 +4,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Self
 
+from pytoy_llm.models.llm_activities import LLMActivitySink
 from pytoy_llm.task.execution import TaskExecutionHandler
 from pytoy_llm.task.execution.models import TaskExecutionID, TaskExecutionStatus
 from pytoy_llm.task.models import TaskContextState, TaskResult, TaskSpec
@@ -23,6 +24,7 @@ class LLMExecutionRequest[T]:
     context_state: TaskContextState | None = None
     kind: LLMExecutionKind = "$default"
     logger: logging.Logger | None = None
+    activity_sink: LLMActivitySink | None = None
 
     @classmethod
     def from_any(
@@ -32,8 +34,16 @@ class LLMExecutionRequest[T]:
         context_state: TaskContextState | None = None,
         kind: LLMExecutionKind = "$default",
         logger: logging.Logger | None = None,
+        activity_sink: LLMActivitySink | None = None,
     ) -> Self:
-        return cls(task_spec=task_spec, input=input, context_state=context_state, kind=kind, logger=logger)
+        return cls(
+            task_spec=task_spec,
+            input=input,
+            context_state=context_state,
+            kind=kind,
+            logger=logger,
+            activity_sink=activity_sink,
+        )
 
 
 @dataclass(frozen=True)
