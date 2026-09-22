@@ -106,8 +106,6 @@ class IdeaChatDriver(LLMSessionDriverProtocol):
 
     def on_exit(self, exit_entity: LLMExecutionExit, llm_buffer_provider: LLMSessionBufferProvider) -> None:
         buffer = llm_buffer_provider.provide()
-        if window := buffer.window:
-            window.focus()
         if is_error(exit_entity.outcome):
             exception = exit_entity.outcome.exception
             buffer.append(str(exception))

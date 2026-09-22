@@ -1,7 +1,6 @@
 import json
 import os
 import time
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -187,17 +186,6 @@ def pytoy_log(location: Annotated[Literal["local", "global"] | None, Argument()]
     from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
     from pytoy.shared.ui.pytoy_window import PytoyWindow
 
-    def _logger_to_latest_log(logger) -> None | Path:
-        log_files = []
-        for h in logger.handlers:
-            if isinstance(h, RotatingFileHandler):
-                folder = Path(h.baseFilename).parent
-                pattern = Path(h.baseFilename).name + "*"
-                log_files.extend(folder.glob(pattern))
-        if not log_files:
-            return None
-        return sorted(log_files, key=lambda f: f.stat().st_mtime, reverse=True)[0]
-
     logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
     logger.info("Opening a Log file.")
 
@@ -209,16 +197,9 @@ def pytoy_log(location: Annotated[Literal["local", "global"] | None, Argument()]
         raise ValueError("Current folder should be `file`. ")
     workspace = GlobalCoreContext().get().environment_manager.find_workspace(pivot_folder)
     workspace = workspace if workspace else pivot_folder
-    config = PytoyConfiguration(workspace, local_config_type=None)
+    config = PytoyConfiguration(workspace)
 
-    if location is not None:
-        target_path = _logger_to_latest_log(config.get_logger(location))
-    else:
-        if config.is_logger_exist("local"):
-            logger = config.get_logger("local")
-            target_path = _logger_to_latest_log(logger)
-        else:
-            target_path = _logger_to_latest_log(config.get_logger("global"))
+    target_path = config.get_latest_log_path(location)
     if target_path is None:
         raise ValueError("Cannot find the apt log folder.")
     PytoyWindow.open(target_path, "vertical")
