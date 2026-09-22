@@ -30,6 +30,10 @@ operation surface needed by commands and other package consumers.
 The codecs own only conversion between the chat buffer representation and LLM
 messages. They do not create sessions, execute tasks, or mutate buffers.
 
+`BufferMetaDataCodec` separately converts the buffer front-matter. It stores
+only `title`; a missing dashboard title is represented as YAML `null` in the
+buffer. 
+
 The LLM execution and session packages own asynchronous execution and session
 lifecycle. `idea_chat` consumes those contracts and does not reimplement them.
 

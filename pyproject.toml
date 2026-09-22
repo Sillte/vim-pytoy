@@ -19,6 +19,7 @@ dependencies = [
     "pywinpty; sys_platform == 'win32'",
     "pexpect; sys_platform == 'linux'",
     "typing_extensions>=4.13",
+    "yamlrocks>=0.6.1",
     "pytoy-llm @ git+https://github.com/Sillte/pytoy-llm.git@main",
 ]
 requires-python = ">=3.12"

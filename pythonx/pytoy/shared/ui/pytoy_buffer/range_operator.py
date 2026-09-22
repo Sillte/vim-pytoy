@@ -1,6 +1,13 @@
-from typing import Sequence
+from typing import Sequence, assert_never
 
-from pytoy.shared.lib.text import CharacterRange, LineRange
+from pytoy.shared.lib.text import (
+    CharacterRange,
+    LineRange,
+    NoReplacePatch,
+    ReplaceCharactersPatch,
+    ReplaceLinesPatch,
+    ReplacePatch,
+)
 from pytoy.shared.ui.contract.buffer import RangeOperatorProtocol
 
 
@@ -38,3 +45,25 @@ class RangeOperator(RangeOperatorProtocol):
     @property
     def entire_character_range(self) -> CharacterRange:
         return self._impl.entire_character_range
+
+    def apply_patch(self, replace_patch: ReplacePatch) -> ReplacePatch:
+        """Apply a replacement patch to the buffer.
+
+        Returns:
+            A replacement patch that restores the buffer to its previous state.
+            Applying the returned patch once restores the buffer before this
+            operation.
+        """
+        match replace_patch:
+            case NoReplacePatch():
+                return NoReplacePatch()
+            case ReplaceLinesPatch():
+                old_lines = self._impl.get_lines(replace_patch.line_range)
+                new_character_range = self._impl.replace_lines(replace_patch.line_range, replace_patch.lines)
+                return ReplaceLinesPatch(line_range=new_character_range, lines=old_lines)
+            case ReplaceCharactersPatch():
+                old_text = self._impl.get_text(replace_patch.character_range)
+                new_character_range = self._impl.replace_text(replace_patch.character_range, replace_patch.text)
+                return ReplaceCharactersPatch(character_range=new_character_range, text=old_text)
+            case _:
+                assert_never(replace_patch)

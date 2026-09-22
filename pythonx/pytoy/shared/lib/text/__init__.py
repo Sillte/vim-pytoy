@@ -1,14 +1,18 @@
 from dataclasses import dataclass
+from typing import Sequence
 
 
 @dataclass(frozen=True)
 class CursorPosition:
-    """This represents the position of cursor.
-    Here, both of `line` and `col` are 0-based.
-    Note that `line` and `col` in vim start from 1, while
-    thoese start from 0 in vscode.
-    Hence, you have to take it into account to implement
-    the concrete classs for vim/vscode.
+    """A zero-based position in a text document.
+
+    Both ``line`` and ``col`` are zero-based. ``col`` is measured in
+    Python string indices, i.e. Unicode code points rather than bytes.
+
+    This position is independent of any editor-specific coordinate system.
+    Concrete integrations such as Vim or VS Code must convert their native
+    positions to and from this representation.
+    (c.f. line and col are 1-based in vim while they are 0-based in vscode.)
     """
 
     line: int  # 0-based.
@@ -17,11 +21,16 @@ class CursorPosition:
 
 @dataclass(frozen=True)
 class CharacterRange:
-    """
-    Represents a half-open text range [start, end).
+    """A half-open range of text positions. [start, end).
 
-    - start: inclusive
-    - end: exclusive
+    ``start`` is inclusive and ``end`` is exclusive.
+
+    Positions are expressed using :class:`CursorPosition`.
+    If ``end`` precedes ``start``, the positions are normalized so that
+    ``start <= end``.
+
+    An empty range is represented by ``start == end`` and can be used as
+    an insertion point.
     """
 
     start: CursorPosition
@@ -54,11 +63,13 @@ class CharacterRange:
 
 @dataclass(frozen=True)
 class LineRange:
-    """0-based, exclusive range [start, end)
+    """A zero-based half-open range of lines. `[start, end)`
 
-    Example:
-        LineRange(0, 1) -> Only 0.
-        LineRange(0, 0) -> Just before the 0 (Insertion Point)
+    ``start`` is inclusive and ``end`` is exclusive.
+
+    Examples:
+        ``LineRange(0, 1)`` selects line 0.
+        ``LineRange(0, 0)`` is an empty range at the beginning of line 0.
     """
 
     start: int
@@ -66,4 +77,39 @@ class LineRange:
 
     @property
     def count(self) -> int:
+        """Return the number of lines in the range."""
         return self.end - self.start
+
+
+@dataclass(frozen=True)
+class ReplaceLinesPatch:
+    """Replace a contiguous range of lines with the given lines.
+
+    The target range uses zero-based, half-open line coordinates.
+    """
+
+    line_range: LineRange
+    lines: Sequence[str]
+
+
+@dataclass(frozen=True)
+class ReplaceCharactersPatch:
+    """Replace a contiguous range of characters with the given text.
+
+    The target range uses zero-based, half-open character coordinates.
+    """
+
+    character_range: CharacterRange
+    text: str
+
+
+@dataclass(frozen=True)
+class NoReplacePatch:
+    """Represents the absence of a text replacement.
+
+    This is a successful result of an edit computation, not an error
+    or a missing patch.
+    """
+
+
+type ReplacePatch = ReplaceLinesPatch | ReplaceCharactersPatch | NoReplacePatch

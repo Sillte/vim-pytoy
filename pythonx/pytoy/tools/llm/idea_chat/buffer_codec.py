@@ -1,20 +1,14 @@
 from dataclasses import dataclass
-from typing import ClassVar, Self, Sequence
+from typing import ClassVar, Self
 
-from pytoy.shared.lib.text import LineRange
-
-
-@dataclass(frozen=True)
-class ReplacePatch:
-    line_range: LineRange
-    lines: Sequence[str]
+from pytoy.shared.lib.text import LineRange, NoReplacePatch, ReplaceLinesPatch
 
 
 @dataclass(frozen=True)
 class LLMBufferCodec:
     _LLM_MESSAGES_SEPARATOR_START: ClassVar[str] = "---LLMMessages-BEGIN---"
     _LLM_MESSAGES_SEPARATOR_END: ClassVar[str] = "---LLMMessages-END---"
-    messages_domain: str | None = None
+    messages_domain: str
 
     @classmethod
     def from_llm_buffer(cls, buffer_content: str) -> Self:
@@ -35,21 +29,14 @@ class LLMBufferCodec:
         if start_separator_index is not None and end_separator_index is not None:
             messages_domain = "\n".join(lines[start_separator_index + 1 : end_separator_index])
         else:
-            messages_domain = None
+            messages_domain = ""
         return cls(messages_domain)
 
-    def to_buffer_content(self) -> str:
-        if not self.valid:
-            raise ValueError("This does not include `messages`.")
+    def _make_messages_with_separators(self) -> str:
         fragment = f"{self._LLM_MESSAGES_SEPARATOR_START}\n{self.messages_domain}\n{self._LLM_MESSAGES_SEPARATOR_END}\n"
         return fragment
 
-    def create_patch(self, buffer_content: str) -> ReplacePatch | None:
-        if not self.valid:
-            raise ValueError("This does not include `messages`.")
-        if self.messages_domain is None:
-            raise RuntimeError("This does not include `messages`.")
-
+    def create_patch(self, buffer_content: str) -> ReplaceLinesPatch | NoReplacePatch:
         lines = buffer_content.split("\n")
         index = 0
         start_separator_index = None
@@ -66,13 +53,11 @@ class LLMBufferCodec:
             index += 1
         if start_separator_index is not None and end_separator_index is not None:
             line_range = LineRange(start=start_separator_index + 1, end=end_separator_index)
-            return ReplacePatch(line_range=line_range, lines=self.messages_domain.split("\n"))
-        return None
-
-    @classmethod
-    def provide_empty_domain(cls) -> str:
-        return f"{cls._LLM_MESSAGES_SEPARATOR_START}\n{cls._LLM_MESSAGES_SEPARATOR_END}\n"
-
-    @property
-    def valid(self) -> bool:
-        return self.messages_domain is not None
+            patch = ReplaceLinesPatch(line_range=line_range, lines=self.messages_domain.split("\n"))
+        elif start_separator_index is not None:
+            line_range = LineRange(start=start_separator_index, end=start_separator_index + 1)
+            patch = ReplaceLinesPatch(line_range=line_range, lines=self._make_messages_with_separators().split("\n"))
+        else:
+            line_range = LineRange(start=len(lines), end=len(lines))
+            patch = ReplaceLinesPatch(line_range=line_range, lines=self._make_messages_with_separators().split("\n"))
+        return patch

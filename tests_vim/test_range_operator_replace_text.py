@@ -4,7 +4,7 @@
 # It is very low risk that the difference of `start` changes problem
 
 
-from pytoy.infra.core.models import CharacterRange, CursorPosition
+from pytoy.shared.lib.text import CharacterRange, CursorPosition
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.shared.ui.pytoy_window import PytoyWindowProvider, WindowCreationParam
 

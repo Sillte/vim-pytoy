@@ -5,8 +5,8 @@ resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform != 'win32'",
     "python_full_version == '3.14.*' and sys_platform == 'win32'",
-    "python_full_version == '3.13.*' and sys_platform == 'win32'",
     "python_full_version == '3.14.*' and sys_platform != 'win32'",
+    "python_full_version == '3.13.*' and sys_platform == 'win32'",
     "python_full_version == '3.13.*' and sys_platform != 'win32'",
     "python_full_version < '3.13' and sys_platform == 'win32'",
     "python_full_version < '3.13' and sys_platform != 'win32'",
@@ -3833,6 +3833,7 @@ dependencies = [
     { name = "requests" },
     { name = "toml" },
     { name = "typing-extensions" },
+    { name = "yamlrocks" },
 ]
 
 [package.dev-dependencies]
@@ -3860,6 +3861,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.31" },
     { name = "toml", specifier = ">=0.10" },
     { name = "typing-extensions", specifier = ">=4.13" },
+    { name = "yamlrocks", specifier = ">=0.6.1" },
 ]
 
 [package.metadata.requires-dev]

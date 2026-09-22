@@ -13,8 +13,8 @@ from pytoy.shared.ui.contract.buffer import (
     Event,
     PytoyBufferProtocol,
     PytoyBufferProviderProtocol,
-    RangeOperatorProtocol,
 )
+from pytoy.shared.ui.pytoy_buffer.range_operator import RangeOperator
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.pytoy_window import PytoyWindow
@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 class PytoyBuffer:
     def __init__(self, impl: PytoyBufferProtocol):
         self._impl = impl
+        self._range_operator = RangeOperator(impl.range_operator)
 
     @property
     def buffer_id(self) -> BufferID:
@@ -125,8 +126,8 @@ class PytoyBuffer:
         return self.range_operator.replace_text(character_range, text)
 
     @property
-    def range_operator(self) -> RangeOperatorProtocol:
-        return self.impl.range_operator
+    def range_operator(self) -> RangeOperator:
+        return self._range_operator
 
     def get_windows(self, only_visible: bool = True) -> Sequence["PytoyWindow"]:
         from pytoy.shared.ui.pytoy_window import PytoyWindow

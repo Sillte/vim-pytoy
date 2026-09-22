@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Protocol, Sequence
 
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.events.action_events import KeyActionEvents
-from pytoy.shared.lib.text import CharacterRange, LineRange
+from pytoy.shared.lib.text import CharacterRange, LineRange, ReplacePatch
 from pytoy.shared.ui.contract.buffer.models import (
     URI,
     BufferEvents,
@@ -82,6 +82,15 @@ class RangeOperatorProtocol(Protocol):
     def replace_text(self, character_range: CharacterRange, text: str) -> CharacterRange: ...
 
     def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> LineRange: ...
+
+    def apply_patch(self, replace_patch: ReplacePatch) -> ReplacePatch:
+        """Apply the `replace_patch` to the given buffer.
+
+        Return:
+            ReplacePatch: the inverse operation to the given patch.
+        """
+
+        ...
 
     def find_first(
         self,

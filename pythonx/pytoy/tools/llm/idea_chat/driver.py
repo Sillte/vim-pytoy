@@ -3,16 +3,13 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Callable, Self
 
-from pytoy_llm.activity_sinks import LoggerActivitySink
 from pytoy_llm.idea import IdeaSpace
 from pytoy_llm.models import LLMMessage, LLMMessagesLike
 from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, InvocationHooks, TaskSpec
 from pytoy_llm.tools.idea_tool import IdeaTool
 
-from pytoy.devtools.debug_logger import DebugLogger
 from pytoy.shared.lib.events.domain.action import Keys
 from pytoy.shared.lib.outcome import is_error
-from pytoy.shared.pytoy_configuration import PytoyConfiguration
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import make_buffer
 from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler
@@ -24,14 +21,13 @@ from pytoy.tool_session.llm import (
 )
 from pytoy.tools.llm.idea_chat.buffer_codec import LLMBufferCodec
 from pytoy.tools.llm.idea_chat.messages_codec import LLMMessagesCodec
+from pytoy.tools.llm.idea_chat.metadata_codec import BufferMetadataCodec
 from pytoy.tools.llm.idea_chat.prompts import CONVENTION, SYSTEM_PROMPT
 
 
 def _make_task_spec(
     idea_space: IdeaSpace, llm_buffer_codec: LLMBufferCodec, user_prompt: str, workspace: Path | None = None
 ) -> TaskSpec:
-    if llm_buffer_codec.messages_domain is None:
-        raise ValueError("Invalid LLMBufferCodec")
     llm_messages = LLMMessagesCodec().decode(llm_buffer_codec.messages_domain)
 
     def _create_messages(input: str, context: ExecutionContext) -> LLMMessagesLike:
@@ -74,24 +70,20 @@ class IdeaChatDriver(LLMSessionDriverProtocol):
         user_prompt: str,
     ) -> None:
 
-        buffer = llm_buffer_provider.provide()
-        DebugLogger().log(f"buffer:{buffer.content}")
-        codec = LLMBufferCodec.from_llm_buffer(buffer.content)
-        DebugLogger().log(f"codec:{codec}")
-        if not codec.valid:
-            buffer.append(LLMBufferCodec.provide_empty_domain())
-            DebugLogger().log(f"buffer:{buffer.content}")
-            codec = LLMBufferCodec.from_llm_buffer(buffer.content)
-            DebugLogger().log(f"codec:{codec}")
-        if not codec.valid:
-            raise ValueError("Inconsistency of `Buffer` in views of `LLMBufferCodec`. ")
         self._prepare_idea_space()
 
-        task_spec = _make_task_spec(self._idea_space, codec, user_prompt, workspace=self._workspace)
+        buffer = llm_buffer_provider.provide()
+        dashboard_path = self.folder_path / "dashboard.md"
+        metadata = BufferMetadataCodec.from_dashboard(dashboard_path)
+        patch = metadata.create_patch(buffer.content)
+        buffer.range_operator.apply_patch(patch)
 
-        logger = PytoyConfiguration().get_logger(location="global", level=10)
-        activity_sink = LoggerActivitySink(logger=logger)
-        task_request = TaskRequest(spec=task_spec, input=user_prompt, activity_sink=activity_sink)
+        codec = LLMBufferCodec.from_llm_buffer(buffer.content)
+        patch = codec.create_patch(buffer.content)
+        buffer.range_operator.apply_patch(patch)
+
+        task_spec = _make_task_spec(self._idea_space, codec, user_prompt, workspace=self._workspace)
+        task_request = TaskRequest(spec=task_spec, input=user_prompt)
 
         self.on_start(user_prompt, buffer, codec)
         execution_handler = execution_creator(task_request)
@@ -104,16 +96,13 @@ class IdeaChatDriver(LLMSessionDriverProtocol):
         buffer: PytoyBuffer,
         buffer_codec: LLMBufferCodec,
     ):
-        if buffer_codec.messages_domain is None:
-            raise ValueError("Implemetation Error.")
+
         message_codec = LLMMessagesCodec()
         new_message = message_codec.make_part_from_user_prompt(user_prompt)
         buffer_codec = replace(buffer_codec, messages_domain=buffer_codec.messages_domain + f"\n\n{new_message}\n\n")
 
         replace_patch = buffer_codec.create_patch(buffer.content)
-        if replace_patch is None:
-            raise RuntimeError("`ReplacePatch` cannot be created.")
-        buffer.range_operator.replace_lines(replace_patch.line_range, replace_patch.lines)
+        buffer.range_operator.apply_patch(replace_patch)
 
     def on_exit(self, exit_entity: LLMExecutionExit, llm_buffer_provider: LLMSessionBufferProvider) -> None:
         buffer = llm_buffer_provider.provide()
@@ -126,10 +115,7 @@ class IdeaChatDriver(LLMSessionDriverProtocol):
             result = exit_entity.outcome.value
             messages_text = LLMMessagesCodec().encode(result.context_state.llm_messages)
             replace_patch = LLMBufferCodec(messages_domain=messages_text).create_patch(buffer.content)
-            if replace_patch is not None:
-                buffer.range_operator.replace_lines(replace_patch.line_range, replace_patch.lines)
-            else:
-                pass
+            buffer.range_operator.apply_patch(replace_patch)
 
     @classmethod
     def build_buffer_hooks(cls, idea_space: IdeaSpace) -> LLMSessionBufferHooks:
