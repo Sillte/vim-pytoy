@@ -170,12 +170,6 @@ class PytoyBufferDummy(PytoyBufferProtocol):
     def is_normal_type(self) -> bool:
         return True
 
-    def show(self) -> None:
-        pass
-
-    def hide(self) -> None:
-        pass
-
     @property
     def metadata(self) -> BufferMetadata:
         return self._metadata

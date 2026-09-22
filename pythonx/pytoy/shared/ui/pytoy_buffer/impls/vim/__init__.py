@@ -138,19 +138,6 @@ class PytoyBufferVim(PytoyBufferProtocol):
     def lines(self) -> list[str]:
         return self._kernel.lines
 
-    def show(self):
-        bufnr = self.buffer.number
-        winid = int(vim.eval(f"bufwinid({bufnr})"))
-        if winid != -1:
-            vim.command(f"call win_gotoid({winid})")
-        else:
-            vim.command(f"buffer {bufnr}")
-
-    def hide(self):
-        nr = int(vim.eval(f"bufwinnr({self.buffer.number})"))
-        if 0 <= nr:
-            vim.command(f":{nr}close")
-
     def _is_empty(self) -> bool:
         if len(self.buffer) == 0:
             return True

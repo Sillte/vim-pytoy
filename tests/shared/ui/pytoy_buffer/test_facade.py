@@ -17,7 +17,6 @@ def test_buffer_facade_uses_product_selected_backend() -> None:
 
     buffer.append("more")
     buffer.init_buffer("new")
-    buffer.show()
     buffer.hide()
 
     assert buffer.content == "new"

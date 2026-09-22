@@ -90,7 +90,7 @@ class PytoyWindow:
 
     @staticmethod
     def open(
-        source: str | Path | BufferSource,
+        source: str | Path | BufferSource | PytoyBuffer,
         param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place",
     ) -> "PytoyWindow":
         """Open or create PytoyWindow."""
@@ -127,8 +127,10 @@ class PytoyWindowProvider:
 
     def open_window(
         self,
-        source: str | Path | BufferSource,
+        source: str | Path | BufferSource | PytoyBuffer,
         param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place",
     ) -> PytoyWindow:
+        if isinstance(source, PytoyBuffer):
+            source = source.source
         impl_window = self._impl.open_window(source, param)
         return PytoyWindow(impl_window)

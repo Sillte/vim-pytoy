@@ -111,11 +111,9 @@ class PytoyBuffer:
     def lines(self) -> list[str]:
         return self._impl.lines
 
-    def show(self):
-        return self._impl.show()
-
     def hide(self):
-        return self._impl.hide()
+        for window in self.get_windows(only_visible=True):
+            window.close()
 
     def get_lines(self, line_range: LineRange) -> list[str]:
         return self.range_operator.get_lines(line_range)

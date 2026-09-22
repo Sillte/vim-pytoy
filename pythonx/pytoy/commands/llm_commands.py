@@ -79,11 +79,3 @@ def idea_llm_chat():
 
     IdeaChatHandler.from_any(folder, workspace=workspace)
     llm_dialog()
-    # buffer = handler.provide_buffer()
-    # buffer.show()
-
-    # current_window = PytoyWindow.get_current()
-    # line_range = current_window.selected_line_range
-    # lines = current_window.buffer.get_current().get_lines(line_range)
-    # user_prompt = "\n".join(lines)
-    # handler.make_progress(user_prompt)

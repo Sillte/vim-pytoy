@@ -158,18 +158,6 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         # it is possible to get the `vim.buffer[:] directly.
         return self.content.split("\n")
 
-    def show(self):
-        self.document.show()
-
-    def hide(self):
-        # [NOTE]: Due to the difference of management of window and `Editor` in vscode
-        # this it not implemented.
-        for window in self.get_windows(only_visible=True):
-            try:
-                window.close()
-            except Exception:
-                pass
-
     @property
     def range_operator(self) -> RangeOperatorProtocol:
         return RangeOperatorVSCode(self.kernel)
