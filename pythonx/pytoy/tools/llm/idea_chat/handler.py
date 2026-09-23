@@ -10,7 +10,7 @@ from pytoy.tools.llm.idea_chat.driver import IdeaChatDriver
 
 
 class IdeaChatHandler:
-    kind = "idea-chat"
+    kind = IdeaChatDriver.kind
     buffer_name = "__idea-chat__"
 
     def __init__(self, session_handler: LLMSessionHandler) -> None:

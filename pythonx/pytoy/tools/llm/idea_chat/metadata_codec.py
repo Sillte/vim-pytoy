@@ -12,20 +12,22 @@ from pytoy.shared.lib.text import LineRange, ReplaceLinesPatch
 class BufferMetadataCodec:
     _FRONT_MATTER_MARKER: ClassVar[str] = "---"
     title: str | None = None
+    kind: str = "idea-chat"
+    workspace_name: str | None = None
 
     @classmethod
-    def from_dashboard(cls, dashboard_path: Path) -> Self:
+    def from_dashboard(cls, dashboard_path: Path, kind: str, workspace_name: str | None = None) -> Self:
         if not dashboard_path.exists():
-            return cls()
+            return cls(kind=kind, workspace_name=workspace_name, title=None)
         metadata = IdeaNote.from_path(dashboard_path, root=dashboard_path.parent).metadata
         title = metadata["title"] if "title" in metadata.keys() else None
-        return cls(title=title)
+        return cls(kind=kind, workspace_name=workspace_name, title=title)
 
     def _content_text(self) -> str:
-        metadata = {"title": self.title}
+        metadata = {"title": self.title, "kind": self.kind}
+        if workspace_name := self.workspace_name:
+            metadata["workspace_name"] = workspace_name
         yaml_text = yamlrocks.dumps(metadata).decode().strip("\r\n")
-        if self.title is None:
-            yaml_text = "title: null"
         return f"{self._FRONT_MATTER_MARKER}\n{yaml_text}\n{self._FRONT_MATTER_MARKER}\n"
 
     def create_patch(self, buffer_content: str) -> ReplaceLinesPatch:

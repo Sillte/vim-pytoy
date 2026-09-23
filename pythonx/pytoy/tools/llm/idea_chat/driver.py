@@ -1,7 +1,7 @@
 import shutil
 from dataclasses import replace
 from pathlib import Path
-from typing import Callable, Self
+from typing import Callable, ClassVar, Self
 
 from pytoy_llm.idea import IdeaSpace
 from pytoy_llm.models import LLMMessage, LLMMessagesLike
@@ -51,6 +51,8 @@ def _make_task_spec(
 
 
 class IdeaChatDriver(LLMSessionDriverProtocol):
+    kind: ClassVar[str] = "idea-chat"
+
     def __init__(self, idea_space: IdeaSpace, workspace: Path | None) -> None:
         self._idea_space = idea_space
         self._workspace = workspace
@@ -74,7 +76,8 @@ class IdeaChatDriver(LLMSessionDriverProtocol):
 
         buffer = llm_buffer_provider.provide()
         dashboard_path = self.folder_path / "dashboard.md"
-        metadata = BufferMetadataCodec.from_dashboard(dashboard_path)
+        workspace_name = self._workspace.name if self._workspace else None
+        metadata = BufferMetadataCodec.from_dashboard(dashboard_path, kind=self.kind, workspace_name=workspace_name)
         patch = metadata.create_patch(buffer.content)
         buffer.range_operator.apply_patch(patch)
 
@@ -145,8 +148,9 @@ class IdeaChatDriver(LLMSessionDriverProtocol):
         convention_path = self.folder_path / ".convention.md"
         if not self.folder_path.exists():
             self.folder_path.mkdir(exist_ok=True, parents=True)
+        if not convention_path.exists():
             convention_path.write_text(CONVENTION)
-        sub_names = ["surveys", "issues"]
+        sub_names = ["llm_notes", "outputs"]
         for sub_name in sub_names:
             (self.folder_path / sub_name).mkdir(exist_ok=True)
 
