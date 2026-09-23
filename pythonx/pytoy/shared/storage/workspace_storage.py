@@ -1,9 +1,5 @@
-import hashlib
-import logging
 from pathlib import Path
 from typing import Self
-
-from pytoy.shared.loggers import setup_logger
 
 from .workspace_discovery import find_workspace
 
@@ -55,15 +51,3 @@ class WorkspaceStorage:
     @property
     def log_path(self) -> Path:
         return self.resolve_path(self.LOG_DIRECTORY) / self.LOG_FILE_NAME
-
-    def get_logger(self, level: int | None = None) -> logging.Logger:
-        logger_name = self._make_logger_name()
-        return setup_logger(logger_name, self.log_path, enable_console=False, level=level)
-
-    def is_logger_exist(self) -> bool:
-        logger_name = self._make_logger_name()
-        return logger_name in logging.root.manager.loggerDict and bool(logging.getLogger(logger_name).handlers)
-
-    def _make_logger_name(self) -> str:
-        workspace_hash = hashlib.sha1(str(self.workspace).encode("utf8")).hexdigest()[:8]
-        return f"pytoy.workspace.{self.workspace.name}.{workspace_hash}"

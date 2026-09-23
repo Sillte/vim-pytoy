@@ -130,12 +130,14 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+
 x64
 
 scratch*
 
 .vs
 
+.pytoy
 MEMORY/
 mybag/
 debuglog.txt

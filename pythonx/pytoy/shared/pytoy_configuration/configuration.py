@@ -1,12 +1,13 @@
+import hashlib
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Literal, assert_never
 
 from pytoy.shared.loggers import setup_logger
-from pytoy.shared.storage import WorkspaceStorage
+from pytoy.shared.storage import GlobalStorage, WorkspaceStorage
 
-from .readers import ConfigReader, ConfigWriter, FileReader, validate_safe_relative_path
+from .readers import ConfigReader, ConfigWriter, FileReader
 
 
 class PytoyConfiguration:
@@ -15,13 +16,16 @@ class PytoyConfiguration:
     NAME = "vim_pytoy"
 
     def __init__(self, local_folder: str | Path | None = None):
-        self._global_folder = Path.home() / ".config" / self.NAME
+        self._global_storage = GlobalStorage()
         self._workspace_storage = WorkspaceStorage.from_path(local_folder or Path.cwd())
 
     @property
     def global_folder(self) -> Path:
-        self._global_folder.mkdir(exist_ok=True, parents=True)
-        return self._global_folder
+        return self._global_storage.storage_root
+
+    @property
+    def global_storage(self) -> GlobalStorage:
+        return self._global_storage
 
     @property
     def local_folder(self) -> Path:
@@ -48,31 +52,34 @@ class PytoyConfiguration:
             case "local":
                 return self._workspace_storage.ensure_directory(relative_path)
             case "global":
-                base_folder = self._global_folder
-                folder = validate_safe_relative_path(relative_path, base_folder)
-                folder.mkdir(exist_ok=True, parents=True)
-                return folder
+                return self._global_storage.ensure_directory(relative_path)
             case _:
                 assert_never(location)
 
     def _make_logger_name(self, location: Literal["global", "local"]) -> str:
         if location == "global":
             return "vim_pytoy.global"
-        return self._workspace_storage.get_logger(level=None).name
+        workspace_hash = hashlib.sha1(str(self.workspace_storage.workspace).encode("utf8")).hexdigest()[:8]
+        workspace_name = self.workspace_storage.workspace.name
+        return f"vim_pytoy.{workspace_name}.{workspace_hash}"
 
     def get_logger(self, location: Literal["global", "local"] = "local", level: int | None = None) -> logging.Logger:
         match location:
             case "local":
-                return self._workspace_storage.get_logger(level=level)
+                return setup_logger(
+                    self._make_logger_name(location),
+                    self._workspace_storage.log_path,
+                    enable_console=False,
+                    level=level,
+                )
             case "global":
-                log_path = self.get_folder("_logs", location="global") / "log.txt"
-                return setup_logger(self._make_logger_name(location), log_path, enable_console=False, level=level)
+                return setup_logger(
+                    self._make_logger_name(location), self._global_storage.log_path, enable_console=False, level=level
+                )
             case _:
                 assert_never(location)
 
     def is_logger_exist(self, location: Literal["global", "local"] = "local") -> bool:
-        if location == "local":
-            return self._workspace_storage.is_logger_exist()
         name = self._make_logger_name(location)
         return name in logging.root.manager.loggerDict and bool(logging.getLogger(name).handlers)
 

@@ -16,13 +16,17 @@ class IdeaChatHandler:
     def __init__(self, session_handler: LLMSessionHandler) -> None:
         self._session_handler = session_handler
 
+    @property
+    def session_handler(self) -> LLMSessionHandler:
+        return self._session_handler
+
     @classmethod
     def from_any(cls, idea_space: IdeaSpace | Path | str, workspace: Path | None = None) -> Self:
         if not isinstance(idea_space, IdeaSpace):
             idea_space = IdeaSpace.from_path(idea_space)
         idea_space_path = idea_space.root.resolve()
         workspace_path = (workspace or idea_space.root).resolve()
-        metadata = {"idea_space": idea_space_path, "workspace": workspace_path}
+        metadata = {"idea-space": idea_space_path, "workspace": workspace_path}
         query = LLMSessionQuery.from_any(kind=cls.kind, metadata=metadata)
         llm_handlers = LLMSessionHandler.query(query)
         if llm_handlers:

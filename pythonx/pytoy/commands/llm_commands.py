@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from typing import Annotated
 
 from pytoy.shared.command import App, Option
+from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider, WindowCreationParam
 
 app = App()
@@ -53,8 +56,9 @@ def llm_dialog():
 
     handlers = LLMSessionHandler.query(query=LLMSessionQuery())
     if not handlers:
-        raise ValueError("No LLMSessions started.")
-    handler = handlers[0]
+        handler = _construct_idea_chat()
+    else:
+        handler = handlers[0]
     current_window = PytoyWindow.get_current()
     buffer_source = handler.buffer_provider.buffer_source
     is_left = current_window.is_left()
@@ -66,16 +70,20 @@ def llm_dialog():
     window.focus()
 
 
-@app.command("IdeaLLMChatExperiment")
+@app.command("IdeaLLMChat")
 def idea_llm_chat():
-    from pytoy.tool_execution.execution_environment import EnvironmentManager
+    _construct_idea_chat()
+    llm_dialog()
+
+
+def _construct_idea_chat():
+    from pytoy.shared.storage import WorkspaceStorage
     from pytoy.tools.llm.idea_chat import IdeaChatHandler
 
-    manager = EnvironmentManager()
-    workspace = manager.find_workspace(__file__)
-    if workspace is None:
-        raise ValueError("Apt folder is not found")
-    folder = workspace / "mybag" / "IdeaLLMDialog"
-
-    IdeaChatHandler.from_any(folder, workspace=workspace)
-    llm_dialog()
+    buffer = PytoyBuffer.get_current()
+    if not buffer.path:
+        raise ValueError("The current buffer is not file.")
+    storage = WorkspaceStorage.from_path(buffer.path)
+    path = storage.resolve_path("./idea-spaces/default")
+    idea_chat_handler = IdeaChatHandler.from_any(path, workspace=storage.workspace)
+    return idea_chat_handler.session_handler
