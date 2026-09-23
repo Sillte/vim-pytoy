@@ -136,8 +136,7 @@ x64
 scratch*
 
 .vs
-
 .pytoy
-MEMORY/
+archives/
 mybag/
 debuglog.txt

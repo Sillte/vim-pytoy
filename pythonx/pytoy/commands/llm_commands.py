@@ -70,20 +70,52 @@ def llm_dialog():
     window.focus()
 
 
-@app.command("IdeaLLMChat")
+@app.command("IdeaChatLLM")
 def idea_llm_chat():
     _construct_idea_chat()
     llm_dialog()
 
 
-def _construct_idea_chat():
-    from pytoy.shared.storage import WorkspaceStorage
+def _construct_idea_chat(name: str = "chat_default"):
+    from pytoy.shared.storage import GlobalStorage, WorkspaceStorage
+    from pytoy.tool_execution.execution_environment import EnvironmentManager
     from pytoy.tools.llm.idea_chat import IdeaChatHandler
 
     buffer = PytoyBuffer.get_current()
     if not buffer.path:
         raise ValueError("The current buffer is not file.")
-    storage = WorkspaceStorage.from_path(buffer.path)
-    path = storage.resolve_path("./idea-spaces/default")
-    idea_chat_handler = IdeaChatHandler.from_any(path, workspace=storage.workspace)
+
+    workspace = EnvironmentManager().find_workspace(buffer.path, preference="system")
+    if workspace:
+        storage = WorkspaceStorage.from_path(workspace)
+        idea_space = storage.storage_root / "idea-spaces" / name
+        idea_chat_handler = IdeaChatHandler.from_any(idea_space, workspace=storage.workspace)
+        return idea_chat_handler.session_handler
+    else:
+        storage = GlobalStorage()
+        idea_space = storage.storage_root / "idea-spaces" / name
+        idea_chat_handler = IdeaChatHandler.from_any(idea_space, workspace=None)
+
     return idea_chat_handler.session_handler
+
+
+@app.command("ThreeWordStoryLLM")
+def three_word_story(name: str = "three_word"):
+    from pytoy.shared.storage import GlobalStorage, WorkspaceStorage
+    from pytoy.tool_execution.execution_environment import EnvironmentManager
+    from pytoy.tools.llm.stories.three_word_story import ThreeWordStoryHandler
+
+    buffer = PytoyBuffer.get_current()
+    if not buffer.path:
+        raise ValueError("The current buffer is not file.")
+
+    workspace = EnvironmentManager().find_workspace(buffer.path, preference="system")
+    if workspace:
+        storage = WorkspaceStorage.from_path(workspace)
+        idea_space = storage.storage_root / "idea-spaces" / name
+        handler = ThreeWordStoryHandler.from_any(idea_space)
+    else:
+        storage = GlobalStorage()
+        idea_space = storage.storage_root / "idea-spaces" / name
+        handler = ThreeWordStoryHandler.from_any(idea_space)
+    return handler

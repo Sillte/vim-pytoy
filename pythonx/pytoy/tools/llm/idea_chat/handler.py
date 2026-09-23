@@ -23,7 +23,9 @@ class IdeaChatHandler:
     @classmethod
     def from_any(cls, idea_space: IdeaSpace | Path | str, workspace: Path | None = None) -> Self:
         if not isinstance(idea_space, IdeaSpace):
+            Path(idea_space).mkdir(exist_ok=True, parents=True)
             idea_space = IdeaSpace.from_path(idea_space)
+        idea_space.ensure_root_marker()
         idea_space_path = idea_space.root.resolve()
         workspace_path = (workspace or idea_space.root).resolve()
         metadata = {"idea-space": idea_space_path, "workspace": workspace_path}

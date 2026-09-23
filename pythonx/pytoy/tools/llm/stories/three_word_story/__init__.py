@@ -82,8 +82,9 @@ class ThreeWordStoryDriver(LLMSessionDriverProtocol):
         return LLMSessionBufferHooks(actions=actions, on_creation=on_creation)
 
 
-class ThreeWordsStoryController:
-    kind = "ThreeWordsStory"
+class ThreeWordStoryHandler:
+    kind = "ThreeWordStory"
+    buffer_name = "__three-word-story__"
 
     def __init__(self, idea_space_llm_handler: LLMSessionHandler) -> None:
         self.idea_space_llm_handler = idea_space_llm_handler
@@ -94,11 +95,12 @@ class ThreeWordsStoryController:
         llm_handlers = LLMSessionHandler.query(query)
         if llm_handlers:
             return cls(llm_handlers[0])
+        Path(space_path).mkdir(exist_ok=True, parents=True)
         idea_space = IdeaSpace.from_path(space_path)
-        buffer_name = "__idea_space__"
+
         request = LLMSessionRequest.from_any(
             driver=ThreeWordStoryDriver(ThreeWordStoryStudio.from_any(idea_space.folder_path)),
-            buffer_source=BufferSource.from_no_file(name=buffer_name),
+            buffer_source=BufferSource.from_no_file(name=cls.buffer_name),
             buffer_hooks=ThreeWordStoryDriver.build_buffer_hooks(idea_space),
             kind=cls.kind,
         )
