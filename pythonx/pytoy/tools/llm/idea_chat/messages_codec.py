@@ -1,6 +1,6 @@
 from typing import Sequence, assert_never
 
-from pytoy_llm.models import LLMMessage, LLMMessagesLike
+from pytoy_llm.models import LLMMessage
 from pytoy_llm.models.parts import Role, TextPart
 
 
@@ -75,12 +75,12 @@ class LLMMessagesCodec:
     def __init__(self) -> None:
         self._part_codec = _PartCodec()
 
-    def encode(self, messages: LLMMessagesLike) -> str:
+    def encode(self, messages: Sequence[LLMMessage]) -> str:
         part_texts = []
         if not messages:
             return ""
 
-        for message in LLMMessage.to_messages(messages):
+        for message in messages:
             for part in message.parts:
                 match part:
                     case TextPart():

@@ -2,7 +2,7 @@ import re
 from typing import Literal, Self
 
 from pytoy_llm.composer import InvocationComposer, OutputSpec, SystemPromptSpec
-from pytoy_llm.models import LLMMessage, LLMToolsLike
+from pytoy_llm.models import LLMRequest, LLMToolsLike
 from pytoy_llm.task.models import (
     AgentInvocationSpec,
     FunctionInvocationSpec,
@@ -80,7 +80,7 @@ class DefaultScopedEditTaskMaker:
         name = "Edit or generation of the part of document inside markers"
         output_description = "A part of the document, focusing on the specified scope between markers."
 
-        def create_message(language_kind: LanguageKind) -> LLMMessage:
+        def create_request(language_kind: LanguageKind) -> LLMRequest:
             language = language_kind
             guidance_role = "An expert writer and editor"
             intent = "Recontruction of the part of the document while preserving intent, structure, and coherence."
@@ -105,16 +105,16 @@ class DefaultScopedEditTaskMaker:
             )
             composer = InvocationComposer(system_prompt)
             supplementary_sections = None
-            return composer.compose_message(user_prompt=document, supplementary_sections=supplementary_sections)
+            return composer.make_request(user_prompt=document, supplementary_sections=supplementary_sections)
 
         meta = InvocationSpecMeta(name=name, intent="Scoped edit of the document.")
         if self._tools is None:
             return LLMInvocationSpec.from_any(
-                create_messages=create_message,
+                create_request=create_request,
                 output_type=str,
                 meta=meta,
             )
         else:
             return AgentInvocationSpec.from_any(
-                create_messages=create_message, output_type=str, meta=meta, tools=self._tools
+                create_request=create_request, output_type=str, meta=meta, tools=self._tools
             )

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Callable, ClassVar, Self
 
 from pytoy_llm.idea import IdeaSpace
-from pytoy_llm.models import LLMMessage, LLMMessagesLike
+from pytoy_llm.models import LLMMessage, LLMRequest, LLMRequestLike
 from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, InvocationHooks, TaskSpec
 from pytoy_llm.tools.idea_tool import IdeaTool
 
@@ -30,11 +30,11 @@ def _make_task_spec(
 ) -> TaskSpec:
     llm_messages = LLMMessagesCodec().decode(llm_buffer_codec.messages_domain)
 
-    def _create_messages(input: str, context: ExecutionContext) -> LLMMessagesLike:
+    def _create_request(input: str, context: ExecutionContext) -> LLMRequestLike:
         # If other `context` would be preferrable, `ExecutionContext` is utilized.
-        new_llm_message = LLMMessage.from_prompt(user=user_prompt, system=SYSTEM_PROMPT)
+        new_llm_message = LLMMessage.from_prompt(user=user_prompt)
         messages = [*llm_messages, new_llm_message]
-        return messages
+        return LLMRequest.from_any(messages, system_prompt=SYSTEM_PROMPT)
 
     if workspace is None:
         workspace = idea_space.root
@@ -43,7 +43,7 @@ def _make_task_spec(
         on_start=lambda _: idea_tool.mark_llm_start(), on_completion=lambda _: idea_tool.mark_llm_finished()
     )
     tools = [idea_tool]
-    spec = AgentInvocationSpec.from_any(create_messages=_create_messages, output_type=str, tools=tools, hooks=hooks)
+    spec = AgentInvocationSpec.from_any(create_request=_create_request, output_type=str, tools=tools, hooks=hooks)
 
     return TaskSpec.from_specs(
         [spec],
