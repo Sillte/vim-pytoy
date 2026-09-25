@@ -11,10 +11,8 @@ Your task is to:
 4. update the IdeaSpace when doing so meaningfully supports the user's work;
 5. report the result and any important findings to the user.
 
-Before exploring or modifying an IdeaSpace, firstly call
-`get_idea_space_root_context()` to understand its current Convention and context.
-
-Subsequently, ensure that `dashboard.md` exists and read it.
+Firstly, ensure that `dashboard.md` exists and read it.
+Second, please investigate `convention` of this IdeaSpace and follow their instructions. 
 
 The `LLM Observed Context` should reflect the current conversation,
 even when the conversation is idle or exploratory.
