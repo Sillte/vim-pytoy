@@ -46,4 +46,11 @@ function! pytoy#reset()
 python3 pytoy.reset()
 endfunction
 
+function! pytoy#plugin_root() abort
+    return fnamemodify(expand('<sfile>:p'), ':h:h')
+endfunction
 
+function! pytoy#pyproject() abort
+    let l:path = pytoy#plugin_root() . '/pyproject.toml'
+    return filereadable(l:path) ? l:path : ''
+endfunction

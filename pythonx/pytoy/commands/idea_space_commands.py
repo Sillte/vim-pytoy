@@ -26,7 +26,7 @@ def idea_recent():
     else:
         idea_space = current_buffer.metadata.data.get("idea-space")
         if idea_space is None:
-            raise ValueError()
+            raise ValueError("Currently, `idea_space` is not set in the buffer.")
     notes = get_rececnt_idea_notes(idea_space)
     records = [QuickfixRecord(filename=note.file_path.as_posix(), lnum=1) for note in notes]
     quick_fix = Quickfix.from_any(records, kind="idea-space-quickfix", try_reuse=True)

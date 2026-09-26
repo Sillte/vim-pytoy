@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import threading
 import time
 from contextlib import contextmanager
@@ -13,11 +15,14 @@ class DebugLock:
         name: str,
         logger: DebugLogger | None = None,
         dump_after_ms: float | None = 1000,
+        capture_stack: bool = False,
     ) -> None:
         self._lock = lock
         self._name = name
-        self._logger = logger or DebugLogger()
+        self._logger = logger if logger is not None else DebugLogger()
         self._dump_after_ms = dump_after_ms
+        self._capture_stack = capture_stack
+        self._state_lock = threading.Lock()
 
         self._owner: int | None = None
         self._owner_name: str | None = None
@@ -34,41 +39,71 @@ class DebugLock:
         start = time.perf_counter()
         current = threading.current_thread()
 
-        self._logger.stack()
+        if self._capture_stack:
+            self._logger.stack()
+        with self._state_lock:
+            owner = self._owner
+            owner_name = self._owner_name
         self._logger.log(
-            f"WAIT {self._name} "
-            f"depth={depth} "
-            f"current={current.name}({current.ident}) "
-            f"owner={self._owner_name}({self._owner})"
+            f"WAIT {self._name} depth={depth} current={current.name}({current.ident}) owner={owner_name}({owner})",
+            category="lock",
         )
 
         acquired = self._lock.acquire()
         if acquired:
-            self._owner = threading.get_ident()
-            self._owner_name = threading.current_thread().name
+            with self._state_lock:
+                self._owner = threading.get_ident()
+                self._owner_name = threading.current_thread().name
 
         elapsed = (time.perf_counter() - start) * 1000
 
         self._set_depth(depth + 1)
 
+        with self._state_lock:
+            owner = self._owner
+            owner_name = self._owner_name
         self._logger.log(
-            f"ACQUIRE {self._name} depth={depth + 1} ({elapsed:.3f} ms)owner={self._owner_name}({self._owner})"
+            f"ACQUIRE {self._name} depth={depth + 1}",
+            category="lock",
+            elapsed_ms=f"{elapsed:.3f}",
+            owner=owner_name,
+            owner_id=owner,
         )
 
         if self._dump_after_ms is not None and elapsed >= self._dump_after_ms:
-            self._logger.log(f"LOCK WAIT WARNING: {self._name}")
-            self._logger.dump_threads()
+            self._logger.log(f"LOCK WAIT WARNING: {self._name}", category="lock", elapsed_ms=f"{elapsed:.3f}")
+            if self._logger.debug_enabled:
+                self._logger.stack()
+                self._logger.dump_threads()
 
         return acquired
 
     def release(self) -> None:
         depth = self._get_depth()
-        self._logger.log(f"RELEASE {self._name} depth={depth} owner={self._owner_name}({self._owner})")
+        current_id = threading.get_ident()
+        with self._state_lock:
+            owner = self._owner
+            owner_name = self._owner_name
+        self._logger.log(
+            f"RELEASE {self._name} depth={depth}",
+            category="lock",
+            owner=owner_name,
+            owner_id=owner,
+        )
+        if owner != current_id:
+            self._logger.log(
+                f"RELEASE OWNER MISMATCH {self._name}",
+                level="WARNING",
+                category="lock",
+                expected_owner=owner,
+                actual_owner=current_id,
+            )
 
         self._set_depth(max(0, depth - 1))
         if self._get_depth() == 0:
-            self._owner = None
-            self._owner_name = None
+            with self._state_lock:
+                self._owner = None
+                self._owner_name = None
 
         self._lock.release()
 
