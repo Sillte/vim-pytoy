@@ -83,15 +83,6 @@ class RangeOperatorProtocol(Protocol):
 
     def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> LineRange: ...
 
-    def apply_patch(self, replace_patch: ReplacePatch) -> ReplacePatch:
-        """Apply the `replace_patch` to the given buffer.
-
-        Return:
-            ReplacePatch: the inverse operation to the given patch.
-        """
-
-        ...
-
     def find_first(
         self,
         text: str,

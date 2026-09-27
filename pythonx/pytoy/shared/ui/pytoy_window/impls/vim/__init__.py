@@ -285,7 +285,11 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
 
         if bufno <= 0:
             # New buffer.
-            vim.command(f"edit {target}")
+            from pytoy.devtools import DebugLogger
+
+            DebugLogger().log(f"target: {target}")
+            with DebugLogger().trace():
+                vim.command(f"edit {target}")
             window = vim.current.window
             if not is_file:
                 window.buffer.options["buftype"] = "nofile"

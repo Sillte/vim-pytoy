@@ -49,3 +49,26 @@ def test_debug_lock_captures_stack_when_explicitly_enabled(tmp_path: Path, monke
         logger.close()
 
     assert stack_calls
+
+
+def test_debug_lock_scope_logs_and_reraises_exception(tmp_path: Path):
+    logger = DebugLogger(tmp_path / "debug.log")
+    lock = DebugLock(threading.Lock(), name="test", logger=logger)
+    error = ValueError("scope failed")
+
+    try:
+        try:
+            with lock.scope():
+                raise error
+        except ValueError as caught:
+            assert caught is error
+    finally:
+        logger.close()
+
+    content = (tmp_path / "debug.log").read_text()
+    assert "LOCK SCOPE ERROR test: ValueError: scope failed" in content
+    assert "Traceback (most recent call last)" in content
+    assert "category=lock" in content
+
+    assert lock._lock.acquire(blocking=False)
+    lock._lock.release()

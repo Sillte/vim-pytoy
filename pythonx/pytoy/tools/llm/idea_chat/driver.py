@@ -37,8 +37,8 @@ def _make_task_spec(
         return LLMRequest.from_any(messages, system_prompt=SYSTEM_PROMPT)
 
     if workspace is None:
-        workspace = idea_space.root
-    idea_tool = IdeaTool.from_any(idea_space_root=idea_space.root, workspace_root=workspace)
+        workspace = idea_space.root_folder_path
+    idea_tool = IdeaTool.from_any(idea_space_root=idea_space.root_folder_path, workspace_root=workspace)
     hooks = InvocationHooks.from_any(
         on_start=lambda _: idea_tool.mark_llm_start(), on_completion=lambda _: idea_tool.mark_llm_finished()
     )

@@ -112,6 +112,12 @@ class DebugLock:
         self.acquire()
         try:
             yield
+        except Exception as error:
+            self._logger.exception(
+                f"LOCK SCOPE ERROR {self._name}: {type(error).__name__}: {error}",
+                category="lock",
+            )
+            raise
         finally:
             self.release()
 

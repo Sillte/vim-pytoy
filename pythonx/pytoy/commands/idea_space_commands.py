@@ -22,7 +22,7 @@ def idea_recent():
     current_buffer = PytoyBuffer.get_current()
     if current_buffer.is_file:
         file_path = current_buffer.file_path
-        idea_space = IdeaSpace.from_path(file_path)
+        idea_space = IdeaSpace.from_note(file_path)
     else:
         idea_space = current_buffer.metadata.data.get("idea-space")
         if idea_space is None:

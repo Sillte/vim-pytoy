@@ -26,8 +26,8 @@ class IdeaChatHandler:
             Path(idea_space).mkdir(exist_ok=True, parents=True)
             idea_space = IdeaSpace.from_path(idea_space)
         idea_space.ensure_root_marker()
-        idea_space_path = idea_space.root.resolve()
-        workspace_path = (workspace or idea_space.root).resolve()
+        idea_space_path = idea_space.folder_path
+        workspace_path = (workspace or idea_space.root_folder_path).resolve()
         metadata = {"idea-space": idea_space_path, "workspace": workspace_path}
         query = LLMSessionQuery.from_any(kind=cls.kind, metadata=metadata)
         llm_handlers = LLMSessionHandler.query(query)
