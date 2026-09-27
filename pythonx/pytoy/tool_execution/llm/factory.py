@@ -67,7 +67,11 @@ class LLMExecutionFactory:
             else:
                 exception = execution_exit.outcome.exception if is_error(execution_exit.outcome) else None
                 logger.error("execution.failed id=%s kind=%s exception=%r", execution.id, kind, exception)
-            backend_thread_dispatch(lambda: execution.exit_emitter.fire(execution_exit))
+
+            def emit_exit() -> None:
+                execution.exit_emitter.fire(execution_exit)
+
+            backend_thread_dispatch(emit_exit)
 
         execution.task_handler.on_exit.map(transform).once().subscribe(_dispatch_exit)
         return execution

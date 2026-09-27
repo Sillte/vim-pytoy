@@ -168,9 +168,10 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
 
         def _impl_function():
             with self._lock:
+                # TODO: Defer deletion until the current timer callback has returned. If problems occur, please chech them.
                 vim.command(
                     dedent(f"""
-                    call timer_start(1, {{ -> VimPytoyTimerTaskDeleteFunction_private('{vim_funcname}', {timer_id}) }} )
+                    call timer_start(5, {{ -> VimPytoyTimerTaskDeleteFunction_private('{vim_funcname}', {timer_id}) }} )
                 """).strip()
                 )
                 self.tasks.pop(name)
