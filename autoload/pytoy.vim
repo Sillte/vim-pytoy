@@ -47,10 +47,175 @@ python3 pytoy.reset()
 endfunction
 
 function! pytoy#plugin_root() abort
-    return fnamemodify(expand('<sfile>:p'), ':h:h')
+    let l:path = fnamemodify(expand('<sfile>:p'), ':h')
+
+    while 1
+        let l:git = l:path . '/.git'
+        let l:pyproject = l:path . '/pyproject.toml'
+
+        if isdirectory(l:git) || filereadable(l:git) || filereadable(l:pyproject)
+            return l:path
+        endif
+
+        let l:parent = fnamemodify(l:path, ':h')
+
+        if l:parent ==# l:path
+            break
+        endif
+
+        let l:path = l:parent
+    endwhile
+
+    echohl ErrorMsg
+    echom '[pytoy] Failed to find plugin root from: ' . l:path
+    echohl None
+
+    return ''
 endfunction
 
 function! pytoy#pyproject() abort
-    let l:path = pytoy#plugin_root() . '/pyproject.toml'
-    return filereadable(l:path) ? l:path : ''
+    let l:root = pytoy#plugin_root()
+    if empty(l:root)
+        return ''
+    endif
+
+    let l:path = l:root . '/pyproject.toml'
+
+    if !filereadable(l:path)
+        echohl ErrorMsg
+        echom '[pytoy] pyproject.toml was not found.' . l:path
+        echohl None
+        return ''
+    endif
+    return l:path
+
+endfunction
+
+function! pytoy#find_python_executable() abort
+    if !has('python3')
+        echohl ErrorMsg
+        echom '[pytoy] This Vim/Neovim was built without Python 3 support.'
+        echohl None
+        return ''
+    endif
+
+    try
+        let l:executable = py3eval('sys.executable')
+        let l:prefix = py3eval('sys.prefix')
+        let l:base_prefix = py3eval('getattr(sys, "base_prefix", "")')
+    catch
+        echohl ErrorMsg
+        echom '[pytoy] Failed to inspect the Python 3 environment: ' . v:exception
+        echohl None
+        return ''
+    endtry
+
+    " sys.executable is usable when it points to an actual Python executable.
+    if !empty(l:executable) && executable(l:executable)
+        let l:executable_name = fnamemodify(l:executable, ':t')
+
+        if l:executable_name =~? '^python\%(\d\+\)\?\%(\.exe\)\?$'
+            return fnamemodify(l:executable, ':p')
+        endif
+    endif
+
+    " Search for Python from sys.prefix.
+    if !empty(l:prefix)
+        let l:candidates = []
+
+        if has('win32') || has('win64')
+            let l:candidates = [
+                        \ l:prefix . '/Scripts/python.exe',
+                        \ l:prefix . '/python.exe',
+                        \ ]
+        else
+            let l:candidates = [
+                        \ l:prefix . '/bin/python3',
+                        \ l:prefix . '/bin/python',
+                        \ ]
+        endif
+
+        for l:candidate in l:candidates
+            if executable(l:candidate)
+                return fnamemodify(l:candidate, ':p')
+            endif
+        endfor
+    endif
+
+    echohl ErrorMsg
+    echom '[pytoy] Python 3 executable was not found.'
+    echom '[pytoy] sys.prefix      = ' . string(l:prefix)
+    echom '[pytoy] sys.base_prefix = ' . string(l:base_prefix)
+    echom '[pytoy] sys.executable  = ' . string(l:executable)
+    echohl None
+
+    return ''
+endfunction
+
+function! pytoy#update_python_environment(...) abort
+    let l:python = pytoy#find_python_executable()
+    if empty(l:python)
+        return 0
+    endif
+
+    let l:pyproject = pytoy#pyproject()
+    if empty(l:pyproject)
+        return 0
+    endif
+
+    let l:uv = exepath('uv')
+    if empty(l:uv)
+        echohl ErrorMsg
+        echom '[pytoy] uv was not found in PATH.'
+        echohl None
+        return 0
+    endif
+
+    let l:args = [
+                \ l:uv,
+                \ 'pip',
+                \ 'install',
+                \ '-r',
+                \ l:pyproject,
+                \ '--python',
+                \ l:python,
+                \ ]
+
+    if a:0 > 0
+        call extend(l:args, a:000)
+    endif
+
+    let l:command = join(map(copy(l:args), 'shellescape(v:val)'), ' ')
+    echom l:command
+
+    if has('nvim')
+        let l:output = system(l:args)
+    else
+        let l:output = system(l:command)
+    endif
+
+    let l:status = v:shell_error
+
+    if l:status != 0
+        echohl ErrorMsg
+
+        echom '[pytoy] uv install failed (exit ' . l:status . '): ' . trim(l:output)
+
+        if l:output =~? 'os error 5\|access is denied'
+            echom '[pytoy] Access to the Python environment was denied.'
+            echom '[pytoy] The current Vim process may not have sufficient privileges.'
+            echom '[pytoy] Run Vim with administrator privileges, or execute the following command'
+            echom '[pytoy] manually from an administrator command prompt:'
+            echom l:command
+        elseif l:status == 2
+            echom '[pytoy] uv reported a general error.'
+        endif
+
+        echohl None
+        return 0
+    endif
+
+    echom '[pytoy] Python dependencies installed successfully: ' . string(l:python)
+    echom '[pytoy] Please restart Vim/Neovim to reload the Python environment.'
+    return 1
 endfunction
