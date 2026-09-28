@@ -46,8 +46,10 @@ function! pytoy#reset()
 python3 pytoy.reset()
 endfunction
 
+let s:autoload_folder = fnamemodify(expand('<sfile>:p'), ':h')
+
 function! pytoy#plugin_root() abort
-    let l:path = fnamemodify(expand('<sfile>:p'), ':h')
+    let l:path = s:autoload_folder
 
     while l:path !=# fnamemodify(l:path, ':h')
         if filereadable(l:path . '/pyproject.toml')
