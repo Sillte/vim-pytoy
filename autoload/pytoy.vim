@@ -49,25 +49,16 @@ endfunction
 function! pytoy#plugin_root() abort
     let l:path = fnamemodify(expand('<sfile>:p'), ':h')
 
-    while 1
-        let l:git = l:path . '/.git'
-        let l:pyproject = l:path . '/pyproject.toml'
-
-        if isdirectory(l:git) || filereadable(l:git) || filereadable(l:pyproject)
+    while l:path !=# fnamemodify(l:path, ':h')
+        if filereadable(l:path . '/pyproject.toml')
             return l:path
         endif
 
-        let l:parent = fnamemodify(l:path, ':h')
-
-        if l:parent ==# l:path
-            break
-        endif
-
-        let l:path = l:parent
+        let l:path = fnamemodify(l:path, ':h')
     endwhile
 
     echohl ErrorMsg
-    echom '[pytoy] Failed to find plugin root from: ' . l:path
+    echom '[pytoy] Failed to find pyproject.toml'
     echohl None
 
     return ''
