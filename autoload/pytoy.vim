@@ -178,6 +178,13 @@ function! pytoy#update_python_environment(...) abort
         call extend(l:args, a:000)
     endif
 
+    " Upgrade dependencies by default.
+    " Respect an explicit upgrade policy from the caller.
+    if index(a:000, '--upgrade') < 0 && index(a:000, '--no-upgrade') < 0
+        call add(l:args, '--upgrade')
+    endif
+
+
     let l:command = join(map(copy(l:args), 'shellescape(v:val)'), ' ')
     echom l:command
 
