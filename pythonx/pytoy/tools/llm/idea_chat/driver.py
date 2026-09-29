@@ -149,7 +149,7 @@ class IdeaChatDriver(LLMSessionDriverProtocol):
         if not self.folder_path.exists():
             self.folder_path.mkdir(exist_ok=True, parents=True)
         if not convention_path.exists():
-            convention_path.write_text(CONVENTION)
+            convention_path.write_text(CONVENTION, encoding="utf8")
         sub_names = ["llm_notes", "outputs"]
         for sub_name in sub_names:
             (self.folder_path / sub_name).mkdir(exist_ok=True)
