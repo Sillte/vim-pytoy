@@ -7,6 +7,7 @@ from pytoy_llm.idea import IdeaSpace
 from pytoy_llm.models import LLMMessage, LLMRequest, LLMRequestLike
 from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, InvocationHooks, TaskSpec
 from pytoy_llm.tools.idea_tool import IdeaTool
+from pytoy_llm.tools.workspace_explorer import WorkspaceExplorer
 
 from pytoy.shared.lib.events.domain.action import Keys
 from pytoy.shared.lib.outcome import is_error
@@ -39,10 +40,11 @@ def _make_task_spec(
     if workspace is None:
         workspace = idea_space.root_folder_path
     idea_tool = IdeaTool.from_any(idea_space_roots=idea_space.root_folder_path, workspace_root=workspace)
+    workspace_explorer = WorkspaceExplorer.from_any(workspace=workspace, ignored_roots=[idea_space.root_folder_path])
     hooks = InvocationHooks.from_any(
         on_start=lambda _: idea_tool.mark_llm_start(), on_completion=lambda _: idea_tool.mark_llm_finished()
     )
-    tools = [idea_tool]
+    tools = [*idea_tool.tools, workspace_explorer.tools]
     spec = AgentInvocationSpec.from_any(create_request=_create_request, output_type=str, tools=tools, hooks=hooks)
 
     return TaskSpec.from_specs(
