@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from pytoy_llm.models import LLMTokens
+import yamlrocks
+from pytoy_llm.models import LLMParam, LLMTokens, UsageLimit
 
 from pytoy.tools.llm.idea_chat.metadata_codec import BufferMetadataCodec
 
@@ -68,6 +69,21 @@ def test_dashboard_title_patch_preserves_leading_blank_lines():
         "kind: idea-chat",
         "---",
     ]
+
+
+def test_detail_metadata_includes_llm_configuration():
+    codec = BufferMetadataCodec(
+        llm_param=LLMParam(temperature=0.4),
+        usage_limit=UsageLimit(max_requests=5),
+        connection_name="local",
+    )
+
+    patch = codec.create_patch("# Dashboard\n")
+    front_matter = yamlrocks.loads("\n".join(patch.lines[1:-1]))
+
+    assert front_matter["llm_param"] == {"temperature": 0.4}
+    assert front_matter["usage_limit"] == {"max_requests": 5}
+    assert front_matter["connection_name"] == "local"
 
 
 def test_summary_metadata_removes_existing_token_usage():

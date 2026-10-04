@@ -4,7 +4,7 @@ from typing import ClassVar, Self
 
 import yamlrocks
 from pytoy_llm.idea.note import IdeaNote
-from pytoy_llm.models import LLMTokens
+from pytoy_llm.models import LLMParam, LLMTokens, UsageLimit
 
 from pytoy.shared.lib.text import LineRange, ReplaceLinesPatch
 
@@ -16,6 +16,9 @@ class BufferMetadataCodec:
     kind: str = "idea-chat"
     workspace_name: str | None = None
     llm_tokens: LLMTokens | None = None
+    llm_param: LLMParam | None = None
+    usage_limit: UsageLimit | None = None
+    connection_name: str | None = None
 
     @classmethod
     def from_dashboard(cls, dashboard_path: Path, kind: str, workspace_name: str | None = None) -> Self:
@@ -31,6 +34,12 @@ class BufferMetadataCodec:
             metadata["workspace_name"] = workspace_name
         if self.llm_tokens:
             metadata["llm_tokens"] = self.llm_tokens.model_dump(exclude_none=True)
+        if self.llm_param is not None:
+            metadata["llm_param"] = self.llm_param.model_dump(exclude_none=True)
+        if self.usage_limit is not None:
+            metadata["usage_limit"] = self.usage_limit.model_dump(exclude_none=True)
+        if self.connection_name is not None:
+            metadata["connection_name"] = self.connection_name
         yaml_text = yamlrocks.dumps(metadata).decode().strip("\r\n")
         return f"{self._FRONT_MATTER_MARKER}\n{yaml_text}\n{self._FRONT_MATTER_MARKER}\n"
 

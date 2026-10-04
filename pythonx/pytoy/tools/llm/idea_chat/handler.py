@@ -68,6 +68,9 @@ class IdeaChatHandler:
     def set_metadata_detail_level(self, metadata_detail_level: MetadataDetailLevel) -> None:
         self._driver.set_metadata_detail_level(metadata_detail_level, self._session_handler.buffer_provider)
 
+    def open_configuration_file(self) -> None:
+        self._driver.open_configuration_file()
+
     def provide_buffer(
         self,
     ) -> PytoyBuffer:

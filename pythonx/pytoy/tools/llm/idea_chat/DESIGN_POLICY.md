@@ -30,9 +30,10 @@ operation surface needed by commands and other package consumers.
 The codecs own only conversion between the chat buffer representation and LLM
 messages. They do not create sessions, execute tasks, or mutate buffers.
 
-`BufferMetaDataCodec` separately converts the buffer front-matter. It stores
-only `title`; a missing dashboard title is represented as YAML `null` in the
-buffer. 
+`BufferMetadataCodec` separately converts the buffer front-matter. It reads
+the dashboard title; `IdeaChatDriver` supplies LLM configuration details only
+in `detail` mode. A missing dashboard title is represented as YAML `null` in
+the buffer.
 
 The LLM execution and session packages own asynchronous execution and session
 lifecycle. `idea_chat` consumes those contracts and does not reimplement them.
@@ -47,6 +48,10 @@ lifecycle records.
 Consumers import `IdeaChatHandler` and `MetadataDetailLevel` from
 `pytoy.tools.llm.idea_chat`. `MetadataDetailLevel` is the accepted mode type
 for selecting the metadata detail exposed by the handler.
+
+`IdeaChatHandler` also exposes opening the IdeaChat LLM configuration file for
+editing. `IdeaChatDriver` owns loading and validating that per-space YAML file
+and passing its values to the invocation spec.
 
 The following modules and symbols are implementation details:
 

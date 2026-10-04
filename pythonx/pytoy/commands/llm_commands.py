@@ -91,6 +91,12 @@ def idea_chat_metadata(level: Annotated[MetadataDetailLevel, Argument()]) -> Non
     idea_chat_handler.set_metadata_detail_level(level)
 
 
+@idea_chat_group.command("config")
+def idea_chat_config() -> None:
+    idea_chat_handler = _construct_idea_chat()
+    idea_chat_handler.open_configuration_file()
+
+
 def _construct_idea_chat(name: str = "chat_default"):
     from pytoy.shared.storage import GlobalStorage, WorkspaceStorage
     from pytoy.tool_execution.execution_environment import EnvironmentManager
