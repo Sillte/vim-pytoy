@@ -80,6 +80,7 @@ def test_detail_metadata_includes_llm_configuration():
 
     patch = codec.create_patch("# Dashboard\n")
     front_matter = yamlrocks.loads("\n".join(patch.lines[1:-1]))
+    assert isinstance(front_matter, dict)
 
     assert front_matter["llm_param"] == {"temperature": 0.4}
     assert front_matter["usage_limit"] == {"max_requests": 5}
