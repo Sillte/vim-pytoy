@@ -1,8 +1,9 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pytoy.shared.command import App, Argument, Group, Option
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider, WindowCreationParam
+from pytoy.tools.llm.idea_chat import MetadataDetailLevel
 
 app = App()
 idea_chat_group = Group("IdeaChat")
@@ -85,7 +86,7 @@ def idea_chat_open():
 
 
 @idea_chat_group.command("metadata")
-def idea_chat_metadata(level: Annotated[Literal["summary", "detail"], Argument()]) -> None:
+def idea_chat_metadata(level: Annotated[MetadataDetailLevel, Argument()]) -> None:
     idea_chat_handler = _construct_idea_chat()
     idea_chat_handler.set_metadata_detail_level(level)
 

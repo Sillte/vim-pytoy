@@ -1,7 +1,8 @@
-from typing import Literal
+from typing import Annotated, Literal
 
 import pytest
 
+from pytoy.shared.command import Argument
 from pytoy.shared.command.core.models import CommandModel
 from pytoy.shared.command.core.tokenizer import tokenize
 from pytoy.shared.command.service.completion import (
@@ -53,6 +54,14 @@ def arg_and_input(arg: str, input: str = "DDD"): ...
 def arg_and_input_literal_dd(arg: str, input: Literal["DDD", "DDQ"] = "DDD"): ...
 def arg_and_input_literal_kk(arg: str, input: Literal["DDD", "KKK"] = "KKK"): ...
 def arg_literal(arg: Literal["apple", "banana"]): ...
+
+
+type MetadataDetailLevel = Literal["summary", "detail"]
+
+
+def arg_literal_alias(arg: Annotated[MetadataDetailLevel, Argument()]): ...
+
+
 def arg_literal_with_option(arg: Literal["foo", "bar"], input: str = "hogehoge"): ...
 def only_option(input: str = "hogehoge"): ...
 def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
@@ -104,6 +113,12 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
             1,
             arg_literal,
             {CompletionCandidate(start=0, end=1, value="apple")},
+        ),
+        (
+            "d",
+            1,
+            arg_literal_alias,
+            {CompletionCandidate(start=0, end=1, value="detail")},
         ),
         # case7
         (
