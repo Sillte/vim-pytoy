@@ -11,6 +11,7 @@ from .manager import LLMSessionManager
 from .models import (
     LLMSession,
     LLMSessionBufferProvider,
+    LLMSessionDriverProtocol,
     LLMSessionID,
     LLMSessionMetadata,
     LLMSessionQuery,
@@ -43,6 +44,10 @@ class LLMSessionHandler:
     @property
     def metadata(self) -> LLMSessionMetadata:
         return self._require_session().metadata
+
+    @property
+    def driver(self) -> LLMSessionDriverProtocol:
+        return self._require_session().driver
 
     def make_progress(self, user_prompt: str) -> None:
         session = self._require_session()

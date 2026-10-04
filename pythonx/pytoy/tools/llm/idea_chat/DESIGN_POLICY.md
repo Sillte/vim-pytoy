@@ -44,7 +44,9 @@ lifecycle records.
 
 ## Public API
 
-Consumers import `IdeaChatHandler` from `pytoy.tools.llm.idea_chat`.
+Consumers import `IdeaChatHandler` and `MetadataDetailLevel` from
+`pytoy.tools.llm.idea_chat`. `MetadataDetailLevel` is the accepted mode type
+for selecting the metadata detail exposed by the handler.
 
 The following modules and symbols are implementation details:
 

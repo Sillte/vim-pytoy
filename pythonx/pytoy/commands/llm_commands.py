@@ -1,12 +1,11 @@
-from __future__ import annotations
+from typing import Annotated, Literal
 
-from typing import Annotated
-
-from pytoy.shared.command import App, Option
+from pytoy.shared.command import App, Argument, Group, Option
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider, WindowCreationParam
 
 app = App()
+idea_chat_group = Group("IdeaChat")
 
 
 @app.command("LLMConfig")
@@ -56,9 +55,13 @@ def llm_dialog():
 
     handlers = LLMSessionHandler.query(query=LLMSessionQuery())
     if not handlers:
-        handler = _construct_idea_chat()
+        handler = _construct_idea_chat().session_handler
     else:
         handler = handlers[0]
+    _open_llm_dialog(handler)
+
+
+def _open_llm_dialog(handler) -> None:
     current_window = PytoyWindow.get_current()
     buffer_source = handler.buffer_provider.buffer_source
     is_left = current_window.is_left()
@@ -72,8 +75,19 @@ def llm_dialog():
 
 @app.command("IdeaChatLLM")
 def idea_llm_chat():
-    _construct_idea_chat()
-    llm_dialog()
+    handler = _construct_idea_chat().session_handler
+    _open_llm_dialog(handler)
+
+
+@idea_chat_group.command("open")
+def idea_chat_open():
+    idea_llm_chat()
+
+
+@idea_chat_group.command("metadata")
+def idea_chat_metadata(level: Annotated[Literal["summary", "detail"], Argument()]) -> None:
+    idea_chat_handler = _construct_idea_chat()
+    idea_chat_handler.set_metadata_detail_level(level)
 
 
 def _construct_idea_chat(name: str = "chat_default"):
@@ -90,13 +104,13 @@ def _construct_idea_chat(name: str = "chat_default"):
         storage = WorkspaceStorage.from_path(workspace)
         idea_space = storage.storage_root / "idea-spaces" / name
         idea_chat_handler = IdeaChatHandler.from_any(idea_space, workspace=storage.workspace)
-        return idea_chat_handler.session_handler
+        return idea_chat_handler
     else:
         storage = GlobalStorage()
         idea_space = storage.storage_root / "idea-spaces" / name
         idea_chat_handler = IdeaChatHandler.from_any(idea_space, workspace=None)
 
-    return idea_chat_handler.session_handler
+    return idea_chat_handler
 
 
 @app.command("ThreeWordStoryLLM")

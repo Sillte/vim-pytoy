@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from pytoy_llm.models import LLMTokens
+
 from pytoy.tools.llm.idea_chat.metadata_codec import BufferMetadataCodec
 
 
@@ -13,7 +15,29 @@ def test_dashboard_title_is_read_from_idea_note_metadata(tmp_path: Path):
 def test_missing_dashboard_title_is_written_as_yaml_null():
     patch = BufferMetadataCodec().create_patch("# Dashboard\n")
 
-    assert patch.lines == ["---", "title:", "kind: idea-chat", "---"]
+    assert patch.lines == [
+        "---",
+        "title:",
+        "kind: idea-chat",
+        "---",
+    ]
+
+
+def test_token_usage_is_written_to_front_matter():
+    tokens = LLMTokens(prompt=12, completion=4, total=16)
+
+    patch = BufferMetadataCodec(llm_tokens=tokens).create_patch("# Dashboard\n")
+
+    assert patch.lines == [
+        "---",
+        "title:",
+        "kind: idea-chat",
+        "llm_tokens:",
+        "  prompt: 12",
+        "  completion: 4",
+        "  total: 16",
+        "---",
+    ]
 
 
 def test_dashboard_title_patch_replaces_only_front_matter():
@@ -23,7 +47,12 @@ def test_dashboard_title_patch_replaces_only_front_matter():
 
     assert patch.line_range.start == 0
     assert patch.line_range.end == 3
-    assert patch.lines == ["---", "title: New title", "kind: idea-chat", "---"]
+    assert patch.lines == [
+        "---",
+        "title: New title",
+        "kind: idea-chat",
+        "---",
+    ]
 
 
 def test_dashboard_title_patch_preserves_leading_blank_lines():
@@ -33,4 +62,29 @@ def test_dashboard_title_patch_preserves_leading_blank_lines():
 
     assert patch.line_range.start == 2
     assert patch.line_range.end == 5
-    assert patch.lines == ["---", "title: New title", "kind: idea-chat", "---"]
+    assert patch.lines == [
+        "---",
+        "title: New title",
+        "kind: idea-chat",
+        "---",
+    ]
+
+
+def test_summary_metadata_removes_existing_token_usage():
+    content = (
+        "---\n"
+        "title: null\n"
+        "kind: idea-chat\n"
+        "llm_tokens:\n"
+        "  prompt: 12\n"
+        "  completion: 4\n"
+        "  total: 16\n"
+        "---\n"
+        "conversation\n"
+    )
+
+    patch = BufferMetadataCodec().create_patch(content)
+
+    assert patch.line_range.start == 0
+    assert patch.line_range.end == 8
+    assert patch.lines == ["---", "title:", "kind: idea-chat", "---"]
