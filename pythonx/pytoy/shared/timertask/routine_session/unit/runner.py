@@ -68,6 +68,7 @@ class RoutineUnitRunner:
         self._hooks.on_exit(exit)
         self._iteration_exit_emitter.fire(exit)
         with self._lock:
+            self._execution_handler = None
             self._called += 1
             if self._routine_unit.max_iteration is None:
                 is_continued = True
@@ -94,7 +95,7 @@ class RoutineUnitRunner:
             handler = ThreadExecutionHandler.create(request)
             event = handler.on_exit.map(
                 lambda thread_exit: RoutineUnitIterationExit(name=self.name, outcome=thread_exit.outcome)
-            )
+            ).once()
             event.subscribe(self._on_iteration_exit)
             self._execution_handler = handler
 
