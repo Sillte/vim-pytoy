@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from pytoy.shared.lib.events.action_events import KeyEventManager
     from pytoy.shared.lib.function.manager import FunctionManager
     from pytoy.shared.timertask.manager import TimerTaskManager
+    from pytoy.shared.timertask.routine_session.manager import RoutineSessionManager
     from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
     from pytoy.tool_execution.execution_environment import EnvironmentManager
 
@@ -47,6 +48,12 @@ class GlobalCoreContext:
         from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
 
         return ThreadExecutionManager()
+
+    @cached_property
+    def routine_session_manager(self) -> RoutineSessionManager:
+        from pytoy.shared.timertask.routine_session.manager import RoutineSessionManager
+
+        return RoutineSessionManager()
 
     @cached_property
     def timer_task_manager(self) -> TimerTaskManager:
