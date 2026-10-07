@@ -25,6 +25,8 @@ class LLMSessionManager:
             sessions = list(self._sessions.values())
             if query.kind is not None:
                 sessions = [session for session in sessions if session.kind == query.kind]
+            if query.interface is not None:
+                sessions = [session for session in sessions if session.interface == query.interface]
             if query.buffer_source is not None:
                 sessions = [session for session in sessions if session.buffer_source == query.buffer_source]
             if query.metadata is not None:

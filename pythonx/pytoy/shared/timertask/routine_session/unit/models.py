@@ -52,3 +52,13 @@ class RoutineUnitRequest[T]:
     worker: Callable[[RoutineContext], T]
     delay: int = 1000
     max_iteration: int | None = None
+
+    @classmethod
+    def from_any(
+        cls,
+        worker: Callable[[RoutineContext], T],
+        name: RoutineUnitName = "single-unit",
+        delay: int = 1000,
+        max_iteration: int | None = None,
+    ):
+        return cls(name=name, worker=worker, delay=delay, max_iteration=max_iteration)

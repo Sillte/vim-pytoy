@@ -6,6 +6,7 @@ from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider, Windo
 
 app = App()
 idea_chat_group = Group("IdeaChat")
+idea_routine_group = Group("IdeaRoutine")
 
 
 @app.command("LLMConfig")
@@ -34,7 +35,7 @@ def llm_scope():
 def llm_send(user_prompt: Annotated[str | None, Option()] = None):
     from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery
 
-    handlers = LLMSessionHandler.query(query=LLMSessionQuery())
+    handlers = LLMSessionHandler.query(query=LLMSessionQuery(interface="interactive"))
     if not handlers:
         raise ValueError("No LLMSessions started.")
     handler = handlers[0]
@@ -53,7 +54,7 @@ def llm_send(user_prompt: Annotated[str | None, Option()] = None):
 def llm_dialog():
     from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery
 
-    handlers = LLMSessionHandler.query(query=LLMSessionQuery())
+    handlers = LLMSessionHandler.query(query=LLMSessionQuery(interface="interactive"))
     if not handlers:
         handler = _construct_idea_chat().session_handler
     else:
@@ -73,15 +74,10 @@ def _open_llm_dialog(handler) -> None:
     window.focus()
 
 
-@app.command("IdeaChatLLM")
-def idea_llm_chat():
-    handler = _construct_idea_chat().session_handler
-    _open_llm_dialog(handler)
-
-
 @idea_chat_group.command("open")
 def idea_chat_open():
-    idea_llm_chat()
+    handler = _construct_idea_chat().session_handler
+    _open_llm_dialog(handler)
 
 
 # from pytoy.tools.llm.idea_chat import MetadataDetailLevel
@@ -96,6 +92,30 @@ def idea_chat_metadata(level: Annotated[Literal["summary", "detail"], Argument()
 def idea_chat_config() -> None:
     idea_chat_handler = _construct_idea_chat()
     idea_chat_handler.open_configuration_file()
+
+
+@app.command("LLMRoutine")
+def llm_routine():
+    idea_routine_start()
+
+
+@idea_routine_group.command("start")
+def idea_routine_start():
+    from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery
+
+    handlers = LLMSessionHandler.query(query=LLMSessionQuery(interface="autonomous"))
+    if not handlers:
+        handler = _construct_idea_routine()
+        handler.start()
+
+
+@idea_routine_group.command("terminate")
+def idea_rotine_terminate():
+    from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery
+
+    handlers = LLMSessionHandler.query(query=LLMSessionQuery(interface="autonomous"))
+    for handler in handlers:
+        handler.terminate()
 
 
 def _construct_idea_chat(name: str = "chat_default"):
@@ -119,6 +139,26 @@ def _construct_idea_chat(name: str = "chat_default"):
         idea_chat_handler = IdeaChatHandler.from_any(idea_space, workspace=None)
 
     return idea_chat_handler
+
+
+def _construct_idea_routine(name: str = "routine_default"):
+    from pytoy.shared.storage import GlobalStorage, WorkspaceStorage
+    from pytoy.tool_execution.execution_environment import EnvironmentManager
+    from pytoy.tools.llm.idea_routine.handler import IdeaRoutineHandler
+
+    buffer = PytoyBuffer.get_current()
+    if not buffer.path:
+        raise ValueError("The current buffer is not file.")
+
+    workspace = EnvironmentManager().find_workspace(buffer.path, preference="system")
+    if workspace:
+        storage = WorkspaceStorage.from_path(workspace)
+        idea_space = storage.storage_root / "idea-spaces" / name
+        return IdeaRoutineHandler.from_any(idea_space, workspace=storage.workspace)
+    else:
+        storage = GlobalStorage()
+        idea_space = storage.storage_root / "idea-spaces" / name
+        return IdeaRoutineHandler.from_any(idea_space, workspace=None)
 
 
 @app.command("ThreeWordStoryLLM")

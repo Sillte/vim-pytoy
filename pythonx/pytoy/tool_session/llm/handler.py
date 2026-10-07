@@ -5,6 +5,7 @@ from pytoy_llm.activity_sinks import LoggerActivitySink
 from pytoy_llm.task.models import TaskRequest
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
+from pytoy.shared.lib.event import Event
 from pytoy.tool_execution.llm import LLMExecutionHandler
 
 from .manager import LLMSessionManager
@@ -12,7 +13,9 @@ from .models import (
     LLMSession,
     LLMSessionBufferProvider,
     LLMSessionDriverProtocol,
+    LLMSessionExit,
     LLMSessionID,
+    LLMSessionInterfaceMode,
     LLMSessionMetadata,
     LLMSessionQuery,
     LLMSessionRequest,
@@ -46,6 +49,10 @@ class LLMSessionHandler:
         return self._require_session().metadata
 
     @property
+    def interface(self) -> LLMSessionInterfaceMode | None:
+        return self._require_session().interface
+
+    @property
     def driver(self) -> LLMSessionDriverProtocol:
         return self._require_session().driver
 
@@ -74,6 +81,10 @@ class LLMSessionHandler:
         if session is None:
             return
         session.terminate()
+
+    @property
+    def on_exit(self) -> Event[LLMSessionExit]:
+        return self._require_session().on_exit
 
     def _require_session(self) -> LLMSession:
         session = self._manager.get(self._id)
