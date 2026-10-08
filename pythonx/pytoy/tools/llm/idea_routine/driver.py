@@ -16,14 +16,7 @@ from pytoy.tool_session.llm import (
     TaskRequest,
 )
 
-from .prompts import (
-    BASE_SYSTEM_PROMPT,
-    CONVENTION,
-    DASHBOARD_TEMPLATE,
-    LLM_INQUIRY_TEMPLATE,
-    MASTER_INQUIRY_TEMPLATE,
-    SYSTEM_PERSONALITY,
-)
+from .prompts import BASE_SYSTEM_PROMPT, CONVENTION, SYSTEM_PERSONALITY, ValuableDemandProviderTool
 
 EXCEPTION_LOG_FOLDER_NAME = "exceptions"
 RESPONSE_LOG_FOLDER_NAME = "responses"
@@ -64,7 +57,7 @@ def _make_task_spec(
     hooks = InvocationHooks.from_any(
         on_start=lambda _: idea_tool.mark_llm_start(), on_completion=lambda _: idea_tool.mark_llm_finished()
     )
-    tools = [*idea_tool.tools, workspace_explorer.tools]
+    tools = [*idea_tool.tools, workspace_explorer.tools, ValuableDemandProviderTool().tools]
     spec = AgentInvocationSpec.from_any(
         create_request=_create_request,
         output_type=str,
@@ -143,19 +136,7 @@ class IdeaRoutineDriver(LLMSessionDriverProtocol):
 
     def _prepare_idea_space(self) -> None:
         convention_path = self.folder_path / ".convention.md"
-        dashboard_path = self.folder_path / "dashboard.md"
-        llm_inquiry_path = self.folder_path / "llm_inquiry.md"
-        master_inquiry_path = self.folder_path / "master_inquiry.md"
         if not self.folder_path.exists():
             self.folder_path.mkdir(exist_ok=True, parents=True)
         if not convention_path.exists():
             convention_path.write_text(CONVENTION, encoding="utf8")
-        sub_names = ["analysis", "suggestions"]
-        for sub_name in sub_names:
-            (self.folder_path / sub_name).mkdir(exist_ok=True)
-        if not dashboard_path.exists():
-            dashboard_path.write_text(DASHBOARD_TEMPLATE, encoding="utf8")
-        if not llm_inquiry_path.exists():
-            llm_inquiry_path.write_text(LLM_INQUIRY_TEMPLATE, encoding="utf8")
-        if not master_inquiry_path.exists():
-            master_inquiry_path.write_text(MASTER_INQUIRY_TEMPLATE, encoding="utf8")

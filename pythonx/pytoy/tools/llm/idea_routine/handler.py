@@ -32,7 +32,7 @@ class IdeaRoutineHandler:
 
         self._routine_session_handler = RoutineSessionHandler.create(request=RoutineSessionRequest(kind=self.kind))
         self._routine_unit_handler = self._routine_session_handler.create_unit(
-            request=RoutineUnitRequest(name="llm-invocation", worker=_worker, delay=1000 * 60, max_iteration=300),
+            request=RoutineUnitRequest(name="llm-invocation", worker=_worker, delay=1000 * 30, max_iteration=300),
             hooks=RoutineUnitHooks.from_any(on_result=_start_llm_progress),
         )
         self._session_handler.on_exit.subscribe(lambda _: self._routine_session_handler.terminate())
