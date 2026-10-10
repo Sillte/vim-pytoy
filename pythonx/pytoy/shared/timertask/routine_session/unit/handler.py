@@ -24,8 +24,8 @@ class RoutineUnitHandler:
         return self._runner.alive
 
     @property
-    def on_execution_start(self) -> Event[ThreadExecutionHandler]:
-        return self._runner.on_execution_start
+    def on_execution_preparing(self) -> Event[ThreadExecutionHandler]:
+        return self._runner.on_execution_preparing
 
     @property
     def on_iteration_exit(self) -> Event[RoutineUnitIterationExit]:

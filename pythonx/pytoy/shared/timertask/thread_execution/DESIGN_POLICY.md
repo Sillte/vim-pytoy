@@ -28,6 +28,8 @@ thread execution and result delivery separate.
 - A cancellation request may be issued from any thread.
 - A running function must cooperate with cancellation for cancellation
   to take effect.
+- An execution that has not started may be discarded; started executions are
+  cancelled cooperatively and must not be discarded.
 
 ## Notes
 

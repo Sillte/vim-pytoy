@@ -125,6 +125,8 @@ class RoutineSession:
         for runner in runners:
             runner.terminate()
 
-        self._exit_emitter.fire(RoutineSessionExit(id=self._id))
-        with self._lock:
-            self._exit_emitter.dispose()
+        try:
+            self._exit_emitter.fire(RoutineSessionExit(id=self._id))
+        finally:
+            with self._lock:
+                self._exit_emitter.dispose()

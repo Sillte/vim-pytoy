@@ -26,6 +26,15 @@ class ThreadExecutionManager:
     def get_execution(self, execution_id: ThreadExecutionID) -> ThreadExecution | None:
         return self._executions.get(execution_id)
 
+    def discard_unstarted(self, execution_id: ThreadExecutionID) -> None:
+        execution = self._executions.get(execution_id)
+        if execution is None:
+            return
+        if execution.status != "created":
+            raise RuntimeError("Only an unstarted execution can be discarded.")
+        del self._executions[execution_id]
+        execution.exit_emitter.dispose()
+
     def submit_exit_entity(self, result: ThreadExecutionExit) -> None:
         self._queue.put(result)
 

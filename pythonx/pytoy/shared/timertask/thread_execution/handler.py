@@ -79,6 +79,11 @@ class ThreadExecutionHandler[T]:
             raise ValueError(f"`execution` does not exist; {self._id=}")
         execution.cancel_token.set()
 
+    @main_thread_only
+    def discard(self) -> None:
+        """Remove an execution that has not been started."""
+        self._manager.discard_unstarted(self._id)
+
     @property
     def id(self) -> ThreadExecutionID:
         return self._id
