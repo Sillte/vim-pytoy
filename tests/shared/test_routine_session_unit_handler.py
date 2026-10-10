@@ -1,8 +1,6 @@
 import threading
 import time
 
-import pytest
-
 from pytoy.shared.lib.outcome import Success
 from pytoy.shared.timertask.routine_session import (
     RoutineSessionHandler,
@@ -23,21 +21,35 @@ def wait_for_unit_removal(session: RoutineSessionHandler, name: str) -> None:
 def test_preparing_listener_error_leaves_unit_unstarted_and_allows_retry() -> None:
     session = RoutineSessionHandler.create(RoutineSessionRequest())
     unit = session.create_unit(RoutineUnitRequest(name="prepare-test", worker=lambda _: 42, max_iteration=1))
+    preparation_failed = threading.Event()
+    retry_prepared = threading.Event()
     exit_received = threading.Event()
+    preparation_count = 0
 
-    def fail_preparation(_) -> None:
-        raise RuntimeError("preparation failed")
+    def fail_first_preparation(_) -> None:
+        nonlocal preparation_count
+        preparation_count += 1
+        if preparation_count == 1:
+            preparation_failed.set()
+            raise RuntimeError("preparation failed")
+        retry_prepared.set()
 
-    disposable = unit.on_execution_preparing.subscribe(fail_preparation)
+    unit.on_execution_preparing.subscribe(fail_first_preparation)
     unit.on_iteration_exit.subscribe(lambda _: exit_received.set())
 
     try:
-        with pytest.raises(RuntimeError, match="preparation failed"):
+        try:
             unit.start()
+        except RuntimeError as error:
+            assert str(error) == "preparation failed"
 
-        assert not unit.alive
-        disposable.dispose()
-        unit.start()
+        assert preparation_failed.wait(timeout=5)
+        deadline = time.monotonic() + 5
+        while not retry_prepared.is_set() and time.monotonic() < deadline:
+            unit.start()
+            time.sleep(0.01)
+
+        assert retry_prepared.is_set()
         assert exit_received.wait(timeout=5)
     finally:
         session.terminate()

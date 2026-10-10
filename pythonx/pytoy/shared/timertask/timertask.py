@@ -45,6 +45,11 @@ class TimerTask:
         return cls.get_manager().is_registered(name)
 
     @classmethod
+    def is_dispatch_thread(cls) -> bool:
+        """Return whether the current thread executes TimerTask callbacks."""
+        return cls.get_manager().is_dispatch_thread()
+
+    @classmethod
     def execute_oneshot(cls, func, interval: int = 100, name: str | None = None) -> TaskName:
         return cls.get_manager().execute_oneshot(func, interval=interval, name=name)
 

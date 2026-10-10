@@ -1,3 +1,4 @@
+import time
 import uuid
 
 import pytest
@@ -51,8 +52,11 @@ def test_session_handler_delegates_unit_access_and_termination() -> None:
     assert unit_handler is not None
     assert unit_handler.alive is False
     unit_handler.start()
-    assert unit_handler.alive is True
+    deadline = time.monotonic() + 5
+    while not unit_handler.alive and time.monotonic() < deadline:
+        time.sleep(0.01)
 
+    assert unit_handler.alive is True
     assert session_handler.get_unit("unit") is not None
 
     session_handler.terminate()

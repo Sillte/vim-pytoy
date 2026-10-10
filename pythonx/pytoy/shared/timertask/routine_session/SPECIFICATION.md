@@ -17,18 +17,25 @@ The public API is exported from `__init__.py`. The main user-facing types are
 
 ## Routine unit lifecycle
 
-- `start()` starts the first execution immediately. Calling it again while the
-  unit is started has no effect. Starting a terminated unit raises an error.
-- Each execution runs through `ThreadExecutionHandler`. After an execution
-  exits, the runner increments its iteration count and either schedules the
-  next execution after the requested delay or terminates the unit.
+- `start()` requests the first execution without applying the inter-iteration
+  delay. Preparation may run after `start()` returns. Calling `start()` again
+  while the unit is starting or active has no effect. Starting a terminated
+  unit raises an error.
+- `alive` is false before the first execution starts and after termination; it
+  is true while an execution is running or the unit is waiting for its next
+  iteration.
+- Each worker invocation runs through `ThreadExecutionHandler`. After an
+  execution exits, the unit increments its iteration count and either schedules
+  the next execution after the requested delay or terminates.
 - `max_iteration` is the total number of executions. `None` means no limit.
 - `on_execution_preparing` fires before each execution is started and provides
   its `ThreadExecutionHandler`. Listeners must not start or discard that handler.
 - If `on_execution_preparing` raises before the first execution starts, the
-  execution is discarded, the unit remains unstarted and may be retried, and
-  the exception propagates. If it raises during a later iteration, the unit is
-  terminated before the exception propagates.
+  execution is discarded and the unit returns to an unstarted, retryable state.
+  Since preparation is dispatched asynchronously, the error is handled by the
+  TimerTask dispatch and is not raised synchronously by `start()`. If preparing
+  a later iteration raises, the unit is terminated before the error is handed
+  back to TimerTask dispatch.
 - For each iteration, the `RoutineUnitHooks.on_exit` callback runs before the
   `on_iteration_exit` event. Callback errors do not prevent iteration-count
   updates, scheduling, or unit termination. A single error propagates after
@@ -38,14 +45,6 @@ The public API is exported from `__init__.py`. The main user-facing types are
   after routine processing.
 
 
-
-
-
-
-
-
-
 ## Recommendations
-
 Callbacks registered with events or hooks should generally not raise exceptions.
 Exceptions raised by callbacks follow the contract of the event or hook that invokes them.

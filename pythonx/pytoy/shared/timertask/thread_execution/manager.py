@@ -1,56 +1,76 @@
 from queue import Empty, Queue
+from threading import RLock
 from typing import Callable, Sequence
 
 from pytoy.shared.lib.backend import can_use_vim
 from pytoy.shared.timertask import TimerTask, backend_thread_dispatch
 from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
 
-from .models import ThreadExecution, ThreadExecutionExit, ThreadExecutionID, ThreadExecutionQuery
+from .models import ThreadExecution, ThreadExecutionExit, ThreadExecutionID, ThreadExecutionQuery, ThreadExecutionStatus
 
 
 class ThreadExecutionManager:
     def __init__(self):
+        self._lock = RLock()
         self._executions: dict[ThreadExecutionID, ThreadExecution] = {}
         self._queue: Queue[ThreadExecutionExit] = Queue()
         self._consumer = _ThreadExecutionConsumer(queue=self._queue, consume=self._consume)
 
     def register(self, execution: ThreadExecution) -> ThreadExecution:
-        self._executions[execution.id] = execution
+        with self._lock:
+            self._executions[execution.id] = execution
 
         def _deregister(_):
-            self._executions.pop(execution.id, None)
+            with self._lock:
+                self._executions.pop(execution.id, None)
 
         execution.on_exit.subscribe(_deregister)
         return execution
 
     def get_execution(self, execution_id: ThreadExecutionID) -> ThreadExecution | None:
-        return self._executions.get(execution_id)
+        with self._lock:
+            return self._executions.get(execution_id)
+
+    def get_status(self, execution_id: ThreadExecutionID) -> ThreadExecutionStatus | None:
+        with self._lock:
+            execution = self._executions.get(execution_id)
+            return execution.status if execution is not None else None
+
+    def start_execution[T](self, execution_id: ThreadExecutionID, start: Callable[[ThreadExecution[T]], None]) -> None:
+        with self._lock:
+            execution = self._executions.get(execution_id)
+            if execution is None:
+                raise ValueError(f"`execution` does not exist; {execution_id=}")
+            start(execution)
 
     def discard_unstarted(self, execution_id: ThreadExecutionID) -> None:
-        execution = self._executions.get(execution_id)
-        if execution is None:
-            return
-        if execution.status != "created":
-            raise RuntimeError("Only an unstarted execution can be discarded.")
-        del self._executions[execution_id]
-        execution.exit_emitter.dispose()
+        with self._lock:
+            execution = self._executions.get(execution_id)
+            if execution is None:
+                return
+            if execution.status != "created":
+                raise RuntimeError("Only an unstarted execution can be discarded.")
+            del self._executions[execution_id]
+            execution.exit_emitter.dispose()
 
     def submit_exit_entity(self, result: ThreadExecutionExit) -> None:
         self._queue.put(result)
 
     def select(self, query: ThreadExecutionQuery | None = None) -> Sequence[ThreadExecution]:
-        target_ids = list(self._executions.keys())
         query = query or ThreadExecutionQuery()
-        if query.id is not None:
-            target_ids = [id_ for id_ in target_ids if self._executions[id_].id == query.id]
-        if query.statuses is not None:
-            target_ids = [id_ for id_ in target_ids if self._executions[id_].status in set(query.statuses)]
-        if query.kind is not None:
-            target_ids = [id_ for id_ in target_ids if self._executions[id_].kind == query.kind]
-        return [self._executions[id_] for id_ in target_ids]
+        with self._lock:
+            executions = tuple(self._executions.values())
+            if query.id is not None:
+                executions = tuple(item for item in executions if item.id == query.id)
+            if query.statuses is not None:
+                statuses = set(query.statuses)
+                executions = tuple(item for item in executions if item.status in statuses)
+            if query.kind is not None:
+                executions = tuple(item for item in executions if item.kind == query.kind)
+            return executions
 
     def _consume(self, execution_exit: ThreadExecutionExit) -> None:
-        execution = self._executions.get(execution_exit.id)
+        execution = self.get_execution(execution_exit.id)
         if not execution:
             return
         backend_thread_dispatch(lambda: execution.notify_exit(execution_exit))
