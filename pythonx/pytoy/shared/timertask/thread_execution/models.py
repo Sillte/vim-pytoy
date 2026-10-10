@@ -49,7 +49,11 @@ class ThreadExecution[T]:
         if self.status != "created":
             raise RuntimeError(f"When `start` is called, `status` must be `created`, but `{self.status}`")
         self.status = "running"
-        self.thread.start()
+        try:
+            self.thread.start()
+        except BaseException:
+            self.status = "created"
+            raise
 
     def notify_exit(self, execution_exit: ThreadExecutionExit[T]) -> None:
         self.exit_emitter.fire(execution_exit)

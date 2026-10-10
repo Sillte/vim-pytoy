@@ -6,7 +6,7 @@ from functools import wraps
 from typing import Self, Sequence
 
 from pytoy.contexts.core import GlobalCoreContext
-from pytoy.shared.lib.event import Event
+from pytoy.shared.lib.event import Disposable, Event
 from pytoy.shared.lib.outcome import is_error, is_success
 from pytoy.shared.timertask.timertask import TimerTask
 
@@ -64,13 +64,27 @@ class ThreadExecutionHandler[T]:
         hooks = hooks or ThreadExecutionHooks.from_any()
 
         def start_execution(execution: ThreadExecution[T]) -> None:
-            execution.on_exit.map(lambda exit: exit.outcome).filter(is_success).map(
-                lambda success: success.value
-            ).once().subscribe(hooks.on_result)
-            execution.on_exit.map(lambda exit: exit.outcome).filter(is_error).map(
-                lambda error: error.exception
-            ).once().subscribe(hooks.on_exception)
-            execution.start()
+            subscriptions: list[Disposable] = []
+            try:
+                subscriptions.append(
+                    execution.on_exit.map(lambda exit: exit.outcome)
+                    .filter(is_success)
+                    .map(lambda success: success.value)
+                    .once()
+                    .subscribe(hooks.on_result)
+                )
+                subscriptions.append(
+                    execution.on_exit.map(lambda exit: exit.outcome)
+                    .filter(is_error)
+                    .map(lambda error: error.exception)
+                    .once()
+                    .subscribe(hooks.on_exception)
+                )
+                execution.start()
+            except BaseException:
+                for subscription in subscriptions:
+                    subscription.dispose()
+                raise
 
         self._manager.start_execution(self._id, start_execution)
 

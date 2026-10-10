@@ -155,25 +155,21 @@ class RoutineUnitRunner:
         start_error: BaseException | None = None
         with self._lock:
             if self._status == "exited":
-                should_discard = True
-            else:
-                should_discard = False
-                try:
-                    handler.start(
-                        hooks=ThreadExecutionHooks.from_any(
-                            on_result=self._hooks.on_result, on_exception=self._hooks.on_exception
-                        )
+                handler.discard()
+                return
+            try:
+                handler.start(
+                    hooks=ThreadExecutionHooks.from_any(
+                        on_result=self._hooks.on_result, on_exception=self._hooks.on_exception
                     )
-                except BaseException as error:
-                    start_error = error
-                    self._execution_handler = None
-                    if self._status == "starting":
-                        self._status = "created"
-                else:
-                    self._status = "executing"
-        if should_discard:
-            handler.discard()
-        elif start_error is not None:
+                )
+            except BaseException as error:
+                start_error = error
+                self._execution_handler = None
+            else:
+                self._status = "executing"
+
+        if start_error is not None:
             self.terminate()
             raise start_error
 

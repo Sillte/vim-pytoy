@@ -30,6 +30,10 @@ thread execution and result delivery separate.
   to take effect.
 - An execution that has not started may be discarded; started executions are
   cancelled cooperatively and must not be discarded.
+- If starting an execution fails before its worker thread starts, its status
+  remains `created` and the manager keeps it registered for retry. The failure
+  propagates synchronously and does not emit `ThreadExecutionExit` because no
+  worker started.
 
 ## Notes
 

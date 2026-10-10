@@ -37,6 +37,7 @@ class ThreadExecutionManager:
             return execution.status if execution is not None else None
 
     def start_execution[T](self, execution_id: ThreadExecutionID, start: Callable[[ThreadExecution[T]], None]) -> None:
+        """Start an execution atomically, leaving it registered if startup fails."""
         with self._lock:
             execution = self._executions.get(execution_id)
             if execution is None:
@@ -48,10 +49,15 @@ class ThreadExecutionManager:
             execution = self._executions.get(execution_id)
             if execution is None:
                 return
-            if execution.status != "created":
+            if not self._discard_unstarted_locked(execution_id, execution):
                 raise RuntimeError("Only an unstarted execution can be discarded.")
-            del self._executions[execution_id]
-            execution.exit_emitter.dispose()
+
+    def _discard_unstarted_locked(self, execution_id: ThreadExecutionID, execution: ThreadExecution) -> bool:
+        if execution.status != "created" or self._executions.get(execution_id) is not execution:
+            return False
+        del self._executions[execution_id]
+        execution.exit_emitter.dispose()
+        return True
 
     def submit_exit_entity(self, result: ThreadExecutionExit) -> None:
         self._queue.put(result)
