@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, ClassVar, Self
@@ -9,6 +10,7 @@ from pytoy_llm.tools.idea_tool import IdeaTool
 from pytoy_llm.tools.workspace_explorer import WorkspaceExplorer
 
 from pytoy.shared.lib.outcome import is_error
+from pytoy.shared.pytoy_configuration import PytoyConfiguration
 from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler
 from pytoy.tool_session.llm import (
     LLMSessionBufferProvider,
@@ -16,10 +18,12 @@ from pytoy.tool_session.llm import (
     TaskRequest,
 )
 
-from .prompts import BASE_SYSTEM_PROMPT, CONVENTION, SYSTEM_PERSONALITY, ValuableDemandProviderTool
+from .prompts import BASE_SYSTEM_PROMPT, CONVENTION, SYSTEM_PERSONALITY
+from .values.tools import ValuableDemandProviderTool
 
 EXCEPTION_LOG_FOLDER_NAME = "exceptions"
 RESPONSE_LOG_FOLDER_NAME = "responses"
+MASTER_FOLDER_NAME = "master"
 
 
 def _construct_system_prompt(idea_space: IdeaSpace) -> str:
@@ -57,7 +61,13 @@ def _make_task_spec(
     hooks = InvocationHooks.from_any(
         on_start=lambda _: idea_tool.mark_llm_start(), on_completion=lambda _: idea_tool.mark_llm_finished()
     )
-    tools = [*idea_tool.tools, workspace_explorer.tools, ValuableDemandProviderTool().tools]
+    demand_provider = ValuableDemandProviderTool.from_any(idea_space.root_folder_path)
+
+    tools = [
+        *idea_tool.tools,
+        *workspace_explorer.tools,
+        *demand_provider.tools,
+    ]
     spec = AgentInvocationSpec.from_any(
         create_request=_create_request,
         output_type=str,
@@ -73,10 +83,11 @@ def _make_task_spec(
 class IdeaRoutineDriver(LLMSessionDriverProtocol):
     kind: ClassVar[str] = "idea-routine"
 
-    def __init__(self, idea_space: IdeaSpace, workspace: Path | None) -> None:
+    def __init__(self, idea_space: IdeaSpace, workspace: Path | None, *, logger: logging.Logger | None = None) -> None:
         self._idea_space = idea_space
         self._workspace = workspace
         self._llm_tokens = LLMTokens(prompt=0, completion=0, total=0, cache_read=0, cache_write=0)
+        self._logger = logger or PytoyConfiguration().get_logger(location="global", level=logging.INFO)
 
     @classmethod
     def from_any(cls, idea_space_folder: str | Path | IdeaSpace, workspace: Path | None = None) -> Self:
@@ -136,7 +147,11 @@ class IdeaRoutineDriver(LLMSessionDriverProtocol):
 
     def _prepare_idea_space(self) -> None:
         convention_path = self.folder_path / ".convention.md"
+        master_folder_path = self.folder_path / "master"
         if not self.folder_path.exists():
             self.folder_path.mkdir(exist_ok=True, parents=True)
         if not convention_path.exists():
             convention_path.write_text(CONVENTION, encoding="utf8")
+
+        if not master_folder_path.exists():
+            master_folder_path.mkdir(exist_ok=True, parents=True)
