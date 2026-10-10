@@ -29,7 +29,7 @@ def assert_execution_thread() -> None:
     raise RuntimeError("This method must be called from the main thread or a TimerTask dispatch thread.")
 
 
-def execution_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
+def backend_or_main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         assert_execution_thread()
@@ -44,7 +44,7 @@ class ThreadExecutionHandler[T]:
         self._manager = manager
 
     @classmethod
-    @execution_thread_only
+    @backend_or_main_thread_only
     def create(cls, request: ThreadExecutionRequest[T], *, manager: ThreadExecutionManager | None = None) -> Self:
         if manager is None:
             manager = GlobalCoreContext.get().thread_execution_manager
@@ -59,7 +59,7 @@ class ThreadExecutionHandler[T]:
         executions = manager.select(query)
         return [cls(id=execution.id, manager=manager) for execution in executions]
 
-    @execution_thread_only
+    @backend_or_main_thread_only
     def start(self, hooks: ThreadExecutionHooks[T] | None = None) -> None:
         hooks = hooks or ThreadExecutionHooks.from_any()
 
@@ -81,7 +81,7 @@ class ThreadExecutionHandler[T]:
             raise ValueError(f"`execution` does not exist; {self._id=}")
         execution.cancel_token.set()
 
-    @execution_thread_only
+    @backend_or_main_thread_only
     def discard(self) -> None:
         """Remove an execution that has not been started."""
         self._manager.discard_unstarted(self._id)

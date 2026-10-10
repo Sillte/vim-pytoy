@@ -27,7 +27,7 @@ requires-python = ">=3.12"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["pythonx"]
-addopts = "-v"
+addopts = "-v --ignore=archives --ignore=tests_vim"
 
 [tool.setuptools.packages.find]
 where = ["pythonx"]

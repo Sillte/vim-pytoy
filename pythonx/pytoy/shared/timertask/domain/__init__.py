@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from threading import Thread
 from typing import Callable, Literal, Protocol
 
 from pytoy.shared.lib.event import EventProtocol
@@ -31,6 +32,9 @@ class TimerStopException(Exception):
 
 
 class TimerTaskImplProtocol(Protocol):
+    @property
+    def backend_thread(self) -> Thread: ...
+
     @property
     def on_exit(self) -> EventProtocol[TaskExit]: ...
 

@@ -48,6 +48,10 @@ class TimerTaskImplDummy(TimerTaskImplProtocol):
         self._scheduler.start()
 
     @property
+    def backend_thread(self) -> threading.Thread:
+        return self._scheduler
+
+    @property
     def on_exit(self) -> Event[TaskExit]:
         return self._exit_emitter.event
 

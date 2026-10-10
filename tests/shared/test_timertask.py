@@ -39,16 +39,20 @@ def test_execute_oneshot_runs_and_deregisters(dummy_impl):
 def test_backend_thread_dispatch_runs_callback_and_returns_none(dummy_impl):
     completed = threading.Event()
     callback_threads = []
+    dispatch_thread_states = []
 
     def callback() -> None:
         callback_threads.append(threading.current_thread())
+        dispatch_thread_states.append(TimerTask.is_dispatch_thread())
         completed.set()
 
     result = backend_thread_dispatch(callback)
 
     assert result is None
     assert completed.wait(1)
-    assert callback_threads == [dummy_impl._scheduler]
+    assert callback_threads == [dummy_impl.backend_thread]
+    assert dispatch_thread_states == [True]
+    assert not TimerTask.is_dispatch_thread()
 
 
 def test_repeat_runs_requested_number_of_times_and_finishes(dummy_impl):

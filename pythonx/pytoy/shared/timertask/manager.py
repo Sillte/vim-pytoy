@@ -70,7 +70,6 @@ class TimerTaskManager:
     def __init__(self, impl: TimerTaskImplProtocol | None = None) -> None:
         self.impl = impl or get_timer_task_impl()
         self._lock = threading.RLock()
-        self._dispatch_threads: set[threading.Thread] = set()
         self._counter = 0
         self._tasks: dict[TaskName, _ImplTask] = {}
         self._impl_to_public: dict[TaskName, TaskName] = {}
@@ -80,8 +79,7 @@ class TimerTaskManager:
         )
 
     def is_dispatch_thread(self) -> bool:
-        with self._lock:
-            return threading.current_thread() in self._dispatch_threads
+        return threading.current_thread() is self.impl.backend_thread
 
     def _on_impl_registered(self, impl_name: TaskName) -> None:
         with self._lock:
@@ -162,12 +160,7 @@ class TimerTaskManager:
                     .subscribe(error_callback)
                 )
 
-            def _dispatch() -> None:
-                with self._lock:
-                    self._dispatch_threads.add(threading.current_thread())
-                func()
-
-            self.impl.register(_dispatch, interval, impl_name, repeat)
+            self.impl.register(func, interval, impl_name, repeat)
         except Exception:
             for subscription in task.callback_subscriptions:
                 subscription.dispose()

@@ -37,6 +37,10 @@ class TimerTaskImplVim(TimerTaskImplProtocol):
         self._exit_emitter = EventEmitter[TaskExit]()
 
     @property
+    def backend_thread(self) -> threading.Thread:
+        return threading.main_thread()
+
+    @property
     def on_exit(self) -> Event[TaskExit]:
         return self._exit_emitter.event
 

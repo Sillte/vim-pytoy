@@ -30,7 +30,8 @@ Provide timer-based execution shared by Vim, Neovim, and non-editor environments
 - This includes `on_finish`, `on_error`, and the `TimerTask` implementation's
 	registration, deregistration, and exit Event notifications.
 - Each TimerTask implementation is responsible for defining and maintaining
-	the thread on which its callbacks and Event notifications are executed.
+	the thread on which its callbacks and Event notifications are executed. It
+	exposes that thread through the `backend_thread` property.
 - Consumers may rely on the TimerTask guarantee and must not need to know which
 	concrete thread a TimerTask implementation uses.
 - `TimerTask.is_dispatch_thread()` reports whether the caller is on a thread
