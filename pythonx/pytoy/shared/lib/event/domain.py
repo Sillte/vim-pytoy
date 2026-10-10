@@ -21,18 +21,30 @@ type Subscribe[T] = Callable[[Listener[T]], "Disposable"]
 
 def once[T](event: Event[T]) -> Event[T]:
     def subscribe(listener: Listener[T]) -> Disposable:
-        alive_disposable: Disposable | None = None
+        source_disposable: Disposable | None = None
+        active = True
+
+        def dispose() -> None:
+            nonlocal active
+            if not active:
+                return
+            active = False
+            if source_disposable is not None:
+                source_disposable.dispose()
 
         def wrapper(value: T) -> None:
-            nonlocal alive_disposable
-            if alive_disposable is None:
+            nonlocal active
+            if not active:
                 return
+            active = False
+            if source_disposable is not None:
+                source_disposable.dispose()
             listener(value)
-            alive_disposable.dispose()
-            alive_disposable = None
 
-        alive_disposable = event.subscribe(wrapper)
-        return Disposable(lambda: alive_disposable.dispose() if alive_disposable is not None else None)
+        source_disposable = event.subscribe(wrapper)
+        if not active:
+            source_disposable.dispose()
+        return Disposable(dispose)
 
     return Event(subscribe)
 
