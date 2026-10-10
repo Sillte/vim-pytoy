@@ -8,9 +8,9 @@ from pytoy.shared.timertask.domain import (
 from pytoy.shared.timertask.manager import TimerTaskManager
 
 
-def backend_thread_dispatch(func: OnTaskCallback) -> None:
+def backend_thread_dispatch(func: OnTaskCallback, *, on_error: OnErrorCallback | None = None) -> None:
     """Schedule a no-argument callback on the backend's TimerTask thread."""
-    TimerTask.execute_oneshot(func, interval=0)
+    TimerTask.register(func, interval=0, repeat=1, on_error=on_error)
 
 
 class TimerTask:

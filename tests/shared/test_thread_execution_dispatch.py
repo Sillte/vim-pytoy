@@ -3,7 +3,12 @@ import threading
 import pytest
 
 from pytoy.shared.timertask import TimerTask
-from pytoy.shared.timertask.thread_execution import ThreadExecutionHooks, ThreadExecutionRequest, ThreadExecutor
+from pytoy.shared.timertask.thread_execution import (
+    ThreadExecutionHandler,
+    ThreadExecutionHooks,
+    ThreadExecutionRequest,
+    ThreadExecutor,
+)
 
 
 def test_thread_executor_accepts_timer_task_dispatch_thread() -> None:
@@ -22,6 +27,33 @@ def test_thread_executor_accepts_timer_task_dispatch_thread() -> None:
 
     TimerTask.execute_oneshot(start_execution, interval=0)
 
+    assert result_received.wait(timeout=5)
+    assert results == [42]
+
+
+def test_thread_execution_can_start_from_a_worker_thread() -> None:
+    result_received = threading.Event()
+    results: list[int] = []
+    start_errors: list[Exception] = []
+
+    def on_result(result: int) -> None:
+        results.append(result)
+        result_received.set()
+
+    handler = ThreadExecutionHandler.create(ThreadExecutionRequest.from_any(lambda _: 42))
+
+    def start_execution() -> None:
+        try:
+            handler.start(ThreadExecutionHooks.from_any(on_result=on_result))
+        except Exception as error:
+            start_errors.append(error)
+
+    starter = threading.Thread(target=start_execution)
+    starter.start()
+    starter.join(timeout=5)
+
+    assert not starter.is_alive()
+    assert start_errors == []
     assert result_received.wait(timeout=5)
     assert results == [42]
 

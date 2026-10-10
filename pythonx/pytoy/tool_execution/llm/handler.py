@@ -1,7 +1,5 @@
 import logging
-import threading
-from collections.abc import Callable
-from functools import cached_property, wraps
+from functools import cached_property
 from typing import Self, Sequence
 
 from pytoy_llm.task.execution import TaskExecutionHandler
@@ -9,6 +7,7 @@ from pytoy_llm.task.execution import TaskExecutionHandler
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
 from pytoy.shared.lib.outcome import is_error, is_success
+from pytoy.shared.timertask import backend_or_main_thread_only
 
 from .factory import LLMExecutionFactory
 from .manager import LLMExecutionManager
@@ -25,27 +24,13 @@ from .models import (
 )
 
 
-def assert_main_thread() -> None:
-    if threading.current_thread() is not threading.main_thread():
-        raise RuntimeError("This method must be called from the main thread.")
-
-
-def main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
-    @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        assert_main_thread()
-        return func(*args, **kwargs)
-
-    return wrapper
-
-
 class LLMExecutionHandler[T]:
     def __init__(self, id: LLMExecutionID, *, manager: LLMExecutionManager) -> None:
         self._id = id
         self._manager = manager
 
     @classmethod
-    @main_thread_only
+    @backend_or_main_thread_only
     def create(cls, request: LLMExecutionRequest, *, manager: LLMExecutionManager | None = None) -> Self:
         if manager is None:
             manager = GlobalPytoyContext.get().llm_execution_manager
@@ -55,7 +40,7 @@ class LLMExecutionHandler[T]:
         return cls(id=llm_execution.id, manager=manager)
 
     @classmethod
-    @main_thread_only
+    @backend_or_main_thread_only
     def create_from_task_handler(
         cls,
         task_handler: TaskExecutionHandler,
@@ -87,35 +72,35 @@ class LLMExecutionHandler[T]:
     def status(self) -> LLMExecutionStatus | None:
         return self._require_task_handler().status
 
-    @main_thread_only
+    @backend_or_main_thread_only
     def start(self, hooks: LLMExecutionHooks | None = None) -> None:
         hooks = hooks or LLMExecutionHooks.from_any()
 
-        disposables = []
-        disposables.append(
-            self.on_exit.map(lambda exit_entity: exit_entity.outcome)
-            .filter(is_success)
-            .map(lambda success: success.value)
-            .once()
-            .subscribe(hooks.on_result)
-        )
-        disposables.append(
-            self.on_exit.map(lambda exit_entity: exit_entity.outcome)
-            .filter(is_error)
-            .map(lambda error: error.exception)
-            .once()
-            .subscribe(hooks.on_exception)
-        )
+        def start_execution(execution: LLMExecution[T]) -> None:
+            disposables = []
+            try:
+                disposables.append(
+                    self.on_exit.map(lambda exit_entity: exit_entity.outcome)
+                    .filter(is_success)
+                    .map(lambda success: success.value)
+                    .once()
+                    .subscribe(hooks.on_result)
+                )
+                disposables.append(
+                    self.on_exit.map(lambda exit_entity: exit_entity.outcome)
+                    .filter(is_error)
+                    .map(lambda error: error.exception)
+                    .once()
+                    .subscribe(hooks.on_exception)
+                )
+                self._manager.register_context(LLMExecutionContext(kind=execution.kind, hooks=hooks))
+                execution.task_handler.start()
+            except BaseException:
+                for disposable in disposables:
+                    disposable.dispose()
+                raise
 
-        execution = self._require_execution()
-        context = LLMExecutionContext(kind=execution.kind, hooks=hooks)
-        self._manager.register_context(context)
-        try:
-            execution.task_handler.start()
-        except Exception:
-            for disposable in disposables:
-                disposable.dispose()
-            raise
+        self._manager.start_execution(self._id, start_execution)
 
     @property
     def id(self) -> LLMExecutionID:

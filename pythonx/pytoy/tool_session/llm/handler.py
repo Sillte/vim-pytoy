@@ -6,6 +6,7 @@ from pytoy_llm.task.models import TaskRequest
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
+from pytoy.shared.timertask import backend_thread_dispatch, is_backend_or_main_thread
 from pytoy.tool_execution.llm import LLMExecutionHandler
 
 from .manager import LLMSessionManager
@@ -57,7 +58,27 @@ class LLMSessionHandler:
         return self._require_session().driver
 
     def make_progress(self, user_prompt: str) -> None:
+        """Start inline on the main/backend thread; otherwise dispatch asynchronously."""
         session = self._require_session()
+        if is_backend_or_main_thread():
+            self._make_progress(session, user_prompt)
+            return
+
+        def _dispatch() -> None:
+            current_session = self._manager.get(self._id)
+            if current_session is not None:
+                self._make_progress(current_session, user_prompt)
+
+        backend_thread_dispatch(
+            _dispatch,
+            on_error=lambda error: session.logger.error(
+                "Failed to dispatch LLM progress: %s",
+                error,
+                exc_info=(type(error), error, error.__traceback__),
+            ),
+        )
+
+    def _make_progress(self, session: LLMSession, user_prompt: str) -> None:
         session.driver.make_progress(
             execution_creator=self.make_execution_handler,
             llm_buffer_provider=session.buffer_provider,

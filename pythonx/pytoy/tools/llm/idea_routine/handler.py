@@ -7,7 +7,6 @@ from pytoy.shared.timertask.routine_session import (
     RoutineContext,
     RoutineSessionHandler,
     RoutineSessionRequest,
-    RoutineUnitHooks,
     RoutineUnitRequest,
 )
 from pytoy.shared.ui.pytoy_buffer import BufferSource
@@ -24,16 +23,14 @@ class IdeaRoutineHandler:
         self._session_handler = session_handler
         self._driver = driver
 
-        def _worker(_: RoutineContext) -> None:
-            pass
-
-        def _start_llm_progress(_: None) -> None:
+        def _start_llm_progress(_: RoutineContext) -> None:
             self.session_handler.make_progress("NON-USED INPUT")
 
         self._routine_session_handler = RoutineSessionHandler.create(request=RoutineSessionRequest(kind=self.kind))
         self._routine_unit_handler = self._routine_session_handler.create_unit(
-            request=RoutineUnitRequest(name="llm-invocation", worker=_worker, delay=1000 * 30, max_iteration=300),
-            hooks=RoutineUnitHooks.from_any(on_result=_start_llm_progress),
+            request=RoutineUnitRequest(
+                name="llm-invocation", worker=_start_llm_progress, delay=1000 * 30, max_iteration=300
+            ),
         )
         self._session_handler.on_exit.subscribe(lambda _: self._routine_session_handler.terminate())
 

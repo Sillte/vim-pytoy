@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import threading
-from collections.abc import Callable
-from functools import wraps
 from typing import Self, Sequence
 
 from pytoy.contexts.core import GlobalCoreContext
 from pytoy.shared.lib.event import Disposable, Event
 from pytoy.shared.lib.outcome import is_error, is_success
-from pytoy.shared.timertask.timertask import TimerTask
+from pytoy.shared.timertask import backend_or_main_thread_only
 
 from .factory import ThreadExecutionFactory
 from .manager import ThreadExecutionManager
@@ -21,21 +18,6 @@ from .models import (
     ThreadExecutionRequest,
     ThreadExecutionStatus,
 )
-
-
-def assert_execution_thread() -> None:
-    if threading.current_thread() is threading.main_thread() or TimerTask.is_dispatch_thread():
-        return
-    raise RuntimeError("This method must be called from the main thread or a TimerTask dispatch thread.")
-
-
-def backend_or_main_thread_only[**P, R](func: Callable[P, R]) -> Callable[P, R]:
-    @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        assert_execution_thread()
-        return func(*args, **kwargs)
-
-    return wrapper
 
 
 class ThreadExecutionHandler[T]:
@@ -59,7 +41,6 @@ class ThreadExecutionHandler[T]:
         executions = manager.select(query)
         return [cls(id=execution.id, manager=manager) for execution in executions]
 
-    @backend_or_main_thread_only
     def start(self, hooks: ThreadExecutionHooks[T] | None = None) -> None:
         hooks = hooks or ThreadExecutionHooks.from_any()
 
@@ -97,7 +78,11 @@ class ThreadExecutionHandler[T]:
 
     @backend_or_main_thread_only
     def discard(self) -> None:
-        """Remove an execution that has not been started."""
+        """Remove an unstarted execution.
+
+        Do not subscribe to `on_exit` or dispose its subscriptions concurrently
+        with this call.
+        """
         self._manager.discard_unstarted(self._id)
 
     @property

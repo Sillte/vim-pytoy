@@ -30,7 +30,8 @@ Manage asynchronous LLM operations through a handler-based execution model.
 - An exception that prevents normal completion must not be represented as a
   successful `Result`.
 - Lifecycle events must identify the execution that produced them.
-- Public execution entry points are currently restricted to the main thread.
+- Public execution entry points may run on the main thread or TimerTask dispatch thread.
+- Manager state and retained execution contexts are protected by an `RLock`.
 - Standard LLM execution lifecycle events are logged through the global LLM
   logger by default.
 - Feature-specific diagnostics may use a feature logger, but must not replace

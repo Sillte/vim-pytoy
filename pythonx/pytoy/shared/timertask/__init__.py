@@ -6,6 +6,11 @@ from pytoy.shared.timertask.domain import (
     TimerStopException,
 )
 from pytoy.shared.timertask.manager import TimerTaskManager
+from pytoy.shared.timertask.thread_affinity import (
+    assert_backend_or_main_thread,
+    backend_or_main_thread_only,
+    is_backend_or_main_thread,
+)
 from pytoy.shared.timertask.timertask import TimerTask, backend_thread_dispatch
 
 __all__ = [
@@ -17,4 +22,7 @@ __all__ = [
     "OnFinishCallback",
     "OnErrorCallback",
     "TimerTaskManager",
+    "assert_backend_or_main_thread",
+    "backend_or_main_thread_only",
+    "is_backend_or_main_thread",
 ]

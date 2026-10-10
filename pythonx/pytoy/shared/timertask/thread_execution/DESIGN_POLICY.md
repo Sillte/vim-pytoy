@@ -23,13 +23,17 @@ thread execution and result delivery separate.
 
 ## Rules
 
-- Execution state must be observed and modified from the main thread or the
-  TimerTask dispatch thread, except for cancellation requests.
+- Execution creation and discarding an unstarted execution are restricted to
+  the main thread or the TimerTask dispatch thread.
+- Starting an execution is serialized by the manager lock and may be requested
+  from any thread.
 - A cancellation request may be issued from any thread.
 - A running function must cooperate with cancellation for cancellation
   to take effect.
 - An execution that has not started may be discarded; started executions are
   cancelled cooperatively and must not be discarded.
+- Callers must not subscribe to an execution's `on_exit` event or dispose its
+  subscriptions concurrently with discarding that unstarted execution.
 - If starting an execution fails before its worker thread starts, its status
   remains `created` and the manager keeps it registered for retry. The failure
   propagates synchronously and does not emit `ThreadExecutionExit` because no

@@ -1,26 +1,34 @@
-from threading import Event
-from unittest.mock import Mock, patch
+import threading
 
-from pytoy.shared.timertask.routine_session import RoutineContext
+from pytoy.shared.lib.event import EventEmitter
 from pytoy.tools.llm.idea_routine.handler import IdeaRoutineHandler
 
 
-def test_worker_dispatches_llm_progress_from_result_hook() -> None:
-    session_handler = Mock()
-    routine_session_handler = Mock()
+class RecordingSessionHandler:
+    def __init__(self) -> None:
+        self._exit_emitter = EventEmitter[object]()
+        self.prompts: list[str] = []
+        self.progress_started = threading.Event()
 
-    with patch(
-        "pytoy.tools.llm.idea_routine.handler.RoutineSessionHandler.create",
-        return_value=routine_session_handler,
-    ):
-        IdeaRoutineHandler(session_handler, Mock())
+    @property
+    def on_exit(self):
+        return self._exit_emitter.event
 
-    create_unit_kwargs = routine_session_handler.create_unit.call_args.kwargs
-    worker = create_unit_kwargs["request"].worker
-    on_result = create_unit_kwargs["hooks"].on_result
+    def make_progress(self, user_prompt: str) -> None:
+        self.prompts.append(user_prompt)
+        self.progress_started.set()
 
-    worker(RoutineContext(cancel_token=Event(), unit_name="llm-invocation"))
-    session_handler.make_progress.assert_not_called()
+    def terminate(self) -> None:
+        pass
 
-    on_result(None)
-    session_handler.make_progress.assert_called_once_with("NON-USED INPUT")
+
+def test_idea_routine_starts_progress_through_session_handler() -> None:
+    session_handler = RecordingSessionHandler()
+    handler = IdeaRoutineHandler(session_handler, object())
+
+    try:
+        handler.start()
+        assert session_handler.progress_started.wait(timeout=5)
+        assert session_handler.prompts == ["NON-USED INPUT"]
+    finally:
+        handler.terminate()

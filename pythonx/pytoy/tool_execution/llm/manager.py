@@ -1,4 +1,5 @@
-from typing import Sequence
+from threading import RLock
+from typing import Callable, Sequence
 
 from pytoy.tool_execution.llm.models import (
     LLMExecution,
@@ -11,33 +12,48 @@ from pytoy.tool_execution.llm.models import (
 
 class LLMExecutionManager:
     def __init__(self):
+        self._lock = RLock()
         self._executions: dict[LLMExecutionID, LLMExecution] = {}
         self._last_context: LLMExecutionContext | None = None
         self._last_context_by_kind: dict[LLMExecutionKind, LLMExecutionContext] = {}
 
     def register(self, execution: LLMExecution) -> None:
-        self._executions[execution.id] = execution
+        with self._lock:
+            self._executions[execution.id] = execution
 
         def _deregister(_):
-            self._executions.pop(execution.id, None)
+            with self._lock:
+                self._executions.pop(execution.id, None)
 
         execution.on_exit.once().subscribe(_deregister)
 
     def register_context(self, context: LLMExecutionContext) -> None:
-        self._last_context = context
-        self._last_context_by_kind[context.kind] = context
+        with self._lock:
+            self._last_context = context
+            self._last_context_by_kind[context.kind] = context
+
+    def start_execution[T](self, execution_id: LLMExecutionID, start: Callable[[LLMExecution[T]], None]) -> None:
+        with self._lock:
+            execution = self._executions.get(execution_id)
+            if execution is None:
+                raise ValueError(f"`LLMExecution` does not exist; {execution_id=}")
+            if execution.task_handler.status != "created":
+                raise RuntimeError("Only a created LLM execution can be started.")
+            start(execution)
 
     def select(self, query: LLMExecutionQuery | None = None) -> Sequence[LLMExecution]:
         query = query or LLMExecutionQuery()
-        target_ids = list(self._executions.keys())
-        if query.kind is not None:
-            target_ids = [id_ for id_ in target_ids if self._executions[id_].kind == query.kind]
-        if query.status is not None:
-            target_ids = [id_ for id_ in target_ids if self._executions[id_].task_handler.status == query.status]
-        return [self._executions[id_] for id_ in target_ids]
+        with self._lock:
+            executions = tuple(self._executions.values())
+            if query.kind is not None:
+                executions = tuple(item for item in executions if item.kind == query.kind)
+            if query.status is not None:
+                executions = tuple(item for item in executions if item.task_handler.status == query.status)
+            return executions
 
     def get(self, execution_id: LLMExecutionID) -> LLMExecution | None:
-        return self._executions.get(execution_id)
+        with self._lock:
+            return self._executions.get(execution_id)
 
     def get_running(self, kind: LLMExecutionKind | None = None) -> Sequence[LLMExecution]:
         query = LLMExecutionQuery(kind=kind, status="running")
@@ -45,7 +61,9 @@ class LLMExecutionManager:
 
     @property
     def last_context(self) -> LLMExecutionContext | None:
-        return self._last_context
+        with self._lock:
+            return self._last_context
 
     def get_last_context_by_kind(self, kind: LLMExecutionKind) -> LLMExecutionContext | None:
-        return self._last_context_by_kind.get(kind)
+        with self._lock:
+            return self._last_context_by_kind.get(kind)

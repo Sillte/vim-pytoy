@@ -2,6 +2,7 @@ import threading
 
 from pytoy_llm.task.models import FunctionInvocationSpec, TaskSpec
 
+from pytoy.shared.timertask import TimerTask
 from pytoy.tool_execution.llm import (
     LLMExecutionHandler,
     LLMExecutionHooks,
@@ -42,6 +43,31 @@ def test_start_calls_result_hook_and_removes_finished_execution() -> None:
     assert finished.wait(5)
     assert [result for result in results] == [2]
     assert manager.get(handler.id) is None
+
+
+def test_handler_can_be_created_and_started_on_backend_thread() -> None:
+    manager = LLMExecutionManager()
+    completed = threading.Event()
+    errors = []
+    results = []
+
+    def on_result(result) -> None:
+        results.append(result.output)
+        completed.set()
+
+    def start_execution() -> None:
+        try:
+            handler = LLMExecutionHandler.create(make_request(lambda value: value + 1), manager=manager)
+            handler.start(LLMExecutionHooks.from_any(on_result=on_result))
+        except Exception as error:
+            errors.append(error)
+            completed.set()
+
+    TimerTask.register(start_execution, interval=0, repeat=1, on_error=errors.append)
+
+    assert completed.wait(5)
+    assert errors == []
+    assert results == [2]
 
 
 def test_start_calls_exception_hook_for_failed_invocation() -> None:

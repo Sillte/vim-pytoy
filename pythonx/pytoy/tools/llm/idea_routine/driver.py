@@ -122,7 +122,7 @@ class IdeaRoutineDriver(LLMSessionDriverProtocol):
             try:
                 log_folder = self.idea_space.root_space.space_meta_directory / EXCEPTION_LOG_FOLDER_NAME
                 log_folder.mkdir(exist_ok=True, parents=True)
-                log_file = log_folder / f"{datetime.now():%Y%m%d_%H%M%S}_exception.json"
+                log_file = log_folder / f"{datetime.now():%Y%m%d_%H%M%S}_exception.txt"
                 log_file.write_text(str(exception))
             except OSError:
                 pass
@@ -132,7 +132,7 @@ class IdeaRoutineDriver(LLMSessionDriverProtocol):
             try:
                 response_folder = self.idea_space.root_space.space_meta_directory / RESPONSE_LOG_FOLDER_NAME
                 response_folder.mkdir(exist_ok=True, parents=True)
-                response_file = response_folder / f"{datetime.now():%Y%m%d_%H%M%S}_response.json"
+                response_file = response_folder / f"{datetime.now():%Y%m%d_%H%M%S}_response.txt"
                 response_file.write_text(str(result.output))
             except OSError:
                 pass

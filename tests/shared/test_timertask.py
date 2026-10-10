@@ -55,6 +55,24 @@ def test_backend_thread_dispatch_runs_callback_and_returns_none(dummy_impl):
     assert not TimerTask.is_dispatch_thread()
 
 
+def test_backend_thread_dispatch_reports_callback_errors(dummy_impl):
+    failed = threading.Event()
+    errors = []
+
+    def fail() -> None:
+        raise ValueError("dispatch failed")
+
+    def on_error(error: Exception) -> None:
+        errors.append(error)
+        failed.set()
+
+    backend_thread_dispatch(fail, on_error=on_error)
+
+    assert failed.wait(1)
+    assert len(errors) == 1
+    assert isinstance(errors[0], ValueError)
+
+
 def test_repeat_runs_requested_number_of_times_and_finishes(dummy_impl):
     completed = threading.Event()
     calls = []

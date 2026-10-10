@@ -42,6 +42,8 @@ class ThreadExecutionManager:
             execution = self._executions.get(execution_id)
             if execution is None:
                 raise ValueError(f"`execution` does not exist; {execution_id=}")
+            if execution.status != "created":
+                raise RuntimeError(f"When `start` is called, `status` must be `created`, but `{execution.status}`")
             start(execution)
 
     def discard_unstarted(self, execution_id: ThreadExecutionID) -> None:
@@ -49,15 +51,10 @@ class ThreadExecutionManager:
             execution = self._executions.get(execution_id)
             if execution is None:
                 return
-            if not self._discard_unstarted_locked(execution_id, execution):
+            if execution.status != "created":
                 raise RuntimeError("Only an unstarted execution can be discarded.")
-
-    def _discard_unstarted_locked(self, execution_id: ThreadExecutionID, execution: ThreadExecution) -> bool:
-        if execution.status != "created" or self._executions.get(execution_id) is not execution:
-            return False
-        del self._executions[execution_id]
-        execution.exit_emitter.dispose()
-        return True
+            del self._executions[execution_id]
+            execution.exit_emitter.dispose()
 
     def submit_exit_entity(self, result: ThreadExecutionExit) -> None:
         self._queue.put(result)
