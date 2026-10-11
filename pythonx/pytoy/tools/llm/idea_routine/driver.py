@@ -13,6 +13,7 @@ from pytoy.shared.lib.outcome import is_error
 from pytoy.shared.pytoy_configuration import PytoyConfiguration
 from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler
 from pytoy.tool_session.llm import (
+    LLMMessageLike,
     LLMSessionBufferProvider,
     LLMSessionDriverProtocol,
     TaskRequest,
@@ -49,10 +50,10 @@ def _make_task_spec(
     workspace: Path | None = None,
 ) -> TaskSpec:
 
-    def _create_request(_: str, context: ExecutionContext) -> LLMRequestLike:
-        # If other `context` would be preferrable, `ExecutionContext` is utilized.
+    def _create_request(llm_message: LLMMessageLike | None, _context: ExecutionContext) -> LLMRequestLike:
         system_prompt = _construct_system_prompt(idea_space=idea_space)
-        return LLMRequest.from_any([], system_prompt=system_prompt)
+        new_messages = LLMRequest.from_any(llm_message).messages if llm_message is not None else ()
+        return LLMRequest.from_any(new_messages, system_prompt=system_prompt)
 
     if workspace is None:
         workspace = idea_space.root_folder_path
@@ -104,13 +105,12 @@ class IdeaRoutineDriver(LLMSessionDriverProtocol):
         self,
         execution_creator: Callable[[TaskRequest], LLMExecutionHandler],
         llm_buffer_provider: LLMSessionBufferProvider,
-        user_prompt: str,
+        llm_message: LLMMessageLike | None,
     ) -> None:
         _ = llm_buffer_provider
-        _ = user_prompt
 
         task_spec = _make_task_spec(self._idea_space, workspace=self._workspace)
-        task_request = TaskRequest(spec=task_spec, input=None)
+        task_request = TaskRequest(spec=task_spec, input=llm_message)
 
         execution_handler = execution_creator(task_request)
         execution_handler.on_exit.subscribe(lambda exit_entity: self.on_exit(exit_entity))

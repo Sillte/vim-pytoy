@@ -6,6 +6,7 @@ from .handler import LLMSessionHandler
 from .logger import get_llm_logger
 from .manager import LLMSessionManager
 from .models import (
+    LLMMessageLike,
     LLMSessionBufferHooks,
     LLMSessionBufferProvider,
     LLMSessionDriverProtocol,
@@ -30,6 +31,7 @@ __all__ = [
     "LLMSessionInterfaceMode",
     "LLMSessionKind",
     "LLMSessionMetadata",
+    "LLMMessageLike",
     "LLMSessionQuery",
     "LLMSessionRequest",
     "TaskSessionHandler",

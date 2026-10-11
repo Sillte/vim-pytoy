@@ -13,7 +13,7 @@ from pytoy.tools.llm.idea_routine.handler import IdeaRoutineHandler
 class RecordingSessionHandler:
     def __init__(self) -> None:
         self._exit_emitter = EventEmitter[object]()
-        self.prompts: list[str] = []
+        self.messages: list[None] = []
         self.progress_started = threading.Event()
         self.progress_future: Future = Future()
 
@@ -21,8 +21,8 @@ class RecordingSessionHandler:
     def on_exit(self):
         return self._exit_emitter.event
 
-    def make_progress(self, user_prompt: str) -> Future:
-        self.prompts.append(user_prompt)
+    def make_progress(self) -> Future:
+        self.messages.append(None)
         self.progress_started.set()
         return self.progress_future
 
@@ -40,7 +40,7 @@ def test_idea_routine_waits_for_progress_exit_before_finishing_iteration() -> No
         handler.start()
         assert session_handler.progress_started.wait(timeout=5)
         assert not iteration_exited.wait(timeout=0.1)
-        assert session_handler.prompts == ["NON-USED INPUT"]
+        assert session_handler.messages == [None]
 
         session_handler.progress_future.set_result(SimpleNamespace(outcome=Success(None)))
         assert iteration_exited.wait(timeout=5)

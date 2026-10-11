@@ -7,7 +7,7 @@ from typing import Callable, ClassVar, Literal, Self, assert_never
 import yamlrocks
 from pydantic import BaseModel, ConfigDict, Field
 from pytoy_llm.idea import IdeaSpace
-from pytoy_llm.models import LLMMessage, LLMParam, LLMRequest, LLMRequestLike, LLMTokens, UsageLimit
+from pytoy_llm.models import LLMParam, LLMRequest, LLMRequestLike, LLMTokens, UsageLimit
 from pytoy_llm.task.audit import TaskAuditor
 from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, InvocationHooks, TaskResult, TaskSpec
 from pytoy_llm.tools.idea_tool import IdeaTool
@@ -20,6 +20,7 @@ from pytoy.shared.ui.pytoy_buffer import make_buffer
 from pytoy.shared.ui.pytoy_window import PytoyWindow
 from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler
 from pytoy.tool_session.llm import (
+    LLMMessageLike,
     LLMSessionBufferHooks,
     LLMSessionBufferProvider,
     LLMSessionDriverProtocol,
@@ -98,17 +99,15 @@ def _dump_task_audit(idea_space: IdeaSpace, task_result: TaskResult) -> None:
 def _make_task_spec(
     idea_space: IdeaSpace,
     llm_buffer_codec: LLMBufferCodec,
-    user_prompt: str,
     llm_configuration: LLMConfiguration,
     workspace: Path | None = None,
 ) -> TaskSpec:
     llm_messages = LLMMessagesCodec().decode(llm_buffer_codec.messages_domain)
 
-    def _create_request(input: str, context: ExecutionContext) -> LLMRequestLike:
-        # If other `context` would be preferrable, `ExecutionContext` is utilized.
+    def _create_request(llm_message: LLMMessageLike | None, _context: ExecutionContext) -> LLMRequestLike:
         system_prompt = _construct_system_prompt(idea_space=idea_space)
-        new_llm_message = LLMMessage.from_prompt(user=user_prompt)
-        messages = [*llm_messages, new_llm_message]
+        new_messages = LLMRequest.from_any(llm_message).messages if llm_message is not None else ()
+        messages = [*llm_messages, *new_messages]
         return LLMRequest.from_any(messages, system_prompt=system_prompt)
 
     if workspace is None:
@@ -162,7 +161,7 @@ class IdeaChatDriver(LLMSessionDriverProtocol):
         self,
         execution_creator: Callable[[TaskRequest], LLMExecutionHandler],
         llm_buffer_provider: LLMSessionBufferProvider,
-        user_prompt: str,
+        llm_message: LLMMessageLike | None,
     ) -> None:
 
         buffer = llm_buffer_provider.provide()
@@ -176,27 +175,31 @@ class IdeaChatDriver(LLMSessionDriverProtocol):
         task_spec = _make_task_spec(
             self._idea_space,
             codec,
-            user_prompt,
             llm_configuration=self._llm_configuration,
             workspace=self._workspace,
         )
-        task_request = TaskRequest(spec=task_spec, input=user_prompt)
+        task_request = TaskRequest(spec=task_spec, input=llm_message)
 
-        self.on_start(user_prompt, buffer, codec)
+        self.on_start(llm_message, buffer, codec)
         execution_handler = execution_creator(task_request)
         execution_handler.on_exit.subscribe(lambda exit_entity: self.on_exit(exit_entity, llm_buffer_provider))
         execution_handler.start()
 
     def on_start(
         self,
-        user_prompt: str,
+        llm_message: LLMMessageLike | None,
         buffer: PytoyBuffer,
         buffer_codec: LLMBufferCodec,
     ):
+        if llm_message is None:
+            return
 
-        message_codec = LLMMessagesCodec()
-        new_message = message_codec.make_part_from_user_prompt(user_prompt)
-        buffer_codec = replace(buffer_codec, messages_domain=buffer_codec.messages_domain + f"\n\n{new_message}\n\n")
+        new_messages = LLMRequest.from_any(llm_message).messages
+        new_message_text = LLMMessagesCodec().encode(new_messages)
+        buffer_codec = replace(
+            buffer_codec,
+            messages_domain=buffer_codec.messages_domain + f"\n\n{new_message_text}\n\n",
+        )
 
         replace_patch = buffer_codec.create_patch(buffer.content)
         buffer.range_operator.apply_patch(replace_patch)

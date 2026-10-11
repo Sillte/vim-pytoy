@@ -7,7 +7,7 @@ from pytoy_llm.idea import IdeaSpace
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import BufferSource
 from pytoy.tool_execution.llm import LLMExecutionExit
-from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery, LLMSessionRequest
+from pytoy.tool_session.llm import LLMMessageLike, LLMSessionHandler, LLMSessionQuery, LLMSessionRequest
 from pytoy.tools.llm.idea_chat.driver import IdeaChatDriver, MetadataDetailLevel
 
 
@@ -65,8 +65,8 @@ class IdeaChatHandler:
             raise
         return cls(llm_handler, driver)
 
-    def make_progress(self, user_prompt: str) -> Future[LLMExecutionExit[Any]]:
-        return self._session_handler.make_progress(user_prompt)
+    def make_progress(self, llm_message: LLMMessageLike | None = None) -> Future[LLMExecutionExit[Any]]:
+        return self._session_handler.make_progress(llm_message)
 
     def set_metadata_detail_level(self, metadata_detail_level: MetadataDetailLevel) -> None:
         self._driver.set_metadata_detail_level(metadata_detail_level, self._session_handler.buffer_provider)

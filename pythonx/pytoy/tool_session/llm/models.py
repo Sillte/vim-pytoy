@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal, Protocol, Self
 
+from pytoy_llm.models.llm_messages import LLMMessageLike
 from pytoy_llm.task.models import TaskContextState, TaskRequest
 from pytoy_llm.task.session import TaskSessionHandler, TaskSessionRequest
 
@@ -59,14 +60,16 @@ class LLMSessionBufferProvider:
 
 
 class LLMSessionDriverProtocol(Protocol):
-    """Drivers call the creator once synchronously; the returned execution may finish later."""
+    """Drivers synchronously create exactly one execution per call; it may finish later."""
 
     def make_progress(
         self,
         execution_creator: Callable[[TaskRequest], LLMExecutionHandler],
         llm_buffer_provider: LLMSessionBufferProvider,
-        user_prompt: str,
-    ) -> None: ...
+        llm_message: LLMMessageLike | None,
+    ) -> None:
+        """Build this run's request using driver-owned history; ``None`` means no new message."""
+        ...
 
 
 @dataclass(frozen=True)

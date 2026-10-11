@@ -13,6 +13,7 @@ from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler
 
 from .manager import LLMSessionManager
 from .models import (
+    LLMMessageLike,
     LLMSession,
     LLMSessionBufferProvider,
     LLMSessionDriverProtocol,
@@ -92,8 +93,8 @@ class LLMSessionHandler:
     def driver(self) -> LLMSessionDriverProtocol:
         return self._require_session().driver
 
-    def make_progress(self, user_prompt: str) -> Future[LLMExecutionExit[Any]]:
-        """Dispatch progress and resolve on execution exit; wait only from a worker thread."""
+    def make_progress(self, llm_message: LLMMessageLike | None = None) -> Future[LLMExecutionExit[Any]]:
+        """Dispatch one execution with an optional new message and the session's prior context."""
         session = self._require_session()
         future: Future[LLMExecutionExit[Any]] = Future()
         completion_lock = Lock()
@@ -113,7 +114,7 @@ class LLMSessionHandler:
                 current_session = self._manager.get(self._id)
                 if current_session is None:
                     raise ValueError(f"Session is already eliminated. `{self._id=}`")
-                self._make_progress(current_session, user_prompt, _set_result)
+                self._make_progress(current_session, llm_message, _set_result)
             except Exception as error:
                 _set_exception(error)
                 raise
@@ -131,14 +132,14 @@ class LLMSessionHandler:
     def _make_progress(
         self,
         session: LLMSession,
-        user_prompt: str,
+        llm_message: LLMMessageLike | None,
         on_exit: Callable[[LLMExecutionExit[Any]], None],
     ) -> None:
         execution_creator = _SingleExecutionCreator(self.make_execution_handler, on_exit)
         session.driver.make_progress(
             execution_creator=execution_creator,
             llm_buffer_provider=session.buffer_provider,
-            user_prompt=user_prompt,
+            llm_message=llm_message,
         )
         execution_creator.validate()
 

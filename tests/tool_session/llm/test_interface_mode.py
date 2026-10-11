@@ -6,7 +6,7 @@ from pytoy.tool_session.llm.models import LLMSession
 
 
 class Driver:
-    def make_progress(self, execution_creator, llm_buffer_provider, user_prompt: str) -> None:
+    def make_progress(self, execution_creator, llm_buffer_provider, llm_message) -> None:
         pass
 
 

@@ -1,12 +1,14 @@
 import re
 from pathlib import Path
 from types import SimpleNamespace
-from typing import cast
+from typing import Callable, cast
 
 import pytest
 from pytoy_llm.idea import IdeaSpace
-from pytoy_llm.models import LLMParam, UsageLimit
+from pytoy_llm.models import LLMMessage, LLMParam, LLMRequest, UsageLimit
+from pytoy_llm.task.models import ExecutionContext
 
+from pytoy.tool_session.llm import LLMMessageLike
 from pytoy.tools.llm.idea_chat import driver as driver_module
 from pytoy.tools.llm.idea_chat.buffer_codec import LLMBufferCodec
 from pytoy.tools.llm.idea_chat.driver import (
@@ -15,6 +17,7 @@ from pytoy.tools.llm.idea_chat.driver import (
     LLMConfiguration,
     _make_task_spec,
 )
+from pytoy.tools.llm.idea_chat.messages_codec import LLMMessagesCodec
 
 
 def _make_driver(meta_folder: Path) -> IdeaChatDriver:
@@ -95,14 +98,26 @@ def test_configuration_values_are_passed_to_agent_spec(tmp_path: Path, monkeypat
         connection_name="local",
     )
 
+    monkeypatch.setattr(driver_module, "_construct_system_prompt", lambda **_: "system")
+    buffer_message = LLMMessage.from_prompt(user="buffer history")
+    llm_buffer_codec = LLMBufferCodec(messages_domain=LLMMessagesCodec().encode([buffer_message]))
     result = _make_task_spec(
         cast(IdeaSpace, SimpleNamespace(root_folder_path=tmp_path)),
-        LLMBufferCodec(messages_domain=""),
-        "prompt",
+        llm_buffer_codec,
         llm_configuration=configuration,
     )
 
+    context_message = LLMMessage.from_prompt(user="context history")
+    new_message = LLMMessage.from_prompt(user="current")
+    context = ExecutionContext(llm_param=None, connection=None, llm_messages=[context_message])
+    create_request = cast(Callable[[LLMMessageLike | None, ExecutionContext], LLMRequest], captured["create_request"])
+    request = create_request(new_message, context)
+    request_without_new_message = create_request(None, context)
+
     assert result == ["agent-spec"]
+    assert request.messages == [buffer_message, new_message]
+    assert request_without_new_message.messages == [buffer_message]
+    assert request.system_prompt is not None
     assert captured["llm_param"] == configuration.llm_param
     assert captured["usage_limit"] == configuration.usage_limit
     assert captured["connection"] == "local"

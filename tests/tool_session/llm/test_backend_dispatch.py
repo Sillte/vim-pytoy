@@ -2,6 +2,7 @@ import threading
 from typing import Any, cast
 
 import pytest
+from pytoy_llm.models import LLMMessage
 from pytoy_llm.task.execution import TaskExecutionHandler
 from pytoy_llm.task.models import FunctionInvocationSpec, TaskRequest, TaskSpec
 
@@ -112,9 +113,11 @@ class RecordingDriver:
         self.called = threading.Event()
         self.dispatch_thread = False
         self.execution_handler = None
+        self.llm_message = None
 
-    def make_progress(self, execution_creator, llm_buffer_provider, user_prompt: str) -> None:
+    def make_progress(self, execution_creator, llm_buffer_provider, llm_message) -> None:
         self.dispatch_thread = TimerTask.is_dispatch_thread()
+        self.llm_message = llm_message
         self.execution_handler = execution_creator(self.task_request)
         self.called.set()
 
@@ -137,7 +140,7 @@ def test_make_progress_raises_when_dispatch_registration_fails(
 
 def test_make_progress_future_fails_when_driver_skips_execution_creation(dummy_impl) -> None:
     class MissingExecutionDriver:
-        def make_progress(self, execution_creator, llm_buffer_provider, user_prompt: str) -> None:
+        def make_progress(self, execution_creator, llm_buffer_provider, llm_message) -> None:
             pass
 
     session = LLMSessionHandler.create(
@@ -164,12 +167,36 @@ def test_make_progress_always_dispatches_and_future_waits_for_execution_exit(
     execution_handler, exit_emitter = make_execution_handler()
     set_recording_execution_handler(session, execution_handler)
 
+    llm_message = LLMMessage.from_prompt(user="main-thread prompt")
+
     try:
-        future = session.make_progress("main-thread prompt")
+        future = session.make_progress(llm_message)
         assert driver.called.wait(timeout=5)
+        assert driver.llm_message is llm_message
         assert driver.dispatch_thread
         assert driver.execution_handler is execution_handler
         assert not future.done()
+
+        exit_entity = make_execution_exit()
+        exit_emitter.fire(exit_entity)
+        assert future.result(timeout=1) is exit_entity
+    finally:
+        session.terminate()
+
+
+def test_make_progress_allows_a_run_without_a_new_message(dummy_impl, task_request: TaskRequest[int]) -> None:
+    driver = RecordingDriver(task_request)
+    session = LLMSessionHandler.create(
+        LLMSessionRequest.from_any(driver=driver),
+        manager=LLMSessionManager(),
+    )
+    execution_handler, exit_emitter = make_execution_handler()
+    set_recording_execution_handler(session, execution_handler)
+
+    try:
+        future = session.make_progress()
+        assert driver.called.wait(timeout=5)
+        assert driver.llm_message is None
 
         exit_entity = make_execution_exit()
         exit_emitter.fire(exit_entity)

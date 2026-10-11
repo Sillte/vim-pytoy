@@ -25,7 +25,7 @@ class IdeaRoutineHandler:
         self._driver = driver
 
         def _start_llm_progress(_: RoutineContext) -> None:
-            exit_entity = self.session_handler.make_progress("NON-USED INPUT").result()
+            exit_entity = self.session_handler.make_progress().result()
             if is_error(exit_entity.outcome):
                 raise exit_entity.outcome.exception
 
