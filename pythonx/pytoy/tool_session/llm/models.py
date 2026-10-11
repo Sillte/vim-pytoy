@@ -59,6 +59,8 @@ class LLMSessionBufferProvider:
 
 
 class LLMSessionDriverProtocol(Protocol):
+    """Drivers call the creator once synchronously; the returned execution may finish later."""
+
     def make_progress(
         self,
         execution_creator: Callable[[TaskRequest], LLMExecutionHandler],

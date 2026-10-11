@@ -3,6 +3,7 @@ from typing import Self
 
 from pytoy_llm.idea import IdeaSpace
 
+from pytoy.shared.lib.outcome import is_error
 from pytoy.shared.timertask.routine_session import (
     RoutineContext,
     RoutineSessionHandler,
@@ -24,7 +25,9 @@ class IdeaRoutineHandler:
         self._driver = driver
 
         def _start_llm_progress(_: RoutineContext) -> None:
-            self.session_handler.make_progress("NON-USED INPUT")
+            exit_entity = self.session_handler.make_progress("NON-USED INPUT").result()
+            if is_error(exit_entity.outcome):
+                raise exit_entity.outcome.exception
 
         self._routine_session_handler = RoutineSessionHandler.create(request=RoutineSessionRequest(kind=self.kind))
         self._routine_unit_handler = self._routine_session_handler.create_unit(

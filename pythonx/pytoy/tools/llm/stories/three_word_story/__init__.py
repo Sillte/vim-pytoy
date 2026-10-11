@@ -1,5 +1,6 @@
+from concurrent.futures import Future
 from pathlib import Path
-from typing import Callable, Self
+from typing import Any, Callable, Self
 
 from pytoy_llm.idea import IdeaSpace
 from pytoy_llm.ideas.stories.three_word_story import ThreeWordStoryStudio
@@ -107,5 +108,5 @@ class ThreeWordStoryHandler:
         llm_handler = LLMSessionHandler.create(request)
         return cls(llm_handler)
 
-    def make_progress(self, user_prompt: str):
-        self.idea_space_llm_handler.make_progress(user_prompt)
+    def make_progress(self, user_prompt: str) -> Future[LLMExecutionExit[Any]]:
+        return self.idea_space_llm_handler.make_progress(user_prompt)
