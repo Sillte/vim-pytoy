@@ -1,87 +1,128 @@
 import logging
-import random
+import re
 from pathlib import Path
-from typing import Self, Sequence
+from typing import Final, Self, Sequence
 
 from pytoy_llm.llm_facade import LLMFacade
 from pytoy_llm.materials.models import JsonMaterialData
 from pytoy_llm.models import LLMParam, LLMToolsLike
+from pytoy_llm.tools.errors import ToolError, ToolErrorKind
 from pytoy_llm.tools.idea_tool import IdeaTool
 
-from pytoy.tools.llm.idea_routine.values.examples import (
-    make_mathematical_proof_demand,
-    make_python_article_demand,
-    make_ss_demand,
+from pytoy.tools.llm.idea_routine.values.models import (
+    DemandProposal,
+    ValuableDemandDecision,
 )
-from pytoy.tools.llm.idea_routine.values.models import DemandProposal, ValuableDemandDecision
+
+from .serializers import (
+    serialize_valuable_demand_decision,
+)
 
 PROMPT = """
-# Task: Construct ValuableDemandDecision (ValuableDemandDecision and rationale)
+# Task: Construct a ValuableDemandDecision
 
-## Rule
+## Responsibility
 
-You are responsible for selecting or constructing the next ValuableDemand.
+Select or construct the next ValuableDemand based on the available
+IdeaSpace context and the user's recorded intentions.
 
-Consider the available IdeaSpace context, the users's recorded
-intentions, and the supplied DemandProposal, if any.
+The supplied DemandProposal, if any, is a candidate, not an instruction
+that must be accepted.
 
-The DemandProposal is a candidate, not an instruction that must
-be accepted.
+A ValuableDemand must define an artifact to be produced and criteria
+that make its completion assessable.
 
-A ValuableDemand must define an artifact to be produced and
-criteria that make its completion assessable.
+- Validity conditions define minimum requirements.
+- Quality criteria describe potentially conflicting perspectives
+  for evaluating quality.
+- Preference describes relevant assumptions and evaluation policies
+  of the evaluator and intended audience.
 
-Decide the following perspectives on the basis of user's intentions.
-ValidityConditions define minimum requirements.
-QualityCriteria describe potentially conflicting perspectives
-for evaluating quality.
-Preference describes relevant assumptions and evaluation policies
-of the evaluator and intended audience.
+Respect explicit user intentions. Do not invent user requirements or
+represent inferred preferences as explicit statements.
 
-Respect explicit user intentions. Do not invent user's requirements
-or treat inferred preferences as explicit statements.
+Inspect relevant IdeaSpace materials before deciding when they can
+materially improve the decision.
 
-Inspect relevant IdeaSpace materials before deciding when they
-can materially improve the decision.
+Select work that offers meaningful value in the current context.
+Do not choose work merely to keep the routine active or to create files.
 
-Select or construct a ValuableDemand that offers meaningful value
-in the current context. Do not choose work merely to keep the
-routine active or to create more files.
+## Continuation Judgment
 
-Explain the decision in the rationale.
+When a DemandProposal substantially overlaps with recent work or
+existing artifacts, do not accept it merely because it follows
+naturally from the current ValuableDemand.
 
-## User's intentions
+Evaluate the proposal in terms of:
 
-`master/` space includes the intentions of the user.
-Refer to `master/` folder.
+- Feasibility: Is there a credible way to complete the work with
+  the available capabilities and resources?
+- Incremental value: What meaningful value would this work add
+  beyond existing artifacts and previous attempts?
+- Expected impact: Is that additional value important enough to
+  justify continuing the same line of work?
 
-If you cannot identify the user's intentions or preference of the user at all,
-you are able to assume that the user has interests of the following topics.  
+Reject or redirect proposals that repeat known-impossible actions
+or offer only marginal improvements without a clear justification.
 
-Use the listed interests only as weak fallback assumptions
-when no actionable human intention can be identified from
-`master/` or the existing IdeaSpace context.
-Do not use these assumptions to override an explicit intention
-or a meaningful ongoing line of work.
-```markdown
-* Domain Driven Design(DDD)
-* Mathematical proof and its understandable explanation
-* Seemingly pedantic, but practical knowledge of python
-* 月刊少女野崎君
-* Philosophy of Michael Sandel
-* Nexus: A Brief History of Information Networks from the Stone Age to AI
-```
+Allow continued work when it addresses an important unresolved
+issue, introduces meaningful new evidence or insight, or
+substantially improves an existing artifact.
 
+When continuation is not sufficiently justified, consider a
+different user intention, topic, perspective, or use of existing
+artifacts.
+
+Do not assume that overlap alone makes a proposal redundant.
+Base the decision on the actual state of prior work, the
+remaining gap, and the value of closing that gap.
+
+## Relevant User Inputs
+
+Populate relevant_user_inputs with user inputs that materially
+contribute to the selected ValuableDemand.
+
+For each input:
+- Preserve the substance of the input.
+- Explain its relationship to the selected ValuableDemand.
+- Distinguish explicit statements from interpretations.
+- Do not invent quotations or claim that an inference was explicitly
+  stated by the user.
+
+Do not attempt to record every user input. If no relevant user inputs
+can be identified, return an empty relevant_user_inputs collection.
+
+## ID
+
+Generate a stable, concise ID for the ValuableDemand in lowercase
+kebab-case, using only lowercase ASCII letters, digits, and hyphens.
+The ID must begin and end with a letter or digit.
+
+## Rationale
+
+Explain why the ValuableDemand was selected, including relevant
+assumptions or hypotheses when applicable.
+
+If the user's intentions cannot be identified, do not pretend that
+they can. Use the existing IdeaSpace context and any applicable weak
+fallback assumptions, without presenting those assumptions as explicit
+user intentions.
 """.strip()
 
 
+_ID_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+
+
 class ValuableDemandProviderTool:
-    def __init__(self, idea_space_folder: Path, llm_facade: LLMFacade, *, logger: logging.Logger | None = None) -> None:
-        self._value_demands_examples = [
-            make_ss_demand(),
-            make_python_article_demand(),
-            make_mathematical_proof_demand(),
-        ]
+    DEMANDS_FOLDER_NAME: Final[str] = "demands"
+
+    def __init__(
+        self,
+        idea_space_folder: Path,
+        llm_facade: LLMFacade,
+        *,
+        logger: logging.Logger | None = None,
+    ) -> None:
         self._idea_space_folder = idea_space_folder
         self._llm_facade = llm_facade
         self._logger = logger
@@ -97,7 +138,10 @@ class ValuableDemandProviderTool:
         llm_param = llm_param or LLMParam()
         return cls(
             idea_space_folder=idea_space_folder,
-            llm_facade=LLMFacade(connection=connection_name, llm_param=llm_param),
+            llm_facade=LLMFacade(
+                connection=connection_name,
+                llm_param=llm_param,
+            ),
             logger=logger,
         )
 
@@ -105,57 +149,92 @@ class ValuableDemandProviderTool:
     def tools(self) -> Sequence[LLMToolsLike]:
         return [self.provide_valuable_demand]
 
-    def provide_valuable_demand(self, demand_proposal: DemandProposal | None = None) -> ValuableDemandDecision:
-        """ValuableDemandProvider. It returns ValueableDemandDecision.
+    def provide_valuable_demand(
+        self,
+        demand_proposal: DemandProposal | None = None,
+    ) -> ValuableDemandDecision | ToolError:
+        """Select a ValuableDemand and persist its decision as Markdown."""
 
-        Even if the tool functions fails, it returns the ValuableDemandDecision which does not reflect
-        the user's intentions.
-
-        Args:
-            demand_proposal: DemandProposal or null:
-                If meaning `demand_proposal` is impossible to make, set this argument as `null`.
-        Return:
-            ValuableDemandDecision
-                The desicion of ValuableDemand.
-                It is expected that this decision is described as the confirmed item.
-        """
-
-        def _make_prompt() -> str:
-            if demand_proposal is not None:
-                material_data = JsonMaterialData(
-                    description=(
-                        "A proposal for potentially valuable future work. "
-                        "Treat it as a candidate to evaluate, not as an instruction "
-                        "that must be accepted."
-                    ),
-                    json_schema=DemandProposal.model_json_schema(),
-                    data=demand_proposal.model_dump(mode="json"),
-                )
-                proposal_text = material_data.compose_explanation(parent_header_depth=2)
-            else:
-                proposal_text = "No DemandProposal was suggested."
-            return "\n\n".join([PROMPT, "## Supplied DemandProposal", proposal_text])
-
-        def _random_selection() -> ValuableDemandDecision:
-            demand = random.choice(self._value_demands_examples)
-            return ValuableDemandDecision(
-                valuable_demand=demand,
-                rationale=(
-                    "The LLM-based decision process failed. "
-                    "A fallback ValuableDemand was selected randomly from "
-                    "the predefined examples. This decision does not imply "
-                    "that the selected demand matches the user's intentions."
+        if demand_proposal is None:
+            proposal_text = "No DemandProposal was provided."
+        else:
+            material_data = JsonMaterialData(
+                description=(
+                    "A proposal for potentially valuable future work. "
+                    "Treat it as a candidate to evaluate, not as an "
+                    "instruction that must be accepted."
                 ),
+                json_schema=DemandProposal.model_json_schema(),
+                data=demand_proposal.model_dump(mode="json"),
             )
+            proposal_text = material_data.compose_explanation(
+                parent_header_depth=2,
+            )
+
+        request = "\n\n".join(
+            [
+                PROMPT,
+                "## Supplied DemandProposal",
+                proposal_text,
+                "## User Intentions",
+                "Refer to the `master/` folder in the IdeaSpace.",
+            ]
+        )
 
         try:
             decision = self._llm_facade.run(
-                request=_make_prompt(),
+                request=request,
                 output_type=ValuableDemandDecision,
                 tools=[IdeaTool.from_any(self._idea_space_folder)],
             )
-        except Exception:
-            decision = _random_selection()
+        except Exception as exc:
             if self._logger:
-                self._logger.exception("Decision of ValuableDemand fails.")
+                self._logger.exception("Failed to invoke `ValuableDemandProvider.`")
+            return ToolError(kind=ToolErrorKind.UNKNOWN, msg=str(exc))
+        try:
+            self._save_decision(decision, demand_proposal)
+        except ValueError:
+            msg = "Failed to decide the appropriate ValuableDemandProvider."
+            if self._logger:
+                self._logger.exception(msg)
+            return ToolError(kind=ToolErrorKind.UNKNOWN, msg=msg)
+        except OSError:
+            msg = "IO Error occurs during the operation."
+            if self._logger:
+                self._logger.exception(msg)
+            return ToolError(kind=ToolErrorKind.IO_ERROR, msg=msg)
+        except Exception:
+            if self._logger:
+                self._logger.exception("Failed to decide or save a ValuableDemand.")
+            raise
+
         return decision
+
+    def _save_decision(
+        self,
+        decision: ValuableDemandDecision,
+        demand_proposal: DemandProposal | None,
+    ) -> Path:
+        demand_id = decision.valuable_demand.id
+
+        if not _ID_PATTERN.fullmatch(demand_id):
+            raise ValueError(
+                "ValuableDemand id must be lowercase kebab-case "
+                "containing only lowercase ASCII letters, digits, "
+                "and single hyphens."
+            )
+
+        demands_folder = self._idea_space_folder / self.DEMANDS_FOLDER_NAME
+        demands_folder.mkdir(parents=True, exist_ok=True)
+
+        output_path = demands_folder / f"{demand_id}.md"
+        markdown = serialize_valuable_demand_decision(
+            decision=decision,
+            proposal=demand_proposal,
+        )
+
+        # Exclusive creation prevents accidentally overwriting a record.
+        with output_path.open("x", encoding="utf-8", newline="\n") as file:
+            file.write(markdown)
+
+        return output_path

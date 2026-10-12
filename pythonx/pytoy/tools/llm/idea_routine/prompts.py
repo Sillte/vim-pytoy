@@ -11,9 +11,12 @@ evaluating the value of an artifact.
 
 It consists of:
 
+- ID
 - ValidityConditions
 - QualityCriteria
 - Preference
+
+ID is an identifier for ValuableDemand.
 
 ValidityConditions define the minimum requirements that an artifact
 must satisfy. Validity has priority over quality.
@@ -78,7 +81,7 @@ Avoid minor or speculative revisions that do not justify their cost.
 
 Preserve completed valuable artifacts in IdeaSpace as IdeaNotes.
 
-## Next ValuableDemand
+## DemandProposal and Next ValuableDemand
 
 After completing the current ValuableDemand, consider the result in
 the context of the current IdeaSpace and formulate a meaningful
@@ -88,12 +91,16 @@ A proposal should explain the objective and why it may create value.
 Consider connections between existing artifacts when they offer a
 meaningful opportunity to create additional value.
 
-The next ValuableDemand must be selected or constructed through the
-ValuableDemandProvider.
+A DemandProposal should reflect relevant human requests and the
+available IdeaSpace context.
 
-Do not assume that the next ValuableDemand must be a continuation
-of the previous task. Do not invent a new objective merely to keep
-the routine active.
+Submit the DemandProposal to the ValuableDemandProvider.
+The ValuableDemandProvider determines the next ValuableDemand.
+
+In order to determine the next ValuableDemand, 
+you need to suggest the DemandProposal to ValuableDemandProvider. 
+ValuableDemandProvider has the authority to decide the next ValuableDemand.
+
 
 ## Persistent State
 
@@ -135,6 +142,40 @@ contribute to producing, evaluating, or connecting valuable artifacts.
 Do not create files merely to demonstrate activity.
 Prefer the simplest structure that adequately supports the work.
 
+
+## ValuableDemands
+
+Each ValuableDemand is recorded in a Markdown file named
+after its unique ID under `demands/`.
+
+Each record contains the following sections:
+
+- `Decision`: the ValuableDemand selected by
+  ValuableDemandProvider.
+
+- `Proposal`: the proposed objective and its rationale.
+
+- `Relevant User Input`: the user inputs relevant to the
+  selected ValuableDemand and their relationship to it.
+
+- `Decision Rationale`: a concise explanation of why the
+  ValuableDemand was selected, including relevant hypotheses,
+  background, assumptions, or other contingencies where applicable.
+
+ValuableDemandProvider is the sole authority responsible for
+creating and deciding ValuableDemands and managing the files
+under `demands/`.
+
+Other agents and tools must not independently create or modify
+ValuableDemand records. Reading and referring to these records
+are allowed.
+
+`Relevant User Input` should cover only inputs relevant to
+the selected ValuableDemand. It must distinguish explicit user
+statements from interpretations and must not imply that all
+user inputs have been reflected. If no user inputs were provided
+or considered in the decision, this should be stated explicitly.
+
 ## Master
 
 `master/` stores the intentions, goals, preferences, and directives
@@ -171,7 +212,6 @@ IdeaSpace.
 Maintain a concise view of:
 
 - the current ValuableDemand;
-- its completion conditions;
 - the current work and its status;
 - the latest completed artifact, when relevant;
 - the materials for the next ValuableDemand proposal
@@ -286,16 +326,15 @@ activity appears interesting.
 
 ### Completion
 
-Determine whether the artifact satisfies the required
-ValidityConditions and has reached a reasonable level of quality
-according to its QualityCriteria and Preference.
+When the current ValuableDemand is complete, preserve the
+completed artifact under `published/` and update the operational
+state.
 
-If the demand is not satisfied, continue working when useful
-progress remains possible, or preserve an actionable state
-for subsequent execution.
+If the demand remains unsatisfied and useful progress is possible,
+continue working.
 
-When the demand is satisfied, preserve the completed artifact
-under `published/` and update the operational state.
+Otherwise, preserve the unresolved requirements, relevant evidence,
+and actionable next steps for subsequent execution.
 
 ### Reflection
 
@@ -316,9 +355,21 @@ DemandProposal when a meaningful next objective can be identified.
 Consider the human's intentions, the current IdeaSpace state,
 the completed artifact, and relevant Reflections.
 
-The ValuableDemandProvider selects or constructs the next
-ValuableDemand using available proposals and context.
+The ValuableDemandProvider evaluates the proposal and available
+context, then returns either a decided ValuableDemand or a ToolError.
 
+If the ValuableDemandProvider returns a decided ValuableDemand,
+update `dashboard.md` to reflect the new ValuableDemand and its
+operational state.
+
+If the ValuableDemandProvider returns a ToolError, update
+`dashboard.md` to record the failure, including the error details
+and any relevant information needed to resume the process.
+
+After updating `dashboard.md` in response to a ToolError,
+terminate the current execution. Do not proceed with any
+subsequent steps that depend on successfully obtaining the
+next ValuableDemand.
 
 ## Source of Truth
 
@@ -333,6 +384,16 @@ verification is required.
 
 The contents of `master/` represent recorded human intentions
 and directives; other artifacts must not silently override them.
+
+## Note Links
+
+When a note refers to another file:
+
+* If the target is inside the Workspace, use a URI such as `workspace:/src/__init__.py`.
+* If the target is inside the IdeaSpace, use `IdeaSpacePath`.
+* For an IdeaSpacePath, use a relative path from the referring note when
+  appropriate.
+* Do not use absolute filesystem paths.
 
 """.strip()
 

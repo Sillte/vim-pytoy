@@ -25,6 +25,20 @@ from .values.tools import ValuableDemandProviderTool
 EXCEPTION_LOG_FOLDER_NAME = "exceptions"
 RESPONSE_LOG_FOLDER_NAME = "responses"
 MASTER_FOLDER_NAME = "master"
+INITIAL_USER_INTENT = """
+# Initial User Intent
+
+No explicit user intent has been recorded yet.
+
+When proposing valuable work, consider relevant existing materials
+in the IdeaSpace and the available workspace. Do not treat inferred
+interests as explicit user intentions.
+
+---
+## To the User
+
+Please describe your intentions in this file.
+""".strip()
 
 
 def _construct_system_prompt(idea_space: IdeaSpace) -> str:
@@ -93,7 +107,7 @@ class IdeaRoutineDriver(LLMSessionDriverProtocol):
     @classmethod
     def from_any(cls, idea_space_folder: str | Path | IdeaSpace, workspace: Path | None = None) -> Self:
         if not isinstance(idea_space_folder, IdeaSpace):
-            idea_space = IdeaSpace.from_path(path=idea_space_folder)
+            idea_space = IdeaSpace.from_path(path=idea_space_folder, with_creation=True)
         else:
             idea_space = idea_space_folder
         return cls(idea_space=idea_space, workspace=workspace)
@@ -147,11 +161,17 @@ class IdeaRoutineDriver(LLMSessionDriverProtocol):
 
     def _prepare_idea_space(self) -> None:
         convention_path = self.folder_path / ".convention.md"
-        master_folder_path = self.folder_path / "master"
+        master_folder_path = self.folder_path / MASTER_FOLDER_NAME
         if not self.folder_path.exists():
             self.folder_path.mkdir(exist_ok=True, parents=True)
         if not convention_path.exists():
             convention_path.write_text(CONVENTION, encoding="utf8")
 
-        if not master_folder_path.exists():
-            master_folder_path.mkdir(exist_ok=True, parents=True)
+        master_folder_path.mkdir(exist_ok=True, parents=True)
+
+        initial_intent_path = master_folder_path / "intentions.md"
+        if not initial_intent_path.exists():
+            initial_intent_path.write_text(
+                INITIAL_USER_INTENT,
+                encoding="utf-8",
+            )

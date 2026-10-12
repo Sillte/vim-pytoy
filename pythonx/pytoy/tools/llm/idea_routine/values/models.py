@@ -1,8 +1,15 @@
+import uuid
+
 from pydantic import BaseModel, Field
 
 
 class ValuableDemand(BaseModel, frozen=True):
     """A set of criteria supplied by the external world for evaluating the value of an artifact."""
+
+    id: str = Field(
+        description="Identifier of ValuableDemand. It must be the unique and the valid name of the file.",
+        default_factory=lambda: str(uuid.uuid4()),
+    )
 
     validity_conditions: str = Field(
         description="Minimum requirements that an artifact must satisfy in order to satisfy the ValuableDemand. Validity has priority over quality."
@@ -36,6 +43,19 @@ class DemandProposal(BaseModel, frozen=True):
     )
 
 
+class RelevantUserInput(BaseModel, frozen=True):
+    """A user input relevant to the selected ValuableDemand."""
+
+    input: str = Field(description="The relevant user input, preserving the meaning of the original statement.")
+
+    relationship: str = Field(
+        description=(
+            "How this input relates to the selected ValuableDemand. "
+            "Distinguish explicit user statements from interpretations."
+        )
+    )
+
+
 class ValuableDemandDecision(BaseModel, frozen=True):
     """The result of selecting or constructing a ValuableDemand."""
 
@@ -45,4 +65,13 @@ class ValuableDemandDecision(BaseModel, frozen=True):
         description=(
             "Why this demand was selected or constructed, considering human intent, proposals, and IdeaSpace context."
         )
+    )
+
+    relevant_user_inputs: tuple[RelevantUserInput, ...] = Field(
+        default=(),
+        description=(
+            "User inputs relevant to this decision and their relationship to the "
+            "selected ValuableDemand. Include only relevant inputs; do not imply "
+            "that all user inputs have been reflected."
+        ),
     )
