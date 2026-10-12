@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, ClassVar, Self
+from typing import Callable, ClassVar, Literal, Self
 
 from pytoy_llm.idea import IdeaSpace
 from pytoy_llm.models import LLMRequest, LLMRequestLike, LLMTokens
@@ -11,6 +11,7 @@ from pytoy_llm.tools.workspace_explorer import WorkspaceExplorer
 
 from pytoy.shared.lib.outcome import is_error
 from pytoy.shared.pytoy_configuration import PytoyConfiguration
+from pytoy.shared.ui import PytoyBuffer
 from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler
 from pytoy.tool_session.llm import (
     LLMMessageLike,
@@ -19,6 +20,8 @@ from pytoy.tool_session.llm import (
     TaskRequest,
 )
 
+from .body_codec import BufferBodyCodec
+from .metadata_codec import BufferMetadataCodec
 from .prompts import BASE_SYSTEM_PROMPT, CONVENTION, SYSTEM_PERSONALITY
 from .values.tools import ValuableDemandProviderTool
 
@@ -95,12 +98,16 @@ def _make_task_spec(
     )
 
 
+type RoutineStatus = Literal["idle", "working"]
+
+
 class IdeaRoutineDriver(LLMSessionDriverProtocol):
     kind: ClassVar[str] = "idea-routine"
 
     def __init__(self, idea_space: IdeaSpace, workspace: Path | None, *, logger: logging.Logger | None = None) -> None:
         self._idea_space = idea_space
         self._workspace = workspace
+        self._routine_status: RoutineStatus = "idle"
         self._llm_tokens = LLMTokens(prompt=0, completion=0, total=0, cache_read=0, cache_write=0)
         self._logger = logger or PytoyConfiguration().get_logger(location="global", level=logging.INFO)
 
@@ -121,16 +128,20 @@ class IdeaRoutineDriver(LLMSessionDriverProtocol):
         llm_buffer_provider: LLMSessionBufferProvider,
         llm_message: LLMMessageLike | None,
     ) -> None:
-        _ = llm_buffer_provider
-
         task_spec = _make_task_spec(self._idea_space, workspace=self._workspace)
         task_request = TaskRequest(spec=task_spec, input=llm_message)
 
         execution_handler = execution_creator(task_request)
-        execution_handler.on_exit.subscribe(lambda exit_entity: self.on_exit(exit_entity))
+        execution_handler.on_exit.subscribe(
+            lambda exit_entity: self.on_exit(exit_entity, llm_buffer_provider=llm_buffer_provider)
+        )
         execution_handler.start()
 
-    def on_exit(self, exit_entity: LLMExecutionExit) -> None:
+        self._routine_status = "working"
+        buffer = llm_buffer_provider.provide()
+        self.update_buffer(buffer)
+
+    def on_exit(self, exit_entity: LLMExecutionExit, llm_buffer_provider: LLMSessionBufferProvider) -> None:
         if is_error(exit_entity.outcome):
             exception = exit_entity.outcome.exception
             try:
@@ -150,6 +161,24 @@ class IdeaRoutineDriver(LLMSessionDriverProtocol):
                 response_file.write_text(str(result.output))
             except OSError:
                 pass
+
+        self._routine_status = "idle"
+        buffer = llm_buffer_provider.provide()
+        self.update_buffer(buffer)
+
+    def update_buffer(self, buffer: PytoyBuffer) -> None:
+        metadata_codec = BufferMetadataCodec.from_any(
+            kind=self.kind,
+            workspace_name=self._workspace,
+            working_status=self._routine_status,
+            llm_tokens=self._llm_tokens,
+        )
+        patch = metadata_codec.create_patch(buffer.content)
+        buffer.range_operator.apply_patch(patch)
+
+        body_codec = BufferBodyCodec.from_any(idea_space=self._idea_space)
+        patch = body_codec.create_patch(buffer.content)
+        buffer.range_operator.apply_patch(patch)
 
     @property
     def idea_space(self) -> IdeaSpace:
