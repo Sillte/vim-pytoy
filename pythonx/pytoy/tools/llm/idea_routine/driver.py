@@ -15,6 +15,7 @@ from pytoy.shared.ui import PytoyBuffer
 from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler
 from pytoy.tool_session.llm import (
     LLMMessageLike,
+    LLMSessionBufferHooks,
     LLMSessionBufferProvider,
     LLMSessionDriverProtocol,
     TaskRequest,
@@ -179,6 +180,16 @@ class IdeaRoutineDriver(LLMSessionDriverProtocol):
         body_codec = BufferBodyCodec.from_any(idea_space=self._idea_space)
         patch = body_codec.create_patch(buffer.content)
         buffer.range_operator.apply_patch(patch)
+
+    @classmethod
+    def build_buffer_hooks(cls, idea_space: IdeaSpace) -> LLMSessionBufferHooks:
+        # TODO: We have to condier the special handling of the links based on the `idea_space`
+        actions = dict()
+
+        def on_creation(buffer):
+            buffer.metadata.data["idea-space"] = idea_space
+
+        return LLMSessionBufferHooks(actions=actions, on_creation=on_creation)
 
     @property
     def idea_space(self) -> IdeaSpace:

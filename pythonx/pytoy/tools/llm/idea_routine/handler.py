@@ -71,6 +71,7 @@ class IdeaRoutineHandler:
             buffer_source=BufferSource.from_no_file(name=IdeaRoutineHandler.buffer_name),
             kind=cls.kind,
             metadata=metadata,
+            buffer_hooks=driver.build_buffer_hooks(idea_space),
             interface="autonomous",
         )
         llm_handler = LLMSessionHandler.create(request)

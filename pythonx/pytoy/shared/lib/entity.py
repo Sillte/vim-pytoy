@@ -1,7 +1,6 @@
 from typing import Callable, Hashable, Protocol
-from weakref import WeakValueDictionary
 
-from pytoy.shared.lib.event.domain import Event
+from pytoy.shared.lib.event.domain import Disposable, Event
 
 
 class MortalEntityProtocol[T](Protocol):
@@ -15,6 +14,8 @@ class MortalEntityProtocol[T](Protocol):
 
 
 class EntityRegistry[ID: Hashable, E: MortalEntityProtocol]:
+    """Keep registered entities alive until their ``on_end`` event fires."""
+
     def __init__(
         self,
         entity_cls: type[E],
@@ -23,7 +24,8 @@ class EntityRegistry[ID: Hashable, E: MortalEntityProtocol]:
     ):
         self._entity_cls = entity_cls
         self._factory = factory or self._default_factory
-        self._entities: WeakValueDictionary[ID, E] = WeakValueDictionary()
+        self._entities: dict[ID, E] = {}
+        self._disposables: dict[ID, Disposable] = {}
 
     def _default_factory(self, entity_id: ID) -> E:
         return self._entity_cls(entity_id)  # type: ignore
@@ -32,8 +34,10 @@ class EntityRegistry[ID: Hashable, E: MortalEntityProtocol]:
         if entity_id not in self._entities:
             entity = self._factory(entity_id)
             self._entities[entity_id] = entity
-            entity.on_end.subscribe(lambda id_: self._dispose(id_))
+            self._disposables[entity_id] = entity.on_end.subscribe(lambda id_: self._dispose(id_))
         return self._entities[entity_id]
 
     def _dispose(self, entity_id: ID) -> None:
         self._entities.pop(entity_id, None)
+        if disposable := self._disposables.pop(entity_id, None):
+            disposable.dispose()
