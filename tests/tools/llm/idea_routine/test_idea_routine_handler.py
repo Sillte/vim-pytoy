@@ -6,8 +6,8 @@ from typing import cast
 from pytoy.shared.lib.event import EventEmitter
 from pytoy.shared.lib.outcome import Error, Success
 from pytoy.tool_session.llm import LLMSessionHandler
-from pytoy.tools.llm.idea_routine.driver import IdeaRoutineDriver
-from pytoy.tools.llm.idea_routine.handler import IdeaRoutineHandler
+from pytoy.tools.llm.idea_circulation.driver import IdeaCirculationDriver
+from pytoy.tools.llm.idea_circulation.handler import IdeaCirculationHandler
 
 
 class RecordingSessionHandler:
@@ -32,7 +32,7 @@ class RecordingSessionHandler:
 
 def test_idea_routine_waits_for_progress_exit_before_finishing_iteration() -> None:
     session_handler = RecordingSessionHandler()
-    handler = IdeaRoutineHandler(cast(LLMSessionHandler, session_handler), cast(IdeaRoutineDriver, object()))
+    handler = IdeaCirculationHandler(cast(LLMSessionHandler, session_handler), cast(IdeaCirculationDriver, object()))
     iteration_exited = threading.Event()
     handler._routine_unit_handler.on_iteration_exit.subscribe(lambda _: iteration_exited.set())
 
@@ -52,7 +52,7 @@ def test_idea_routine_waits_for_progress_exit_before_finishing_iteration() -> No
 
 def test_idea_routine_propagates_execution_failure_to_iteration() -> None:
     session_handler = RecordingSessionHandler()
-    handler = IdeaRoutineHandler(cast(LLMSessionHandler, session_handler), cast(IdeaRoutineDriver, object()))
+    handler = IdeaCirculationHandler(cast(LLMSessionHandler, session_handler), cast(IdeaCirculationDriver, object()))
     iteration_exits = []
     iteration_exited = threading.Event()
 
