@@ -13,14 +13,14 @@ from pytoy.shared.timertask.routine_session import (
 from pytoy.shared.ui.pytoy_buffer import BufferSource
 from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery, LLMSessionRequest
 
-from .driver import IdeaRoutineDriver
+from .driver import IdeaCirculationDriver
 
 
-class IdeaRoutineHandler:
-    kind = IdeaRoutineDriver.kind
+class IdeaCirculationHandler:
+    kind = IdeaCirculationDriver.kind
     buffer_name = "__idea-routine__"
 
-    def __init__(self, session_handler: LLMSessionHandler, driver: IdeaRoutineDriver) -> None:
+    def __init__(self, session_handler: LLMSessionHandler, driver: IdeaCirculationDriver) -> None:
         self._session_handler = session_handler
         self._driver = driver
 
@@ -55,7 +55,7 @@ class IdeaRoutineHandler:
         if llm_handlers:
             llm_handler = llm_handlers[0]
             session_driver = llm_handler.driver
-            if isinstance(session_driver, IdeaRoutineDriver):
+            if isinstance(session_driver, IdeaCirculationDriver):
                 return cls(llm_handler, session_driver)
             else:
                 raise RuntimeError("IdeaRoutineDriver is not preserved.")
@@ -65,21 +65,16 @@ class IdeaRoutineHandler:
                 "An idea-routine session already exists for different metadata: "
                 f"{existing_handlers[0].metadata} != {metadata}"
             )
-        driver = IdeaRoutineDriver.from_any(idea_space, workspace=workspace)
+        driver = IdeaCirculationDriver.from_any(idea_space, workspace=workspace)
         request = LLMSessionRequest.from_any(
             driver=driver,
-            buffer_source=BufferSource.from_no_file(name=IdeaRoutineHandler.buffer_name),
+            buffer_source=BufferSource.from_no_file(name=IdeaCirculationHandler.buffer_name),
             kind=cls.kind,
             metadata=metadata,
             buffer_hooks=driver.build_buffer_hooks(idea_space),
             interface="autonomous",
         )
         llm_handler = LLMSessionHandler.create(request)
-        try:
-            driver.initialize_session()
-        except Exception:
-            llm_handler.terminate()
-            raise
         return cls(llm_handler, driver)
 
     def start(self) -> None:

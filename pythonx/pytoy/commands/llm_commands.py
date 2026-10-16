@@ -6,7 +6,7 @@ from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider, Windo
 
 app = App()
 idea_chat_group = Group("IdeaChat")
-idea_routine_group = Group("IdeaRoutine")
+idea_curculation_group = Group("IdeaCirculation")
 
 
 @app.command("LLMConfig")
@@ -94,22 +94,22 @@ def idea_chat_config() -> None:
     idea_chat_handler.open_configuration_file()
 
 
-@app.command("LLMRoutine")
-def llm_routine():
+@app.command("LLMCirculation")
+def llm_curculation():
     idea_routine_start()
 
 
-@idea_routine_group.command("start")
+@idea_curculation_group.command("start")
 def idea_routine_start():
     from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery
 
     handlers = LLMSessionHandler.query(query=LLMSessionQuery(interface="autonomous"))
     if not handlers:
-        handler = _construct_idea_routine()
+        handler = _construct_idea_circulation()
         handler.start()
 
 
-@idea_routine_group.command("terminate")
+@idea_curculation_group.command("terminate")
 def idea_rotine_terminate():
     from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery
 
@@ -141,10 +141,10 @@ def _construct_idea_chat(name: str = "chat_default"):
     return idea_chat_handler
 
 
-def _construct_idea_routine(name: str = "routine_default"):
+def _construct_idea_circulation(name: str = "cirtulation_default"):
     from pytoy.shared.storage import GlobalStorage, WorkspaceStorage
     from pytoy.tool_execution.execution_environment import EnvironmentManager
-    from pytoy.tools.llm.idea_routine.handler import IdeaRoutineHandler
+    from pytoy.tools.llm.idea_circulation.handler import IdeaCirculationHandler
 
     buffer = PytoyBuffer.get_current()
     if not buffer.path:
@@ -154,11 +154,11 @@ def _construct_idea_routine(name: str = "routine_default"):
     if workspace:
         storage = WorkspaceStorage.from_path(workspace)
         idea_space = storage.storage_root / "idea-spaces" / name
-        return IdeaRoutineHandler.from_any(idea_space, workspace=storage.workspace)
+        return IdeaCirculationHandler.from_any(idea_space, workspace=storage.workspace)
     else:
         storage = GlobalStorage()
         idea_space = storage.storage_root / "idea-spaces" / name
-        return IdeaRoutineHandler.from_any(idea_space, workspace=None)
+        return IdeaCirculationHandler.from_any(idea_space, workspace=None)
 
 
 @app.command("ThreeWordStoryLLM")
