@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import Future, InvalidStateError
 from functools import cached_property
 from typing import Self, Sequence
 
@@ -73,12 +74,21 @@ class LLMExecutionHandler[T]:
         return self._require_task_handler().status
 
     @backend_or_main_thread_only
-    def start(self, hooks: LLMExecutionHooks | None = None) -> None:
+    def start(self, hooks: LLMExecutionHooks | None = None) -> Future[LLMExecutionExit[T]]:
         hooks = hooks or LLMExecutionHooks.from_any()
+        future: Future[LLMExecutionExit[T]] = Future()
+
+        def complete(exit_entity: LLMExecutionExit[T]) -> None:
+            try:
+                future.set_result(exit_entity)
+            except InvalidStateError:
+                if not future.cancelled():
+                    raise
 
         def start_execution(execution: LLMExecution[T]) -> None:
             disposables = []
             try:
+                disposables.append(self.on_exit.once().subscribe(complete))
                 disposables.append(
                     self.on_exit.map(lambda exit_entity: exit_entity.outcome)
                     .filter(is_success)
@@ -101,6 +111,7 @@ class LLMExecutionHandler[T]:
                 raise
 
         self._manager.start_execution(self._id, start_execution)
+        return future
 
     @property
     def id(self) -> LLMExecutionID:

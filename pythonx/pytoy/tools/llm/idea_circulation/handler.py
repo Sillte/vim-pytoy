@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Self
+from typing import Literal, Self
 
 from pytoy_llm.idea import IdeaSpace
 
@@ -15,10 +15,12 @@ from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery, LLMSessio
 
 from .driver import IdeaCirculationDriver
 
+type RoutineStatus = Literal["idle", "working"]
+
 
 class IdeaCirculationHandler:
     kind = IdeaCirculationDriver.kind
-    buffer_name = "__idea-routine__"
+    buffer_name = "__idea-circulation__"
 
     def __init__(self, session_handler: LLMSessionHandler, driver: IdeaCirculationDriver) -> None:
         self._session_handler = session_handler
@@ -58,11 +60,11 @@ class IdeaCirculationHandler:
             if isinstance(session_driver, IdeaCirculationDriver):
                 return cls(llm_handler, session_driver)
             else:
-                raise RuntimeError("IdeaRoutineDriver is not preserved.")
+                raise RuntimeError("IdeaCirculationDriver is not preserved.")
         existing_handlers = LLMSessionHandler.query(LLMSessionQuery.from_any(kind=cls.kind))
         if existing_handlers:
             raise ValueError(
-                "An idea-routine session already exists for different metadata: "
+                "An idea-circulation session already exists for different metadata: "
                 f"{existing_handlers[0].metadata} != {metadata}"
             )
         driver = IdeaCirculationDriver.from_any(idea_space, workspace=workspace)

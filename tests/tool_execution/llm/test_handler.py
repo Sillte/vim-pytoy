@@ -1,5 +1,7 @@
 import threading
+from concurrent.futures import Future
 
+import pytest
 from pytoy_llm.task.models import FunctionInvocationSpec, TaskSpec
 
 from pytoy.shared.timertask import TimerTask
@@ -38,10 +40,45 @@ def test_start_calls_result_hook_and_removes_finished_execution() -> None:
         results.append(result.output)
         finished.set()
 
-    handler.start(LLMExecutionHooks.from_any(on_result=on_result))
+    future = handler.start(LLMExecutionHooks.from_any(on_result=on_result))
+
+    assert isinstance(future, Future)
+    assert finished.wait(5)
+    exit_entity = future.result(timeout=5)
+    assert exit_entity.id == handler.id
+    assert exit_entity.outcome.value.output == 2
+    assert [result for result in results] == [2]
+    assert manager.get(handler.id) is None
+
+
+def test_cancelling_future_does_not_cancel_execution() -> None:
+    manager = LLMExecutionManager()
+    started = threading.Event()
+    release = threading.Event()
+    finished = threading.Event()
+    results = []
+
+    def invoke(value: int) -> int:
+        started.set()
+        assert release.wait(5)
+        return value + 1
+
+    def on_result(result) -> None:
+        results.append(result.output)
+        finished.set()
+
+    handler = LLMExecutionHandler.create(make_request(invoke), manager=manager)
+    future = handler.start(LLMExecutionHooks.from_any(on_result=on_result))
+
+    try:
+        assert started.wait(5)
+        assert future.cancel()
+    finally:
+        release.set()
 
     assert finished.wait(5)
-    assert [result for result in results] == [2]
+    assert future.cancelled()
+    assert results == [2]
     assert manager.get(handler.id) is None
 
 
@@ -84,9 +121,25 @@ def test_start_calls_exception_hook_for_failed_invocation() -> None:
 
     handler = LLMExecutionHandler.create(make_request(fail), manager=manager)
 
-    handler.start(LLMExecutionHooks.from_any(on_exception=on_exception))
+    future = handler.start(LLMExecutionHooks.from_any(on_exception=on_exception))
 
     assert finished.wait(5)
+    exit_entity = future.result(timeout=5)
+    assert exit_entity.id == handler.id
+    assert exit_entity.outcome.exception is exceptions[0]
     assert len(exceptions) == 1
     assert isinstance(exceptions[0], Exception)
     assert manager.get(handler.id) is None
+
+
+def test_start_raises_startup_errors_synchronously() -> None:
+    manager = LLMExecutionManager()
+    handler = LLMExecutionHandler.create(make_request(lambda value: value + 1), manager=manager)
+
+    def reject_start(_execution_id, _start) -> None:
+        raise RuntimeError("startup failed")
+
+    manager.start_execution = reject_start
+
+    with pytest.raises(RuntimeError, match="startup failed"):
+        handler.start()

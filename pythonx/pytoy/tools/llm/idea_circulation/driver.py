@@ -52,9 +52,9 @@ class IdeaCirculationDriver(LLMSessionDriverProtocol):
         llm_buffer_provider: LLMSessionBufferProvider,
         llm_message: LLMMessageLike | None,
     ) -> None:
-        from .value_cycle.task_maker import make_task_spec
+        from .orchestrator.task_creators import make_value_cycle_spec
 
-        task_spec = make_task_spec(self._idea_space, workspace=self._workspace)
+        task_spec = make_value_cycle_spec(self._idea_space, workspace=self._workspace)
         task_request = TaskRequest(spec=task_spec, input=llm_message)
 
         execution_handler = execution_creator(task_request)
