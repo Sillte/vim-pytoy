@@ -4,7 +4,7 @@ from typing import Any, cast
 import pytest
 from pytoy_llm.models import LLMMessage
 from pytoy_llm.task.execution import TaskExecutionHandler
-from pytoy_llm.task.models import FunctionInvocationSpec, TaskRequest, TaskSpec
+from pytoy_llm.task.models import FunctionInvocationSpec, TaskContextState, TaskRequest, TaskSpec
 
 from pytoy.contexts.core import GlobalCoreContext
 from pytoy.shared.lib.event import EventEmitter
@@ -120,6 +120,44 @@ class RecordingDriver:
         self.llm_message = llm_message
         self.execution_handler = execution_creator(self.task_request)
         self.called.set()
+
+
+def test_execute_task_from_worker_uses_session_context_and_returns_exit(
+    dummy_impl, task_request: TaskRequest[int]
+) -> None:
+    task_context = TaskContextState()
+    session = LLMSessionHandler.create(
+        LLMSessionRequest.from_any(driver=RecordingDriver(task_request), task_context=task_context),
+        manager=LLMSessionManager(),
+    )
+    futures = []
+    errors: list[Exception] = []
+
+    def execute_task() -> None:
+        try:
+            futures.append(session.execute_task(task_request))
+        except Exception as error:
+            errors.append(error)
+
+    worker = threading.Thread(target=execute_task)
+    worker.start()
+    worker.join(timeout=5)
+
+    try:
+        assert not worker.is_alive()
+        assert errors == []
+        assert len(futures) == 1
+
+        exit_entity = futures[0].result(timeout=5)
+        assert exit_entity.outcome.value.output == 2
+        session_model = session._manager.get(session._id)
+        assert session_model is not None
+        task_session = session_model.task_session_handler
+        task_record = next(record for record in task_session.records if record.id == exit_entity.id)
+        assert task_record.request.context_state is task_context
+        assert task_record.status == "finished"
+    finally:
+        session.terminate()
 
 
 def test_make_progress_raises_when_dispatch_registration_fails(

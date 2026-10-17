@@ -22,7 +22,7 @@ Otherwise, `NoValuableDemand` should be passed.
 """.strip()
 
 
-def make_value_cycle_spec(idea_space: IdeaSpace, workspace: Path | None) -> TaskSpec:
+def make_value_cycle_task_spec(idea_space: IdeaSpace, workspace: Path | None) -> TaskSpec:
     prepare_idea_space(idea_space)
     invocations = [
         make_value_demand_provide_spec(idea_space, workspace=workspace),

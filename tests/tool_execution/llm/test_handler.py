@@ -1,5 +1,6 @@
 import threading
 from concurrent.futures import Future
+from typing import cast
 
 import pytest
 from pytoy_llm.task.models import FunctionInvocationSpec, TaskSpec
@@ -143,3 +144,80 @@ def test_start_raises_startup_errors_synchronously() -> None:
 
     with pytest.raises(RuntimeError, match="startup failed"):
         handler.start()
+
+
+def test_execute_returns_future_when_called_from_worker_thread() -> None:
+    manager = LLMExecutionManager()
+    completed = threading.Event()
+    futures = []
+    errors = []
+
+    def call_execute() -> None:
+        try:
+            futures.append(
+                LLMExecutionHandler.execute(
+                    make_request(lambda value: value + 1),
+                    hooks=LLMExecutionHooks.from_any(on_result=lambda _: completed.set()),
+                    manager=manager,
+                )
+            )
+        except Exception as error:
+            errors.append(error)
+
+    caller = threading.Thread(target=call_execute)
+    caller.start()
+    caller.join(timeout=5)
+
+    assert not caller.is_alive()
+    assert errors == []
+    assert len(futures) == 1
+    future = futures[0]
+    assert isinstance(future, Future)
+    assert completed.wait(5)
+    exit_entity = future.result(timeout=1)
+    assert exit_entity.outcome.value.output == 2
+    assert manager.get(exit_entity.id) is None
+
+
+def test_execute_returns_exit_for_failed_invocation() -> None:
+    manager = LLMExecutionManager()
+    completed = threading.Event()
+    exceptions = []
+
+    def fail(_):
+        raise ValueError("expected failure")
+
+    def on_exception(exception) -> None:
+        exceptions.append(exception)
+        completed.set()
+
+    future = LLMExecutionHandler.execute(
+        make_request(fail),
+        hooks=LLMExecutionHooks.from_any(on_exception=on_exception),
+        manager=manager,
+    )
+
+    assert completed.wait(5)
+    exit_entity = future.result(timeout=1)
+    assert exit_entity.outcome.exception is exceptions[0]
+    assert len(exceptions) == 1
+    assert manager.get(exit_entity.id) is None
+
+
+def test_execute_sets_future_exception_when_hook_setup_fails() -> None:
+    manager = LLMExecutionManager()
+
+    class FailingHooks:
+        @property
+        def on_result(self):
+            raise RuntimeError("hook setup failed")
+
+        @property
+        def on_exception(self):
+            return lambda _: None
+
+    hooks = cast(LLMExecutionHooks[int], FailingHooks())
+    future = LLMExecutionHandler.execute(make_request(lambda value: value + 1), hooks=hooks, manager=manager)
+
+    with pytest.raises(RuntimeError, match="hook setup failed"):
+        future.result(timeout=5)

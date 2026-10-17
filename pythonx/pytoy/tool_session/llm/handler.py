@@ -1,4 +1,4 @@
-from concurrent.futures import Future
+from concurrent.futures import Future, InvalidStateError
 from dataclasses import replace
 from threading import Lock, current_thread
 from typing import Any, Callable, Self, Sequence
@@ -9,7 +9,7 @@ from pytoy_llm.task.models import TaskRequest
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
 from pytoy.shared.timertask import backend_thread_dispatch
-from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler
+from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler, LLMExecutionHooks
 
 from .manager import LLMSessionManager
 from .models import (
@@ -92,6 +92,56 @@ class LLMSessionHandler:
     @property
     def driver(self) -> LLMSessionDriverProtocol:
         return self._require_session().driver
+
+    def execute_task[T](
+        self,
+        task_request: TaskRequest[T],
+        hooks: LLMExecutionHooks[T] | None = None,
+    ) -> Future[LLMExecutionExit[T]]:
+        """Execute a task using this session's context and return its eventual exit."""
+        future: Future[LLMExecutionExit[T]] = Future()
+        completion_lock = Lock()
+
+        def _set_result(exit_entity: LLMExecutionExit[T]) -> None:
+            with completion_lock:
+                try:
+                    if not future.done():
+                        future.set_result(exit_entity)
+                except InvalidStateError:
+                    if not future.cancelled():
+                        raise
+
+        def _set_exception(error: Exception) -> None:
+            with completion_lock:
+                try:
+                    if not future.done():
+                        future.set_exception(error)
+                except InvalidStateError:
+                    if not future.cancelled():
+                        raise
+
+        def _transfer_execution_exit(execution_future: Future[LLMExecutionExit[T]]) -> None:
+            try:
+                _set_result(execution_future.result())
+            except Exception as error:
+                _set_exception(error)
+
+        def _dispatch() -> None:
+            try:
+                session = self._manager.get(self._id)
+                if session is None:
+                    raise ValueError(f"Session is already eliminated. `{self._id=}`")
+                execution_handler = self.make_execution_handler(task_request)
+                execution_future = execution_handler.start(hooks=hooks)
+                execution_future.add_done_callback(_transfer_execution_exit)
+            except Exception as error:
+                _set_exception(error)
+
+        try:
+            backend_thread_dispatch(_dispatch, on_error=_set_exception)
+        except Exception as error:
+            _set_exception(error)
+        return future
 
     def make_progress(self, llm_message: LLMMessageLike | None = None) -> Future[LLMExecutionExit[Any]]:
         """Dispatch one execution with an optional new message and the session's prior context."""

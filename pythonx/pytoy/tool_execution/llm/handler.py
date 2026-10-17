@@ -1,4 +1,5 @@
 import logging
+import threading
 from concurrent.futures import Future, InvalidStateError
 from functools import cached_property
 from typing import Self, Sequence
@@ -8,9 +9,10 @@ from pytoy_llm.task.execution import TaskExecutionHandler
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
 from pytoy.shared.lib.outcome import is_error, is_success
-from pytoy.shared.timertask import backend_or_main_thread_only
+from pytoy.shared.timertask import backend_or_main_thread_only, backend_thread_dispatch
 
 from .factory import LLMExecutionFactory
+from .logger import get_llm_logger
 from .manager import LLMExecutionManager
 from .models import (
     LLMExecution,
@@ -120,6 +122,55 @@ class LLMExecutionHandler[T]:
     @cached_property
     def on_exit(self) -> Event[LLMExecutionExit[T]]:
         return self._require_execution().exit_emitter.event
+
+    @classmethod
+    def execute(
+        cls,
+        request: LLMExecutionRequest[T],
+        *,
+        hooks: LLMExecutionHooks[T] | None = None,
+        manager: LLMExecutionManager | None = None,
+    ):
+
+        future: Future[LLMExecutionExit[T]] = Future()
+        completion_lock = threading.Lock()
+        logger = request.logger or get_llm_logger()
+
+        def on_execution_exit(exit: LLMExecutionExit) -> None:
+            with completion_lock:
+                try:
+                    if not future.done():
+                        future.set_result(exit)
+                except InvalidStateError:
+                    if not future.cancelled():
+                        raise
+
+        def _set_exception(error: Exception) -> None:
+            with completion_lock:
+                try:
+                    if not future.done():
+                        future.set_exception(error)
+                except InvalidStateError:
+                    if not future.cancelled():
+                        raise
+
+        def _dispatch():
+            try:
+                handler = cls.create(request, manager=manager)
+                handler.on_exit.once().subscribe(on_execution_exit)
+                handler.start(hooks=hooks)
+            except Exception as error:
+                _set_exception(error)
+
+        backend_thread_dispatch(
+            _dispatch,
+            on_error=lambda error: logger.error(
+                "Failed to dispatch LLM progress: %s",
+                error,
+                exc_info=(type(error), error, error.__traceback__),
+            ),
+        )
+        return future
 
     def _require_execution(self) -> LLMExecution[T]:
         execution = self._manager.get(self._id)

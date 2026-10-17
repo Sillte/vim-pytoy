@@ -31,7 +31,14 @@ type RoutineStatus = Literal["idle", "working"]
 class IdeaCirculationDriver(LLMSessionDriverProtocol):
     kind: ClassVar[str] = "idea-routine"
 
-    def __init__(self, idea_space: IdeaSpace, workspace: Path | None, *, logger: logging.Logger | None = None) -> None:
+    def __init__(
+        self,
+        idea_space: IdeaSpace,
+        workspace: Path | None,
+        llm_tokens: LLMTokens,
+        *,
+        logger: logging.Logger | None = None,
+    ) -> None:
         self._idea_space = idea_space
         self._workspace = workspace
         self._routine_status: RoutineStatus = "idle"
@@ -39,12 +46,18 @@ class IdeaCirculationDriver(LLMSessionDriverProtocol):
         self._logger = logger or PytoyConfiguration().get_logger(location="global", level=logging.INFO)
 
     @classmethod
-    def from_any(cls, idea_space_folder: str | Path | IdeaSpace, workspace: Path | None = None) -> Self:
+    def from_any(
+        cls,
+        idea_space_folder: str | Path | IdeaSpace,
+        llm_tokens: LLMTokens,
+        workspace: Path | None = None,
+        logger: logging.Logger | None = None,
+    ) -> Self:
         if not isinstance(idea_space_folder, IdeaSpace):
             idea_space = IdeaSpace.from_path(path=idea_space_folder, with_creation=True)
         else:
             idea_space = idea_space_folder
-        return cls(idea_space=idea_space, workspace=workspace)
+        return cls(idea_space=idea_space, workspace=workspace, llm_tokens=llm_tokens, logger=logger)
 
     def make_progress(
         self,
@@ -52,9 +65,9 @@ class IdeaCirculationDriver(LLMSessionDriverProtocol):
         llm_buffer_provider: LLMSessionBufferProvider,
         llm_message: LLMMessageLike | None,
     ) -> None:
-        from .orchestrator.task_creators import make_value_cycle_spec
+        from .orchestrator.task_creators import make_value_cycle_task_spec
 
-        task_spec = make_value_cycle_spec(self._idea_space, workspace=self._workspace)
+        task_spec = make_value_cycle_task_spec(self._idea_space, workspace=self._workspace)
         task_request = TaskRequest(spec=task_spec, input=llm_message)
 
         execution_handler = execution_creator(task_request)

@@ -47,3 +47,10 @@ Manage asynchronous LLM operations through a handler-based execution model.
 
 - The appropriate scope of retained execution context may evolve as
   subsequent LLM interactions are introduced.
+- If execution creation or startup fails after registration, the execution may
+  remain in `LLMExecutionManager`, because deregistration currently depends on
+  the execution's exit event. Treat this as a known limitation rather than
+  adding package-local cancellation or deregistration behavior. Once
+  `pytoy_llm` provides a reliable cooperative cancellation mechanism, use it
+  to cancel failed-to-start task executions and propagate cancellation through
+  the LLM execution manager.
