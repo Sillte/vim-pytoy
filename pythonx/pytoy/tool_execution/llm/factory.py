@@ -71,7 +71,14 @@ class LLMExecutionFactory:
             def emit_exit() -> None:
                 execution.exit_emitter.fire(execution_exit)
 
-            backend_thread_dispatch(emit_exit)
+            backend_thread_dispatch(
+                emit_exit,
+                on_error=lambda error: logger.error(
+                    "Failed to dispatch LLM exit: %s",
+                    error,
+                    exc_info=(type(error), error, error.__traceback__),
+                ),
+            )
 
         execution.task_handler.on_exit.map(transform).once().subscribe(_dispatch_exit)
         return execution

@@ -91,6 +91,7 @@ class LLMExecutionHandler[T]:
             disposables = []
             try:
                 disposables.append(self.on_exit.once().subscribe(complete))
+                disposables.append(self.on_exit.once().subscribe(hooks.on_exit))
                 disposables.append(
                     self.on_exit.map(lambda exit_entity: exit_entity.outcome)
                     .filter(is_success)
@@ -130,7 +131,7 @@ class LLMExecutionHandler[T]:
         *,
         hooks: LLMExecutionHooks[T] | None = None,
         manager: LLMExecutionManager | None = None,
-    ):
+    ) -> Future[LLMExecutionExit[T]]:
 
         future: Future[LLMExecutionExit[T]] = Future()
         completion_lock = threading.Lock()

@@ -21,7 +21,11 @@ Distinguish explicit human statements from interpretations or
 hypotheses inferred by the LLM. Never present an inference as an
 explicitly stated human intention.
 
-## ValuableDemands
+## ValueCycle
+
+ValueCycle is an activity to create a value inside this IdeaSpace.
+
+### ValuableDemands
 
 Each ValuableDemand is recorded in a Markdown file named
 after its unique ID under `demands/`.
@@ -44,7 +48,7 @@ statements from interpretations and must not imply that all
 user inputs have been reflected. If no user inputs were provided
 or considered in the decision, this should be stated explicitly.
 
-## Fulfillment of ValuableDemand
+### Fulfillment of ValuableDemand
 
 The primary outputs are completed artifacts stored in `published/`.
 Supporting work may include research, validation, evaluation,
@@ -57,7 +61,7 @@ contribute to producing, evaluating, or connecting valuable artifacts.
 Do not create files merely to demonstrate activity.
 Prefer the simplest structure that adequately supports the work.
 
-## Audits
+### Audits
 
 `audits/` stores concise IdeaNotes recording the evaluation
 of ValuableDemand selection, fulfillment, and the value created.
@@ -79,24 +83,28 @@ Keep Audit records concise. Include only the evidence,
 findings, and insights needed to understand the evaluation.
 
 
-## Dashboard
+## State Preservation
 
-`dashboard.md` represents the current operational state of the
-IdeaSpace.
+Preserve important, current IdeaSpace state concisely when doing so
+materially supports continuity, coordination, or future decisions.
 
-Maintain a concise view of:
+Use the simplest appropriate representation. Do not require a
+dedicated dashboard or a fixed file structure.
 
-- the current ValuableDemand;
-- the current work and its status;
+Preserve only information that is useful beyond the current
+interaction, such as active work, significant status transitions,
+unresolved blockers, or decisions that affect subsequent activities.
 
-The dashboard is a navigation and state representation. It is not
-the primary source of truth for published artifact contents.
+Prefer updating existing records over duplicating the same
+information across multiple files.
 
-Do not use the dashboard as a diary of internal reasoning.
-Update it when a meaningful state transition occurs.
+Do not create or update state records merely to demonstrate activity.
+The absence of a state summary is acceptable when no meaningful
+information needs to be preserved.
 
-Create it when needed. An initially empty IdeaSpace does not need
-to contain a pre-generated dashboard.
+Keep operational state distinct from execution control: records
+in the IdeaSpace describe the state, while the harness determines
+whether autonomous activities are executed.
 
 ## Artifacts
 

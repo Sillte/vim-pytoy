@@ -150,7 +150,6 @@ Resolve trade-offs in a way that is consistent with the ValuableDemand
 and the user's stated intentions.
 
 
-
 ### Refinement and Termination
 
 Do not refine an artifact merely because some small improvement is possible.

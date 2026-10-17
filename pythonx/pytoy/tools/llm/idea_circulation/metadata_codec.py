@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, ClassVar, Self
 
 import yamlrocks
@@ -8,36 +7,27 @@ from pytoy_llm.models import LLMParam, LLMTokens, UsageLimit  # noqa
 
 from pytoy.shared.lib.text import LineRange, ReplaceLinesPatch
 
+from .statuses import IdeaCirculationStatus
+
 
 @dataclass(frozen=True)
 class BufferMetadataCodec:
     _FRONT_MATTER_MARKER: ClassVar[str] = "---"
-    kind: str = "idea-circulation"
-    workspace_name: str | None = None
-    working_status: str | None = None
-    llm_tokens: LLMTokens | None = None
+    status: IdeaCirculationStatus
 
     @classmethod
-    def from_any(
-        cls,
-        kind: str,
-        workspace_name: Path | str | None = None,
-        working_status: str | None = None,
-        llm_tokens: LLMTokens | None = None,
-    ) -> Self:
-        if isinstance(workspace_name, Path):
-            workspace_name = workspace_name.name
-
-        return cls(kind=kind, workspace_name=workspace_name, working_status=working_status, llm_tokens=llm_tokens)
+    def from_any(cls, status: IdeaCirculationStatus) -> Self:
+        return cls(status=status)
 
     def _content_text(self) -> str:
-        metadata: dict[str, Any] = {"kind": self.kind}
-        if workspace_name := self.workspace_name:
+        metadata: dict[str, Any] = {"kind": self.status.kind}
+        if workspace_name := self.status.workspace_name:
             metadata["workspace_name"] = workspace_name
-        if self.working_status:
-            metadata["working_status"] = self.working_status
-        if self.llm_tokens:
-            metadata["llm_tokens"] = self.llm_tokens.model_dump(exclude_none=True)
+        metadata["value_cycle_execution_policy"] = self.status.value_cycle_execution_policy
+        if self.status.value_cycle_working_status:
+            metadata["value_cycle_working_status"] = self.status.value_cycle_working_status
+        if self.status.llm_tokens:
+            metadata["llm_tokens"] = self.status.llm_tokens.model_dump(exclude_none=True)
         yaml_text = yamlrocks.dumps(metadata).decode().strip("\r\n")
         return f"{self._FRONT_MATTER_MARKER}\n{yaml_text}\n{self._FRONT_MATTER_MARKER}\n"
 

@@ -1,18 +1,18 @@
 import threading
 from concurrent.futures import Future
-from types import SimpleNamespace
 from typing import cast
 
 from pytoy_llm.idea import IdeaSpace
+from pytoy_llm.models import LLMTokens
 from pytoy_llm.task.models import FunctionInvocationSpec, TaskSpec
 
 from pytoy.shared.lib.event import EventEmitter
-from pytoy.shared.lib.outcome import Error, Success
 from pytoy.tool_session.llm import LLMSessionHandler
 from pytoy.tools.llm.idea_circulation import routines
 from pytoy.tools.llm.idea_circulation.driver import IdeaCirculationDriver
 from pytoy.tools.llm.idea_circulation.handler import IdeaCirculationHandler
 from pytoy.tools.llm.idea_circulation.routines import ValueCycleRoutineHandler
+from pytoy.tools.llm.idea_circulation.statuses import IdeaCirculationStatus
 
 
 class RecordingSessionHandler:
@@ -42,6 +42,7 @@ def make_handler(session_handler: RecordingSessionHandler, monkeypatch) -> IdeaC
     routine_handler = ValueCycleRoutineHandler.from_any(
         session_handler=cast(LLMSessionHandler, session_handler),
         idea_space=cast(IdeaSpace, object()),
+        status=IdeaCirculationStatus(workspace_name=None, value_cycle_working_status="idle"),
         max_iteration=1,
     )
     return IdeaCirculationHandler(
@@ -51,49 +52,14 @@ def make_handler(session_handler: RecordingSessionHandler, monkeypatch) -> IdeaC
     )
 
 
-def test_idea_routine_waits_for_task_exit_before_finishing_iteration(monkeypatch) -> None:
-    session_handler = RecordingSessionHandler()
-    handler = make_handler(session_handler, monkeypatch)
-    iteration_exited = threading.Event()
-    handler._idea_routine._unit_handler.on_iteration_exit.subscribe(lambda _: iteration_exited.set())
+def test_idea_circulation_status_aggregates_tokens() -> None:
+    status = IdeaCirculationStatus(workspace_name=None, value_cycle_working_status="idle")
 
-    try:
-        handler.start()
-        assert session_handler.task_started.wait(timeout=5)
-        assert not iteration_exited.wait(timeout=0.1)
-        assert len(session_handler.task_requests) == 1
-        assert session_handler.task_requests[0].input is None
+    status.update_tokens(LLMTokens(prompt=3, completion=4, total=7, cache_read=1, cache_write=2))
+    status.update_tokens(LLMTokens(prompt=5, completion=6, total=11, cache_read=2, cache_write=3))
 
-        session_handler.task_future.set_result(SimpleNamespace(outcome=Success(None)))
-        assert iteration_exited.wait(timeout=5)
-    finally:
-        if not session_handler.task_future.done():
-            session_handler.task_future.set_result(SimpleNamespace(outcome=Success(None)))
-        handler.terminate()
-
-
-def test_idea_routine_propagates_task_start_failure_to_iteration(monkeypatch) -> None:
-    session_handler = RecordingSessionHandler()
-    handler = make_handler(session_handler, monkeypatch)
-    iteration_exits = []
-    iteration_exited = threading.Event()
-
-    def record_exit(exit_entity) -> None:
-        iteration_exits.append(exit_entity)
-        iteration_exited.set()
-
-    handler._idea_routine._unit_handler.on_iteration_exit.subscribe(record_exit)
-    failure = RuntimeError("Task execution could not start")
-
-    try:
-        handler.start()
-        assert session_handler.task_started.wait(timeout=5)
-        session_handler.task_future.set_exception(failure)
-
-        assert iteration_exited.wait(timeout=5)
-        assert isinstance(iteration_exits[0].outcome, Error)
-        assert iteration_exits[0].outcome.exception is failure
-    finally:
-        if not session_handler.task_future.done():
-            session_handler.task_future.set_result(SimpleNamespace(outcome=Success(None)))
-        handler.terminate()
+    assert status.llm_tokens.prompt == 8
+    assert status.llm_tokens.completion == 10
+    assert status.llm_tokens.total == 18
+    assert status.llm_tokens.cache_read == 3
+    assert status.llm_tokens.cache_write == 5

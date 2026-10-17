@@ -36,13 +36,14 @@ def test_start_calls_result_hook_and_removes_finished_execution() -> None:
     manager = LLMExecutionManager()
     finished = threading.Event()
     results = []
+    exits = []
     handler = LLMExecutionHandler.create(make_request(lambda value: value + 1), manager=manager)
 
     def on_result(result) -> None:
         results.append(result.output)
         finished.set()
 
-    future = handler.start(LLMExecutionHooks.from_any(on_result=on_result))
+    future = handler.start(LLMExecutionHooks.from_any(on_result=on_result, on_exit=exits.append))
 
     assert isinstance(future, Future)
     assert finished.wait(5)
@@ -51,6 +52,7 @@ def test_start_calls_result_hook_and_removes_finished_execution() -> None:
     assert not is_error(exit_entity.outcome)
     assert exit_entity.outcome.value.output == 2
     assert [result for result in results] == [2]
+    assert exits == [exit_entity]
     assert manager.get(handler.id) is None
 
 
@@ -114,6 +116,7 @@ def test_start_calls_exception_hook_for_failed_invocation() -> None:
     manager = LLMExecutionManager()
     finished = threading.Event()
     exceptions = []
+    exits = []
 
     def fail(_):
         raise ValueError("expected failure")
@@ -124,7 +127,7 @@ def test_start_calls_exception_hook_for_failed_invocation() -> None:
 
     handler = LLMExecutionHandler.create(make_request(fail), manager=manager)
 
-    future = handler.start(LLMExecutionHooks.from_any(on_exception=on_exception))
+    future = handler.start(LLMExecutionHooks.from_any(on_exception=on_exception, on_exit=exits.append))
 
     assert finished.wait(5)
     exit_entity = future.result(timeout=5)
@@ -133,6 +136,7 @@ def test_start_calls_exception_hook_for_failed_invocation() -> None:
     assert exit_entity.outcome.exception is exceptions[0]
     assert len(exceptions) == 1
     assert isinstance(exceptions[0], Exception)
+    assert exits == [exit_entity]
     assert manager.get(handler.id) is None
 
 
@@ -189,6 +193,7 @@ def test_execute_returns_exit_for_failed_invocation() -> None:
 
     assert completed.wait(5)
     exit_entity = future.result(timeout=1)
+    assert is_error(exit_entity.outcome)
     assert exit_entity.outcome.exception is exceptions[0]
     assert len(exceptions) == 1
     assert manager.get(exit_entity.id) is None
@@ -198,6 +203,10 @@ def test_execute_sets_future_exception_when_hook_setup_fails() -> None:
     manager = LLMExecutionManager()
 
     class FailingHooks:
+        @property
+        def on_exit(self):
+            return lambda _: None
+
         @property
         def on_result(self):
             raise RuntimeError("hook setup failed")

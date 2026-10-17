@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Self
 
 from pytoy_llm.models.llm_activities import LLMActivitySink
@@ -88,10 +88,11 @@ class LLMExecutionExit[T]:
 
 @dataclass(frozen=True)
 class LLMExecutionHooks[T]:
-    """Recommendation policy... Use `on_finish` rather than on_success / on_failure."""
+    """Recommendation policy..."""
 
     on_result: Callable[[LLMExecutionResult[T]], None]
     on_exception: Callable[[Exception], None]
+    on_exit: Callable[[LLMExecutionExit[T]], None] = field(default=lambda _: None)
 
     @staticmethod
     def merge(hook1: LLMExecutionHooks[T], hook2: LLMExecutionHooks[T]) -> LLMExecutionHooks[T]:
@@ -120,6 +121,7 @@ class LLMExecutionHooks[T]:
         on_result: Callable[[LLMExecutionResult[T]], None] | None = None,
         on_exception: Callable[[Exception], None] | None = None,
         on_output: Callable[[T], None] | None = None,
+        on_exit: Callable[[LLMExecutionExit[T]], None] | None = None,
     ) -> Self:
         def _resolve_handle_output(
             target: Callable[[LLMExecutionResult[T]], None],
@@ -134,8 +136,9 @@ class LLMExecutionHooks[T]:
 
         on_result = on_result or (lambda _: None)
         on_exception = on_exception or (lambda _: None)
+        on_exit = on_exit or (lambda _: None)
         on_result = _resolve_handle_output(on_result, on_output) if on_output else on_result
-        return cls(on_result=on_result, on_exception=on_exception)
+        return cls(on_result=on_result, on_exception=on_exception, on_exit=on_exit)
 
 
 @dataclass(frozen=True)

@@ -1,8 +1,7 @@
 from pathlib import Path
-from typing import Literal, Self
+from typing import Self
 
 from pytoy_llm.idea import IdeaSpace
-from pytoy_llm.models import LLMTokens
 
 from pytoy.shared.ui.pytoy_buffer import BufferSource
 from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery, LLMSessionRequest
@@ -10,8 +9,7 @@ from pytoy.tools.llm.idea_circulation.routines import ValueCycleRoutineHandler
 
 from .buffer_hooks import build_buffer_hooks
 from .driver import IdeaCirculationDriver
-
-type RoutineStatus = Literal["idle", "working"]
+from .statuses import IdeaCirculationStatus
 
 
 class IdeaCirculationHandler:
@@ -43,13 +41,16 @@ class IdeaCirculationHandler:
         if llm_handlers:
             llm_handler = llm_handlers[0]
             session_driver = llm_handler.driver
-            idea_routine = ValueCycleRoutineHandler.from_any(
-                session_handler=llm_handler, idea_space=idea_space, workspace=workspace
-            )
-            if isinstance(session_driver, IdeaCirculationDriver):
-                return cls(llm_handler, session_driver, idea_routine)
-            else:
+            if not isinstance(session_driver, IdeaCirculationDriver):
                 raise RuntimeError("IdeaCirculationDriver is not preserved.")
+            status = session_driver.status
+            idea_routine = ValueCycleRoutineHandler.from_any(
+                session_handler=llm_handler,
+                idea_space=idea_space,
+                workspace=workspace,
+                status=status,
+            )
+            return cls(llm_handler, session_driver, idea_routine)
 
         existing_handlers = LLMSessionHandler.query(LLMSessionQuery.from_any(kind=cls.kind))
         if existing_handlers:
@@ -57,8 +58,8 @@ class IdeaCirculationHandler:
                 "An idea-circulation session already exists for different metadata: "
                 f"{existing_handlers[0].metadata} != {metadata}"
             )
-        llm_tokens = LLMTokens(prompt=0, completion=0, total=0, cache_read=0, cache_write=0)
-        driver = IdeaCirculationDriver.from_any(idea_space, workspace=workspace, llm_tokens=llm_tokens)
+        status = IdeaCirculationStatus(workspace_name=workspace_path.name, value_cycle_working_status="idle")
+        driver = IdeaCirculationDriver.from_any(idea_space, workspace=workspace, status=status)
         request = LLMSessionRequest.from_any(
             driver=driver,
             buffer_source=BufferSource.from_no_file(name=IdeaCirculationHandler.buffer_name),
@@ -68,7 +69,10 @@ class IdeaCirculationHandler:
         )
         llm_handler = LLMSessionHandler.create(request)
         idea_routine = ValueCycleRoutineHandler.from_any(
-            session_handler=llm_handler, idea_space=idea_space, workspace=workspace
+            session_handler=llm_handler,
+            idea_space=idea_space,
+            workspace=workspace,
+            status=status,
         )
         return cls(llm_handler, driver, idea_routine)
 
