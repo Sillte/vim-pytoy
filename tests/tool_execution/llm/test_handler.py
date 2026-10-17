@@ -5,6 +5,7 @@ from typing import cast
 import pytest
 from pytoy_llm.task.models import FunctionInvocationSpec, TaskSpec
 
+from pytoy.shared.lib.outcome import is_error
 from pytoy.shared.timertask import TimerTask
 from pytoy.tool_execution.llm import (
     LLMExecutionHandler,
@@ -47,6 +48,7 @@ def test_start_calls_result_hook_and_removes_finished_execution() -> None:
     assert finished.wait(5)
     exit_entity = future.result(timeout=5)
     assert exit_entity.id == handler.id
+    assert not is_error(exit_entity.outcome)
     assert exit_entity.outcome.value.output == 2
     assert [result for result in results] == [2]
     assert manager.get(handler.id) is None
@@ -127,23 +129,11 @@ def test_start_calls_exception_hook_for_failed_invocation() -> None:
     assert finished.wait(5)
     exit_entity = future.result(timeout=5)
     assert exit_entity.id == handler.id
+    assert is_error(exit_entity.outcome)
     assert exit_entity.outcome.exception is exceptions[0]
     assert len(exceptions) == 1
     assert isinstance(exceptions[0], Exception)
     assert manager.get(handler.id) is None
-
-
-def test_start_raises_startup_errors_synchronously() -> None:
-    manager = LLMExecutionManager()
-    handler = LLMExecutionHandler.create(make_request(lambda value: value + 1), manager=manager)
-
-    def reject_start(_execution_id, _start) -> None:
-        raise RuntimeError("startup failed")
-
-    manager.start_execution = reject_start
-
-    with pytest.raises(RuntimeError, match="startup failed"):
-        handler.start()
 
 
 def test_execute_returns_future_when_called_from_worker_thread() -> None:

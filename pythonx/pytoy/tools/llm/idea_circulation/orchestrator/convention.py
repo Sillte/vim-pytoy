@@ -21,10 +21,6 @@ Distinguish explicit human statements from interpretations or
 hypotheses inferred by the LLM. Never present an inference as an
 explicitly stated human intention.
 
-The contents of `master/` are read-only for LLM tools.
-An inferred preference or conclusion must not be written into
-`master/` as though the human had explicitly stated it.
-
 ## ValuableDemands
 
 Each ValuableDemand is recorded in a Markdown file named

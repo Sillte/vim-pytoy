@@ -1,10 +1,10 @@
 import logging
-from datetime import datetime
+from dataclasses import replace
 from pathlib import Path
 from typing import Callable, ClassVar, Literal, Self
 
 from pytoy_llm.idea import IdeaSpace
-from pytoy_llm.models import LLMTokens
+from pytoy_llm.models import LLMRequest, LLMTokens
 
 from pytoy.shared.lib.outcome import is_error
 from pytoy.shared.pytoy_configuration import PytoyConfiguration
@@ -12,13 +12,13 @@ from pytoy.shared.ui import PytoyBuffer
 from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler
 from pytoy.tool_session.llm import (
     LLMMessageLike,
-    LLMSessionBufferHooks,
     LLMSessionBufferProvider,
     LLMSessionDriverProtocol,
     TaskRequest,
 )
 
-from .body_codec import BufferBodyCodec
+from .buffer_codec import LLMBufferCodec
+from .messages_codec import LLMMessagesCodec
 from .metadata_codec import BufferMetadataCodec
 
 EXCEPTION_LOG_FOLDER_NAME = "exceptions"
@@ -29,7 +29,7 @@ type RoutineStatus = Literal["idle", "working"]
 
 
 class IdeaCirculationDriver(LLMSessionDriverProtocol):
-    kind: ClassVar[str] = "idea-routine"
+    kind: ClassVar[str] = "idea-circulation"
 
     def __init__(
         self,
@@ -42,7 +42,7 @@ class IdeaCirculationDriver(LLMSessionDriverProtocol):
         self._idea_space = idea_space
         self._workspace = workspace
         self._routine_status: RoutineStatus = "idle"
-        self._llm_tokens = LLMTokens(prompt=0, completion=0, total=0, cache_read=0, cache_write=0)
+        self._llm_tokens = llm_tokens
         self._logger = logger or PytoyConfiguration().get_logger(location="global", level=logging.INFO)
 
     @classmethod
@@ -65,47 +65,51 @@ class IdeaCirculationDriver(LLMSessionDriverProtocol):
         llm_buffer_provider: LLMSessionBufferProvider,
         llm_message: LLMMessageLike | None,
     ) -> None:
-        from .orchestrator.task_creators import make_value_cycle_task_spec
+        from .orchestrator.task_creators import create_idea_exchange_task_spec
 
-        task_spec = make_value_cycle_task_spec(self._idea_space, workspace=self._workspace)
+        task_spec = create_idea_exchange_task_spec(self._idea_space, workspace=self._workspace)
         task_request = TaskRequest(spec=task_spec, input=llm_message)
 
         execution_handler = execution_creator(task_request)
         execution_handler.on_exit.subscribe(
             lambda exit_entity: self.on_exit(exit_entity, llm_buffer_provider=llm_buffer_provider)
         )
-        execution_handler.start()
-
-        self._routine_status = "working"
         buffer = llm_buffer_provider.provide()
-        self.update_buffer(buffer)
+        self.on_start(llm_message, buffer)
+        execution_handler.start()
+        self.update_buffer_metadata(buffer)
+
+    def on_start(
+        self,
+        llm_message: LLMMessageLike | None,
+        buffer: PytoyBuffer,
+    ):
+        if llm_message is None:
+            return
+        buffer_codec = LLMBufferCodec.from_llm_buffer(buffer.content)
+        new_messages = LLMRequest.from_any(llm_message).messages
+        new_message_text = LLMMessagesCodec().encode(new_messages)
+        buffer_codec = replace(
+            buffer_codec,
+            messages_domain=buffer_codec.messages_domain + f"\n\n{new_message_text}\n\n",
+        )
+        replace_patch = buffer_codec.create_patch(buffer.content)
+        buffer.range_operator.apply_patch(replace_patch)
 
     def on_exit(self, exit_entity: LLMExecutionExit, llm_buffer_provider: LLMSessionBufferProvider) -> None:
+        buffer = llm_buffer_provider.provide()
         if is_error(exit_entity.outcome):
             exception = exit_entity.outcome.exception
-            try:
-                log_folder = self.idea_space.root_space.space_meta_directory / EXCEPTION_LOG_FOLDER_NAME
-                log_folder.mkdir(exist_ok=True, parents=True)
-                log_file = log_folder / f"{datetime.now():%Y%m%d_%H%M%S}_exception.txt"
-                log_file.write_text(str(exception))
-            except OSError:
-                pass
+            buffer.append(str(exception))
         else:
             result = exit_entity.outcome.value
             self._llm_tokens = LLMTokens.aggregate((self._llm_tokens, result.task_result.llm_tokens))
-            try:
-                response_folder = self.idea_space.root_space.space_meta_directory / RESPONSE_LOG_FOLDER_NAME
-                response_folder.mkdir(exist_ok=True, parents=True)
-                response_file = response_folder / f"{datetime.now():%Y%m%d_%H%M%S}_response.txt"
-                response_file.write_text(str(result.output))
-            except OSError:
-                pass
+            messages_text = LLMMessagesCodec().encode(result.context_state.llm_messages)
+            replace_patch = LLMBufferCodec(messages_domain=messages_text).create_patch(buffer.content)
+            buffer.range_operator.apply_patch(replace_patch)
+            self.update_buffer_metadata(buffer)
 
-        self._routine_status = "idle"
-        buffer = llm_buffer_provider.provide()
-        self.update_buffer(buffer)
-
-    def update_buffer(self, buffer: PytoyBuffer) -> None:
+    def update_buffer_metadata(self, buffer: PytoyBuffer) -> None:
         metadata_codec = BufferMetadataCodec.from_any(
             kind=self.kind,
             workspace_name=self._workspace,
@@ -114,20 +118,6 @@ class IdeaCirculationDriver(LLMSessionDriverProtocol):
         )
         patch = metadata_codec.create_patch(buffer.content)
         buffer.range_operator.apply_patch(patch)
-
-        body_codec = BufferBodyCodec.from_any(idea_space=self._idea_space)
-        patch = body_codec.create_patch(buffer.content)
-        buffer.range_operator.apply_patch(patch)
-
-    @classmethod
-    def build_buffer_hooks(cls, idea_space: IdeaSpace) -> LLMSessionBufferHooks:
-        # TODO: We have to condier the special handling of the links based on the `idea_space`
-        actions = dict()
-
-        def on_creation(buffer):
-            buffer.metadata.data["idea-space"] = idea_space
-
-        return LLMSessionBufferHooks(actions=actions, on_creation=on_creation)
 
     @property
     def idea_space(self) -> IdeaSpace:

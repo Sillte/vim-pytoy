@@ -12,7 +12,7 @@ from pytoy.shared.lib.text import LineRange, ReplaceLinesPatch
 @dataclass(frozen=True)
 class BufferMetadataCodec:
     _FRONT_MATTER_MARKER: ClassVar[str] = "---"
-    kind: str = "idea-routine"
+    kind: str = "idea-circulation"
     workspace_name: str | None = None
     working_status: str | None = None
     llm_tokens: LLMTokens | None = None
