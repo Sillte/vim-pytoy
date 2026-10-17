@@ -2,7 +2,7 @@ import logging
 import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Callable, Literal, Protocol, Self
+from typing import Any, Callable, Protocol, Self
 
 from pytoy_llm.models.llm_messages import LLMMessageLike
 from pytoy_llm.task.models import TaskContextState, TaskRequest
@@ -18,7 +18,6 @@ type LLMSessionKind = str
 # If the LLM retains the conversation, it is a `session`.
 type LLMSessionID = str
 type LLMSessionMetadata = Mapping[str, Any]
-type LLMSessionInterfaceMode = Literal["interactive", "autonomous"]
 
 
 @dataclass(frozen=True)
@@ -81,7 +80,6 @@ class LLMSessionRequest:
     kind: LLMSessionKind = "$default"
     metadata: LLMSessionMetadata = field(default_factory=dict)
     logger: logging.Logger | None = None
-    interface: LLMSessionInterfaceMode = "interactive"
 
     @classmethod
     def from_any(
@@ -93,7 +91,6 @@ class LLMSessionRequest:
         kind: LLMSessionKind | None = None,
         metadata: LLMSessionMetadata | None = None,
         logger: logging.Logger | None = None,
-        interface: LLMSessionInterfaceMode = "interactive",
     ) -> Self:
         kind = kind or "$default"
         buffer_source = buffer_source or BufferSource.from_no_file("__idea_space_llm__")
@@ -107,7 +104,6 @@ class LLMSessionRequest:
             kind=kind,
             metadata=dict(metadata or {}),
             logger=logger,
-            interface=interface,
         )
 
 
@@ -121,7 +117,6 @@ class LLMSessionQuery:
     buffer_source: BufferSource | None = None
     kind: LLMSessionKind | None = None
     metadata: LLMSessionMetadata | None = None
-    interface: LLMSessionInterfaceMode | None = None
 
     @classmethod
     def from_any(
@@ -129,13 +124,11 @@ class LLMSessionQuery:
         buffer_source: BufferSource | PytoyBuffer | None = None,
         kind: LLMSessionKind | None = None,
         metadata: LLMSessionMetadata | None = None,
-        interface: LLMSessionInterfaceMode | None = None,
     ) -> Self:
         if isinstance(buffer_source, PytoyBuffer):
             buffer_source = buffer_source.source
         return cls(
             buffer_source=buffer_source,
-            interface=interface,
             kind=kind,
             metadata=dict(metadata) if metadata is not None else None,
         )
@@ -149,7 +142,6 @@ class LLMSession:
         buffer_hooks: LLMSessionBufferHooks,
         task_context: TaskContextState,
         kind: LLMSessionKind,
-        interface: LLMSessionInterfaceMode,
         metadata: LLMSessionMetadata,
         logger: logging.Logger | None,
     ):
@@ -160,7 +152,6 @@ class LLMSession:
         self._buffer: PytoyBuffer | None = None
         self._id = str(uuid.uuid4())
         self._kind = kind
-        self._interface = interface
         self._metadata = dict(metadata)
         self._logger = logger or get_llm_logger()
 
@@ -179,7 +170,6 @@ class LLMSession:
             buffer_hooks=request.buffer_hooks,
             task_context=request.task_context,
             kind=request.kind,
-            interface=request.interface,
             metadata=request.metadata,
             logger=request.logger,
         )
@@ -203,10 +193,6 @@ class LLMSession:
     @property
     def kind(self) -> LLMSessionKind:
         return self._kind
-
-    @property
-    def interface(self) -> LLMSessionInterfaceMode:
-        return self._interface
 
     @property
     def logger(self) -> logging.Logger:

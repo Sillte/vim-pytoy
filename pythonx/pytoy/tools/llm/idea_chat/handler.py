@@ -55,7 +55,6 @@ class IdeaChatHandler:
             buffer_hooks=IdeaChatDriver.build_buffer_hooks(idea_space),
             kind=cls.kind,
             metadata=metadata,
-            interface="interactive",
         )
         llm_handler = LLMSessionHandler.create(request)
         try:

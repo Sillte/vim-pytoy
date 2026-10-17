@@ -19,7 +19,6 @@ from .models import (
     LLMSessionDriverProtocol,
     LLMSessionExit,
     LLMSessionID,
-    LLMSessionInterfaceMode,
     LLMSessionMetadata,
     LLMSessionQuery,
     LLMSessionRequest,
@@ -84,10 +83,6 @@ class LLMSessionHandler:
     @property
     def metadata(self) -> LLMSessionMetadata:
         return self._require_session().metadata
-
-    @property
-    def interface(self) -> LLMSessionInterfaceMode | None:
-        return self._require_session().interface
 
     @property
     def driver(self) -> LLMSessionDriverProtocol:

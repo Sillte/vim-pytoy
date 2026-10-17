@@ -65,7 +65,6 @@ class IdeaCirculationHandler:
             kind=cls.kind,
             metadata=metadata,
             buffer_hooks=build_buffer_hooks(idea_space),
-            interface="autonomous",
         )
         llm_handler = LLMSessionHandler.create(request)
         idea_routine = ValueCycleRoutineHandler.from_any(

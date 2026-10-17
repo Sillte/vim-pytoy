@@ -35,7 +35,7 @@ def llm_scope():
 def llm_send(user_prompt: Annotated[str | None, Option()] = None):
     from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery
 
-    handlers = LLMSessionHandler.query(query=LLMSessionQuery(interface="interactive"))
+    handlers = LLMSessionHandler.query(query=LLMSessionQuery())
     if not handlers:
         raise ValueError("No LLMSessions started.")
     handler = handlers[0]
@@ -54,7 +54,7 @@ def llm_send(user_prompt: Annotated[str | None, Option()] = None):
 def llm_dialog():
     from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery
 
-    handlers = LLMSessionHandler.query(query=LLMSessionQuery(interface="interactive"))
+    handlers = LLMSessionHandler.query(query=LLMSessionQuery())
     if not handlers:
         handler = _construct_idea_chat().session_handler
     else:
@@ -103,7 +103,7 @@ def llm_curculation():
 def idea_routine_start():
     from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery
 
-    handlers = LLMSessionHandler.query(query=LLMSessionQuery(interface="autonomous"))
+    handlers = LLMSessionHandler.query(query=LLMSessionQuery())
     if not handlers:
         handler = _construct_idea_circulation()
         handler.start()
@@ -113,7 +113,7 @@ def idea_routine_start():
 def idea_rotine_terminate():
     from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery
 
-    handlers = LLMSessionHandler.query(query=LLMSessionQuery(interface="autonomous"))
+    handlers = LLMSessionHandler.query(query=LLMSessionQuery())
     for handler in handlers:
         handler.terminate()
 
