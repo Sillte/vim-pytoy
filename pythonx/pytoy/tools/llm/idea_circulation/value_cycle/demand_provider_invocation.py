@@ -84,11 +84,22 @@ A ValuableDemand is a Demand intended to create Value, whose feasibility can be 
 Satisfying a ValuableDemand is expected to produce a useful change within the IdeaSpace.
 However, satisfying a ValuableDemand is not equivalent to realizing Value. After execution, verify whether the expected change actually occurred.
 
-The following are possible categories of ValuableDemand approaches. These categories are not mutually exclusive or collectively exhaustive (MECE).
+The following are possible categories of ValuableDemand approaches.
+These categories are not mutually exclusive or collectively exhaustive.
 
-* CONTINUATION: Starts from one or more IdeaNotes and aims to create Value by improving the current line of work.
-* SYNTHESIS: Starts from two or more IdeaNotes and aims to create Value by organizing their relationships—such as similarities, differences, contradictions, and potential integrations—to generate new insights.
-* EXPLORATION: Introduces new perspectives or lines of thought that are not already represented by similar ideas in the IdeaSpace, with the aim of challenging or reexamining existing thinking.
+* CONTINUATION: Starts from one or more IdeaNotes and aims to
+  create Value by improving or extending the current line of work.
+
+* SYNTHESIS: Starts from two or more IdeaNotes and aims to create
+  Value by organizing their relationships, including similarities,
+  differences, contradictions, and potential integrations.
+
+* EXPLORATION: Investigates potentially valuable directions whose
+  relevance, feasibility, or relationship to the user's intentions
+  remains uncertain. It may introduce new perspectives, test
+  hypotheses about the user's intentions, create provisional
+  artifacts, or present concrete alternatives that help the user
+  clarify or evaluate what they want.
 
 The following principles can guide the selection and creation of ValuableDemands:
 
@@ -127,6 +138,46 @@ that justifies this choice.
 Do not assume that an intent is fully satisfied merely because a
 plausible artifact exists. Assess the scope of the intent and the
 contribution of existing artifacts to that scope.
+
+## Intent Exploration and Hypothesis Testing
+
+When the user's intentions, preferences, or desired direction
+remain uncertain, do not automatically interpret this uncertainty
+as a reason to stop, ask for clarification, or create a planning
+document.
+
+Consider whether a small, concrete exploratory activity could
+help clarify the intention or reveal valuable possibilities.
+
+Such activities may include:
+- creating a provisional creative work or prototype;
+- exploring distinct interpretations of an existing idea;
+- presenting concrete alternatives for the user to evaluate;
+- connecting existing notes to reveal an overlooked direction;
+- testing a hypothesis derived from the user's stated intentions
+  and prior work.
+
+Distinguish between two complementary forms of exploration:
+
+1. Autonomous clarification: Explore the available context,
+   compare interpretations, and gather evidence that helps
+   determine which directions are worth pursuing.
+
+2. User-facing hypothesis presentation: Create a concrete artifact,
+   example, or set of alternatives that allows the user to recognize,
+   evaluate, or correct an inferred direction.
+
+Prefer direct, reversible exploration when the expected learning
+or creative value justifies its cost. Do not require the user to
+specify every detail that can reasonably be explored through action.
+
+Treat inferred intentions as hypotheses, not established preferences.
+Evaluate an exploration by what it reveals, creates, or enables,
+including whether it helps rule out an unpromising direction.
+
+Do not create elaborate planning documents merely because the
+ultimate objective is uncertain. Preserve useful discoveries in
+the simplest appropriate form.
 
 ## Policy
 

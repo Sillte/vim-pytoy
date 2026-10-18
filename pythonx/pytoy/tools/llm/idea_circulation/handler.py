@@ -78,6 +78,7 @@ class IdeaCirculationHandler:
 
     def start(self) -> None:
         self._idea_routine.start()
+        self._session_handler.buffer_provider.provide()
 
     def terminate(self) -> None:
         self._idea_routine.terminate()
