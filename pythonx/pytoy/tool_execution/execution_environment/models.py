@@ -52,6 +52,7 @@ class SystemEnvironmentSolver(EnvironmentSolverProtocol):
     def kind(self) -> EnvironmentKind:
         return "system"
 
+    @property
     def installed(self) -> bool:
         return True
 
