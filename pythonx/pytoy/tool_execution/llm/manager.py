@@ -25,7 +25,19 @@ class LLMExecutionManager:
             with self._lock:
                 self._executions.pop(execution.id, None)
 
+        def _deregister_if_not_running(_):
+            if execution.task_handler.status == "canceled":
+                _deregister(None)
+
         execution.on_exit.once().subscribe(_deregister)
+        execution.task_handler.on_cancel.once().subscribe(_deregister_if_not_running)
+
+    def cancel_execution(self, execution_id: LLMExecutionID) -> None:
+        with self._lock:
+            execution = self._executions.get(execution_id)
+            if execution is None:
+                raise ValueError(f"`LLMExecution` does not exist; {execution_id=}")
+            execution.task_handler.cancel()
 
     def register_context(self, context: LLMExecutionContext) -> None:
         with self._lock:

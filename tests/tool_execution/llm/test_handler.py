@@ -3,7 +3,7 @@ from concurrent.futures import Future
 from typing import cast
 
 import pytest
-from pytoy_llm.task.models import FunctionInvocationSpec, TaskSpec
+from pytoy_llm.task.models import FunctionInvocationSpec, TaskCanceledException, TaskSpec
 
 from pytoy.shared.lib.outcome import is_error
 from pytoy.shared.timertask import TimerTask
@@ -30,6 +30,103 @@ def test_create_exposes_handler_and_query_before_start() -> None:
     assert [item.id for item in LLMExecutionHandler.query(LLMExecutionQuery(kind="test"), manager=manager)] == [
         handler.id
     ]
+
+
+def test_cancel_removes_created_execution_from_manager() -> None:
+    manager = LLMExecutionManager()
+    handler = LLMExecutionHandler.create(make_request(lambda value: value + 1), manager=manager)
+    execution = manager.get(handler.id)
+    assert execution is not None
+
+    handler.cancel()
+
+    assert execution.task_handler.status == "canceled"
+    assert manager.get(handler.id) is None
+
+
+def test_cancel_running_execution_emits_exit_after_cooperative_cancellation() -> None:
+    manager = LLMExecutionManager()
+    invocation_started = threading.Event()
+    allow_invocation_to_finish = threading.Event()
+    cancellation_observed = []
+    second_invocation_called = []
+    exited = threading.Event()
+    exit_hooks = []
+    exception_hooks = []
+
+    def blocking_invocation(value, context):
+        invocation_started.set()
+        assert allow_invocation_to_finish.wait(5)
+        cancellation_observed.append(context.cancel_token.is_set())
+        return value
+
+    def second_invocation(value):
+        second_invocation_called.append(True)
+        return value
+
+    request = LLMExecutionRequest(
+        task_spec=TaskSpec.from_specs(
+            [
+                FunctionInvocationSpec.from_any(blocking_invocation),
+                FunctionInvocationSpec.from_any(second_invocation),
+            ]
+        ),
+        input="value",
+        kind="test",
+    )
+    handler = LLMExecutionHandler.create(request, manager=manager)
+    execution = manager.get(handler.id)
+    assert execution is not None
+
+    def on_exit(exit_entity) -> None:
+        exit_hooks.append(exit_entity)
+        exited.set()
+
+    future = handler.start(LLMExecutionHooks.from_any(on_exit=on_exit, on_exception=exception_hooks.append))
+
+    try:
+        assert invocation_started.wait(5)
+        handler.cancel()
+        assert handler.status == "canceling"
+        assert manager.get(handler.id) is execution
+        assert not future.done()
+    finally:
+        allow_invocation_to_finish.set()
+
+    assert exited.wait(5)
+    exit_entity = future.result(timeout=5)
+    assert is_error(exit_entity.outcome)
+    assert isinstance(exit_entity.outcome.exception, TaskCanceledException)
+    assert exit_hooks == [exit_entity]
+    assert exception_hooks == []
+    assert cancellation_observed == [True]
+    assert second_invocation_called == []
+    assert manager.get(handler.id) is None
+
+
+def test_start_failure_keeps_created_execution_registered_for_retry(monkeypatch) -> None:
+    manager = LLMExecutionManager()
+    handler = LLMExecutionHandler.create(make_request(lambda value: value + 1), manager=manager)
+    execution = manager.get(handler.id)
+    assert execution is not None
+
+    def fail_start() -> None:
+        raise RuntimeError("task startup failed")
+
+    monkeypatch.setattr(execution.task_handler, "start", fail_start)
+
+    with pytest.raises(RuntimeError, match="task startup failed"):
+        handler.start()
+
+    assert execution.task_handler.status == "created"
+    assert manager.get(handler.id) is execution
+
+    monkeypatch.undo()
+    future = handler.start()
+    exit_entity = future.result(timeout=5)
+    assert not is_error(exit_entity.outcome)
+    assert exit_entity.outcome.value.output == 2
+    assert manager.get(handler.id) is None
 
 
 def test_start_calls_result_hook_and_removes_finished_execution() -> None:
@@ -220,3 +317,13 @@ def test_execute_sets_future_exception_when_hook_setup_fails() -> None:
 
     with pytest.raises(RuntimeError, match="hook setup failed"):
         future.result(timeout=5)
+
+    execution_handlers = LLMExecutionHandler.query(manager=manager)
+    assert len(execution_handlers) == 1
+    assert execution_handlers[0].status == "created"
+
+    retry_future = execution_handlers[0].start()
+    exit_entity = retry_future.result(timeout=5)
+    assert not is_error(exit_entity.outcome)
+    assert exit_entity.outcome.value.output == 2
+    assert manager.get(execution_handlers[0].id) is None

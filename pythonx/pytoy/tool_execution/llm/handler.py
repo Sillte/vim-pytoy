@@ -5,6 +5,7 @@ from functools import cached_property
 from typing import Self, Sequence
 
 from pytoy_llm.task.execution import TaskExecutionHandler
+from pytoy_llm.task.models import TaskCanceledException
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
@@ -103,6 +104,7 @@ class LLMExecutionHandler[T]:
                     self.on_exit.map(lambda exit_entity: exit_entity.outcome)
                     .filter(is_error)
                     .map(lambda error: error.exception)
+                    .filter(lambda exception: not isinstance(exception, TaskCanceledException))
                     .once()
                     .subscribe(hooks.on_exception)
                 )
@@ -115,6 +117,10 @@ class LLMExecutionHandler[T]:
 
         self._manager.start_execution(self._id, start_execution)
         return future
+
+    @backend_or_main_thread_only
+    def cancel(self) -> None:
+        self._manager.cancel_execution(self._id)
 
     @property
     def id(self) -> LLMExecutionID:
@@ -158,8 +164,12 @@ class LLMExecutionHandler[T]:
         def _dispatch():
             try:
                 handler = cls.create(request, manager=manager)
-                handler.on_exit.once().subscribe(on_execution_exit)
-                handler.start(hooks=hooks)
+                exit_subscription = handler.on_exit.once().subscribe(on_execution_exit)
+                try:
+                    handler.start(hooks=hooks)
+                except BaseException:
+                    exit_subscription.dispose()
+                    raise
             except Exception as error:
                 _set_exception(error)
 

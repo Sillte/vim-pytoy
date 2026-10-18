@@ -61,6 +61,7 @@ class FailingTimerTaskImpl(TimerTaskImplDummy):
 
 class RecordingTaskExecutionHandler:
     id = "execution-id"
+    on_cancel = EventEmitter().event
 
 
 def make_execution_handler() -> tuple[LLMExecutionHandler[Any], EventEmitter[LLMExecutionExit[Any]]]:
