@@ -23,10 +23,17 @@ class IdeaCirculationStatus:
     workspace_name: str | None
     value_cycle_working_status: str | None
     value_cycle_execution_policy: ValueCycleExecutionPolicy = field(default="enabled")
+    value_cycle_message: str | None = None
     llm_tokens: LLMTokens = field(default_factory=_empty_llm_tokens)
 
     def update_tokens(self, llm_tokens: LLMTokens) -> None:
         self.llm_tokens = LLMTokens.aggregate([self.llm_tokens, llm_tokens])
+
+    def change_value_cycle_execution_policy(self, execution_policy: ValueCycleExecutionPolicy) -> None:
+        self.value_cycle_execution_policy = execution_policy
+
+    def change_value_cycle_message(self, message: str) -> None:
+        self.value_cycle_message = message
 
 
 class IdeaCirculationStatusPatch(BaseModel, frozen=True):

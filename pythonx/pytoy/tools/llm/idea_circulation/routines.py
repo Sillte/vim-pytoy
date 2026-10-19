@@ -1,4 +1,3 @@
-from datetime import datetime
 from pathlib import Path
 from typing import Self
 
@@ -22,13 +21,10 @@ from pytoy.tool_execution.llm import (
 )
 from pytoy.tool_session.llm import LLMSessionHandler
 from pytoy.tools.llm.idea_circulation.driver import IdeaCirculationDriver
-from pytoy.tools.llm.idea_circulation.orchestrator.task_creators import create_value_cycle_task_spec
+from pytoy.tools.llm.idea_circulation.orchestrator.task_creators import ValueAuditResponse, create_value_cycle_task_spec
 
 from .metadata_codec import BufferMetadataCodec
 from .statuses import IdeaCirculationStatus
-
-EXCEPTION_LOG_FOLDER_NAME = "exceptions"
-RESPONSE_LOG_FOLDER_NAME = "responses"
 
 
 class ValueCycleRoutineHandler:
@@ -122,27 +118,18 @@ class ValueCycleRoutineHandler:
             )
         return unit_handler
 
-    def on_exit(self, exit_entity: LLMExecutionExit) -> None:
-        id_ = exit_entity.id
+    def on_exit(self, exit_entity: LLMExecutionExit[ValueAuditResponse]) -> None:
         if is_error(exit_entity.outcome):
             exception = exit_entity.outcome.exception
-            try:
-                log_folder = self._idea_space.root_space.space_meta_directory / EXCEPTION_LOG_FOLDER_NAME
-                log_folder.mkdir(exist_ok=True, parents=True)
-                log_file = log_folder / f"{datetime.now():%Y%m%d_%H%M%S}_{id_}_exception.txt"
-                log_file.write_text(str(exception))
-            except OSError:
-                pass
+            self._status.change_value_cycle_message(str(exception))
         else:
             result = exit_entity.outcome.value
+            response = result.output
+
             self._status.update_tokens(result.task_result.llm_tokens)
-            try:
-                response_folder = self._idea_space.root_space.space_meta_directory / RESPONSE_LOG_FOLDER_NAME
-                response_folder.mkdir(exist_ok=True, parents=True)
-                response_file = response_folder / f"{datetime.now():%Y%m%d_%H%M%S}_{id_}_response.txt"
-                response_file.write_text(str(result.output))
-            except OSError:
-                pass
+            self._status.change_value_cycle_message(response.message)
+            if response.value_cycle_execution_policy:
+                self._status.change_value_cycle_execution_policy(response.value_cycle_execution_policy)
 
         self._status.value_cycle_working_status = "idle"
         buffer = self._session_handler.buffer_provider.provide()

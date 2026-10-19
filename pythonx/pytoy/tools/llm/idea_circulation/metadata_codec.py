@@ -26,6 +26,8 @@ class BufferMetadataCodec:
         metadata["value_cycle_execution_policy"] = self.status.value_cycle_execution_policy
         if self.status.value_cycle_working_status:
             metadata["value_cycle_working_status"] = self.status.value_cycle_working_status
+        if self.status.value_cycle_message is not None:
+            metadata["value_cycle_message"] = self.status.value_cycle_message
         if self.status.llm_tokens:
             metadata["llm_tokens"] = self.status.llm_tokens.model_dump(exclude_none=True)
         yaml_text = yamlrocks.dumps(metadata).decode().strip("\r\n")

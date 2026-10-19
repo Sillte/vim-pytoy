@@ -8,7 +8,10 @@ from pytoy_llm.task.models import TaskSpec
 from pytoy.tools.llm.idea_circulation.idea_exchange import IdeaExchangeResponse, make_idea_exchange_spec
 from pytoy.tools.llm.idea_circulation.value_cycle.demand_fulfiller_invocation import make_demand_fulfiller_spec
 from pytoy.tools.llm.idea_circulation.value_cycle.demand_provider_invocation import make_value_demand_provide_spec
-from pytoy.tools.llm.idea_circulation.value_cycle.value_auditor_invocation import make_value_auditor_spec
+from pytoy.tools.llm.idea_circulation.value_cycle.value_auditor_invocation import (
+    ValueAuditResponse,
+    make_value_auditor_spec,
+)
 
 from .convention import CONVENTION
 
@@ -25,7 +28,7 @@ Otherwise, `NoValuableDemand` should be passed.
 """.strip()
 
 
-def create_value_cycle_task_spec(idea_space: IdeaSpace, workspace: Path | None) -> TaskSpec:
+def create_value_cycle_task_spec(idea_space: IdeaSpace, workspace: Path | None) -> TaskSpec[ValueAuditResponse]:
     prepare_idea_space(idea_space)
     invocations = [
         make_value_demand_provide_spec(idea_space, workspace=workspace),

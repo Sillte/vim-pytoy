@@ -6,6 +6,7 @@ from pytoy_llm.idea import IdeaSpace
 from pytoy_llm.models import LLMRequest, LLMRequestLike
 from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, InvocationHooks
 from pytoy_llm.tools.idea_tool import IdeaTool
+from pytoy_llm.tools.idea_tool.models import IdeaNotePath
 from pytoy_llm.tools.workspace_explorer import WorkspaceExplorer
 
 from pytoy.tool_session.llm import (
@@ -39,6 +40,10 @@ class ValuableDemand(BaseModel, frozen=True):
 
     preference: str | None = Field(
         description="Assumptions and evaluation policies of the evaluator and intended audience when they evaluate the quality of the artifact."
+    )
+
+    valuable_demand_note_path: IdeaNotePath = Field(
+        description=("Path to a note where this ValuableDemand is preserved.")
     )
 
 
@@ -108,7 +113,7 @@ The following principles can guide the selection and creation of ValuableDemands
 3. Evaluate the Value each candidate is expected to create and the feasibility of realizing that Value.
 4. Consider overlap with existing artifacts, as well as the user's reading and information-management burden.
 5. Select the most promising candidate. If no candidate is sufficiently promising, select "NoValuableDemand".
-6. Make an IdeaNote to preserve the selected `ValuableDemandOutput` and reply the output.   
+6. Make an IdeaNote to preserve the selected `ValuableDemand` and reply the output.   
 
 ## Intent-First Candidate Comparison
 

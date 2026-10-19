@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pydantic import BaseModel, Field
 from pytoy_llm.idea import IdeaSpace
 from pytoy_llm.materials.models import JsonMaterialData
 from pytoy_llm.models import LLMRequest, LLMRequestLike
@@ -7,7 +8,22 @@ from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, Invocat
 from pytoy_llm.tools.idea_tool import IdeaTool
 from pytoy_llm.tools.workspace_explorer import WorkspaceExplorer
 
+from pytoy.tools.llm.idea_circulation.statuses import ValueCycleExecutionPolicy
+
 from .demand_fulfiller_invocation import FulfillmentReport
+
+
+class ValueAuditResponse(BaseModel, frozen=True):
+    """Report the very concise summary of `Audit` and notify the control of the next consideration of `ValuableDemand`."""
+
+    message: str = Field(
+        description="Very concise explanation of the audit and the reason of `value_cycle_execution_policy`, if any."
+    )
+    value_cycle_execution_policy: ValueCycleExecutionPolicy | None = Field(
+        default=None,
+        description="The request of change of the status for continuing to consider `ValuableDemand`. `null` specifies delegation of policy to the harness.",
+    )
+
 
 BASE_SYSTEM_PROMPT = """
 # ValueAuditor
@@ -67,6 +83,52 @@ The Audit must distinguish:
 - the Value actually realized, including unresolved uncertainty;
 - actionable insights for subsequent activities, when applicable.
 
+### ValueCycleExecutionPolicy
+
+ValueCycleExecutionPolicy controls whether periodic ValueCycle
+execution is enabled or paused.
+
+- "enabled": Request that periodic execution be enabled.
+- "paused": Request that periodic execution be paused.
+- null: Do not request a policy change; preserve the current policy.
+
+When deciding whether to request a policy change, consider the
+user's stated intentions, the current execution policy, audit
+findings, and relevant IdeaSpace context.
+
+Request "paused" only when there is a concrete and sufficiently
+strong reason that autonomous ValueCycle execution should remain
+suspended.
+
+Examples include an explicit user instruction to suspend
+autonomous execution, or circumstances in which meaningful
+exploration is not feasible because essential information
+sources are unavailable and no reasonable alternative exists.
+
+Do not infer a complete absence of user intentions merely because
+explicit goals are unclear or difficult to identify.
+
+Ambiguous intentions are not, by themselves, a reason to pause.
+When feasible, consider exploratory activities that may reveal
+valuable directions.
+
+Temporary obstacles do not automatically justify a persistent
+policy change. Prefer ending the current execution without
+changing the policy when the obstacle is limited to the current run.
+
+Request "enabled" only when there is a clear and sufficiently
+strong reason to resume autonomous execution, consistent with the
+user's intentions and the current execution context.
+
+Do not request a policy change merely because the current
+ValuableDemand was fulfilled, unresolved issues remain, or the
+ValuableDemandProvider may return NoValuableDemand.
+These situations do not, by themselves, determine whether
+periodic execution should be enabled or paused.
+
+When requesting a policy change, clearly and concisely explain
+the reason. Otherwise, return null.
+
 
 ## Responsibilities
 
@@ -78,7 +140,11 @@ The Audit must distinguish:
     - Evaluate how the selected ValuableDemand and the resulting
       artifacts contributed to, enabled, limited, or failed to create Value.
     - If any, consider the actionable actions which are insightful for the next execution.
-3. Reply the concise summary of the audit result to the user. 
+3. Create a concise summary of the audit result.
+   Assess whether meaningful ValuableDemand exploration remains
+   feasible under the current circumstances.
+   Separately determine whether the ValueCycle execution policy
+   should be changed, following the policy criteria.
 
 If the input represents a `NoValuableDemand` decision,
 audit that decision and its handling instead of assuming
@@ -220,7 +286,7 @@ def _construct_system_prompt(idea_space: IdeaSpace) -> str:
 def make_value_auditor_spec(
     idea_space: IdeaSpace,
     workspace: Path | None = None,
-) -> AgentInvocationSpec[str]:
+) -> AgentInvocationSpec[ValueAuditResponse]:
 
     def _create_request(input: FulfillmentReport, _context: ExecutionContext) -> LLMRequestLike:
 
@@ -246,7 +312,7 @@ def make_value_auditor_spec(
     ]
     return AgentInvocationSpec.from_any(
         create_request=_create_request,
-        output_type=str,
+        output_type=ValueAuditResponse,
         tools=tools,
         hooks=hooks,
     )
