@@ -1,16 +1,25 @@
+from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Annotated, Literal, Sequence
+from typing import Annotated, Any, Literal, Sequence
 
 from pydantic import BaseModel, Field
 from pytoy_llm.idea import IdeaSpace
 from pytoy_llm.materials.models import JsonMaterialData
 from pytoy_llm.models import LLMRequest, LLMRequestLike
-from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, InvocationHooks
+from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, InvocationHooks, InvocationResult
 from pytoy_llm.tools.idea_tool import IdeaTool
 from pytoy_llm.tools.idea_tool.models import IdeaNotePath
 from pytoy_llm.tools.workspace_explorer import WorkspaceExplorer
 
 from .demand_provider_invocation import NoValuableDemand, ValuableDemand, ValuableDemandProviderOutput
+from .states import FULFILLMENT_REPORT_CONTEXT_KEY, VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY, ValueCycleState
+
+
+def _markdown_heading(heading_level: int, text: str) -> str:
+    if not 1 <= heading_level <= 6:
+        raise ValueError("Markdown heading level must be between 1 and 6.")
+    return f"{'#' * heading_level} {text}"
+
 
 type FulfillmentStatus = Annotated[
     Literal["completed", "blocked", "no_valuable_demand_processed"],
@@ -28,14 +37,9 @@ class FulfillmentReport(BaseModel, frozen=True):
     """Report describing how a ValuableDemandProviderOutput was processed."""
 
     status: FulfillmentStatus
-    valuable_demand_note_paths: Sequence[IdeaNotePath] = Field(
-        description=("Paths to notes describing the ValuableDemands processed by this execution, if any.")
-    )
-
     artifact_note_paths: Sequence[IdeaNotePath] = Field(
         description=("Paths to artifacts actually created or modified by this execution, if any.")
     )
-
     comment: str = Field(
         description=(
             "A concise explanation of the actions taken, the outcome, "
@@ -43,6 +47,33 @@ class FulfillmentReport(BaseModel, frozen=True):
             "and self-reviews for the artifacts."
         )
     )
+
+    def markdown(self, heading_level: int = 1) -> str:
+        artifact_notes = "\n".join(f"- `{path}`" for path in self.artifact_note_paths) or "- None"
+        return "\n\n".join(
+            [
+                _markdown_heading(heading_level, "Fulfillment Report"),
+                f"**Status:** `{self.status}`",
+                _markdown_heading(heading_level + 1, "Artifacts"),
+                artifact_notes,
+                _markdown_heading(heading_level + 1, "Comment"),
+                self.comment,
+            ]
+        )
+
+
+class FulfillmentNoteClass(BaseModel, frozen=True):
+    valuable_demand_provider_output: ValuableDemandProviderOutput
+    fulfillment_report: FulfillmentReport
+
+    def markdown(self, heading_level: int = 1) -> str:
+        return "\n\n".join(
+            [
+                _markdown_heading(heading_level, "Value Cycle Fulfillment"),
+                self.valuable_demand_provider_output.markdown(heading_level=heading_level + 1),
+                self.fulfillment_report.markdown(heading_level=heading_level + 1),
+            ]
+        )
 
 
 BASE_SYSTEM_PROMPT = """
@@ -107,8 +138,8 @@ Do not interpret `NoValuableDemand` as an execution failure.
    and communicating with the user when appropriate.
 5. If no further action is required, do not invent work merely to
    keep the system active.
-6. Report the outcome using `FulfillmentReport`, including any relevant
-   note paths and a concise explanation of what was done or why no
+6. Report the outcome using `FulfillmentReport`, including relevant
+   artifact paths and a concise explanation of what was done or why no
    further action was needed.
 
 Do not assume that every `NoValuableDemand` requires a message or
@@ -187,7 +218,6 @@ subsequent agent to understand what happened without repeating
 the entire execution.
 
 Include:
-- references to the relevant ValuableDemand notes, if any;
 - references to created or modified artifacts, if any;
 - a concise explanation of the actions taken and the outcome;
 - unresolved issues, limitations, required user actions, or self-evaluation for the artifacts when applicable.
@@ -368,11 +398,13 @@ def _construct_system_prompt(idea_space: IdeaSpace) -> str:
 
 
 def make_demand_fulfiller_spec(
+    state: ValueCycleState,
     idea_space: IdeaSpace,
     workspace: Path | None = None,
 ) -> AgentInvocationSpec[FulfillmentReport]:
 
-    def _create_request(input: ValuableDemandProviderOutput, _context: ExecutionContext) -> LLMRequestLike:
+    def _create_request(input: ValuableDemandProviderOutput, context: ExecutionContext) -> LLMRequestLike:
+        context.state[VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY] = input
         value = input.value
         if isinstance(value, ValuableDemand):
             material = JsonMaterialData(
@@ -394,9 +426,32 @@ def make_demand_fulfiller_spec(
         workspace = idea_space.root_folder_path
     idea_tool = IdeaTool.from_any(idea_space_roots=idea_space.root_folder_path, workspace_root=workspace)
     workspace_explorer = WorkspaceExplorer.from_any(workspace=workspace, ignored_roots=[idea_space.root_folder_path])
-    hooks = InvocationHooks.from_any(
-        on_start=lambda _: idea_tool.mark_llm_start(), on_completion=lambda _: idea_tool.mark_llm_finished()
-    )
+
+    context_state: MutableMapping[str, Any] | None = None
+
+    def _on_start(context: ExecutionContext) -> None:
+        nonlocal context_state
+        context_state = context.state
+        idea_tool.mark_llm_start()
+
+    def _on_result(result: InvocationResult[FulfillmentReport]) -> None:
+        idea_tool.mark_llm_finished()
+        if context_state is None:
+            raise RuntimeError("The ValueCycle context was not captured.")
+        provider_output = context_state.get(VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY)
+        if not isinstance(provider_output, ValuableDemandProviderOutput):
+            raise RuntimeError("ValuableDemandProviderOutput was not found in the ValueCycle context.")
+        report = result.output
+        context_state[FULFILLMENT_REPORT_CONTEXT_KEY] = report
+        if report.status == "completed" and report.artifact_note_paths:
+            state.status = "artifacts-created"
+        note = FulfillmentNoteClass(
+            valuable_demand_provider_output=provider_output,
+            fulfillment_report=report,
+        )
+        state.write_note(markdown=note.markdown(), idea_space=idea_space)
+
+    hooks = InvocationHooks.from_any(on_start=_on_start, on_result=_on_result)
     tools = [
         *idea_tool.tools,
         *workspace_explorer.tools,

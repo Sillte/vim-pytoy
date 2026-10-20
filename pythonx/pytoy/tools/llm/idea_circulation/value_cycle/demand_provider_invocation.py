@@ -1,25 +1,35 @@
+import time
 import uuid
+from collections.abc import MutableMapping
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field
 from pytoy_llm.idea import IdeaSpace
 from pytoy_llm.models import LLMRequest, LLMRequestLike
-from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, InvocationHooks
+from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, InvocationHooks, InvocationResult
 from pytoy_llm.tools.idea_tool import IdeaTool
-from pytoy_llm.tools.idea_tool.models import IdeaNotePath
 from pytoy_llm.tools.workspace_explorer import WorkspaceExplorer
 
 from pytoy.tool_session.llm import (
     LLMMessageLike,
 )
 
+from .states import VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY, ValueCycleState
+
+
+def _markdown_heading(heading_level: int, text: str) -> str:
+    if not 1 <= heading_level <= 6:
+        raise ValueError("Markdown heading level must be between 1 and 6.")
+    return f"{'#' * heading_level} {text}"
+
 
 class ValuableDemand(BaseModel, frozen=True):
     """A demand intended to create Value, with explicit validity conditions and quality criteria."""
 
-    id: str = Field(
+    summary: str = Field(
         description=(
-            "Identifier of ValuableDemand. "
+            "Summary of ValuableDemand. "
             "It is expected to be kebab-case containing only lowercase ASCII letters, digits, and single hyphens. "
             "It is expected to represent the summary of ValuableDemand."
         ),
@@ -42,9 +52,17 @@ class ValuableDemand(BaseModel, frozen=True):
         description="Assumptions and evaluation policies of the evaluator and intended audience when they evaluate the quality of the artifact."
     )
 
-    valuable_demand_note_path: IdeaNotePath = Field(
-        description=("Path to a note where this ValuableDemand is preserved.")
-    )
+    def markdown(self, heading_level: int = 1) -> str:
+        sections = [
+            _markdown_heading(heading_level, self.summary),
+            _markdown_heading(heading_level + 1, "Validity conditions"),
+            self.validity_conditions,
+            _markdown_heading(heading_level + 1, "Quality criteria"),
+            self.quality_criteria,
+        ]
+        if self.preference is not None:
+            sections.extend([_markdown_heading(heading_level + 1, "Preference"), self.preference])
+        return "\n\n".join(sections)
 
 
 class NoValuableDemand(BaseModel, frozen=True):
@@ -57,11 +75,25 @@ class NoValuableDemand(BaseModel, frozen=True):
         )
     )
 
+    def markdown(self, heading_level: int = 1) -> str:
+        return "\n\n".join(
+            [
+                _markdown_heading(heading_level, "No Valuable Demand"),
+                _markdown_heading(heading_level + 1, "Reason"),
+                self.reason,
+                _markdown_heading(heading_level + 1, "Desired response"),
+                self.desired_response,
+            ]
+        )
+
 
 class ValuableDemandProviderOutput(BaseModel, frozen=True):
     """Output of `ValuableDemandProvider`."""
 
     value: ValuableDemand | NoValuableDemand
+
+    def markdown(self, heading_level: int = 1) -> str:
+        return self.value.markdown(heading_level=heading_level)
 
 
 BASE_SYSTEM_PROMPT = """
@@ -112,8 +144,7 @@ The following principles can guide the selection and creation of ValuableDemands
 2. Consider candidate ValuableDemands across multiple approaches, including CONTINUATION, SYNTHESIS, and EXPLORATION.
 3. Evaluate the Value each candidate is expected to create and the feasibility of realizing that Value.
 4. Consider overlap with existing artifacts, as well as the user's reading and information-management burden.
-5. Select the most promising candidate. If no candidate is sufficiently promising, select "NoValuableDemand".
-6. Make an IdeaNote to preserve the selected `ValuableDemand` and reply the output.   
+5. Create or select the most promising candidate. If no candidate is sufficiently promising, select "NoValuableDemand".
 
 ## Intent-First Candidate Comparison
 
@@ -339,18 +370,21 @@ def _construct_system_prompt(idea_space: IdeaSpace) -> str:
         base_system_prompt = base_system_prompt_path.read_text(encoding="utf8")
     else:
         base_system_prompt_path.write_text(BASE_SYSTEM_PROMPT, encoding="utf8")
+        time.sleep(0.1)
         base_system_prompt = BASE_SYSTEM_PROMPT
 
     if system_personality_path.exists():
         system_personality = system_personality_path.read_text(encoding="utf8")
     else:
         system_personality_path.write_text(SYSTEM_PERSONALITY, encoding="utf8")
+        time.sleep(0.1)
         system_personality = SYSTEM_PERSONALITY
 
     return "\n\n".join([elem.strip() for elem in [base_system_prompt, system_personality]])
 
 
 def make_value_demand_provide_spec(
+    cycle_state: ValueCycleState,
     idea_space: IdeaSpace,
     workspace: Path | None = None,
 ) -> AgentInvocationSpec[ValuableDemandProviderOutput]:
@@ -360,13 +394,32 @@ def make_value_demand_provide_spec(
         new_messages = LLMRequest.from_any(llm_message).messages if llm_message is not None else ()
         return LLMRequest.from_any(new_messages, system_prompt=system_prompt)
 
+    context_state: MutableMapping[str, Any] | None = None
+
+    def _on_start(context: ExecutionContext) -> None:
+        nonlocal context_state
+        context_state = context.state
+        idea_tool.mark_llm_start()
+
+    def _on_result(result: InvocationResult[ValuableDemandProviderOutput]) -> None:
+        idea_tool.mark_llm_finished()
+        if context_state is None:
+            raise RuntimeError("The ValueCycle context was not captured.")
+        output = result.output
+        context_state[VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY] = output
+        if isinstance(output.value, ValuableDemand):
+            cycle_state.summary = output.value.summary
+        else:
+            cycle_state.summary = "NoValuableDemand"
+        cycle_state.status = "demand-created"
+        cycle_state.write_note(markdown=output.markdown(), idea_space=idea_space)
+
     if workspace is None:
         workspace = idea_space.root_folder_path
     idea_tool = IdeaTool.from_any(idea_space_roots=idea_space.root_folder_path, workspace_root=workspace)
     workspace_explorer = WorkspaceExplorer.from_any(workspace=workspace, ignored_roots=[idea_space.root_folder_path])
-    hooks = InvocationHooks.from_any(
-        on_start=lambda _: idea_tool.mark_llm_start(), on_completion=lambda _: idea_tool.mark_llm_finished()
-    )
+    hooks = InvocationHooks.from_any(on_start=_on_start, on_result=_on_result)
+
     tools = [
         *idea_tool.tools,
         *workspace_explorer.tools,

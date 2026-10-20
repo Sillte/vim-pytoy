@@ -8,6 +8,7 @@ from pytoy_llm.task.models import TaskSpec
 from pytoy.tools.llm.idea_circulation.idea_exchange import IdeaExchangeResponse, make_idea_exchange_spec
 from pytoy.tools.llm.idea_circulation.value_cycle.demand_fulfiller_invocation import make_demand_fulfiller_spec
 from pytoy.tools.llm.idea_circulation.value_cycle.demand_provider_invocation import make_value_demand_provide_spec
+from pytoy.tools.llm.idea_circulation.value_cycle.states import ValueCycleState
 from pytoy.tools.llm.idea_circulation.value_cycle.value_auditor_invocation import (
     ValueAuditResponse,
     make_value_auditor_spec,
@@ -30,10 +31,11 @@ Otherwise, `NoValuableDemand` should be passed.
 
 def create_value_cycle_task_spec(idea_space: IdeaSpace, workspace: Path | None) -> TaskSpec[ValueAuditResponse]:
     prepare_idea_space(idea_space)
+    state = ValueCycleState()
     invocations = [
-        make_value_demand_provide_spec(idea_space, workspace=workspace),
-        make_demand_fulfiller_spec(idea_space, workspace=workspace),
-        make_value_auditor_spec(idea_space, workspace=workspace),
+        make_value_demand_provide_spec(state, idea_space, workspace=workspace),
+        make_demand_fulfiller_spec(state, idea_space, workspace=workspace),
+        make_value_auditor_spec(state, idea_space, workspace=workspace),
     ]
     return TaskSpec.from_specs(invocation_specs=invocations)
 

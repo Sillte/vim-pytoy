@@ -23,30 +23,9 @@ explicitly stated human intention.
 
 ## ValueCycle
 
-ValueCycle is an activity to create a value inside this IdeaSpace.
+### ValueDemandProvider
 
-### ValuableDemands
-
-Each ValuableDemand is recorded in a Markdown file named
-after its unique ID under `demands/`.
-
-Each record contains the following sections:
-
-- `Valuable Demand`: 
-
-- `Decision Rationale`: a concise explanation of why the
-  ValuableDemand was selected, including relevant hypotheses,
-  background, assumptions, or other contingencies where applicable.
-
-- `Relevant User Input`: the user inputs relevant to the
-  selected ValuableDemand and their relationship to it.
-
-
-`Relevant User Input` should cover only inputs relevant to
-the selected ValuableDemand. It must distinguish explicit user
-statements from interpretations and must not imply that all
-user inputs have been reflected. If no user inputs were provided
-or considered in the decision, this should be stated explicitly.
+ValueDemandProvider selects a `ValuableDemand` or `NoValuableDemand`, fulfills it when appropriate, and audits the outcome. The harness preserves these structured results in the execution log.
 
 ### Fulfillment of ValuableDemand
 
@@ -61,26 +40,22 @@ contribute to producing, evaluating, or connecting valuable artifacts.
 Do not create files merely to demonstrate activity.
 Prefer the simplest structure that adequately supports the work.
 
-### Audits
+### Audit
 
-`audits/` stores concise IdeaNotes recording the evaluation
-of ValuableDemand selection, fulfillment, and the value created.
+The audit evaluates the appropriateness of the demand selection (including a `NoValuableDemand` decision), the adequacy of fulfillment, and the value actually realized. It should distinguish evidence from judgment, record relevant uncertainty, and include actionable insights for later activities when applicable.
 
-Each completed work cycle must produce an Audit record.
+The audit is part of the ValueCycle execution snapshot. It does not replace or constitute a completed artifact.
 
-An Audit should distinguish:
-- the appropriateness of the selected ValuableDemand;
-- the adequacy of its fulfillment;
-- the value actually created, including unresolved uncertainty;
-- actionable insights for subsequent activities, when applicable.
+### Value Cycle Log
 
-Each Audit must link to the IdeaNote recording the ValuableDemand and to the artifact, if one exists.
+`value_cycle_log/` contains one operational IdeaNote per ValueCycle execution, named `<execution-id>.md`. After each stage completes, the harness overwrites that note with the latest snapshot; it is not an append-only history.
 
-An Audit does not replace the completed artifact.
-It records the evaluation of the work and its outcomes.
+The snapshot accumulates:
+- the provider's `ValuableDemand` or `NoValuableDemand` output;
+- the `FulfillmentReport`, including artifact references and the outcome;
+- the `ValueAudit`, including the evaluation and actionable insights.
 
-Keep Audit records concise. Include only the evidence,
-findings, and insights needed to understand the evaluation.
+The note metadata records the execution ID, status, start and finish times, and summary when available. Do not create separate notes merely to persist a demand or audit; they are retained in the execution snapshot. Keep this operational log distinct from completed artifacts.
 
 
 ## State Preservation

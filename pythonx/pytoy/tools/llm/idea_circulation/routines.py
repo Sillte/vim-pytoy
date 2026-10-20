@@ -40,7 +40,7 @@ class ValueCycleRoutineHandler:
         routine_handler: RoutineSessionHandler,
         *,
         delay: int = 1000 * 30,
-        max_iteration: int | None = 100,
+        max_iteration: int | None = None,
     ) -> None:
         self._idea_space = idea_space
         self._workspace = workspace
@@ -64,7 +64,7 @@ class ValueCycleRoutineHandler:
         workspace: Path | None = None,
         *,
         delay: int = 1000 * 30,
-        max_iteration: int | None = 100,
+        max_iteration: int | None = None,
     ) -> Self:
 
         routine_handlers = RoutineSessionHandler.query(RoutineSessionQuery(kind=cls.kind))

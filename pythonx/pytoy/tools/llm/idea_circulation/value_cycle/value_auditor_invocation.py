@@ -1,20 +1,68 @@
+from collections.abc import MutableMapping
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field
 from pytoy_llm.idea import IdeaSpace
 from pytoy_llm.materials.models import JsonMaterialData
 from pytoy_llm.models import LLMRequest, LLMRequestLike
-from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, InvocationHooks
+from pytoy_llm.task.models import AgentInvocationSpec, ExecutionContext, InvocationHooks, InvocationResult
 from pytoy_llm.tools.idea_tool import IdeaTool
 from pytoy_llm.tools.workspace_explorer import WorkspaceExplorer
 
 from pytoy.tools.llm.idea_circulation.statuses import ValueCycleExecutionPolicy
 
 from .demand_fulfiller_invocation import FulfillmentReport
+from .demand_provider_invocation import ValuableDemandProviderOutput
+from .states import (
+    FULFILLMENT_REPORT_CONTEXT_KEY,
+    VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY,
+    VALUE_AUDIT_CONTEXT_KEY,
+    ValueCycleState,
+)
+
+
+def _markdown_heading(heading_level: int, text: str) -> str:
+    if not 1 <= heading_level <= 6:
+        raise ValueError("Markdown heading level must be between 1 and 6.")
+    return f"{'#' * heading_level} {text}"
+
+
+class ValueAudit(BaseModel, frozen=True):
+    """Audit record for `ValuableDemand` and `Artifacts`."""
+
+    demand_selection_assessment: str = Field(
+        description="The appropriateness of the selected ValuableDemand, or the decision not to select one."
+    )
+    artifacts_assessment: str = Field(description="The adequacy of fulfillment on the basis of the artifacts.")
+    realized_value_assessment: str = Field(description="The Value actually realized, including unresolved uncertainty.")
+    actionable_insights: tuple[str, ...] = Field(
+        default_factory=tuple,
+        description="Actionable insights for subsequent activities, when applicable.",
+    )
+
+    def markdown(self, heading_level: int = 1) -> str:
+        actionable_insights = "\n".join(f"- {insight}" for insight in self.actionable_insights) or "- None"
+        return "\n\n".join(
+            [
+                _markdown_heading(heading_level, "Value Audit"),
+                _markdown_heading(heading_level + 1, "Demand selection"),
+                self.demand_selection_assessment,
+                _markdown_heading(heading_level + 1, "Fulfillment"),
+                self.artifacts_assessment,
+                _markdown_heading(heading_level + 1, "Realized Value"),
+                self.realized_value_assessment,
+                _markdown_heading(heading_level + 1, "Actionable insights"),
+                actionable_insights,
+            ]
+        )
 
 
 class ValueAuditResponse(BaseModel, frozen=True):
-    """Report the very concise summary of `Audit` and notify the control of the next consideration of `ValuableDemand`."""
+    """Report the `Audit` and notify the control of the next consideration of `ValuableDemand`."""
+
+    value_audit: ValueAudit = Field(description="Audit for `ValuableDemand` and `Artifacts`.")
 
     message: str = Field(
         description="Very concise explanation of the audit and the reason of `value_cycle_execution_policy`, if any."
@@ -25,11 +73,33 @@ class ValueAuditResponse(BaseModel, frozen=True):
     )
 
 
+class ValueAuditInput(BaseModel, frozen=True):
+    valuable_demand_provider_output: ValuableDemandProviderOutput
+    fulfillment_report: FulfillmentReport
+
+
+class ValueAuditNoteClass(BaseModel, frozen=True):
+    valuable_demand_provider_output: ValuableDemandProviderOutput
+    fulfillment_report: FulfillmentReport
+    value_audit: ValueAudit
+
+    def markdown(self, heading_level: int = 1) -> str:
+        return "\n\n".join(
+            [
+                _markdown_heading(heading_level, "Value Cycle Audit"),
+                self.valuable_demand_provider_output.markdown(heading_level=heading_level + 1),
+                self.fulfillment_report.markdown(heading_level=heading_level + 1),
+                self.value_audit.markdown(heading_level=heading_level + 1),
+            ]
+        )
+
+
 BASE_SYSTEM_PROMPT = """
 # ValueAuditor
 
-You are an agent that audit the given ValuableDemand and the artifacts in an IdeaSpace.
-Your responsibility is to create an audit idea note from the given `FulfillmentReport`.
+You are an agent that audits the given ValuableDemand and the artifacts in an IdeaSpace.
+Your responsibility is to return a structured `ValueAuditResponse` containing a `ValueAudit` based on the given `ValueAuditInput`.
+The harness creates and persists the audit IdeaNote from that structured output.
 
 ## Terminology
 
@@ -68,9 +138,10 @@ A FulfillmentReport is a report from the previous execution to inform the create
 
 ### Audit Record
 
-An Audit is a concise IdeaNote that evaluates the selection
-and fulfillment of a ValuableDemand, and the Value actually
-realized from the resulting work.
+A `ValueAudit` is a structured evaluation that the harness serializes
+as a concise IdeaNote. It evaluates the selection and fulfillment of
+a ValuableDemand, and the Value actually realized from the resulting work.
+Do not create or write the audit IdeaNote yourself.
 
 The Audit must link to:
 - the ValuableDemand note, if one exists;
@@ -132,14 +203,14 @@ the reason. Otherwise, return null.
 
 ## Responsibilities
 
-1. Read FulfillmentReport.
-    - Read ValuableDemand.
-    - Read artifacts
-2. Create the audit.
-    - Evaluate the value the artifact created. 
+1. Read `ValueAuditInput`.
+    - Read the `ValuableDemandProviderOutput` and `FulfillmentReport`.
+    - Read the referenced artifacts.
+2. Return the audit as the structured `ValueAudit` output.
     - Evaluate how the selected ValuableDemand and the resulting
       artifacts contributed to, enabled, limited, or failed to create Value.
-    - If any, consider the actionable actions which are insightful for the next execution.
+    - Identify actionable insights for the next execution, if any.
+    - Do not create an IdeaNote; the harness persists the output.
 3. Create a concise summary of the audit result.
    Assess whether meaningful ValuableDemand exploration remains
    feasible under the current circumstances.
@@ -284,16 +355,25 @@ def _construct_system_prompt(idea_space: IdeaSpace) -> str:
 
 
 def make_value_auditor_spec(
+    state: ValueCycleState,
     idea_space: IdeaSpace,
     workspace: Path | None = None,
 ) -> AgentInvocationSpec[ValueAuditResponse]:
+    context_state: MutableMapping[str, Any] | None = None
 
-    def _create_request(input: FulfillmentReport, _context: ExecutionContext) -> LLMRequestLike:
-
+    def _create_request(input: FulfillmentReport, context: ExecutionContext) -> LLMRequestLike:
+        provider_output = context.state.get(VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY)
+        if not isinstance(provider_output, ValuableDemandProviderOutput):
+            raise RuntimeError("ValuableDemandProviderOutput was not found in the ValueCycle context.")
+        context.state[FULFILLMENT_REPORT_CONTEXT_KEY] = input
+        audit_input = ValueAuditInput(
+            valuable_demand_provider_output=provider_output,
+            fulfillment_report=input,
+        )
         material = JsonMaterialData(
-            description="Given `FulfillmentReport`",
-            json_schema=FulfillmentReport.model_json_schema(),
-            data=input.model_dump(mode="python"),
+            description="Given `ValueAuditInput`",
+            json_schema=ValueAuditInput.model_json_schema(),
+            data=audit_input.model_dump(mode="python"),
         )
         message = material.compose_explanation(parent_header_depth=1)
         system_prompt = _construct_system_prompt(idea_space=idea_space)
@@ -303,9 +383,35 @@ def make_value_auditor_spec(
         workspace = idea_space.root_folder_path
     idea_tool = IdeaTool.from_any(idea_space_roots=idea_space.root_folder_path, workspace_root=workspace)
     workspace_explorer = WorkspaceExplorer.from_any(workspace=workspace, ignored_roots=[idea_space.root_folder_path])
-    hooks = InvocationHooks.from_any(
-        on_start=lambda _: idea_tool.mark_llm_start(), on_completion=lambda _: idea_tool.mark_llm_finished()
-    )
+
+    def _on_start(context: ExecutionContext) -> None:
+        nonlocal context_state
+        context_state = context.state
+        idea_tool.mark_llm_start()
+
+    def _on_result(result: InvocationResult[ValueAuditResponse]) -> None:
+        idea_tool.mark_llm_finished()
+        if context_state is None:
+            raise RuntimeError("The ValueCycle context was not captured.")
+        provider_output = context_state.get(VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY)
+        fulfillment_report = context_state.get(FULFILLMENT_REPORT_CONTEXT_KEY)
+        if not isinstance(provider_output, ValuableDemandProviderOutput):
+            raise RuntimeError("ValuableDemandProviderOutput was not found in the ValueCycle context.")
+        if not isinstance(fulfillment_report, FulfillmentReport):
+            raise RuntimeError("FulfillmentReport was not found in the ValueCycle context.")
+        response = result.output
+        context_state[VALUE_AUDIT_CONTEXT_KEY] = response.value_audit
+        note = ValueAuditNoteClass(
+            valuable_demand_provider_output=provider_output,
+            fulfillment_report=fulfillment_report,
+            value_audit=response.value_audit,
+        )
+        state.summary = response.message
+        state.status = "finished"
+        state.finished_at = datetime.now(UTC)
+        state.write_note(markdown=note.markdown(), idea_space=idea_space)
+
+    hooks = InvocationHooks.from_any(on_start=_on_start, on_result=_on_result)
     tools = [
         *idea_tool.tools,
         *workspace_explorer.tools,
