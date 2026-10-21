@@ -1,6 +1,5 @@
-from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Annotated, Any, Literal, Sequence
+from typing import Annotated, Literal, Sequence
 
 from pydantic import BaseModel, Field
 from pytoy_llm.idea import IdeaSpace
@@ -427,22 +426,17 @@ def make_demand_fulfiller_spec(
     idea_tool = IdeaTool.from_any(idea_space_roots=idea_space.root_folder_path, workspace_root=workspace)
     workspace_explorer = WorkspaceExplorer.from_any(workspace=workspace, ignored_roots=[idea_space.root_folder_path])
 
-    context_state: MutableMapping[str, Any] | None = None
-
     def _on_start(context: ExecutionContext) -> None:
-        nonlocal context_state
-        context_state = context.state
         idea_tool.mark_llm_start()
 
     def _on_result(result: InvocationResult[FulfillmentReport]) -> None:
         idea_tool.mark_llm_finished()
-        if context_state is None:
-            raise RuntimeError("The ValueCycle context was not captured.")
-        provider_output = context_state.get(VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY)
+
+        provider_output = result.context.state.get(VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY)
         if not isinstance(provider_output, ValuableDemandProviderOutput):
             raise RuntimeError("ValuableDemandProviderOutput was not found in the ValueCycle context.")
         report = result.output
-        context_state[FULFILLMENT_REPORT_CONTEXT_KEY] = report
+        result.context.state[FULFILLMENT_REPORT_CONTEXT_KEY] = report
         if report.status == "completed" and report.artifact_note_paths:
             state.status = "artifacts-created"
         note = FulfillmentNoteClass(

@@ -1,8 +1,6 @@
 import time
 import uuid
-from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Any
 
 from pydantic import BaseModel, Field
 from pytoy_llm.idea import IdeaSpace
@@ -394,19 +392,15 @@ def make_value_demand_provide_spec(
         new_messages = LLMRequest.from_any(llm_message).messages if llm_message is not None else ()
         return LLMRequest.from_any(new_messages, system_prompt=system_prompt)
 
-    context_state: MutableMapping[str, Any] | None = None
-
     def _on_start(context: ExecutionContext) -> None:
-        nonlocal context_state
-        context_state = context.state
+        cycle_state.execution_id = context.task_id  # Firstly, it determines the `execution_id`.
         idea_tool.mark_llm_start()
 
     def _on_result(result: InvocationResult[ValuableDemandProviderOutput]) -> None:
         idea_tool.mark_llm_finished()
-        if context_state is None:
-            raise RuntimeError("The ValueCycle context was not captured.")
+
         output = result.output
-        context_state[VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY] = output
+        result.context.state[VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY] = output
         if isinstance(output.value, ValuableDemand):
             cycle_state.summary = output.value.summary
         else:
