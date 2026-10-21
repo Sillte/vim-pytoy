@@ -21,7 +21,7 @@ from pytoy.tool_session.llm import (
 from .buffer_codec import LLMBufferCodec
 from .messages_codec import LLMMessagesCodec
 from .metadata_codec import BufferMetadataCodec
-from .orchestrator.task_creators import IdeaExchangeResponse, create_idea_exchange_task_spec
+from .orchestrator.task_creators import IdeaCompanionResponse, create_idea_companion_task_spec
 from .statuses import IdeaCirculationStatus
 
 
@@ -67,7 +67,7 @@ class IdeaCirculationDriver(LLMSessionDriverProtocol):
         llm_buffer_codec = LLMBufferCodec.from_llm_buffer(buffer.content)
         message_history = LLMMessagesCodec().decode(llm_buffer_codec.messages_domain)
 
-        task_spec = create_idea_exchange_task_spec(message_history, self._idea_space, workspace=self._workspace)
+        task_spec = create_idea_companion_task_spec(message_history, self._idea_space, workspace=self._workspace)
         task_request = TaskRequest(spec=task_spec, input=llm_message)
 
         execution_handler = execution_creator(task_request)
@@ -106,7 +106,7 @@ class IdeaCirculationDriver(LLMSessionDriverProtocol):
             self._status.update_tokens(result.task_result.llm_tokens)
 
             response = result.output
-            if isinstance(response, IdeaExchangeResponse):
+            if isinstance(response, IdeaCompanionResponse):
                 if response.status_patch:
                     response.status_patch.apply(self._status)
                 new_message = LLMMessage.from_parts(parts=[TextPart(role="assistant", content=response.message)])

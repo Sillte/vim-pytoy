@@ -14,25 +14,31 @@ from pytoy.tools.llm.idea_circulation.statuses import IdeaCirculationStatusPatch
 from .prompts import BASE_SYSTEM_PROMPT, SYSTEM_PERSONALITY
 
 
+def _read_or_create_prompt(path: Path, legacy_path: Path, default: str) -> str:
+    if path.exists():
+        return path.read_text(encoding="utf8")
+    if legacy_path.exists():
+        return legacy_path.read_text(encoding="utf8")
+    path.write_text(default, encoding="utf8")
+    return default
+
+
 def _construct_system_prompt(idea_space: IdeaSpace) -> str:
-    base_system_prompt_path = idea_space.root_space.space_meta_folder / "idea_exchange_system_prompt.md"
-    system_personality_path = idea_space.root_space.space_meta_folder / "idea_exchange_system_personality.md"
-    if base_system_prompt_path.exists():
-        base_system_prompt = base_system_prompt_path.read_text(encoding="utf8")
-    else:
-        base_system_prompt_path.write_text(BASE_SYSTEM_PROMPT, encoding="utf8")
-        base_system_prompt = BASE_SYSTEM_PROMPT
-
-    if system_personality_path.exists():
-        system_personality = system_personality_path.read_text(encoding="utf8")
-    else:
-        system_personality_path.write_text(SYSTEM_PERSONALITY, encoding="utf8")
-        system_personality = SYSTEM_PERSONALITY
-
+    space_meta_folder = idea_space.root_space.space_meta_folder
+    base_system_prompt = _read_or_create_prompt(
+        space_meta_folder / "idea_companion_system_prompt.md",
+        space_meta_folder / "idea_exchange_system_prompt.md",
+        BASE_SYSTEM_PROMPT,
+    )
+    system_personality = _read_or_create_prompt(
+        space_meta_folder / "idea_companion_system_personality.md",
+        space_meta_folder / "idea_exchange_system_personality.md",
+        SYSTEM_PERSONALITY,
+    )
     return "\n\n".join([elem.strip() for elem in [base_system_prompt, system_personality]])
 
 
-class IdeaExchangeResponse(BaseModel, frozen=True):
+class IdeaCompanionResponse(BaseModel, frozen=True):
     """Response from the conversational agent."""
 
     message: str = Field(description="The user-facing conversational reply.")
@@ -43,11 +49,11 @@ class IdeaExchangeResponse(BaseModel, frozen=True):
     )
 
 
-def make_idea_exchange_spec(
+def make_idea_companion_spec(
     message_history: Sequence[LLMMessage],
     idea_space: IdeaSpace,
     workspace: Path | None = None,
-) -> AgentInvocationSpec[IdeaExchangeResponse]:
+) -> AgentInvocationSpec[IdeaCompanionResponse]:
 
     def _create_request(llm_message: LLMMessageLike, _context: ExecutionContext) -> LLMRequestLike:
         system_prompt = _construct_system_prompt(idea_space=idea_space)
@@ -67,7 +73,7 @@ def make_idea_exchange_spec(
     ]
     return AgentInvocationSpec.from_any(
         create_request=_create_request,
-        output_type=IdeaExchangeResponse,
+        output_type=IdeaCompanionResponse,
         tools=tools,
         hooks=hooks,
     )

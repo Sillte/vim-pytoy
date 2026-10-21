@@ -21,11 +21,21 @@ Distinguish explicit human statements from interpretations or
 hypotheses inferred by the LLM. Never present an inference as an
 explicitly stated human intention.
 
+## Companion
+`companion/` stores the inferred intentions, goals, preferences, and directions
+of the human.
+Explicit human statements have higher priority than the inferred hypotheses.
+
+The structure of `companion/` is intentionally flexible.
+Organize its contents according to the information that needs to be preserved
+and retrieved.
+
 ## ValueCycle
 
-### ValueDemandProvider
+### ValuableDemandProvider
 
-ValueDemandProvider selects a `ValuableDemand` or `NoValuableDemand`, fulfills it when appropriate, and audits the outcome. The harness preserves these structured results in the execution log.
+ValuableDemandProvider selects a `ValuableDemand` or `NoValuableDemand`, fulfills the demand when appropriate, and audits the outcome.
+The harness preserves these structured results in the execution log.
 
 ### Fulfillment of ValuableDemand
 
@@ -50,7 +60,7 @@ The audit is part of the ValueCycle execution snapshot. It does not replace or c
 
 `value_cycle_log/` contains one operational IdeaNote per ValueCycle execution, named `<execution-id>.md`. After each stage completes, the harness overwrites that note with the latest snapshot; it is not an append-only history.
 
-The snapshot accumulates:
+The snapshot contains:
 - the provider's `ValuableDemand` or `NoValuableDemand` output;
 - the `FulfillmentReport`, including artifact references and the outcome;
 - the `ValueAudit`, including the evaluation and actionable insights.
