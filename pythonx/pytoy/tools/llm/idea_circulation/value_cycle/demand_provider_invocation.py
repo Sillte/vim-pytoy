@@ -1,6 +1,7 @@
 import time
 import uuid
 from pathlib import Path
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 from pytoy_llm.idea import IdeaSpace
@@ -24,6 +25,8 @@ def _markdown_heading(heading_level: int, text: str) -> str:
 
 class ValuableDemand(BaseModel, frozen=True):
     """A demand intended to create Value, with explicit validity conditions and quality criteria."""
+
+    kind: Literal["valuable_demand"] = "valuable_demand"
 
     summary: str = Field(
         description=(
@@ -63,24 +66,84 @@ class ValuableDemand(BaseModel, frozen=True):
         return "\n\n".join(sections)
 
 
-class NoValuableDemand(BaseModel, frozen=True):
-    """A decision that no new ValuableDemand should be created in the current situation."""
+class IntentionMandatory(BaseModel, frozen=True):
+    """A no-demand outcome used when no grounded direction for valuable exploration is available.
 
-    reason: str = Field(description="The reason why the new `ValuableDemand` cannot or should not be created.")
-    desired_response: str = Field(
-        description=(
-            "The action or response needed after this decision. If no further action is needed, explicitly state that."
+    When conversation, Companion hypotheses, or relevant materials provide a useful direction
+    to explore, create a `ValuableDemand` instead.
+    """
+
+    kind: Literal["intention_mandatory"] = "intention_mandatory"
+    reason_for_no_available_exploration: str = Field(
+        description="The reason why the new `ValuableDemand` cannot be created."
+    )
+    desired_response: str = Field(description=("The action or response needed after this decision."))
+
+    def markdown(self, heading_level: int = 1) -> str:
+        return "\n\n".join(
+            [
+                _markdown_heading(heading_level, "No Valuable Demand (Intention Mandatory)"),
+                _markdown_heading(heading_level + 1, "Reason for no available exploration"),
+                self.reason_for_no_available_exploration,
+                _markdown_heading(heading_level + 1, "Desired response"),
+                self.desired_response,
+            ]
         )
+
+
+class InsufficientCapability(BaseModel, frozen=True):
+    """A valuable intent cannot be advanced because required capabilities are unavailable.
+
+    Use this only when no feasible alternative activity can advance the intent.
+    The intent may be explicit or sufficiently supported by available context.
+    """
+
+    kind: Literal["insufficient_capability"] = "insufficient_capability"
+    blocked_action: str = Field(description="The action that cannot be performed.")
+    required_capabilities: str = Field(description="The tools, permissions, or other capabilities that are missing.")
+    suggestion_of_alternative_objectives: str = Field(
+        description="Feasible alternative objectives that could be pursued without the missing capabilities."
     )
 
     def markdown(self, heading_level: int = 1) -> str:
         return "\n\n".join(
             [
-                _markdown_heading(heading_level, "No Valuable Demand"),
-                _markdown_heading(heading_level + 1, "Reason"),
-                self.reason,
-                _markdown_heading(heading_level + 1, "Desired response"),
-                self.desired_response,
+                _markdown_heading(heading_level, "No Valuable Demand (Insufficient Capability)"),
+                _markdown_heading(heading_level + 1, "Blocked action"),
+                self.blocked_action,
+                _markdown_heading(heading_level + 1, "Required capabilities"),
+                self.required_capabilities,
+                _markdown_heading(heading_level + 1, "Suggestion of alternative objectives"),
+                self.suggestion_of_alternative_objectives,
+            ]
+        )
+
+
+class ValueSaturated(BaseModel, frozen=True):
+    """A context-bounded assessment that no worthwhile next activity is currently evident."""
+
+    kind: Literal["value_saturated"] = "value_saturated"
+
+    reason_no_incremental_value: str = Field(
+        description=(
+            "Explain why no feasible next activity is expected to add enough Value to justify its cost. "
+            "Include the assessed scope, relevant user intentions, notes or artifacts reviewed, and the evidence "
+            "for rejecting feasible alternatives."
+        )
+    )
+    reassessment_triggers: tuple[str, ...] = Field(
+        description="Changes or events that should prompt reassessment; state if no specific trigger is known."
+    )
+
+    def markdown(self, heading_level: int = 1) -> str:
+        reassessment_triggers = "\n".join(f"- {item}" for item in self.reassessment_triggers) or "- None known"
+        return "\n\n".join(
+            [
+                _markdown_heading(heading_level, "Value Saturated (Current Assessment)"),
+                _markdown_heading(heading_level + 1, "Why no incremental Value is expected"),
+                self.reason_no_incremental_value,
+                _markdown_heading(heading_level + 1, "Reassessment triggers"),
+                reassessment_triggers,
             ]
         )
 
@@ -88,7 +151,10 @@ class NoValuableDemand(BaseModel, frozen=True):
 class ValuableDemandProviderOutput(BaseModel, frozen=True):
     """Output of `ValuableDemandProvider`."""
 
-    value: ValuableDemand | NoValuableDemand
+    value: Annotated[
+        ValuableDemand | IntentionMandatory | InsufficientCapability | ValueSaturated,
+        Field(discriminator="kind"),
+    ]
 
     def markdown(self, heading_level: int = 1) -> str:
         return self.value.markdown(heading_level=heading_level)
@@ -104,20 +170,27 @@ These demands are expected to be fulfilled by other agents in the subsequent pha
 
 ### Value
 
-Value is a useful change, relevant to the user's intent, in the user's understanding, judgment, creative work, validation, or ability to act.
+Value is a useful change, relevant to the user's intent, in the user's understanding,
+judgment, creative work, validation, or ability to act.
 
 Useful change does not arise solely from directly executing the user's instructions.
-Value may also arise from uncovering hypotheses underlying the user's intent and introducing meaningful friction that helps move the user's understanding or judgment in a useful direction.
+Value may also arise from uncovering hypotheses underlying the user's intent and
+introducing meaningful friction that helps move the user's understanding or
+judgment in a useful direction.
 
-Value is not determined by the mere existence, volume, or novelty of artifacts, nor by the continuation of activity itself.
-Instead, evaluate what a candidate adds to the current IdeaSpace and what significance that addition has for the user.
+Value is not determined by the mere existence, volume, or novelty of artifacts,
+nor by the continuation of activity itself.
+Instead, evaluate what a candidate adds to the current IdeaSpace and what
+significance that addition has for the user.
 
 ### ValuableDemand
 
-A ValuableDemand is a Demand intended to create Value, whose feasibility can be assessed and whose expected deliverables are subject to defined quality criteria.
+A ValuableDemand is a Demand intended to create Value, whose feasibility can be
+assessed and whose expected deliverables are subject to defined quality criteria.
 
 Satisfying a ValuableDemand is expected to produce a useful change within the IdeaSpace.
-However, satisfying a ValuableDemand is not equivalent to realizing Value. After execution, verify whether the expected change actually occurred.
+However, satisfying a ValuableDemand is not equivalent to realizing Value. After
+execution, verify whether the expected change actually occurred.
 
 The following are possible categories of ValuableDemand approaches.
 These categories are not mutually exclusive or collectively exhaustive.
@@ -139,19 +212,53 @@ These categories are not mutually exclusive or collectively exhaustive.
 The following principles can guide the selection and creation of ValuableDemands:
 
 1. Understand the user's current intent and the existing state of the IdeaSpace.
-2. Consider candidate ValuableDemands across multiple approaches, including CONTINUATION, SYNTHESIS, and EXPLORATION.
-3. Evaluate the Value each candidate is expected to create and the feasibility of realizing that Value.
-4. Consider overlap with existing artifacts, as well as the user's reading and information-management burden.
-5. Create or select the most promising candidate. If no candidate is sufficiently promising, select "NoValuableDemand".
+2. Consider candidate ValuableDemands across multiple approaches, including
+   CONTINUATION, SYNTHESIS, and EXPLORATION.
+3. Evaluate the Value each candidate is expected to create and the feasibility of
+   realizing that Value.
+4. Consider overlap with existing artifacts, as well as the user's reading and
+   information-management burden.
+5. Create or select the most promising candidate. If none is sufficiently
+   promising, choose the applicable no-demand outcome described below.
+
+## No-Demand Outcomes
+
+Choose exactly one outcome for `ValuableDemandProviderOutput.value`:
+
+- `IntentionMandatory`: Use only when neither the user's explicit intentions nor
+  sufficiently grounded hypotheses from the conversation, Companion, or relevant
+  IdeaNotes provide a direction for valuable exploration. State what intention or
+  context is missing and what the user can provide. Do not use this merely because
+  explicit intent is absent if useful exploration is possible.
+- `InsufficientCapability`: Use when a valuable intent is identifiable, but a
+  required tool, permission, or other capability is unavailable and no feasible
+  alternative activity can advance that intent. Identify the blocked action and
+  missing capabilities, and suggest a feasible alternative objective if the
+  capability cannot be provided.
+
+- `ValueSaturated`: Use after reviewing the relevant intentions, notes, and feasible
+  options when no worthwhile next activity is currently expected to add incremental
+  Value. State the assessed scope, which intentions and notes or artifacts were
+  reviewed, why feasible alternatives do not add enough Value, and the reassessment
+  triggers. This is a current, evidence-based assessment, not a claim that no Value
+  could ever be created.
+
+When an alternative method or activity can advance the intent, represent that
+activity as a `ValuableDemand` instead of `InsufficientCapability`. Never use a
+no-demand outcome merely because a candidate is inconvenient or because existing
+artifacts cover a similar topic. Use `ValueSaturated` only after considering
+meaningful alternatives; do not infer it from the mere existence of artifacts.
 
 ## Intent-First Candidate Comparison
 
 When an established user intent remains active, do not derive the
 next ValuableDemand solely from unresolved issues in existing artifacts.
 
-Treat inferred intentions or hypotheses as weak-to-moderate evidence for prioritization and exploration.
+Treat inferred intentions or hypotheses as weak-to-moderate evidence for
+prioritization and exploration.
 Preserve their uncertainty.
-Do not treat them as established preferences, and do not select high-cost work solely because of an inferred intention.
+Do not treat them as established preferences, and do not select high-cost work
+solely because of an inferred intention.
 
 Generate and compare materially different candidate activities,
 including direct progress toward the user's intent and supporting
@@ -221,15 +328,42 @@ the simplest appropriate form.
 
 ### Prioritizing Artifact Creation, Refinement, and Organization
 
-When the user requests the creation of artifacts, unless the user explicitly specifies otherwise, prioritize creating multiple artifacts from distinct perspectives over repeatedly refining individual artifacts.
-During the initial phase, ensure that each artifact is sufficiently complete to stand on its own and has a distinct perspective, structure, or conflict compared with the other artifacts. Defer fine-grained stylistic improvements and repeated refinement aimed at maximizing the quality of individual artifacts until enough artifacts are available for meaningful comparison.
-Once multiple artifacts are available, use insights gained from comparing them to guide individual refinement. However, do not automatically prioritize refinement. Compare the available options, including refining existing artifacts, creating new artifacts, organizing existing artifacts, and conducting validation or other forms of investigation. Choose the activity expected to deliver the greatest value in light of the user's intentions.
-When refining an artifact, evaluate not only its fluency and style but also its originality, alignment with the user's objectives, internal consistency, and effect on its intended audience.
-If creating a new artifact is expected to deliver greater value than refining existing ones, prioritize creating the new artifact.
-If organizing existing artifacts is expected to provide meaningful value, perform the organization. Do not organize artifacts merely for the sake of tidiness or formal completeness. First identify the intended value of the organization in relation to the user's objectives, such as improved discoverability, easier comparison, or greater reusability.
-These priorities may be overridden when the user explicitly requests the refinement of a particular artifact or when a serious defect requires prompt correction.
-Choose between creation, refinement, organization, and validation based not only on the number of existing artifacts but also on their diversity, the remaining unmet objectives, the costs of each activity, and the value each activity is expected to deliver.
-Do not treat the completion of reviews or organizational work as evidence that the user's original creative objective has been fulfilled. If the user's creative intent remains active and creating additional artifacts is expected to provide value, continue to consider new creation as a valid option even after reviews or organizational activities have been performed.
+When the user requests the creation of artifacts, unless the user explicitly
+specifies otherwise, prioritize creating multiple artifacts from distinct
+perspectives over repeatedly refining individual artifacts.
+During the initial phase, ensure that each artifact is sufficiently complete to
+stand on its own and has a distinct perspective, structure, or conflict compared
+with the other artifacts. Defer fine-grained stylistic improvements and repeated
+refinement aimed at maximizing the quality of individual artifacts until enough
+artifacts are available for meaningful comparison.
+Once multiple artifacts are available, use insights gained from comparing them
+to guide individual refinement. However, do not automatically prioritize
+refinement. Compare the available options, including refining existing artifacts,
+creating new artifacts, organizing existing artifacts, and conducting validation
+or other forms of investigation. Choose the activity expected to deliver the
+greatest value in light of the user's intentions.
+When refining an artifact, evaluate not only its fluency and style but also its
+originality, alignment with the user's objectives, internal consistency, and
+effect on its intended audience.
+If creating a new artifact is expected to deliver greater value than refining
+existing ones, prioritize creating the new artifact.
+If organizing existing artifacts is expected to provide meaningful value, perform
+the organization. Do not organize artifacts merely for the sake of tidiness or
+formal completeness. First identify the intended value of the organization in
+relation to the user's objectives, such as improved discoverability, easier
+comparison, or greater reusability.
+These priorities may be overridden when the user explicitly requests the
+refinement of a particular artifact or when a serious defect requires prompt
+correction.
+Choose between creation, refinement, organization, and validation based not only
+on the number of existing artifacts but also on their diversity, the remaining
+unmet objectives, the costs of each activity, and the value each activity is
+expected to deliver.
+Do not treat the completion of reviews or organizational work as evidence that
+the user's original creative objective has been fulfilled. If the user's creative
+intent remains active and creating additional artifacts is expected to provide
+value, continue to consider new creation as a valid option even after reviews or
+organizational activities have been performed.
 
 ### Value of New Artifacts and Perspectives
 
@@ -238,7 +372,7 @@ the user's established intentions and the existing IdeaSpace.
 
 When the user's creative intent remains active, do not treat
 similarity to existing artifacts as sufficient reason to prefer
-NoValuableDemand over creating a new artifact from a distinct
+a no-demand outcome over creating a new artifact from a distinct
 perspective.
 
 Existing artifacts provide context for further creation.
@@ -263,10 +397,14 @@ When a relevant new contribution is feasible, compare its
 expected Value with the available alternatives rather than
 rejecting it solely because related artifacts already exist.
 
-Choose NoValuableDemand only when no sufficiently valuable
+Choose a no-demand outcome only when no sufficiently valuable
 and feasible next activity can be identified in the current
-context, not merely because existing artifacts cover a similar
-topic.
+context. Use `IntentionMandatory` when no grounded direction for
+exploration can be identified, `InsufficientCapability` when a valuable
+direction is blocked by unavailable capabilities and no feasible alternative
+exists, and `ValueSaturated` when no worthwhile next activity is evident within
+the assessed scope. Do not use a no-demand outcome merely because existing
+artifacts cover a similar topic.
 
 
 ### Human Intent
@@ -360,7 +498,7 @@ def make_valuable_demand_provider_spec(
         if isinstance(output.value, ValuableDemand):
             cycle_state.summary = output.value.summary
         else:
-            cycle_state.summary = "NoValuableDemand"
+            cycle_state.summary = f"NoValuableDemand: {output.value.kind}"
         cycle_state.status = "demand-created"
         cycle_state.write_note(markdown=output.markdown(), idea_space=idea_space)
 

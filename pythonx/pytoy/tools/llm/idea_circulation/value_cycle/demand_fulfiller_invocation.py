@@ -10,7 +10,13 @@ from pytoy_llm.tools.idea_tool import IdeaTool
 from pytoy_llm.tools.idea_tool.models import IdeaNotePath
 from pytoy_llm.tools.workspace_explorer import WorkspaceExplorer
 
-from .demand_provider_invocation import NoValuableDemand, ValuableDemand, ValuableDemandProviderOutput
+from .demand_provider_invocation import (
+    InsufficientCapability,
+    IntentionMandatory,
+    ValuableDemand,
+    ValuableDemandProviderOutput,
+    ValueSaturated,
+)
 from .states import FULFILLMENT_REPORT_CONTEXT_KEY, VALUABLE_DEMAND_PROVIDER_OUTPUT_CONTEXT_KEY, ValueCycleState
 
 
@@ -25,8 +31,9 @@ type FulfillmentStatus = Annotated[
     Field(
         description=(
             "The outcome of processing the ValuableDemandProviderOutput. "
-            "Use no_valuable_demand_processed when a NoValuableDemand "
-            "decision was handled without an execution failure."
+            "Use no_valuable_demand_processed when an IntentionMandatory, "
+            "InsufficientCapability, or ValueSaturated decision was handled "
+            "without an execution failure."
         )
     ),
 ]
@@ -114,36 +121,43 @@ the expected change actually occurred.
 
 ### ValuableDemandProviderOutput
 
-The input from ValuableDemandProvider is either:
+The input from ValuableDemandProvider is one of:
 
 - `ValuableDemand`: a selected task expected to create Value.
-- `NoValuableDemand`: a decision not to create a new ValuableDemand
-  under the current circumstances.
+- `IntentionMandatory`: no sufficiently grounded direction for valuable exploration
+  can be identified from the available intentions, conversation, Companion, or notes.
+- `InsufficientCapability`: a valuable intent is identifiable, but required capabilities
+  are unavailable and no feasible alternative activity can advance it.
+- `ValueSaturated`: relevant intentions, context, and feasible options were assessed,
+  and no worthwhile next activity is currently expected to add incremental Value.
 
-These outcomes require different handling.
-Do not interpret `NoValuableDemand` as an execution failure.
+These no-demand outcomes are decisions, not execution failures, and require
+handling their distinct fields accurately.
 
 ## Responsibilities
 
-### When the input is `NoValuableDemand`
+### When the input is a no-demand outcome
 
-1. Read and understand `reason` and `desired_response`.
-2. Determine what response or action is required by that decision.
-3. If the required action can be completed autonomously, perform it
-   when appropriate and within the available capabilities.
-4. If the decision requires user input or action, clearly explain
-   what is needed and why. Do not directly send the final user-facing response.
-   The subsequent workflow is responsible for evaluating the outcome
-   and communicating with the user when appropriate.
-5. If no further action is required, do not invent work merely to
-   keep the system active.
-6. Report the outcome using `FulfillmentReport`, including relevant
-   artifact paths and a concise explanation of what was done or why no
-   further action was needed.
+1. For `IntentionMandatory`, explain what intention or context the user can provide.
+2. For `InsufficientCapability`, explain the limitation and viable
+   alternatives without implying that the user must change objectives when a
+   reasonable alternative activity exists.
+3. For `ValueSaturated`, report this as a current assessment, not a permanent conclusion,
+   and do not invent work or ask for new intent unless the report identifies that need.
+4. If a response or action can be completed autonomously, perform it only when
+   appropriate and within available capabilities.
+5. Do not directly send the final user-facing response. The subsequent workflow
+   is responsible for evaluating the outcome and communicating with the user
+   when appropriate.
+6. If no further action is required, do not invent work merely to keep the
+   system active.
+7. Report the outcome using `FulfillmentReport`, including relevant artifact
+   paths and a concise explanation of what was done or why no further action
+   was needed.
 
-Do not assume that every `NoValuableDemand` requires a message or
-action from the user. Distinguish between situations that require
-user involvement and situations that can conclude without it.
+Do not assume that a no-demand outcome always requires a message or action
+from the user. Distinguish situations requiring user involvement from those
+that can conclude without it.
 
 Do not claim that an action was completed unless there is evidence
 that it was completed.
@@ -232,7 +246,7 @@ The report must distinguish, as applicable:
 - completed work;
 - partially completed work;
 - work that could not proceed;
-- processing of a `NoValuableDemand` decision;
+- processing of an `IntentionMandatory`, `InsufficientCapability`, or `ValueSaturated` decision;
 - unresolved issues or failures.
 
 For each relevant artifact, assess:
@@ -411,12 +425,14 @@ def make_demand_fulfiller_spec(
                 json_schema=ValuableDemand.model_json_schema(),
                 data=value.model_dump(mode="python"),
             )
-        else:
+        elif isinstance(value, (IntentionMandatory, InsufficientCapability, ValueSaturated)):
             material = JsonMaterialData(
-                description="Given `NoValuableDemand`",
-                json_schema=NoValuableDemand.model_json_schema(),
+                description=f"Given `{value.kind}`",
+                json_schema=type(value).model_json_schema(),
                 data=value.model_dump(mode="python"),
             )
+        else:
+            raise TypeError(f"Unsupported ValuableDemandProviderOutput value: {type(value).__name__}")
         message = material.compose_explanation(parent_header_depth=1)
         system_prompt = _construct_system_prompt(idea_space=idea_space)
         return LLMRequest.from_any(message, system_prompt=system_prompt)

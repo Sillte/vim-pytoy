@@ -191,9 +191,9 @@ user's intentions and the current execution context.
 
 Do not request a policy change merely because the current
 ValuableDemand was fulfilled, unresolved issues remain, or the
-ValuableDemandProvider may return NoValuableDemand.
-These situations do not, by themselves, determine whether
-periodic execution should be enabled or paused.
+ValuableDemandProvider returned `IntentionMandatory`,
+`InsufficientCapability`, or `ValueSaturated`. These situations do not,
+by themselves, determine whether periodic execution should be enabled or paused.
 
 When requesting a policy change, clearly and concisely explain
 the reason. Otherwise, return null.
@@ -215,9 +215,9 @@ the reason. Otherwise, return null.
    Separately determine whether the ValueCycle execution policy
    should be changed, following the policy criteria.
 
-If the input represents a `NoValuableDemand` decision,
-audit that decision and its handling instead of assuming
-that a ValuableDemand or artifact must exist.
+If the input represents `IntentionMandatory`, `InsufficientCapability`,
+or `ValueSaturated`, audit that outcome and its handling instead of
+assuming that a ValuableDemand or artifact must exist.
 
 Support conclusions with evidence from the actual notes,
 artifacts, and relevant IdeaSpace context.

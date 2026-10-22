@@ -23,9 +23,12 @@ INITIAL_USER_INTENT = """
 No explicit user intent has been recorded yet.
 
 When proposing valuable work, consider relevant existing materials
-in the IdeaSpace and the available workspace.
-If you find potentially valuable proposals, create `ValuableDemand`. 
-Otherwise, `NoValuableDemand` should be passed.
+in the IdeaSpace and the available workspace, including inferred intentions.
+Create a `ValuableDemand` when valuable exploration is feasible.
+Use `IntentionMandatory` when no grounded direction for exploration is available,
+`InsufficientCapability` when a valuable direction is blocked and no feasible
+alternative can advance it, or `ValueSaturated` when reviewed context and feasible
+options reveal no worthwhile next activity within the assessed scope.
 """.strip()
 
 

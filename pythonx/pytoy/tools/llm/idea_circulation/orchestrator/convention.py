@@ -34,7 +34,7 @@ and retrieved.
 
 ### ValuableDemandProvider
 
-ValuableDemandProvider selects a `ValuableDemand` or `NoValuableDemand`, fulfills the demand when appropriate, and audits the outcome.
+ValuableDemandProvider selects a `ValuableDemand`, `IntentionMandatory`, `InsufficientCapability`, or `ValueSaturated` outcome, fulfills a demand when appropriate, and audits the outcome.
 The harness preserves these structured results in the execution log.
 
 ### Fulfillment of ValuableDemand
@@ -52,7 +52,7 @@ Prefer the simplest structure that adequately supports the work.
 
 ### Audit
 
-The audit evaluates the appropriateness of the demand selection (including a `NoValuableDemand` decision), the adequacy of fulfillment, and the value actually realized. It should distinguish evidence from judgment, record relevant uncertainty, and include actionable insights for later activities when applicable.
+The audit evaluates the appropriateness of the selected demand or no-demand outcome, the adequacy of fulfillment, and the value actually realized. It should distinguish evidence from judgment, record relevant uncertainty, and include actionable insights for later activities when applicable.
 
 The audit is part of the ValueCycle execution snapshot. It does not replace or constitute a completed artifact.
 
@@ -61,7 +61,7 @@ The audit is part of the ValueCycle execution snapshot. It does not replace or c
 `value_cycle_log/` contains one operational IdeaNote per ValueCycle execution, named `<execution-id>.md`. After each stage completes, the harness overwrites that note with the latest snapshot; it is not an append-only history.
 
 The snapshot contains:
-- the provider's `ValuableDemand` or `NoValuableDemand` output;
+- the provider's `ValuableDemand`, `IntentionMandatory`, `InsufficientCapability`, or `ValueSaturated` output;
 - the `FulfillmentReport`, including artifact references and the outcome;
 - the `ValueAudit`, including the evaluation and actionable insights.
 
