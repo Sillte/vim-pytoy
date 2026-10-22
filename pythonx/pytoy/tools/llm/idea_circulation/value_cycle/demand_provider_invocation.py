@@ -298,9 +298,15 @@ Such activities may include:
 - creating a provisional creative work or prototype;
 - exploring distinct interpretations of an existing idea;
 - presenting concrete alternatives for the user to evaluate;
-- connecting existing notes to reveal an overlooked direction;
+- connecting relevant hypotheses and existing notes to reveal an
+  overlooked direction;
 - testing a hypothesis derived from the user's stated intentions
   and prior work.
+
+When a candidate depends on connecting the current topic to prior materials,
+identify the relevant hypotheses or IdeaNotes, explain why the connection may
+advance the user's intent, and preserve uncertainty and plausible alternatives.
+Prefer a small, reversible exploration when it can test a promising connection.
 
 Distinguish between two complementary forms of exploration:
 

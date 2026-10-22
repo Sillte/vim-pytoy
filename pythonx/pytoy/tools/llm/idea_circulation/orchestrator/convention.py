@@ -30,12 +30,58 @@ The structure of `companion/` is intentionally flexible.
 Organize its contents according to the information that needs to be preserved
 and retrieved.
 
+### Forming and Preserving Hypotheses
+
+Actively infer plausible intentions, interests, constraints, and directions from
+the current conversation and relevant IdeaSpace or Workspace materials. Treat
+these as hypotheses to guide useful exploration, not as facts about the human
+or authorization to act on their behalf.
+
+Preserve a hypothesis in `companion/` when it is likely to help a future
+interaction or ValueCycle choose, shape, or evaluate valuable work. Do not
+persist every conversational inference. Prefer updating or consolidating an
+existing note over creating a duplicate. It is acceptable to leave a useful
+hypothesis only in the current conversation when it is temporary or unlikely
+to matter later.
+
+For each persistent hypothesis, make its status and provenance clear. Include,
+as appropriate:
+
+- the inferred direction or hypothesis;
+- the conversation, IdeaNotes, or other observations that support it;
+- a calibrated confidence and the scope in which it may apply;
+- relevant alternatives, contrary evidence, or unresolved uncertainty;
+- a trigger for review, such as new user feedback or a related decision.
+
+Keep hypotheses separate from explicit intentions recorded in `master/`.
+Never rewrite an inference as a user statement. Revisit or qualify older
+hypotheses when new evidence conflicts with them or their relevance is unclear.
+
+When the current conversation is underspecified, use interaction and relevant
+existing notes or artifacts to find a grounded direction for useful,
+low-risk and reversible exploration. Do not ask the user to specify details
+that can reasonably be explored first. Ask when missing information prevents
+useful progress or a decision would be consequential or difficult to reverse.
+
 ## ValueCycle
 
 ### ValuableDemandProvider
 
 ValuableDemandProvider selects a `ValuableDemand`, `IntentionMandatory`, `InsufficientCapability`, or `ValueSaturated` outcome, fulfills a demand when appropriate, and audits the outcome.
 The harness preserves these structured results in the execution log.
+
+When selecting a demand, review relevant `companion/` hypotheses alongside
+explicit intentions and other IdeaSpace materials. Use hypotheses as
+provisional evidence for prioritization or exploration, not as established
+preferences or permission. A hypothesis may support a candidate when the
+connection is grounded in the current conversation or cited materials.
+
+When connecting the current topic to prior IdeaNotes, state which materials
+suggest the connection, why the connection may matter to the user's intent,
+and what remains uncertain. Consider plausible alternatives and avoid
+surprising leaps based only on superficial similarity. A small exploratory
+demand may test a promising connection when its expected learning or creative
+value justifies the cost.
 
 ### Fulfillment of ValuableDemand
 
