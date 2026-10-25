@@ -52,14 +52,14 @@ class LLMImportResolver:
 
     def _naive_import(self) -> None:
         try:
-            import litellm  # noqa [F401]
             from pytoy_llm import completion, run  # noqa [F401]
 
             self._imported = True
         except ImportError as e:
-            from pathlib import Path
+            from pytoy.shared.pytoy_configuration import PytoyConfiguration
 
-            Path("_llm_import_error.txt").write_text(str(e))
+            logger = PytoyConfiguration().get_logger(location="global")
+            logger.exception("Failed to import pytoy_llm")
             self._import_error = e
 
     @property
