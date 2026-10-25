@@ -29,7 +29,7 @@ class BufferMetadataCodec:
         if self.status.value_cycle_message is not None:
             metadata["value_cycle_message"] = self.status.value_cycle_message
         if self.status.llm_tokens:
-            metadata["llm_tokens"] = self.status.llm_tokens.model_dump(exclude_none=True)
+            metadata["llm_tokens"] = self.status.llm_tokens.model_dump(exclude_none=True, exclude={"usage_missing"})
         yaml_text = yamlrocks.dumps(metadata).decode().strip("\r\n")
         return f"{self._FRONT_MATTER_MARKER}\n{yaml_text}\n{self._FRONT_MATTER_MARKER}\n"
 

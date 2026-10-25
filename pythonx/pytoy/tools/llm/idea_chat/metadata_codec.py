@@ -33,7 +33,7 @@ class BufferMetadataCodec:
         if workspace_name := self.workspace_name:
             metadata["workspace_name"] = workspace_name
         if self.llm_tokens:
-            metadata["llm_tokens"] = self.llm_tokens.model_dump(exclude_none=True)
+            metadata["llm_tokens"] = self.llm_tokens.model_dump(exclude_none=True, exclude={"usage_missing"})
         if self.llm_param is not None:
             metadata["llm_param"] = self.llm_param.model_dump(exclude_none=True)
         if self.usage_limit is not None:
