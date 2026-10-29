@@ -13,7 +13,6 @@ dependencies = [
     "pynvim>=0.5",
     "pyte>=0.8",
     "toml>=0.10",
-    "pip-system-certs>=0.1",
     "markitdown>=0.0.1",
     "requests>=2.31",
     "pywinpty; sys_platform == 'win32'",
