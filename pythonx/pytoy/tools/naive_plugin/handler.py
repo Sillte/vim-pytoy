@@ -59,6 +59,44 @@ def example2(context: NaivePluginContext) -> None:
         pass
     PytoyWindow.open(example_path)
 """,
+            "slow_process.py": """import subprocess
+import sys
+
+from pytoy.shared.timertask.thread_execution import ThreadExecutionHandler, ThreadExecutionHooks, ThreadExecutionRequest
+from pytoy.shared.ui import make_buffer
+from pytoy.tools.naive_plugin import NaivePluginContext, register_naive_plugin
+
+
+@register_naive_plugin(name="slow_process")
+def slow_process(context: NaivePluginContext) -> None:
+    selected_text = context.current_buffer.get_text(context.selection)
+
+    def process_selection() -> str:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import sys, time; text = sys.stdin.read(); time.sleep(2); sys.stdout.write(text.upper())",
+            ],
+            input=selected_text,
+            capture_output=True,
+            check=True,
+            text=True,
+        )
+        return result.stdout
+
+    def show_output(content: str) -> None:
+        output_buffer = make_buffer("__naive_plugin_slow_process__", "vertical")
+        output_buffer.init_buffer("Processed selection:\\n")
+        output_buffer.append(content)
+
+    request = ThreadExecutionRequest.from_any(process_selection)
+    hooks = ThreadExecutionHooks(
+        on_result=show_output,
+        on_exception=lambda error: show_output(f"Processing failed: {error}\\n"),
+    )
+    ThreadExecutionHandler.create(request).start(hooks=hooks)
+""",
         }
         for filename, source in examples.items():
             example_path = plugin_folder / filename

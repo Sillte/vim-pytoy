@@ -165,14 +165,21 @@ def test_dump_default_examples_writes_loadable_examples(
 
     example_path = plugin_folder / "example.py"
     example2_path = plugin_folder / "example2.py"
+    slow_process_path = plugin_folder / "slow_process.py"
     assert example_path.is_file()
     assert example2_path.is_file()
+    assert slow_process_path.is_file()
     assert 'register_naive_plugin(name="example")' in example_path.read_text(encoding="utf-8")
     example2_source = example2_path.read_text(encoding="utf-8")
     assert 'get_folder("naive_plugins", location="global")' in example2_source
     assert "PytoyWindow.open(example_path)" in example2_source
+    slow_process_source = slow_process_path.read_text(encoding="utf-8")
+    assert "context.current_buffer.get_text(context.selection)" in slow_process_source
+    assert "subprocess.run(" in slow_process_source
+    assert "ThreadExecutionHandler.create(request).start(hooks=hooks)" in slow_process_source
+    assert 'make_buffer("__naive_plugin_slow_process__", "vertical")' in slow_process_source
     plugins = NaivePluginLoader().load_plugins(plugin_folder)
-    assert plugins.keys() == {"example", "example2"}
+    assert plugins.keys() == {"example", "example2", "slow_process"}
 
     opened_paths: list[Path] = []
     example2_plugin = plugins["example2"]
