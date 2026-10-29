@@ -82,6 +82,3 @@ def example2(context: NaivePluginContext) -> None:
             return self._plugins[name]
         except KeyError:
             raise NaivePluginNotFoundError(f"Naive plugin not found: {name}") from None
-
-    def _list_plugins(self) -> tuple[str, ...]:
-        return tuple(sorted(self._plugins))

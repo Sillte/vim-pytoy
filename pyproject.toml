@@ -21,6 +21,7 @@ dependencies = [
     "typing_extensions>=4.13",
     "yamlrocks>=0.6.1",
     "pytoy-llm @ git+https://github.com/Sillte/pytoy-llm.git@main",
+    "fairybrowser @ git+https://github.com/Sillte/fairybrowser.git@main",
 ]
 requires-python = ">=3.12"
 

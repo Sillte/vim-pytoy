@@ -116,7 +116,7 @@ def local_only(context): pass
 
     handler = NaivePluginHandler.from_folders(plugin_folders=(global_folder, local_folder))
 
-    assert handler._list_plugins() == ("global_only", "local_only", "shared")
+    assert handler.names == ("global_only", "local_only", "shared")
     context = SimpleNamespace()
     handler._get("shared")(cast(NaivePluginContext, context))
     assert context.called == "local"
