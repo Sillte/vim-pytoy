@@ -173,6 +173,11 @@ class _VimRebooter:
         else:
             commands += ["-u", "NONE"]
         commands += ["-S", f"{session_file.as_posix()}"]
+        if with_vimrc:
+            commands += [
+                "-c",
+                f"let &runtimepath='{self.root_folder.as_posix()},' . &runtimepath",
+            ]
 
         if not is_gui:
             if sys.platform.startswith("win"):
