@@ -1,124 +1,15 @@
-import json
-import os
-import time
-from pathlib import Path
 from typing import Annotated, Literal
 
-from pytoy.devtools.vim_rebooter import VimRebooter
-from pytoy.devtools.vimplugin_package import VimPluginPackage
+from pytoy.devtools import VimPluginPackage
 from pytoy.shared.command import App, Argument
-from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.timertask import TimerTask
-
-
-class VimRebootExecutor:
-    JSON_CACHE_NAME = "pytoy_reboot.json"
-    SESSION_CACHE_NAME = "pytoy_reboot.vim"
-
-    def __init__(self, start_folder=None):
-        try:
-            package = VimPluginPackage(start_folder)
-        except ValueError as e:
-            print("Current folder is not within a plugin folder.", e)
-            package = None
-        self.package = package
-
-    def __call__(self):
-        folder = self.get_cache_folder()
-        json_cache_path = folder / self.JSON_CACHE_NAME
-        session_cache_path = folder / self.SESSION_CACHE_NAME
-        self._dump_reboot_info(json_cache_path, session_cache_path)
-        if not self.package:
-            raise ValueError("Current folder is not within a plugin folder, so no reboot.")
-        self.reboot()
-
-    def get_cache_folder(self) -> Path:
-        """Get the cache path.
-        By reloading the `cache` file at the start of `.vimrc` / `init.lua`,
-        """
-        backend_enum = get_backend_enum()
-        if backend_enum in {BackendEnum.VSCODE, BackendEnum.NVIM}:
-            import vim
-
-            nvim_folder = Path(vim.eval("stdpath('cache')"))
-            if not nvim_folder:
-                nvim_folder.mkdir(parents=True)
-            return nvim_folder
-        elif backend_enum == BackendEnum.VIM:
-            import vim
-
-            if "XDG_CACHE_HOME" in os.environ:
-                cache_dir = Path(os.environ["XDG_CACHE_HOME"])
-            else:
-                cache_dir = Path.home() / ".cache"
-            vim_folder = cache_dir / "vim"
-            if not vim_folder.exists():
-                vim_folder.mkdir(parents=True)
-            return vim_folder
-        else:
-            dummy_folder = Path.home() / ".cache" / "dummy_pytoy"
-            dummy_folder.mkdir(parents=True, exist_ok=True)
-            return dummy_folder
-        raise RuntimeError("Not Implmented.")
-
-    def _dump_reboot_info(self, json_path, session_path):
-        import vim
-
-        plugin_folder = self.package.root_folder.as_posix() if self.package else None
-        data: dict[str, float | str] = {"time": time.time()}
-        if plugin_folder:
-            data["plugin_folder"] = plugin_folder
-        json_path.write_text(json.dumps(data, indent=4))
-        vim.command(f"mksession! {session_path.as_posix()}")
-
-    def reboot(self):
-        backend_enum = get_backend_enum()
-        if backend_enum == BackendEnum.VSCODE:
-            from pytoy.shared.ui.vscode.api import Api
-
-            api = Api()
-            api.action("vscode-neovim.restart")
-            return
-        elif backend_enum in {BackendEnum.VIM, BackendEnum.NVIM}:
-            rebooter = VimRebooter()
-            rebooter()
-        else:
-            print("Reboot is not supported for `Dummy`.")
-
 
 app = App()
 
 
 @app.command(name="VimReboot")
 def vim_reboot():
-    executor = VimRebootExecutor()
-    executor()
-    backend_enum = get_backend_enum()
-
-    if backend_enum in {BackendEnum.VIM, BackendEnum.NVIM}:
-        try:
-            package = VimPluginPackage()
-        except ValueError as e:
-            print("Current folder is not within a plugin folder.", e)
-        else:
-            package.restart(with_vimrc=True, kill_myprocess=True)
-    elif backend_enum == BackendEnum.VSCODE:
-        try:
-            package = VimPluginPackage()
-            plugin_folder = package.root_folder.as_posix()
-        except ValueError:
-            plugin_folder = None
-        import vim
-
-        path = Path(vim.eval("stdpath('cache')")) / "vscode_restarted.json"
-        data = {"plugin_folder": plugin_folder, "time": time.time()}
-        path.write_text(json.dumps(data, indent=4))
-        from pytoy.shared.ui.vscode.api import Api
-
-        api = Api()
-        api.action("vscode-neovim.restart")
-    else:
-        print("Reboot is not supported for `Dummy`.")
+    VimPluginPackage().restart()
 
 
 @app.command(name="DebugInfo")

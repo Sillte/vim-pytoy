@@ -1,9 +1,223 @@
+import json
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+from time import time
+from typing import Protocol, Self, assert_never
 
+from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
+from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.tool_execution.execution_environment.uv_environment import UVEnvironmentSolver
+
+JSON_CACHE_NAME = "pytoy_reboot.json"
+SESSION_CACHE_NAME = "pytoy_reboot.vim"
+
+
+@dataclass(frozen=True)
+class RebootInfo:
+    session_file: Path
+    metafile_path: Path
+    plugin_root_folder: Path
+    debug_venv_path: Path | None = None
+
+    @classmethod
+    def from_cache_folder(cls, cache_folder: Path, plugin_root_folder) -> Self:
+        cache_folder.mkdir(parents=True, exist_ok=True)
+        session_file = cache_folder / SESSION_CACHE_NAME
+        metafile_path = cache_folder / JSON_CACHE_NAME
+        debug_venv_path = UVEnvironmentSolver().find_venv_path(plugin_root_folder)
+        return cls(
+            session_file=session_file,
+            metafile_path=metafile_path,
+            plugin_root_folder=plugin_root_folder,
+            debug_venv_path=debug_venv_path,
+        )
+
+    def dump(self) -> None:
+        """Dump the reboot information to the metafile."""
+        data = {
+            "time": time(),
+            "plugin_folder": self.plugin_root_folder.as_posix(),
+            "debug_venv_path": self.debug_venv_path.as_posix() if self.debug_venv_path else None,
+        }
+        self.metafile_path.parent.mkdir(parents=True, exist_ok=True)
+        self.metafile_path.write_text(json.dumps(data, indent=4))
+
+
+class RebooterWithInfoProtocol(Protocol):
+    def prepare(self) -> RebootInfo: ...
+
+    def reboot(self, reboot_info: RebootInfo) -> None: ...
+
+
+class VimRebooter(RebooterWithInfoProtocol):
+    def __init__(self, root_folder: Path, *, minimal: bool = False, kill_myprocess: bool = True):
+        self._root_folder = Path(root_folder)
+        self._minimal = minimal
+        self._kill_myprocess = kill_myprocess
+
+    def prepare(self) -> RebootInfo:
+        import vim
+
+        cach_folder = (
+            Path(os.environ["XDG_CACHE_HOME"]) / "vim"
+            if "XDG_CACHE_HOME" in os.environ
+            else Path.home() / ".cache" / "vim"
+        )
+        info = RebootInfo.from_cache_folder(cach_folder, self._root_folder)
+        vim.command(f"let &runtimepath='{self._root_folder.as_posix()},' . &runtimepath")
+        vim.command(f"mksession! {info.session_file.as_posix()}")
+        return info
+
+    def reboot(self, reboot_info: RebootInfo):
+        import vim
+
+        if int(vim.eval("&term == 'builtin_gui'")):
+            app = "gvim"
+            is_gui = True
+        else:
+            app = "vim"
+            is_gui = False
+
+        commands = [app]
+
+        if self._minimal:
+            commands += ["-u", "NONE"]
+        else:
+            if reboot_info.debug_venv_path is not None:
+                commands += ["--cmd", f"let g:pytoy_debug_venv='{reboot_info.debug_venv_path.as_posix()}'"]
+            commands += ["--cmd", f"let g:pytoy_reboot='{reboot_info.plugin_root_folder.as_posix()}'"]
+            commands += [
+                "--cmd",
+                f"let &runtimepath='{reboot_info.plugin_root_folder.as_posix()},' . &runtimepath",
+            ]
+        commands += ["-S", f"{reboot_info.session_file.as_posix()}"]
+
+        if not is_gui:
+            if sys.platform.startswith("win"):
+                consoles = ["start", "cmd", "/k"]
+            elif sys.platform.startswith("linux"):
+                consoles = ["x-terminal-emulator", "-e"]
+            else:
+                raise RuntimeError("Unrecognized platform")
+            commands = consoles + commands
+
+        _start_vim_detached(commands)
+
+        if self._kill_myprocess:
+            vim.command("qall!")
+
+
+class NVimRebooter(RebooterWithInfoProtocol):
+    def __init__(self, root_folder: Path, *, minimal: bool = False, kill_myprocess: bool = True):
+        self._root_folder = Path(root_folder)
+        self._minimal = minimal
+        self._kill_myprocess = kill_myprocess
+
+    def prepare(self) -> RebootInfo:
+        import vim
+
+        cach_folder = Path(vim.eval("stdpath('cache')"))
+
+        info = RebootInfo.from_cache_folder(cach_folder, self._root_folder)
+        vim.command(f"let &runtimepath='{self._root_folder.as_posix()},' . &runtimepath")
+        vim.command(f"mksession! {info.session_file.as_posix()}")
+        return info
+
+    def reboot(self, reboot_info: RebootInfo):
+        import vim
+
+        app = "nvim"
+        _ = is_gui = False
+
+        commands = [app]
+
+        if self._minimal:
+            commands += ["-u", "NONE"]
+        else:
+            if reboot_info.debug_venv_path is not None:
+                commands += ["--cmd", f"let g:pytoy_debug_venv='{reboot_info.debug_venv_path.as_posix()}'"]
+            commands += ["--cmd", f"let g:pytoy_reboot='{reboot_info.plugin_root_folder.as_posix()}'"]
+            commands += [
+                "--cmd",
+                f"let &runtimepath='{reboot_info.plugin_root_folder.as_posix()},' . &runtimepath",
+            ]
+        commands += ["-S", f"{reboot_info.session_file.as_posix()}"]
+
+        if not is_gui:
+            if sys.platform.startswith("win"):
+                console = ["start", "cmd", "/k"]
+            elif sys.platform.startswith("linux"):
+                console = ["x-terminal-emulator", "-e"]
+            else:
+                raise RuntimeError("Unrecognized platform")
+            commands = console + commands
+
+        _start_vim_detached(commands)
+
+        if self._kill_myprocess:
+            vim.command("qall!")
+
+
+class VSCodeRebooter(RebooterWithInfoProtocol):
+    def __init__(self, root_folder: Path, *, minimal: bool = False, kill_myprocess: bool = True):
+        self._root_folder = Path(root_folder)
+        self._minimal = minimal
+        self._kill_myprocess = kill_myprocess
+
+    def prepare(self) -> RebootInfo:
+        import vim
+
+        cach_folder = Path(vim.eval("stdpath('cache')"))
+
+        info = RebootInfo.from_cache_folder(cach_folder, self._root_folder)
+        vim.command(f"let &runtimepath='{self._root_folder.as_posix()},' . &runtimepath")
+        vim.command(f"mksession! {info.session_file.as_posix()}")
+        return info
+
+    def reboot(self, reboot_info: RebootInfo):
+        from pytoy.shared.ui.vscode.api import Api
+
+        # NOTE:
+        # Neovim is embedded in VSCode, so we cannot spawn a new process to restart directly.
+        Api().action("vscode-neovim.restart")
+
+
+class DummyRebooter(RebooterWithInfoProtocol):
+    def __init__(self, root_folder: Path, *, minimal: bool = False, kill_myprocess: bool = True):
+        self._root_folder = Path(root_folder)
+        self._minimal = minimal
+        self._kill_myprocess = kill_myprocess
+
+    def prepare(self) -> RebootInfo:
+        cach_folder = (
+            Path(os.environ["XDG_CACHE_HOME"]) / "dummy_pytoy"
+            if "XDG_CACHE_HOME" in os.environ
+            else Path.home() / ".cache" / "dummy_pytoy"
+        )
+
+        info = RebootInfo.from_cache_folder(cach_folder, self._root_folder)
+        return info
+
+    def reboot(self, reboot_info: RebootInfo):
+        _ = reboot_info
+        pass
+
+
+def create_rebooter_for_current_backend(root_folder: Path, *, minimal: bool = False) -> RebooterWithInfoProtocol:
+    match get_backend_enum():
+        case BackendEnum.VIM:
+            return VimRebooter(root_folder, minimal=minimal)
+        case BackendEnum.NVIM:
+            return NVimRebooter(root_folder, minimal=minimal)
+        case BackendEnum.VSCODE:
+            return VSCodeRebooter(root_folder, minimal=minimal)
+        case BackendEnum.DUMMY:
+            return DummyRebooter(root_folder, minimal=minimal)
+        case _:
+            assert_never("Unrecognized backend enum.")
 
 
 class VimPluginPackage:
@@ -17,6 +231,9 @@ class VimPluginPackage:
         root_folder (Path): The root directory of the detected Vim plugin package.
     """
 
+    JSON_CACHE_NAME = "pytoy_reboot.json"
+    SESSION_CACHE_NAME = "pytoy_reboot.vim"
+
     def __init__(self, start_folder: str | Path | None = None):
         """Initialize the package and detect its root directory.
 
@@ -26,32 +243,25 @@ class VimPluginPackage:
                 If not specified, the current working directory is used.
         """
         if start_folder is None:
-            import vim
-
-            from pytoy.shared.ui.utils import to_filepath
-
-            try:
-                start_folder = to_filepath(vim.eval("expand('%:p:h')"))
-            except Exception:
+            current_buffer = PytoyBuffer.get_current()
+            if current_buffer.source.type == "file" and current_buffer.file_path:
+                start_folder = current_buffer.file_path
+            else:
                 start_folder = Path.cwd()
 
-        start_folder = Path(start_folder)
-
-        root_folder = self._find_plugin_root(start_folder)
+        root_folder = UVEnvironmentSolver().find_workspace(start_folder)
+        if root_folder is None:
+            raise ValueError(f"The given folder is NOT plugin:{start_folder=}")
         self._root_folder = root_folder
 
     @property
     def root_folder(self) -> Path:
         return self._root_folder
 
-    def restart(self, with_vimrc=True, kill_myprocess: bool = True):
-        """Save the current session and restart Vim/GVim/nvim with this plugin loaded.
+    def restart(self, minimal=False):
+        """Write reboot cache files and restart the active Vim backend.
 
         Args:
-            with_vimrc (bool):
-                If True, the plugin's root folder is prepended to the 'runtimepath'
-                before loading the user's vimrc with `--cmd` options.
-                If False, starts Vim with '-u NONE'.
             kill_myprocess (bool):
                 If True, terminates the current Vim process after starting the new one.
 
@@ -59,148 +269,15 @@ class VimPluginPackage:
             This is useful when reinitializing plugin state during development,
             especially when changes affect runtime behavior or require a clean environment.
         """
-        _VimRebooter(self.root_folder)(with_vimrc=with_vimrc, kill_myprocess=kill_myprocess)
 
-    def _find_plugin_root(self, start_folder: Path | None = None):
-        """Search upward from the given folder to locate the plugin root.
+        rebooter = create_rebooter_for_current_backend(self._root_folder, minimal=minimal)
 
-        Args:
-            start_folder (Path | None): Directory to start the search from.
-
-        Returns:
-            Path: The detected plugin root folder.
-
-        Raises:
-            ValueError: If no valid plugin structure is found in the parent hierarchy.
-        """
-        if start_folder is None:
-            start_folder = Path.cwd()
-
-        def _is_inner(folder: Path):
-            for ext in ["py", "lua", "vim"]:
-                if self._is_non_empty_iter(folder.glob(f"*.{ext}")):
-                    return True
-            if folder.name.startswith("python"):
-                return True
-            return False
-
-        def _is_root(folder: Path):
-            if any((folder / elem).exists() for elem in ["plugin", "autoload", "syntax"]):
-                return True
-            return False
-
-        folder = start_folder
-
-        while True:
-            if _is_root(folder):
-                return folder
-            if (not _is_inner(folder)) or folder.parent == folder:
-                raise ValueError(f"The given folder is NOT plugin:{start_folder=}")
-            folder = folder.parent
-
-    def _is_non_empty_iter(self, iteration):
-        """Check whether the given iterable has any elements.
-
-        Args:
-            iteration (Iterable): The iterable to check.
-
-        Returns:
-            bool: True if the iterable has at least one item, otherwise False.
-
-        Note: If you invoke this function, iteration is consumed (corrupted).
-        """
-        it = iter(iteration)
-        try:
-            next(it)
-        except StopIteration:
-            return False
-        return True
+        info = rebooter.prepare()
+        info.dump()
+        rebooter.reboot(info)
 
 
-class _VimRebooter:
-    """Perform rebooting of `vim/nvim/gvim`.
-
-    When the activation is carried out via this function.
-    `g:pytoy_reboot = 1` is added for the spawned (n/g) vim.
-    In addition, when the reboot is performed inside the plugin folder and the corresponding virtual environment is detected,
-     the path of the virtual environment is passed to the spawned (n/g) vim via `PYTOY_DEBUG_VENV` environment variable.
-
-    [NOTE]: (with_vimrc=True)
-        Sometimes, plugin loaders `prepend` their configuration path
-        to the first `rtp` / `runtimepath`.
-        If the plugin loader uses this kind of mechanism,
-        the idea the path is prepended as the initialization of `(n/g)vim` fails.
-        To curcumvent this situation please use the defined variable
-        `g:pytoy_reboot=1` to notify the plugin manager, and it does not
-        override the prepended path.
-
-    * `debug`: Please see `scriptnames` / `echo &runtimepath`.
-    """
-
-    def __init__(self, root_folder: Path):
-        self.root_folder = Path(root_folder)
-
-    def __call__(self, with_vimrc: bool = True, kill_myprocess: bool = True):
-        """
-        When `with_vimrc` = True, please refer to the docstring of the class.
-        """
-        import vim
-
-        venv_path = UVEnvironmentSolver().find_venv_path(self.root_folder)
-
-        cache_folder = Path.home() / ".cache/vim"
-
-        if not cache_folder.exists():
-            cache_folder.mkdir(parents=True)
-        session_file = cache_folder / "devplugin.vim"
-        vim.command(f"mksession! {session_file.as_posix()}")
-
-        if int(vim.eval("&term == 'builtin_gui'")):
-            app = "gvim"
-            is_gui = True
-        else:
-            is_gui = False
-            if int(vim.eval("has('nvim')")):
-                app = "nvim"
-            else:
-                app = "vim"
-        commands = [app, "--cmd", f"let g:pytoy_reboot='{self.root_folder.as_posix()}'"]
-        if with_vimrc:
-            commands += [
-                "--cmd",
-                f"let &runtimepath='{self.root_folder.as_posix()},' . &runtimepath",
-            ]
-        else:
-            commands += ["-u", "NONE"]
-        commands += ["-S", f"{session_file.as_posix()}"]
-        if with_vimrc:
-            commands += [
-                "-c",
-                f"let &runtimepath='{self.root_folder.as_posix()},' . &runtimepath",
-            ]
-
-        if not is_gui:
-            if sys.platform.startswith("win"):
-                consoles = ["start", "cmd", "/k"]
-            elif sys.platform.startswith("linux"):
-                consoles = ["x-terminal-emulator", "-e"]
-            else:
-                raise RuntimeError("Unrecognized platform")
-            commands = consoles + commands
-
-        env = os.environ.copy()
-        if venv_path is not None:
-            env["PYTOY_DEBUG_VENV"] = str(venv_path)
-        else:
-            env.pop("PYTOY_DEBUG_VENV", None)
-
-        _start_vim_detached(commands, env=env)
-
-        if kill_myprocess:
-            vim.command("qall!")
-
-
-def _start_vim_detached(cmd, env: dict | None = None):
+def _start_vim_detached(cmd):
     if sys.platform.startswith("win"):
         DETACHED_PROCESS = 0x00000008
         subprocess.Popen(
@@ -209,7 +286,6 @@ def _start_vim_detached(cmd, env: dict | None = None):
             stderr=subprocess.DEVNULL,
             creationflags=DETACHED_PROCESS,
             shell=True,
-            env=env,
         )
     else:
         subprocess.Popen(
@@ -218,7 +294,6 @@ def _start_vim_detached(cmd, env: dict | None = None):
             stderr=subprocess.DEVNULL,
             preexec_fn=os.setpgrp,
             shell=False,
-            env=env,
         )
 
 
