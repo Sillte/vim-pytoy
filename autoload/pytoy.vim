@@ -1,55 +1,29 @@
-if &cp || exists("g:pytoy_loaded")
+if exists('g:loaded_pytoy') || &cp
     finish
 endif
-let g:pytoy_loaded = "v001"
+let g:loaded_pytoy = 1
+let g:pytoy_loaded = 'v001'
 
-"Related to initialization.
-function! pytoy#init_python()
-" Solve the `import` libraries.
-" Assume that `library` exists in `pythonx` folder.
-python3 << EOF
-import sys, os, vim
-plugin_folder = os.path.dirname(vim.eval("expand('<sfile>:p:h')"))
-library_folder = os.path.join(plugin_folder, "pythonx")
-if library_folder not in sys.path: 
-    sys.path.append(library_folder)
-try:
-    import pytoy
-except Exception as e:
-    import traceback
-    s = traceback.format_exc()
-    msg = "[pytoy]: Failed to import pytoy.\n{}".format(s.replace('"', "'"))
-    vim.command('echohl ErrorMsg | echom "{}" | echohl None'.format(msg))
-    print(msg)
-    raise e
-else:
-    vim.command("let s:init_python=1")
-EOF
+" ---------------------------------------------------------------------------
+" Constants
+" ---------------------------------------------------------------------------
+
+let s:autoload_dir = fnamemodify(expand('<sfile>:p'), ':h')
+
+" ---------------------------------------------------------------------------
+" Utilities
+" ---------------------------------------------------------------------------
+
+function! s:error(message) abort
+    echohl ErrorMsg
+    for l:line in split(a:message, "\n")
+        echom '[pytoy] ' . l:line
+    endfor
+    echohl None
 endfunction
 
-
-" Python Execution.
-
-function! pytoy#run()
-python3 pytoy.run()
-endfunction
-
-function! pytoy#rerun()
-python3 pytoy.rerun()
-endfunction
-
-function! pytoy#stop()
-python3 pytoy.stop()
-endfunction
-
-function! pytoy#reset()
-python3 pytoy.reset()
-endfunction
-
-let s:autoload_folder = fnamemodify(expand('<sfile>:p'), ':h')
-
-function! pytoy#plugin_root() abort
-    let l:path = s:autoload_folder
+function! s:find_project_root(start) abort
+    let l:path = a:start
 
     while l:path !=# fnamemodify(l:path, ':h')
         if filereadable(l:path . '/pyproject.toml')
@@ -59,95 +33,188 @@ function! pytoy#plugin_root() abort
         let l:path = fnamemodify(l:path, ':h')
     endwhile
 
-    echohl ErrorMsg
-    echom '[pytoy] Failed to find pyproject.toml'
-    echohl None
-
     return ''
+endfunction
+
+function! s:shell_command(args) abort
+    return join(map(copy(a:args), 'shellescape(v:val)'), ' ')
+endfunction
+
+function! s:run_command(args) abort
+    if has('nvim')
+        let l:output = system(a:args)
+    else
+        let l:output = system(s:shell_command(a:args))
+    endif
+
+    return {
+        \ 'output': l:output,
+        \ 'status': v:shell_error,
+        \ }
+endfunction
+
+" ---------------------------------------------------------------------------
+" Python initialization
+" ---------------------------------------------------------------------------
+
+function! pytoy#init_python() abort
+    let g:pytoy_python_initialized = 0
+    if !has('python3')
+        call s:error('Vim/Neovim was built without Python 3 support.')
+        return 0
+    endif
+
+    python3 << EOF
+import os
+import sys
+import traceback
+import vim
+
+plugin_dir = os.path.dirname(vim.eval("expand('<sfile>:p:h')"))
+pythonx_dir = os.path.join(plugin_dir, "pythonx")
+
+if pythonx_dir not in sys.path:
+    sys.path.append(pythonx_dir)
+
+try:
+    import pytoy
+except Exception:
+    message = (
+        "[pytoy] Failed to import pytoy.\n"
+        + traceback.format_exc()
+    )
+    vim.command(
+        "call pytoy#_python_error({})".format(repr(message))
+    )
+    raise
+else:
+    vim.command("let g:pytoy_python_initialized = 1")
+EOF
+
+    return get(g:, 'pytoy_python_initialized', 0)
+endfunction
+
+function! pytoy#_python_error(message) abort
+    call s:error(a:message)
+endfunction
+
+" ---------------------------------------------------------------------------
+" Python commands
+" ---------------------------------------------------------------------------
+
+function! pytoy#run() abort
+    python3 pytoy.run()
+endfunction
+
+function! pytoy#rerun() abort
+    python3 pytoy.rerun()
+endfunction
+
+function! pytoy#stop() abort
+    python3 pytoy.stop()
+endfunction
+
+function! pytoy#reset() abort
+    python3 pytoy.reset()
+endfunction
+
+" ---------------------------------------------------------------------------
+" Project files
+" ---------------------------------------------------------------------------
+
+function! pytoy#plugin_root() abort
+    let l:root = s:find_project_root(s:autoload_dir)
+
+    if empty(l:root)
+        call s:error('Failed to find pyproject.toml.')
+    endif
+
+    return l:root
 endfunction
 
 function! pytoy#pyproject() abort
     let l:root = pytoy#plugin_root()
+
     if empty(l:root)
         return ''
     endif
 
-    let l:path = l:root . '/pyproject.toml'
-
-    if !filereadable(l:path)
-        echohl ErrorMsg
-        echom '[pytoy] pyproject.toml was not found.' . l:path
-        echohl None
-        return ''
-    endif
-    return l:path
-
+    return l:root . '/pyproject.toml'
 endfunction
 
-function! pytoy#find_python_executable() abort
+" ---------------------------------------------------------------------------
+" Find environment
+" ---------------------------------------------------------------------------
+
+function! s:find_python_venv() abort
     if !has('python3')
-        echohl ErrorMsg
-        echom '[pytoy] This Vim/Neovim was built without Python 3 support.'
-        echohl None
+        call s:error('Vim/Neovim was built without Python 3 support.')
         return ''
     endif
 
     try
-        let l:executable = py3eval('sys.executable')
-        let l:prefix = py3eval('sys.prefix')
-        let l:base_prefix = py3eval('getattr(sys, "base_prefix", "")')
+        python3 << EOF
+import os
+import sys
+
+venv_path = None
+
+for path in reversed(sys.path):
+    if not path:
+        continue
+
+    current = os.path.realpath(path)
+
+    if os.path.basename(current).lower() != "site-packages":
+        continue
+
+    while True:
+        if os.path.isfile(os.path.join(current, "pyvenv.cfg")):
+            venv_path = current
+            break
+
+        parent = os.path.dirname(current)
+
+        if parent == current:
+            break
+
+        current = parent
+
+    if venv_path:
+        break
+
+vim.command(
+    "let g:pytoy_python_venv = " + repr(venv_path or "")
+)
+EOF
     catch
-        echohl ErrorMsg
-        echom '[pytoy] Failed to inspect the Python 3 environment: ' . v:exception
-        echohl None
+        call s:error(
+                    \ 'Failed to detect Python virtual environment: '
+                    \ . v:exception
+                    \ )
         return ''
     endtry
-
-    " sys.executable is usable when it points to an actual Python executable.
-    if !empty(l:executable) && executable(l:executable)
-        let l:executable_name = fnamemodify(l:executable, ':t')
-
-        if l:executable_name =~? '^python\%(\d\+\)\?\%(\.exe\)\?$'
-            return fnamemodify(l:executable, ':p')
-        endif
-    endif
-
-    " Search for Python from sys.prefix.
-    if !empty(l:prefix)
-        let l:candidates = []
-
-        if has('win32') || has('win64')
-            let l:candidates = [
-                        \ l:prefix . '/Scripts/python.exe',
-                        \ l:prefix . '/python.exe',
-                        \ ]
-        else
-            let l:candidates = [
-                        \ l:prefix . '/bin/python3',
-                        \ l:prefix . '/bin/python',
-                        \ ]
-        endif
-
-        for l:candidate in l:candidates
-            if executable(l:candidate)
-                return fnamemodify(l:candidate, ':p')
-            endif
-        endfor
-    endif
-
-    echohl ErrorMsg
-    echom '[pytoy] Python 3 executable was not found.'
-    echom '[pytoy] sys.prefix      = ' . string(l:prefix)
-    echom '[pytoy] sys.base_prefix = ' . string(l:base_prefix)
-    echom '[pytoy] sys.executable  = ' . string(l:executable)
-    echohl None
-
-    return ''
+    return get(g:, 'pytoy_python_venv', '')
 endfunction
 
+" ---------------------------------------------------------------------------
+" Python environment update
+" ---------------------------------------------------------------------------
+
 function! pytoy#update_python_environment(...) abort
-    let l:python = pytoy#find_python_executable()
-    if empty(l:python)
+    let l:python_venv = s:find_python_venv()
+    if empty(l:python_venv)
+        return 0
+    endif
+
+    if has('win32') || has('win64')
+        let l:python = l:python_venv . '/Scripts/python.exe'
+    else
+        let l:python = l:python_venv . '/bin/python'
+    endif
+
+    if !executable(l:python)
+        call s:error('Python executable was not found: ' . l:python)
         return 0
     endif
 
@@ -158,9 +225,7 @@ function! pytoy#update_python_environment(...) abort
 
     let l:uv = exepath('uv')
     if empty(l:uv)
-        echohl ErrorMsg
-        echom '[pytoy] uv was not found in PATH.'
-        echohl None
+        call s:error('uv was not found in PATH.')
         return 0
     endif
 
@@ -174,48 +239,48 @@ function! pytoy#update_python_environment(...) abort
                 \ l:python,
                 \ ]
 
-    if a:0 > 0
-        call extend(l:args, a:000)
-    endif
+    call s:append_upgrade_option(l:args, a:000)
 
-    " Upgrade dependencies by default.
-    " Respect an explicit upgrade policy from the caller.
-    if index(a:000, '--upgrade') < 0 && index(a:000, '--no-upgrade') < 0
-        call add(l:args, '--upgrade')
-    endif
-
-
-    let l:command = join(map(copy(l:args), 'shellescape(v:val)'), ' ')
+    let l:command = s:shell_command(l:args)
     echom l:command
 
-    if has('nvim')
-        let l:output = system(l:args)
-    else
-        let l:output = system(l:command)
-    endif
+    let l:result = s:run_command(l:args)
 
-    let l:status = v:shell_error
-
-    if l:status != 0
-        echohl ErrorMsg
-
-        echom '[pytoy] uv install failed (exit ' . l:status . '): ' . trim(l:output)
-
-        if l:output =~? 'os error 5\|access is denied'
-            echom '[pytoy] Access to the Python environment was denied.'
-            echom '[pytoy] The current Vim process may not have sufficient privileges.'
-            echom '[pytoy] Run Vim with administrator privileges, or execute the following command'
-            echom '[pytoy] manually from an administrator command prompt:'
-            echom l:command
-        elseif l:status == 2
-            echom '[pytoy] uv reported a general error.'
-        endif
-
-        echohl None
+    if l:result.status != 0
+        call s:report_uv_error(l:result, l:command)
         return 0
     endif
 
-    echom '[pytoy] Python dependencies installed successfully: ' . string(l:python)
+    echom '[pytoy] Python dependencies installed successfully: '
+                \ . string(l:python_venv)
     echom '[pytoy] Please restart Vim/Neovim to reload the Python environment.'
+
     return 1
+endfunction
+
+function! s:append_upgrade_option(args, user_args) abort
+    if index(a:user_args, '--upgrade') < 0
+                \ && index(a:user_args, '--no-upgrade') < 0
+        call add(a:args, '--upgrade')
+    endif
+
+    call extend(a:args, a:user_args)
+endfunction
+
+function! s:report_uv_error(result, command) abort
+    call s:error(
+                \ 'uv install failed (exit '
+                \ . a:result.status
+                \ . '): '
+                \ . trim(a:result.output)
+                \ )
+
+    if a:result.output =~? 'os error 5\|access is denied'
+        echom '[pytoy] Access to the Python environment was denied.'
+        echom '[pytoy] The current Vim process may not have sufficient privileges.'
+        echom '[pytoy] Run Vim with administrator privileges, or execute this command manually:'
+        echom a:command
+    elseif a:result.status == 2
+        echom '[pytoy] uv reported a general error.'
+    endif
 endfunction
