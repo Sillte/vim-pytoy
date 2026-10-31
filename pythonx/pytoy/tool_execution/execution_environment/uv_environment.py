@@ -97,9 +97,9 @@ class UVEnvironmentSolver(EnvironmentSolverProtocol):
         if path is None:
             path = get_current_directory()
 
-        def _to_python_path() -> Path | None:
+        def _to_venv_path() -> Path | None:
             ret = subprocess.run(
-                'uv run python -c "import sys; print(sys.executable)"',
+                "uv run --frozen --no-sync python -c \"import sys; print(sys.prefix if sys.prefix != sys.base_prefix else '')\"",
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
                 env=os.environ,
@@ -108,22 +108,15 @@ class UVEnvironmentSolver(EnvironmentSolverProtocol):
                 shell=True,
             )
             if ret.returncode == 0:
-                return Path(ret.stdout.strip())
+                venv_path = ret.stdout.strip()
+                return Path(venv_path) if venv_path else None
             return None
 
-        if not (python_path := _to_python_path()):
+        if not (venv_path := _to_venv_path()):
             # Maybe `bash` is not applied here.
             _add_uv_path_fallback()
-            python_path = _to_python_path()
-        if not python_path:
-            return None
-
-        if all((python_path.parent / name).exists() for name in ["activate", "activate.bat"]):
-            # It should be virtual environment.
-            return python_path.parent.parent
-        else:
-            # Not virtual environment.
-            return None
+            venv_path = _to_venv_path()
+        return venv_path
 
 
 __add_uv_path_fallback_tried = False

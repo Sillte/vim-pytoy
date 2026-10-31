@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from pytoy.tool_execution.execution_environment.uv_environment import UVEnvironmentSolver
+
 
 class VimPluginPackage:
     """Utility class for managing and developing Vim plugins.
@@ -120,6 +122,8 @@ class _VimRebooter:
 
     When the activation is carried out via this function.
     `g:pytoy_reboot = 1` is added for the spawned (n/g) vim.
+    In addition, when the reboot is performed inside the plugin folder and the corresponding virtual environment is detected,
+     the path of the virtual environment is passed to the spawned (n/g) vim via `PYTOY_DEBUG_VENV` environment variable.
 
     [NOTE]: (with_vimrc=True)
         Sometimes, plugin loaders `prepend` their configuration path
@@ -141,6 +145,8 @@ class _VimRebooter:
         When `with_vimrc` = True, please refer to the docstring of the class.
         """
         import vim
+
+        venv_path = UVEnvironmentSolver().find_venv_path(self.root_folder)
 
         cache_folder = Path.home() / ".cache/vim"
 
@@ -177,13 +183,19 @@ class _VimRebooter:
                 raise RuntimeError("Unrecognized platform")
             commands = consoles + commands
 
-        _start_vim_detached(commands)
+        env = os.environ.copy()
+        if venv_path is not None:
+            env["PYTOY_DEBUG_VENV"] = str(venv_path)
+        else:
+            env.pop("PYTOY_DEBUG_VENV", None)
+
+        _start_vim_detached(commands, env=env)
 
         if kill_myprocess:
             vim.command("qall!")
 
 
-def _start_vim_detached(cmd):
+def _start_vim_detached(cmd, env: dict | None = None):
     if sys.platform.startswith("win"):
         DETACHED_PROCESS = 0x00000008
         subprocess.Popen(
@@ -192,6 +204,7 @@ def _start_vim_detached(cmd):
             stderr=subprocess.DEVNULL,
             creationflags=DETACHED_PROCESS,
             shell=True,
+            env=env,
         )
     else:
         subprocess.Popen(
@@ -200,6 +213,7 @@ def _start_vim_detached(cmd):
             stderr=subprocess.DEVNULL,
             preexec_fn=os.setpgrp,
             shell=False,
+            env=env,
         )
 
 
