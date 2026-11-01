@@ -22,7 +22,7 @@ dependencies = [
     "pytoy-llm @ git+https://github.com/Sillte/pytoy-llm.git@main",
     "fairybrowser @ git+https://github.com/Sillte/fairybrowser.git@main",
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

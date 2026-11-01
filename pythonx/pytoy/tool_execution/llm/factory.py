@@ -1,12 +1,9 @@
 import logging
-from typing import assert_never
 
 from pytoy_llm.activity_sinks import LoggerActivitySink
 from pytoy_llm.task import TaskRequest
 from pytoy_llm.task.execution import TaskExecutionHandler
 from pytoy_llm.task.execution.models import TaskExecutionExit
-from pytoy_llm.task.shared.outcome import Error as TaskError
-from pytoy_llm.task.shared.outcome import Success as TaskSuccess
 
 from pytoy.shared.lib.event import EventEmitter
 from pytoy.shared.lib.outcome import Error, Success, is_error, is_success
@@ -19,15 +16,10 @@ from .models import LLMExecution, LLMExecutionRequest
 
 def transform[T](task_exit: TaskExecutionExit[T]) -> LLMExecutionExit[T]:
     task_outcome = task_exit.outcome
-    match task_outcome:
-        case TaskSuccess(value):
-            result = LLMExecutionResult(task_result=value)
-            outcome = Success(result)
-        case TaskError(exception):
-            outcome = Error(exception)
-        case _:
-            assert_never(task_outcome)
-    return LLMExecutionExit(id=task_exit.id, outcome=outcome)
+    if is_success(task_outcome):
+        result = LLMExecutionResult(task_result=task_outcome.value)
+        return LLMExecutionExit(id=task_exit.id, outcome=Success(result))
+    return LLMExecutionExit(id=task_exit.id, outcome=Error(task_outcome.exception))
 
 
 class LLMExecutionFactory:

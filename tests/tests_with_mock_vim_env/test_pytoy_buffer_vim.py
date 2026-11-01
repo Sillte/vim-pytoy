@@ -28,9 +28,9 @@ def test_buffer_init(vim_env: MockVim):
     assert buf._content == [""]
 
     # Test with content
-    test_content = "line1\r\nline2\nline3"
+    test_content = "line1\r\nline2\n\n\nline3"
     pytoy_buf.init_buffer(test_content)
-    assert buf._content == ["line1", "line2", "line3"]
+    assert buf._content == ["line1", "line2", "", "", "line3"]
 
 
 def test_buffer_valid(vim_env: MockVim):
