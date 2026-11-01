@@ -22,7 +22,7 @@ class IdeaCirculationStatus:
     kind: ClassVar[str] = "idea-circulation"
     workspace_name: str | None
     value_cycle_working_status: str | None
-    value_cycle_execution_policy: ValueCycleExecutionPolicy = field(default="enabled")
+    value_cycle_execution_policy: ValueCycleExecutionPolicy = field(default="paused")
     value_cycle_message: str | None = None
     llm_tokens: LLMTokens = field(default_factory=_empty_llm_tokens)
 
