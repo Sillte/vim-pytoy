@@ -5,6 +5,7 @@ from functools import wraps
 from typing import Any, ParamSpec, TypeVar
 
 from fairybrowser import sync_browser, sync_page
+from fairybrowser.html_analysis import simplify_html_for_playwright
 
 from pytoy import TERM_STDOUT
 from pytoy.shared.lib.outcome import is_error
@@ -35,6 +36,20 @@ def _get_page_target_id(page: Any) -> str:
         session.detach()
 
 
+def _format_page_source(
+    title: str,
+    html: str,
+    *,
+    simplify: bool,
+    transform: Callable[[str], str] | None = None,
+) -> str:
+    if simplify:
+        html = simplify_html_for_playwright(html)
+    if transform is not None:
+        html = transform(html)
+    return f"<--- {title} --->\n{html}"
+
+
 class BrowserHandler:
     def __init__(self, browser_name: str | None = None, *, logger: logging.Logger | None = None) -> None:
         self._browser_name = browser_name
@@ -62,12 +77,25 @@ class BrowserHandler:
         window = PytoyWindowProvider().open_window(buffer_source, param="vertical")
         window.buffer.init_buffer(content)
 
-    def dump_source(self) -> None:
+    def dump_source(self, *, simplify: bool = False, transform: str | None = None) -> None:
         @_capture_traceback
         def on_main() -> str:
             with sync_page(browser_info=self._browser_name) as page:
-                header = f"<--- {page.title()} --->\n"
-                return header + page.content()
+                title = page.title()
+                html = page.content()
+
+            text_transformer: Callable[[str], str] | None = None
+            if transform is not None:
+                from pytoy.tools.text_transformation_plugin import TextTransformationHandler
+
+                handler = TextTransformationHandler.from_global_folder()
+                transform_name = transform
+
+                def apply_transform(content: str) -> str:
+                    return handler.transform(transform_name, content)
+
+                text_transformer = apply_transform
+            return _format_page_source(title, html, simplify=simplify, transform=text_transformer)
 
         request = ThreadExecutionRequest.from_any(on_main)
         handler = ThreadExecutionHandler.create(request)

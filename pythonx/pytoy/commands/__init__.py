@@ -17,3 +17,4 @@ from pytoy.commands.unique_command import unique_command  # NOQA
 from pytoy.commands import llm_commands  # NOQA
 from pytoy.commands import idea_space_commands  # NOQA
 from pytoy.commands import naive_plugin_commands  # NOQA
+from pytoy.commands import text_transformation_commands  # NOQA
