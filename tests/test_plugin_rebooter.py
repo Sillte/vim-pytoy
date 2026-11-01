@@ -2,7 +2,9 @@ import json
 import sys
 from pathlib import Path
 
-from pytoy.devtools import VimPluginPackage, vimplugin_package
+from pytoy.devtools import PluginRebooter
+from pytoy.devtools.dev_rebooter import rebooter
+from pytoy.devtools.dev_rebooter.impls import nvim
 from pytoy.shared.lib.backend import BackendEnum
 from pytoy.tool_execution.execution_environment.uv_environment import UVEnvironmentSolver
 
@@ -33,12 +35,12 @@ def test_restart_writes_contract_cache_files_before_launching(tmp_path, monkeypa
         assert (cache_folder / "pytoy_reboot.vim").is_file()
 
     monkeypatch.setitem(sys.modules, "vim", Vim)
-    monkeypatch.setattr(vimplugin_package, "get_backend_enum", lambda: BackendEnum.NVIM)
+    monkeypatch.setattr(rebooter, "get_backend_enum", lambda: BackendEnum.NVIM)
     monkeypatch.setattr(UVEnvironmentSolver, "find_workspace", lambda self, path: plugin_root)
     monkeypatch.setattr(UVEnvironmentSolver, "find_venv_path", lambda self, path: debug_venv_path)
-    monkeypatch.setattr(vimplugin_package, "_start_vim_detached", launch)
+    monkeypatch.setattr(nvim, "start_vim_detached", launch)
 
-    VimPluginPackage(plugin_root).restart()
+    PluginRebooter(plugin_root).restart()
 
     reboot_info = json.loads((cache_folder / "pytoy_reboot.json").read_text())
     assert reboot_info["plugin_folder"] == plugin_root.as_posix()
@@ -75,7 +77,7 @@ def test_vim_reboot_command_delegates_to_public_package(monkeypatch):
         def restart(self):
             calls.append("restart")
 
-    monkeypatch.setattr(devtools_commands, "VimPluginPackage", Package)
+    monkeypatch.setattr(devtools_commands, "PluginRebooter", Package)
 
     devtools_commands.vim_reboot()
 

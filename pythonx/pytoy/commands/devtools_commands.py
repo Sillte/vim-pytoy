@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pytoy.devtools import VimPluginPackage
+from pytoy.devtools import PluginRebooter
 from pytoy.shared.command import App, Argument
 from pytoy.shared.timertask import TimerTask
 
@@ -9,7 +9,7 @@ app = App()
 
 @app.command(name="VimReboot")
 def vim_reboot():
-    VimPluginPackage().restart()
+    PluginRebooter().restart()
 
 
 @app.command(name="DebugInfo")
