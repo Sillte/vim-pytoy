@@ -15,7 +15,7 @@ def test_metadata_codec_serializes_status() -> None:
     assert metadata == {
         "kind": "idea-circulation",
         "workspace_name": "sample",
-        "value_cycle_execution_policy": "enabled",
+        "value_cycle_execution_policy": "paused",
         "value_cycle_working_status": "working",
         "llm_tokens": {"prompt": 3, "completion": 4, "total": 7, "cache_read": 1, "cache_write": 2},
     }
