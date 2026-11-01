@@ -28,7 +28,7 @@ def _show_output(content: str) -> None:
 def _open_folder_in_file_manager(folder: Path) -> None:
     operating_system = platform.system()
     if operating_system == "Windows":
-        os.startfile(str(folder))
+        os.startfile(str(folder))  # ty: ignore
     elif operating_system == "Darwin":
         subprocess.Popen(["open", str(folder)])
     elif operating_system == "Linux":
