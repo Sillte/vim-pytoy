@@ -2,11 +2,12 @@ import logging
 import traceback
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, ParamSpec, TypeVar
+from typing import Any, ParamSpec, Sequence, TypeVar
 
 from fairybrowser import sync_browser, sync_page
 from fairybrowser.html_analysis import simplify_html_for_playwright
-from fairybrowser.plugins.reader import ReaderPluginRegistry
+from fairybrowser.plugins.invocation import InvocationPluginRegistry
+from fairybrowser.plugins.readers import PageReaderPluginRegistry
 
 from pytoy import TERM_STDOUT
 from pytoy.shared.lib.outcome import is_error
@@ -55,6 +56,7 @@ class BrowserHandler:
     def __init__(self, browser_name: str | None = None, *, logger: logging.Logger | None = None) -> None:
         self._browser_name = browser_name
         self._logger = logger
+        self._plugin_directory = None
 
     def open(self) -> None:
         @_capture_traceback
@@ -67,13 +69,35 @@ class BrowserHandler:
         handler.on_exit(self._display_output)
         handler.start()
 
+    @property
+    def read_plugin_names(self) -> Sequence[str]:
+        return PageReaderPluginRegistry(self._plugin_directory).list_plugins()
+
     def read(self, plugin_name: str) -> None:
         @_capture_traceback
         def on_main() -> str:
-            result = ReaderPluginRegistry().read(plugin_name, browser_info=self._browser_name)
+            result = PageReaderPluginRegistry(self._plugin_directory).read(plugin_name, browser_info=self._browser_name)
             if result is None:
                 return "No reading target page exists."
             return result
+
+        request = ThreadExecutionRequest.from_any(on_main)
+        handler = ThreadExecutionHandler.create(request)
+        handler.on_exit(self._display_output)
+        handler.start()
+
+    @property
+    def invocation_plugin_names(self) -> Sequence[str]:
+        return InvocationPluginRegistry(self._plugin_directory).list_plugins()
+
+    def invoke(self, plugin_name: str, input: str) -> None:
+
+        @_capture_traceback
+        def on_main() -> str:
+            result = InvocationPluginRegistry(self._plugin_directory).invoke(plugin_name, input)
+            if result is None:
+                return "No invocation result."
+            return str(result)
 
         request = ThreadExecutionRequest.from_any(on_main)
         handler = ThreadExecutionHandler.create(request)
