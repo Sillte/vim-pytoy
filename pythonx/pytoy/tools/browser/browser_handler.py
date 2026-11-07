@@ -6,6 +6,7 @@ from typing import Any, ParamSpec, TypeVar
 
 from fairybrowser import sync_browser, sync_page
 from fairybrowser.html_analysis import simplify_html_for_playwright
+from fairybrowser.plugins.reader import ReaderPluginRegistry
 
 from pytoy import TERM_STDOUT
 from pytoy.shared.lib.outcome import is_error
@@ -60,6 +61,19 @@ class BrowserHandler:
         def on_main() -> None:
             with sync_page(browser_info=self._browser_name):
                 pass
+
+        request = ThreadExecutionRequest.from_any(on_main)
+        handler = ThreadExecutionHandler.create(request)
+        handler.on_exit(self._display_output)
+        handler.start()
+
+    def read(self, plugin_name: str) -> None:
+        @_capture_traceback
+        def on_main() -> str:
+            result = ReaderPluginRegistry().read(plugin_name, browser_info=self._browser_name)
+            if result is None:
+                return "No reading target page exists."
+            return result
 
         request = ThreadExecutionRequest.from_any(on_main)
         handler = ThreadExecutionHandler.create(request)
