@@ -131,12 +131,14 @@ class VimCommandAdapter:
 
     @classmethod
     def _get_strip_offset(cls, cmd_line: str, target: str) -> int:
-        """Return the stripped `offset`."""
+        """Return the position after the command name, including any Ex range prefix."""
         stripped = cmd_line.lstrip()
-        if not stripped.startswith(target):
-            return 0
         leading_spaces = len(cmd_line) - len(stripped)
-        return leading_spaces + len(target)
+        if stripped.startswith(target):
+            return leading_spaces + len(target)
+
+        match = re.search(rf"{re.escape(target)}(?=\s|$)", cmd_line)
+        return match.end() if match else 0
 
     @classmethod
     def complete_command(cls, name: str, leading: str, cmd_line: str, cursor_pos: int) -> list[str]:
