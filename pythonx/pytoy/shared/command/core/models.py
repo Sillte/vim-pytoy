@@ -179,7 +179,7 @@ class CompleterModel:
         raise TypeError(f"Cannot convert `{arg}` to `CompleterModel`")
 
     def __call__(self) -> Sequence[str]:
-        return self.impl()
+        return [str(value) for value in self.impl()]
 
 
 @dataclass(frozen=True)
@@ -202,11 +202,9 @@ class ArgumentModel:
         return self.default_getter.get_default()
 
     def get_candidate_values(self) -> Sequence[str]:
-        result = []
-        if self.literal_values:
-            result += self.literal_values
+        result = [str(value) for value in self.literal_values or ()]
         if self.completer:
-            result += self.completer()
+            result.extend(self.completer())
         return result
 
 
@@ -224,11 +222,9 @@ class OptionModel:
         return self.default_getter.get_default()
 
     def get_candidate_values(self) -> Sequence[str]:
-        result = []
-        if self.literal_values:
-            result += self.literal_values
+        result = [str(value) for value in self.literal_values or ()]
         if self.completer:
-            result += self.completer()
+            result.extend(self.completer())
         return result
 
 
