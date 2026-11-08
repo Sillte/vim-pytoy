@@ -338,7 +338,7 @@ class CompletionService:
         if current_position.current_token:
             prev_tokens = [token for token in complete_tokens if token.end < current_position.cursor_pos]
         else:
-            prev_tokens = complete_tokens
+            prev_tokens = [token for token in complete_tokens if token.end <= current_position.cursor_pos]
         appeals = resolver.resolve_appeals(prev_tokens, command_model)
 
         factory = CandidateFactory()
