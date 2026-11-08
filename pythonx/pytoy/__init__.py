@@ -35,9 +35,9 @@ def stop():
 
 
 def reset():
-    from pytoy.commands.console_command import hide_temporary
+    from pytoy.commands.console_command import hide_buffers
 
-    hide_temporary()
+    hide_buffers("temporary")
 
 
 initialize_plugin()

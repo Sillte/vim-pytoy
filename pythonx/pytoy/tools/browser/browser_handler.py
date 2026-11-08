@@ -13,7 +13,7 @@ from pytoy import TERM_STDOUT
 from pytoy.shared.lib.outcome import is_error
 from pytoy.shared.timertask.thread_execution import ThreadExecutionExit, ThreadExecutionHandler, ThreadExecutionRequest
 from pytoy.shared.ui import BufferSource
-from pytoy.shared.ui.pytoy_window import PytoyWindowProvider
+from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider, WindowCreationParam
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -110,7 +110,7 @@ class BrowserHandler:
     def _notify_start(
         self,
     ) -> None:
-        window = PytoyWindowProvider().open_window(self._buffer_source, param="vertical")
+        window = self._open_output_window()
         window.buffer.init_buffer("Browser...")
 
     def _display_output(self, exit: ThreadExecutionExit[str | None]) -> None:
@@ -120,8 +120,12 @@ class BrowserHandler:
             content = exit.outcome.value
             if content is None:
                 return
-        window = PytoyWindowProvider().open_window(self._buffer_source, param="vertical")
+        window = self._open_output_window()
         window.buffer.init_buffer(content)
+
+    def _open_output_window(self) -> PytoyWindow:
+        param = WindowCreationParam.for_split("vertical", try_reuse=True)
+        return PytoyWindowProvider().open_window(self._buffer_source, param=param)
 
     def dump_source(self, *, simplify: bool = False, transform: str | None = None) -> None:
         @_capture_traceback

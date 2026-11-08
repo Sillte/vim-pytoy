@@ -1,4 +1,7 @@
+from collections.abc import Sequence
+
 from pytoy.shared.ui.pytoy_buffer import (
+    BufferID,
     BufferQuery,
     PytoyBuffer,
     PytoyBufferProvider,
@@ -51,13 +54,19 @@ def test_provider_wraps_and_queries_buffers() -> None:
 def test_provider_forwards_close_buffers() -> None:
     class FakeProvider:
         def __init__(self):
-            self.closed_buffer_ids = None
+            self.closed_buffer_ids: Sequence[BufferID] | None = None
 
-        def close_buffers(self, buffer_ids):
+        def get_buffers(self, is_normal_type: bool = True) -> Sequence[PytoyBuffer]:
+            raise NotImplementedError
+
+        def get_current(self) -> PytoyBuffer:
+            raise NotImplementedError
+
+        def close_buffers(self, buffer_ids: Sequence[BufferID]) -> None:
             self.closed_buffer_ids = buffer_ids
 
     impl = FakeProvider()
-    provider = PytoyBufferProvider(impl)  # type: ignore[arg-type]
+    provider = PytoyBufferProvider(impl)
 
     provider.close_buffers([1, "buffer-2"])
 
