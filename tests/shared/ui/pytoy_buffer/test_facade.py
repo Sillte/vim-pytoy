@@ -46,3 +46,19 @@ def test_provider_wraps_and_queries_buffers() -> None:
 
     assert current.buffer_id in [buffer.buffer_id for buffer in buffers]
     assert [buffer.buffer_id for buffer in queried] == [current.buffer_id]
+
+
+def test_provider_forwards_close_buffers() -> None:
+    class FakeProvider:
+        def __init__(self):
+            self.closed_buffer_ids = None
+
+        def close_buffers(self, buffer_ids):
+            self.closed_buffer_ids = buffer_ids
+
+    impl = FakeProvider()
+    provider = PytoyBufferProvider(impl)  # type: ignore[arg-type]
+
+    provider.close_buffers([1, "buffer-2"])
+
+    assert impl.closed_buffer_ids == [1, "buffer-2"]

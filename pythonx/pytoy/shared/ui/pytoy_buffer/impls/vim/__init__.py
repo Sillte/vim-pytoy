@@ -188,6 +188,15 @@ class PytoyBufferProviderVim(PytoyBufferProviderProtocol):
     def get_buffers(self, is_normal_type: bool = True) -> Sequence[PytoyBufferProtocol]:
         return self._get_pytoy_buffer_vim_impls(is_normal_type=is_normal_type)
 
+    def close_buffers(self, buffer_ids: Sequence[BufferID]) -> None:
+        target_ids = set(buffer_ids)
+        for buffer in self._get_pytoy_buffer_vim_impls(is_normal_type=False):
+            if buffer.buffer_id not in target_ids or buffer.is_file:
+                continue
+            buffer.init_buffer("")
+            for window in buffer.get_windows(only_visible=False):
+                window.close()
+
     def _get_pytoy_buffer_vim_impls(self, is_normal_type: bool = True) -> Sequence[PytoyBufferVim]:
         buffers = [PytoyBufferVim.from_buffer(buf) for buf in vim.buffers if buf.valid]
         if is_normal_type:

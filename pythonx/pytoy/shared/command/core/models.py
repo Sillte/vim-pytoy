@@ -9,6 +9,7 @@ from typing import (
     Self,
     Sequence,
     get_origin,
+    get_type_hints,
 )
 
 from pytoy.shared.command.core.utils import flatten_union, is_literal, is_union, literal_values, unwrap_annotated
@@ -333,12 +334,14 @@ class CommandModel:
         from inspect import Parameter, signature
 
         sig = signature(function)
+        resolved_annotations = get_type_hints(function, include_extras=True)
         args_name: str | None = None
         kwargs_name: str | None = None
         injected_params: dict[str, type[InjectedParam]] = {}
         arguments: list[ArgumentModel] = []
         options: list[OptionModel] = []
         for param in sig.parameters.values():
+            param = param.replace(annotation=resolved_annotations.get(param.name, param.annotation))
             if param.kind == Parameter.VAR_POSITIONAL:
                 args_name = param.name
                 continue

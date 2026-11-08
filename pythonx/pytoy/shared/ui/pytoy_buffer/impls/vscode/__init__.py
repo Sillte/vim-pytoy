@@ -183,5 +183,20 @@ class PytoyBufferProviderVSCode(PytoyBufferProviderProtocol):
             buffers = [buffer for buffer in buffers if buffer.is_normal_type]
         return buffers
 
+    def close_buffers(self, buffer_ids: Sequence[BufferID]) -> None:
+        target_ids = set(buffer_ids)
+        uris = []
+        for buffer in self.get_buffers(is_normal_type=False):
+            if buffer.buffer_id not in target_ids or buffer.is_file:
+                continue
+            buffer.init_buffer("")
+            if uri := buffer.kernel.vscode_uri:
+                uris.append(uri)
+
+        if uris:
+            from pytoy.shared.ui.vscode.editor import Editor
+
+            Editor.close_editors(uris)
+
     def get_current(self) -> PytoyBufferProtocol:
         return PytoyBufferVSCode.from_document(Document.get_current())

@@ -1,16 +1,99 @@
 from typing import Sequence
 
+from pytoy.shared.ui.vscode.buffer_uri_solver import BufferURISolver
 from pytoy.shared.ui.vscode.document import Api, VSCodeUri
 from pytoy.shared.ui.vscode.editor import Editor
 
 
 class EditorCleaner:
-    def __init__(self, editor: Editor):
+    def __init__(self, editor: Editor | None):
         self._editor = editor
 
     @property
     def editor(self) -> Editor:
+        if self._editor is None:
+            raise RuntimeError("This operation requires an editor.")
         return self._editor
+
+    @property
+    def temporary_uris(self) -> Sequence[VSCodeUri]:
+        """Return a snapshot of Neovim-backed temporary buffer URIs."""
+        buffer_uris = BufferURISolver.get_bufnr_to_uris().values()
+        targets_by_key = {
+            uri.to_key_str(): uri for uri in buffer_uris if uri.scheme == "untitled" and uri.path.startswith("__")
+        }
+        return list(targets_by_key.values())
+
+    def close_editors(self, uris: Sequence[VSCodeUri]) -> Sequence[VSCodeUri]:
+        """Close all VS Code tabs for the given URIs, discarding dirty documents."""
+        targets_by_key = {uri.to_key_str(): uri for uri in uris}
+        target_uris = list(targets_by_key.values())
+        if not target_uris:
+            return []
+
+        jscode = """
+        (async (args) => {
+            function sameUri(a, b) {
+                return a && b &&
+                    a.scheme === b.scheme &&
+                    a.path === b.path &&
+                    (a.authority || "") === (b.authority || "");
+            }
+
+            function findTab(uri) {
+                return vscode.window.tabGroups.all
+                    .flatMap(group => group.tabs)
+                    .find(tab => sameUri(tab.input?.uri, uri));
+            }
+
+            const targetUris = args.uriKeys.map(key => vscode.Uri.parse(key));
+            const targetKeys = new Set(targetUris.map(uri => uri.toString()));
+            const originalEditor = vscode.window.activeTextEditor;
+
+            for (const uri of targetUris) {
+                while (true) {
+                    const tab = findTab(uri);
+                    if (!tab) break;
+
+                    const doc = await vscode.workspace.openTextDocument(uri);
+                    await vscode.window.showTextDocument(doc, {
+                        viewColumn: tab.group.viewColumn,
+                        preserveFocus: false,
+                        preview: false
+                    });
+
+                    if (doc.isDirty) {
+                        await vscode.commands.executeCommand(
+                            "workbench.action.revertAndCloseActiveEditor"
+                        );
+                    } else {
+                        await vscode.commands.executeCommand(
+                            "workbench.action.closeActiveEditor"
+                        );
+                    }
+                }
+            }
+
+            if (originalEditor &&
+                !targetKeys.has(originalEditor.document.uri.toString()) &&
+                !originalEditor.document.isClosed) {
+                const originalTab = findTab(originalEditor.document.uri);
+                if (originalTab) {
+                    await vscode.window.showTextDocument(originalEditor.document, {
+                        viewColumn: originalTab.group.viewColumn,
+                        preserveFocus: false,
+                        preview: false
+                    });
+                }
+            }
+        })(args)
+        """
+        Api().eval_with_return(
+            jscode,
+            with_await=True,
+            opts={"args": {"uriKeys": list(targets_by_key)}},
+        )
+        return target_uris
 
     def get_clean_target_uris_for_unique(
         self, within_tabs: bool = False, within_windows: bool = True

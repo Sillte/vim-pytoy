@@ -73,6 +73,10 @@ class BufferProviderProtocol(Protocol):
 
     def get_current(self) -> BufferProtocol: ...
 
+    def close_buffers(self, buffer_ids: Sequence[BufferID]) -> None:
+        """Close non-file buffer views, discard their contents, and retain the buffers."""
+        ...
+
 
 class RangeOperatorProtocol(Protocol):
     def get_lines(self, line_range: LineRange) -> list[str]: ...

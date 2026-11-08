@@ -185,6 +185,20 @@ class PytoyBufferDummy(PytoyBufferProtocol):
 class PytoyBufferProviderDummy(PytoyBufferProviderProtocol):
     buffers: ClassVar[dict[BufferID, PytoyBufferDummy]] = {}
 
+    def close_buffers(self, buffer_ids: Sequence[BufferID]) -> None:
+        target_ids = set(buffer_ids)
+        buffers = [buffer for buffer in self.get_buffers(is_normal_type=False) if buffer.buffer_id in target_ids]
+        for buffer in buffers:
+            if buffer.is_file:
+                continue
+            buffer.init_buffer("")
+
+        from pytoy.shared.ui.pytoy_window.impls.dummy import PytoyWindowProviderDummy
+
+        for window in list(PytoyWindowProviderDummy().get_windows(only_normal_buffers=False)):
+            if window.buffer.buffer_id in target_ids and not window.buffer.is_file:
+                window.close()
+
     @classmethod
     def create_buffer(cls, buffer_source: BufferSource | None = None) -> PytoyBufferDummy:
         import uuid

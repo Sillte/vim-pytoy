@@ -258,6 +258,18 @@ class Editor(BaseModel):
         # when this class is created.
         return (self.document == other.document) and (self.viewColumn == other.viewColumn)
 
+    @property
+    def temporary_uris(self) -> Sequence[VSCodeUri]:
+        from pytoy.shared.ui.vscode.editor.clearners import EditorCleaner
+
+        return EditorCleaner(self).temporary_uris
+
+    @staticmethod
+    def close_editors(uris: Sequence[VSCodeUri]) -> Sequence[VSCodeUri]:
+        from pytoy.shared.ui.vscode.editor.clearners import EditorCleaner
+
+        return EditorCleaner(None).close_editors(uris)
+
     def get_clean_target_uris_for_unique(
         self, within_tabs: bool = False, within_windows: bool = True
     ) -> Sequence[VSCodeUri]:

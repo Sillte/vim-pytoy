@@ -163,6 +163,9 @@ class PytoyBufferProvider:
     def get_current(self) -> PytoyBuffer:
         return PytoyBuffer(self.impl.get_current())
 
+    def close_buffers(self, buffer_ids: Sequence[BufferID]) -> None:
+        self.impl.close_buffers(buffer_ids)
+
     def query(self, query: BufferQuery | BufferSource) -> Sequence[PytoyBuffer]:
         if isinstance(query, BufferSource):
             query = BufferQuery.from_source(query)

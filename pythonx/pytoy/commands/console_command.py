@@ -1,10 +1,18 @@
+from __future__ import annotations
+
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from pytoy import TERM_STDERR, TERM_STDOUT
 from pytoy.shared.command import App, Argument, Group, Option, RangeParam
 
+if TYPE_CHECKING:
+    from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
+
 app = App()
+
+_TERMINAL_BUFFER_NAMES = frozenset({"__TERMINAL__", "__SHELL__", "__IPYTYON__", TERM_STDOUT, TERM_STDERR})
 
 
 @app.command("Console")
@@ -105,15 +113,59 @@ def script_stop():
 app = App()
 
 
-@app.command("HideTemporary")
-def hide_temporary():
-    from pytoy.shared.ui.pytoy_buffer import BufferQuery, BufferSource, PytoyBufferProvider
+@app.command("Hide")
+def hide_buffers(scope: Annotated[Literal["temporary", "terminal"], Argument()]) -> None:
+    from pytoy.shared.ui.pytoy_buffer import PytoyBufferProvider
 
-    source1 = BufferSource.from_no_file(name=TERM_STDOUT)
-    source2 = BufferSource.from_no_file(name=TERM_STDERR)
     provider = PytoyBufferProvider()
-    buffers = provider.query(BufferQuery(buffer_sources=[source1, source2]))
+    buffers = [buffer for buffer in provider.get_buffers(is_normal_type=False) if _matches_hide_scope(buffer, scope)]
+    if not buffers:
+        return
 
-    # print("buffers", buffers)
-    for buffer in buffers:
-        buffer.hide()
+    _terminate_matching_executions(buffers)
+    provider.close_buffers([buffer.buffer_id for buffer in buffers])
+
+
+def _matches_hide_scope(buffer: PytoyBuffer, scope: Literal["temporary", "terminal"]) -> bool:
+    if buffer.is_file or not buffer.source.name:
+        return False
+    name = Path(buffer.source.name).name
+    if not name.startswith("__"):
+        return False
+    return scope == "temporary" or name in _TERMINAL_BUFFER_NAMES
+
+
+def _terminate_matching_executions(buffers: Sequence[PytoyBuffer]) -> None:
+    from pytoy.tool_execution.command import CommandExecutionHandler
+    from pytoy.tool_execution.terminal import TerminalExecutionHandler, TerminalExecutionQuery
+    from pytoy.tool_session.llm import LLMSessionHandler, LLMSessionQuery
+
+    sources = {buffer.source for buffer in buffers}
+    for source in sources:
+        for handler in TerminalExecutionHandler.query(TerminalExecutionQuery(buffer=source)):
+            _terminate_if_running(handler)
+        for session in LLMSessionHandler.query(LLMSessionQuery(buffer_source=source)):
+            session.terminate()
+
+    for handler in CommandExecutionHandler.query():
+        try:
+            if handler.status != "running":
+                continue
+            stderr = handler.stderr
+            matches = handler.stdout.source in sources or (stderr is not None and stderr.source in sources)
+        except (RuntimeError, ValueError):
+            continue
+        if matches:
+            _terminate_if_running(handler)
+
+
+def _terminate_if_running(handler) -> None:
+    try:
+        status = handler.status
+    except (RuntimeError, ValueError):
+        return
+    if status == "running":
+        try:
+            handler.terminate()
+        except (RuntimeError, ValueError):
+            pass
