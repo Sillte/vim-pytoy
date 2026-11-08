@@ -14,4 +14,4 @@ def test_command_completion_strips_visual_range_prefix(monkeypatch) -> None:
 
     candidates = VimCommandAdapter.complete_command(name, "example", cmd_line, len(cmd_line))
 
-    assert candidates == ["chatgpt"]
+    assert candidates == ["example"]
