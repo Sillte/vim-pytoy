@@ -57,8 +57,9 @@ class BrowserHandler:
         self._browser_name = browser_name
         self._logger = logger
         self._plugin_directory = None
+        self._buffer_source = BufferSource.from_str(TERM_STDOUT, "nofile")
 
-    def open(self) -> None:
+    def open_browser(self) -> None:
         @_capture_traceback
         def on_main() -> None:
             with sync_page(browser_info=self._browser_name):
@@ -81,6 +82,7 @@ class BrowserHandler:
                 return "No reading target page exists."
             return result
 
+        self._notify_start()
         request = ThreadExecutionRequest.from_any(on_main)
         handler = ThreadExecutionHandler.create(request)
         handler.on_exit(self._display_output)
@@ -99,20 +101,26 @@ class BrowserHandler:
                 return "No invocation result."
             return str(result)
 
+        self._notify_start()
         request = ThreadExecutionRequest.from_any(on_main)
         handler = ThreadExecutionHandler.create(request)
         handler.on_exit(self._display_output)
         handler.start()
 
+    def _notify_start(
+        self,
+    ) -> None:
+        window = PytoyWindowProvider().open_window(self._buffer_source, param="vertical")
+        window.buffer.init_buffer("Browser...")
+
     def _display_output(self, exit: ThreadExecutionExit[str | None]) -> None:
-        buffer_source = BufferSource.from_str(TERM_STDOUT, "nofile")
         if is_error(exit.outcome):
             content = "".join(traceback.format_exception(exit.outcome.exception))
         else:
             content = exit.outcome.value
             if content is None:
                 return
-        window = PytoyWindowProvider().open_window(buffer_source, param="vertical")
+        window = PytoyWindowProvider().open_window(self._buffer_source, param="vertical")
         window.buffer.init_buffer(content)
 
     def dump_source(self, *, simplify: bool = False, transform: str | None = None) -> None:
@@ -135,6 +143,7 @@ class BrowserHandler:
                 text_transformer = apply_transform
             return _format_page_source(title, html, simplify=simplify, transform=text_transformer)
 
+        self._notify_start()
         request = ThreadExecutionRequest.from_any(on_main)
         handler = ThreadExecutionHandler.create(request)
         handler.on_exit(self._display_output)
@@ -161,6 +170,7 @@ class BrowserHandler:
                 for index, (title, url, is_current) in enumerate(pages, start=1)
             )
 
+        self._notify_start()
         request = ThreadExecutionRequest.from_any(on_main)
         handler = ThreadExecutionHandler.create(request)
         handler.on_exit(self._display_output)

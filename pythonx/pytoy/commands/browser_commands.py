@@ -24,7 +24,7 @@ def browser_command(
     handler = BrowserHandler(browser_name=browser_name)
     match operation:
         case "open" | None:
-            handler.open()
+            handler.open_browser()
         case "source":
             handler.dump_source(simplify=simplify, transform=transform)
         case "pages":
