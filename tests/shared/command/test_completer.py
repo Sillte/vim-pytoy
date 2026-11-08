@@ -54,6 +54,7 @@ def func_with_input_and_literal(
     input: Annotated[Literal["input"] | str, Option(..., completer=lambda: ["in1", "out1"])] = "input",
 ): ...
 def func_arg_completer(arg: Annotated[Literal["five"], Argument(completer=lambda: ["first", "second", "five"])]): ...
+def func_unicode_arg(arg: Annotated[Literal["猫"], Argument(completer=lambda: ["猫", "猫犬"])]): ...
 
 
 @pytest.mark.parametrize(
@@ -61,13 +62,13 @@ def func_arg_completer(arg: Annotated[Literal["five"], Argument(completer=lambda
     [
         (
             "--i",
-            2,
+            3,
             func_with_input,
             {CompletionCandidate(start=0, end=3, value="--input")},
         ),
         (
             "--input=i",
-            8,
+            9,
             func_with_input_and_literal,
             {
                 CompletionCandidate(start=0, end=9, value="--input=in1"),
@@ -76,9 +77,27 @@ def func_arg_completer(arg: Annotated[Literal["five"], Argument(completer=lambda
         ),
         (
             "f",
-            0,
+            1,
             func_arg_completer,
             {CompletionCandidate(start=0, end=1, value="first"), CompletionCandidate(start=0, end=1, value="five")},
+        ),
+        (
+            "fX",
+            1,
+            func_arg_completer,
+            {
+                CompletionCandidate(start=0, end=2, value="first"),
+                CompletionCandidate(start=0, end=2, value="five"),
+            },
+        ),
+        (
+            "猫X",
+            1,
+            func_unicode_arg,
+            {
+                CompletionCandidate(start=0, end=2, value="猫"),
+                CompletionCandidate(start=0, end=2, value="猫犬"),
+            },
         ),
     ],
 )

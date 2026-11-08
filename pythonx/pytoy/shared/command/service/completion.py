@@ -9,8 +9,10 @@ from pytoy.shared.command.core.tokenizer import InterpretedInput, OptionValueMis
 
 @dataclass(frozen=True)
 class CompletionParam:
+    """Input to completion; cursor_pos is a 0-based insertion index in cmd_line."""
+
     cmd_line: str
-    cursor_pos: int  # Already, `offset` is subtracted.
+    cursor_pos: int  # Insertion position in [0, len(cmd_line)], relative to cmd_line.
     offset: int  # Required offset for response.
 
 
@@ -22,7 +24,7 @@ class TokenInterval:
 
 @dataclass(frozen=True)
 class CursorTokenPosition:
-    cursor_pos: int
+    cursor_pos: int  # 0-based insertion index into the command line.
     prev_token: Token | None = None
     current_token: Token | None = None
     next_token: Token | None = None
@@ -258,7 +260,7 @@ class CandidateFactory:
         else:
             start = position.current_token.start
             end = position.current_token.end
-            leading = position.current_token.value[: position.cursor_pos + 1 - position.current_token.start]
+            leading = position.current_token.value[: position.cursor_pos - position.current_token.start]
         candidates = []
 
         for appeal in appeals:

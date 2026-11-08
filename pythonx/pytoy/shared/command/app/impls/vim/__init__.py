@@ -86,8 +86,8 @@ def execute_command(command_model: CommandModel, line1: int, line2: int, count: 
 def complete_command(command_model: CommandModel, input_line: str, cursor_pos: int, offset: int) -> list[str]:
     """Make a completion of CommandModel.
     `input_line`: It handles the `cmd` line which is regarded as the input of `CommandModel`.
-    `cursor_pos`: the cursor position within `input_line`.
-    `offset`: the offset of the `cursor`. Typically, it is affected  by stripping the prefix of user inputs.
+    `cursor_pos`: a 0-based insertion index within `input_line`.
+    `offset`: the offset for candidate positions after stripping the prefix of user inputs.
     """
     service = CompletionService()
     param = CompletionParam(cmd_line=input_line, offset=offset, cursor_pos=cursor_pos)
@@ -238,9 +238,11 @@ EOF
         )
 
         quotated_name = f'"{name}"'
+        # Convert Vim's byte cursor offset to the character index used by Python strings.
         vim.command(rf"""
         function! {complete_func_name}(arglead, cmdline, cursorpos)
-            return py3eval("{python_complete_function}(" . '{quotated_name}' . "," . json_encode(a:arglead) . "," . json_encode(a:cmdline) . "," . a:cursorpos . ")")
+            let charpos = strchars(strpart(a:cmdline, 0, a:cursorpos))
+            return py3eval("{python_complete_function}(" . '{quotated_name}' . "," . json_encode(a:arglead) . "," . json_encode(a:cmdline) . "," . charpos . ")")
         endfunction
         """)
 

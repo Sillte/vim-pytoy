@@ -73,7 +73,7 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
         # case1,2
         (
             "--i",
-            2,
+            3,
             arg_and_input,
             {CompletionCandidate(start=0, end=3, value="--input")},
         ),
@@ -96,14 +96,14 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
         # case4
         (
             "--input K",
-            8,
+            9,
             arg_and_input_literal_kk,
             {CompletionCandidate(start=8, end=9, value="KKK")},
         ),
         # case5
         (
             "--input=K",
-            8,
+            9,
             arg_and_input_literal_kk,
             {CompletionCandidate(start=0, end=9, value="--input=KKK")},
         ),
@@ -133,7 +133,7 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
         # case8
         (
             "-",
-            0,
+            1,
             arg_literal_with_option,
             {
                 CompletionCandidate(start=0, end=1, value="--input"),
@@ -147,10 +147,10 @@ def option_with_under_bar(option_bar: Literal["default"] = "default"): ...
             set(),
         ),
         ("--opti", 5, option_with_under_bar, {CompletionCandidate(start=0, end=6, value="--option-bar")}),
-        ("--opti    ", 0, option_with_under_bar, {CompletionCandidate(start=0, end=6, value="--option-bar")}),
+        ("--opti    ", 1, option_with_under_bar, {CompletionCandidate(start=0, end=6, value="--option-bar")}),
         (
             "--option-bar=de",
-            13,
+            14,
             option_with_under_bar,
             {CompletionCandidate(start=0, end=15, value="--option-bar=default")},
         ),
