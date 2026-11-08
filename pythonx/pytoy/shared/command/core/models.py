@@ -1,3 +1,4 @@
+from collections.abc import Sequence as ABCSequence
 from dataclasses import dataclass, field
 from typing import (
     TYPE_CHECKING,
@@ -7,6 +8,7 @@ from typing import (
     Mapping,
     Self,
     Sequence,
+    get_origin,
 )
 
 from pytoy.shared.command.core.utils import flatten_union, is_literal, is_union, literal_values, unwrap_annotated
@@ -18,6 +20,10 @@ if TYPE_CHECKING:
     pass
 
 MISSING_DEFAULT = object()
+
+
+def _is_sequence_type(typ: Any) -> bool:
+    return get_origin(typ) in (list, ABCSequence) and typ is not str
 
 
 def _get_types(annotation: Any, default_type: type = str) -> set[type]:
@@ -216,6 +222,10 @@ class OptionModel:
     literal_values: Sequence[Any] | None = None
     only_literal: bool = False
     completer: CompleterModel | None = None
+
+    @property
+    def allows_repeated_values(self) -> bool:
+        return any(_is_sequence_type(typ) for typ in self.types)
 
     @property
     def default(self) -> Any:

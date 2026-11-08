@@ -167,8 +167,12 @@ class NextTokenResolver:
             appeals.append(ArgumentAppeal(argument=positional_argument_order[n_used_arguments]))
 
         option_map = {opt.name: opt for opt in command_model.options}
-        unused_keys = option_map.keys() - interp.options.keys()
-        appeals.append(OptionAppeal(options={key: option_map[key] for key in unused_keys}))
+        available_options = {
+            key: option
+            for key, option in option_map.items()
+            if key not in interp.options or option.allows_repeated_values
+        }
+        appeals.append(OptionAppeal(options=available_options))
 
         return appeals
 

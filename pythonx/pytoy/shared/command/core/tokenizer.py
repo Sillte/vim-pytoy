@@ -1,11 +1,10 @@
 import re
 import shlex
 from collections import defaultdict
-from collections.abc import Sequence as ABCSequence
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Self, Sequence, get_args, get_origin
+from typing import Any, Mapping, Self, Sequence, get_args
 
-from pytoy.shared.command.core.models import MISSING_DEFAULT, BooleanOptions, CommandModel, Token
+from pytoy.shared.command.core.models import MISSING_DEFAULT, BooleanOptions, CommandModel, Token, _is_sequence_type
 
 
 class OptionValueMissingError(Exception):
@@ -170,9 +169,7 @@ class ResolvedInput:
             converted_values = MISSING_DEFAULT
 
             for typ in opt_def.types:
-                origin = get_origin(typ)
-                is_sequence = origin in (list, ABCSequence) and typ is not str
-                if is_sequence:
+                if _is_sequence_type(typ):
                     elem_types = get_args(typ)
                     converted_values = [cls._convert_element(val, elem_types, None) for val in values]
                     if any(elem is MISSING_DEFAULT for elem in converted_values):
