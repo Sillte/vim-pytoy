@@ -34,6 +34,21 @@ def test_tokenize_preserves_token_boundaries():
     assert not tokens[2].is_current_token(tokens[2].end)
 
 
+@pytest.mark.parametrize(
+    "cmd_line, expected",
+    [
+        ('"abc abc"', [("abc abc", 1, 8)]),
+        ('--input="abc abc"', [("--input=abc abc", 0, 17)]),
+        ("--input=abc\\ abc", [("--input=abc abc", 0, 16)]),
+        ('"猫" "猫"', [("猫", 1, 2), ("猫", 5, 6)]),
+    ],
+)
+def test_tokenize_records_source_ranges_without_searching_token_values(cmd_line, expected):
+    tokens = tokenize(cmd_line)
+
+    assert [(token.value, token.start, token.end) for token in tokens] == expected
+
+
 def test_interpret_tokens_boolean_options():
     def func(verbose: bool = False, level: int = 1): ...
 

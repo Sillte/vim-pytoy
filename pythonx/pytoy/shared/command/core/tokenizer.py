@@ -1,4 +1,3 @@
-import re
 import shlex
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -198,31 +197,69 @@ class ResolvedInput:
         return cls(arg_kwargs=arg_kwargs, kwargs=kwargs)
 
 
-def tokenize(cmd_line: str) -> list[Token]:
-    """文字列をトークン化し、元文字列上の start/end 位置も保持する"""
-    lexer = shlex.shlex(cmd_line, posix=True)
-    lexer.whitespace_split = True
-    lexer.commenters = ""
-
-    tokens = []
-    current_pos = 0
+def _iter_raw_token_ranges(cmd_line: str):
     index = 0
+    while index < len(cmd_line):
+        while index < len(cmd_line) and cmd_line[index] in " \t\r\n":
+            index += 1
+        if index == len(cmd_line):
+            return
 
-    for token_str in lexer:
-        if not token_str:
+        start = index
+        quote = None
+        escaped = False
+        while index < len(cmd_line):
+            char = cmd_line[index]
+            if escaped:
+                escaped = False
+            elif char == "\\" and quote != "'":
+                escaped = True
+            elif quote is not None:
+                if char == quote:
+                    quote = None
+            elif char in "'\"":
+                quote = char
+            elif char in " \t\r\n":
+                break
+            index += 1
+
+        yield start, index
+
+
+def _is_single_quoted_token(raw_token: str) -> bool:
+    if len(raw_token) < 2 or raw_token[0] not in "'\"":
+        return False
+
+    quote = raw_token[0]
+    escaped = False
+    for index, char in enumerate(raw_token[1:], start=1):
+        if escaped:
+            escaped = False
+        elif char == "\\" and quote != "'":
+            escaped = True
+        elif char == quote:
+            return index == len(raw_token) - 1
+    return False
+
+
+def tokenize(cmd_line: str) -> list[Token]:
+    """Tokenize input while retaining source positions for each token."""
+    tokens = []
+    for start, end in _iter_raw_token_ranges(cmd_line):
+        raw_token = cmd_line[start:end]
+        lexer = shlex.shlex(raw_token, posix=True)
+        lexer.whitespace_split = True
+        lexer.commenters = ""
+        value = lexer.get_token()
+        if not value:
             continue
 
-        # 正規表現で元文字列から token_str を検索（current_pos 以降）
-        pattern = re.escape(token_str)
-        match = re.search(pattern, cmd_line[current_pos:])
-        if not match:
-            break
-        start_pos = current_pos + match.start()
-        end_pos = start_pos + len(token_str)
+        token_start, token_end = start, end
+        if _is_single_quoted_token(raw_token):
+            token_start += 1
+            token_end -= 1
 
-        tokens.append(Token(value=token_str, start=start_pos, end=end_pos, index=index))
-        current_pos = end_pos
-        index += 1
+        tokens.append(Token(value=value, start=token_start, end=token_end, index=len(tokens)))
 
     return tokens
 

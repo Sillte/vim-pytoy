@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 import pytest
 
 from pytoy.shared.command.core.models import Argument, CommandModel, Option
+from pytoy.shared.command.core.tokenizer import tokenize
 from pytoy.shared.command.service.completion import CompletionCandidate, CompletionParam, CompletionService
 
 
@@ -10,6 +11,14 @@ def func_with_input(input: Annotated[str, Option(..., completer=lambda: ["input"
 
 
 def func_with_arg(arg: Annotated[Literal["first"], Argument(completer=lambda: ["first", "five"])]): ...
+
+
+def func_with_special_values(
+    value: Annotated[
+        str,
+        Option(..., completer=lambda: ["hello world", 'say "hi"', "back\\slash", "semi;colon", "single'quote"]),
+    ] = "",
+): ...
 
 
 def complete(cmd_line: str, func, cursor_pos: int | None = None) -> set[CompletionCandidate]:
@@ -67,3 +76,30 @@ def test_completion_preserves_unclosed_quote_for_separate_option_value():
 
 def test_completion_tolerates_trailing_escape():
     assert complete("f\\", func_with_arg) == set()
+
+
+def test_completion_encodes_special_values_without_an_open_quote():
+    candidates = complete("--value=", func_with_special_values)
+
+    assert {tokenize(candidate.value)[0].value for candidate in candidates} == {
+        "--value=hello world",
+        '--value=say "hi"',
+        "--value=back\\slash",
+        "--value=semi;colon",
+        "--value=single'quote",
+    }
+    assert all(candidate.value.startswith("--value=") for candidate in candidates)
+
+
+@pytest.mark.parametrize("quote", ['"', "'"])
+def test_completion_encodes_special_values_inside_an_open_quote(quote: str):
+    candidates = complete(f"--value={quote}", func_with_special_values)
+
+    assert {tokenize(candidate.value + quote)[0].value for candidate in candidates} == {
+        "--value=hello world",
+        '--value=say "hi"',
+        "--value=back\\slash",
+        "--value=semi;colon",
+        "--value=single'quote",
+    }
+    assert all(candidate.value.startswith(f"--value={quote}") for candidate in candidates)

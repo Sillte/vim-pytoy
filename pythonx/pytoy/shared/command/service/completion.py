@@ -1,3 +1,4 @@
+import shlex
 from dataclasses import dataclass, replace
 from typing import Literal, Mapping, Sequence, assert_never
 
@@ -203,11 +204,19 @@ class CompletionResult:
     candidates: Sequence[CompletionCandidate]
 
 
+@dataclass(frozen=True)
+class _LogicalCandidate:
+    start: int
+    end: int
+    value: str
+    kind: str | None = None
+
+
 class CandidateFactory:
     def __init__(self):
         pass
 
-    def _appeal_to_candidates(self, appeal: Appeal, leading: str, start: int, end: int) -> list[CompletionCandidate]:
+    def _appeal_to_candidates(self, appeal: Appeal, leading: str, start: int, end: int) -> list[_LogicalCandidate]:
         is_option = leading.startswith("-")
 
         leading = leading or ""
@@ -219,7 +228,7 @@ class CandidateFactory:
                 else:
                     candidates = appeal.argument.get_candidate_values()
                     candidates = [elem for elem in candidates if elem.startswith(leading)]
-                    return [CompletionCandidate(start=start, end=end, value=elem) for elem in candidates]
+                    return [_LogicalCandidate(start=start, end=end, value=elem) for elem in candidates]
             case "Option":
                 if not is_option:
                     return []
@@ -240,7 +249,7 @@ class CandidateFactory:
                         cands = [elem for elem in cands if elem.startswith(value)]
                         token_values = [f"--{leading_key}={cand}" for cand in cands]
                         return [
-                            CompletionCandidate(start=start, end=end, value=token_value) for token_value in token_values
+                            _LogicalCandidate(start=start, end=end, value=token_value) for token_value in token_values
                         ]
                     else:
                         return []
@@ -250,20 +259,16 @@ class CandidateFactory:
                         for key in appeal.options.keys()
                         if key.startswith(InterpretedInput.convert_key(leading_key))
                     ]
-                    return [
-                        CompletionCandidate(start=start, end=end, value=token_value) for token_value in token_values
-                    ]
+                    return [_LogicalCandidate(start=start, end=end, value=token_value) for token_value in token_values]
                 else:
                     token_values = [f"--{InterpretedInput.revert_key(key)}" for key in appeal.options.keys()]
-                    return [
-                        CompletionCandidate(start=start, end=end, value=token_value) for token_value in token_values
-                    ]
+                    return [_LogicalCandidate(start=start, end=end, value=token_value) for token_value in token_values]
 
             case "OptionValue":
                 cands = appeal.option.get_candidate_values()
                 cands = [elem for elem in cands if elem.startswith(leading)]
                 token_values = cands
-                return [CompletionCandidate(start=start, end=end, value=token_value) for token_value in token_values]
+                return [_LogicalCandidate(start=start, end=end, value=token_value) for token_value in token_values]
 
             case _:
                 assert_never(appeal)
@@ -284,31 +289,56 @@ class CandidateFactory:
                 leading = current_token.leading
             else:
                 leading = current_token.value[: position.cursor_pos - current_token.start]
-        candidates = []
+        logical_candidates = []
 
         for appeal in appeals:
-            candidates.extend(self._appeal_to_candidates(appeal, leading, start, end))
+            logical_candidates.extend(self._appeal_to_candidates(appeal, leading, start, end))
 
+        candidates = [self._encode_candidate(candidate, current_token, leading) for candidate in logical_candidates]
+        return self._to_unique(candidates)
+
+    def _encode_candidate(
+        self,
+        candidate: _LogicalCandidate,
+        current_token: CompletionInputToken | None,
+        leading: str,
+    ) -> CompletionCandidate:
         if (
             isinstance(current_token, CompletionToken)
             and current_token.open_quote is not None
             and current_token.open_quote_value_start is not None
         ):
             logical_prefix = current_token.value[: current_token.open_quote_value_start]
+            if candidate.value.startswith(logical_prefix):
+                quote_index = len(logical_prefix)
+            elif logical_prefix.startswith("--") and "=" in logical_prefix:
+                quote_index = candidate.value.find("=") + 1
+            else:
+                quote_index = 0
             quote = current_token.open_quote
-            quoted_candidates = []
-            for candidate in candidates:
-                if candidate.value.startswith(logical_prefix):
-                    quote_index = len(logical_prefix)
-                elif logical_prefix.startswith("--") and "=" in logical_prefix:
-                    quote_index = candidate.value.find("=") + 1
-                else:
-                    quote_index = 0
-                value = candidate.value[:quote_index] + quote + candidate.value[quote_index:]
-                quoted_candidates.append(replace(candidate, value=value))
-            candidates = quoted_candidates
+            value = (
+                candidate.value[:quote_index] + quote + self._encode_quoted_suffix(candidate.value[quote_index:], quote)
+            )
+        else:
+            prefix = leading if candidate.value.startswith(leading) else ""
+            suffix = candidate.value[len(prefix) :]
+            encoded_suffix = "''" if not prefix and not suffix else self._encode_unquoted_suffix(suffix)
+            value = prefix + encoded_suffix
 
-        return self._to_unique(candidates)
+        return CompletionCandidate(start=candidate.start, end=candidate.end, value=value, kind=candidate.kind)
+
+    def _encode_unquoted_suffix(self, value: str) -> str:
+        if not value:
+            return ""
+        shell_special_characters = " \t\r\n\\'\"$`!;&|()<>{}[]*?~#"
+        if not any(char in shell_special_characters for char in value):
+            return value
+        return shlex.quote(value)
+
+    def _encode_quoted_suffix(self, value: str, quote: str) -> str:
+        if quote == '"':
+            return value.replace("\\", "\\\\").replace('"', '\\"')
+        return value.replace("'", "'\\''")
 
     def _to_unique(self, candidates: Sequence[CompletionCandidate]) -> Sequence[CompletionCandidate]:
         return list({cand.value: cand for cand in candidates}.values())
