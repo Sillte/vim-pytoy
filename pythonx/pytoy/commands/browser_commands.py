@@ -1,9 +1,8 @@
-from typing import Annotated, Literal, assert_never
+from typing import Annotated
 
 from pytoy.shared.command import App, Argument, Option
 
 app = App()
-type BrowserOperations = Literal["open", "source", "pages"]
 
 
 def _complete_text_transformation_names() -> tuple[str, ...]:
@@ -13,24 +12,10 @@ def _complete_text_transformation_names() -> tuple[str, ...]:
 
 
 @app.command("Browser")
-def browser_command(
-    operation: Annotated[BrowserOperations | None, Argument()] = None,
-    browser_name: Annotated[str | None, Option()] = None,
-    simplify: Annotated[bool, Option(default=False)] = False,
-    transform: Annotated[str | None, Option(completer=_complete_text_transformation_names)] = None,
-):
+def browser_command(browser_name: Annotated[str | None, Option()] = None) -> None:
     from pytoy.tools.browser.browser_handler import BrowserHandler
 
-    handler = BrowserHandler(browser_name=browser_name)
-    match operation:
-        case "open" | None:
-            handler.open_browser()
-        case "source":
-            handler.dump_source(simplify=simplify, transform=transform)
-        case "pages":
-            handler.list_pages()
-        case _:
-            assert_never(operation)
+    BrowserHandler(browser_name=browser_name).open_browser()
 
 
 @app.command("BrowserSource")
@@ -42,6 +27,13 @@ def browser_source_command(
     from pytoy.tools.browser.browser_handler import BrowserHandler
 
     BrowserHandler(browser_name=browser_name).dump_source(simplify=simplify, transform=transform)
+
+
+@app.command("BrowserPages")
+def browser_pages_command(browser_name: Annotated[str | None, Option()] = None) -> None:
+    from pytoy.tools.browser.browser_handler import BrowserHandler
+
+    BrowserHandler(browser_name=browser_name).list_pages()
 
 
 def _complete_browser_read_names():

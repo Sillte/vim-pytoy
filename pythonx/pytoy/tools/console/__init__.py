@@ -2,7 +2,8 @@ from pathlib import Path
 
 from pytoy.shared.lib.text import LineRange
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
-from pytoy.shared.ui.pytoy_window import PytoyWindow
+from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider, WindowCreationParam
+from pytoy.tool_execution.execution_environment.current import get_current_directory
 from pytoy.tool_execution.terminal.controller import TerminalExecutionController
 from pytoy.tools.console.selector import TerminalSelector
 
@@ -20,17 +21,26 @@ class ConsoleRunner:
     def selector(self) -> TerminalSelector:
         return self._selector
 
-    def run(self, cmd: str, buffer: str | None, driver: str | None = None, cwd: Path | str | None = None):
+    def open(self, buffer: str | None, driver: str | None = None, cwd: Path | str | None = None) -> None:
         current_window = PytoyWindow.get_current()
-        cwd = Path(cwd) if cwd else current_window.buffer.file_path.parent
+        cwd = Path(cwd) if cwd else get_current_directory(current_window.buffer)
         resolved_driver = driver or self.selector.get_preferrable_driver(current_window)
         resolved_buffer = buffer or self.selector.get_preferrable_buffer(current_window)
-        handler = self.controller.get_or_create_handler(
-            resolved_driver,
+        handler = self.controller.get_or_create_handler(resolved_driver, resolved_buffer, cwd=cwd)
+        window = PytoyWindowProvider().open_window(
             resolved_buffer,
-            cwd=cwd,
+            WindowCreationParam.for_split("vertical", try_reuse=True),
         )
-        handler.send(cmd)
+        window.focus()
+        if handler.status == "created":
+            handler.start()
+
+    def run(self, cmd: str, buffer: str | None, driver: str | None = None, cwd: Path | str | None = None):
+        current_window = PytoyWindow.get_current()
+        cwd = Path(cwd) if cwd else get_current_directory(current_window.buffer)
+        resolved_driver = driver or self.selector.get_preferrable_driver(current_window)
+        resolved_buffer = buffer or self.selector.get_preferrable_buffer(current_window)
+        self.controller.send(resolved_driver, resolved_buffer, cmd, cwd=cwd)
 
     def stop(self, buffer: str | None, driver: str | None = None, cwd: Path | str | None = None):
         input = driver or PytoyWindow.get_current()

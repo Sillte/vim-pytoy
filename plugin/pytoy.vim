@@ -2,8 +2,8 @@
 nnoremap <leader>p :call pytoy#run()<CR>
 nnoremap <leader>P :call pytoy#rerun()<CR>
 nnoremap <leader>q :call pytoy#stop()<CR>
-nnoremap <leader>f :<c-u>Console<CR>
-xnoremap <leader>f :Console<CR>
+nnoremap <leader>f :<c-u>ConsoleSend<CR>
+xnoremap <leader>f :ConsoleSend<CR>
 nnoremap <leader>t :<c-u>Pytest<CR>
 
 " Commands

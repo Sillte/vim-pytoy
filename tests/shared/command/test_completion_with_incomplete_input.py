@@ -103,3 +103,41 @@ def test_completion_encodes_special_values_inside_an_open_quote(quote: str):
         "--value=single'quote",
     }
     assert all(candidate.value.startswith(f"--value={quote}") for candidate in candidates)
+
+
+@pytest.mark.parametrize("cursor_offset", [-1, 0])
+def test_completion_preserves_closed_quote_for_argument(cursor_offset: int):
+    cmd_line = '"fi"'
+
+    assert complete(cmd_line, func_with_arg, cursor_pos=len(cmd_line) + cursor_offset) == {
+        CompletionCandidate(start=0, end=4, value='"first"'),
+        CompletionCandidate(start=0, end=4, value='"five"'),
+    }
+
+
+def test_completion_uses_prefix_inside_closed_quote():
+    cmd_line = '--input="in"'
+
+    assert complete(cmd_line, func_with_input, cursor_pos=len(cmd_line) - 1) == {
+        CompletionCandidate(start=0, end=len(cmd_line), value='--input="input"'),
+        CompletionCandidate(start=0, end=len(cmd_line), value='--input="inside"'),
+    }
+
+
+@pytest.mark.parametrize("quote", ['"', "'"])
+@pytest.mark.parametrize("cursor_offset", [-1, 0])
+def test_completion_encodes_special_values_inside_a_closed_quote(quote: str, cursor_offset: int):
+    cmd_line = f"--value={quote}{quote}"
+    candidates = complete(cmd_line, func_with_special_values, cursor_pos=len(cmd_line) + cursor_offset)
+
+    assert {tokenize(candidate.value)[0].value for candidate in candidates} == {
+        "--value=hello world",
+        '--value=say "hi"',
+        "--value=back\\slash",
+        "--value=semi;colon",
+        "--value=single'quote",
+    }
+    assert all(candidate.start == 0 and candidate.end == len(cmd_line) for candidate in candidates)
+    assert all(
+        candidate.value.startswith(f"--value={quote}") and candidate.value.endswith(quote) for candidate in candidates
+    )

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pytoy import TERM_STDERR, TERM_STDOUT
 from pytoy.shared.command import App, Argument, Group, Option, RangeParam
@@ -9,33 +9,55 @@ app = App()
 
 @app.command("Console")
 def console(
-    kind: Annotated[Literal["run", "stop", "terminate"] | None, Argument()] = None,
     driver: Annotated[str | None, Option()] = None,
     buffer: Annotated[str, Option()] = "__TERMINAL__",
     cwd: Annotated[str | Path | None, Option()] = None,
-    cmd: Annotated[str | None, Argument()] = None,
+) -> None:
+    from pytoy.tools.console import ConsoleRunner
+
+    ConsoleRunner().open(buffer, driver, cwd=cwd)
+
+
+@app.command("ConsoleRun")
+def console_run(
+    cmd: Annotated[str, Argument()],
+    driver: Annotated[str | None, Option()] = None,
+    buffer: Annotated[str, Option()] = "__TERMINAL__",
+    cwd: Annotated[str | Path | None, Option()] = None,
+) -> None:
+    from pytoy.tools.console import ConsoleRunner
+
+    ConsoleRunner().run(cmd, buffer, driver, cwd=cwd)
+
+
+@app.command("ConsoleSend")
+def console_send(
+    driver: Annotated[str | None, Option()] = None,
+    buffer: Annotated[str, Option()] = "__TERMINAL__",
+    cwd: Annotated[str | Path | None, Option()] = None,
     range_param: RangeParam | None = None,
-):
+) -> None:
     from pytoy.shared.lib.text import LineRange
     from pytoy.tools.console import ConsoleRunner
 
-    cmd = cmd or ""
-    runner = ConsoleRunner()
+    if range_param is None:
+        raise ValueError("`range_param` is None")
+    line_range = LineRange(start=range_param.start, end=range_param.end)
+    ConsoleRunner().send(buffer, driver, line_range, cwd=cwd)
 
-    match kind:
-        case "run":
-            runner.run(cmd, buffer, driver, cwd=cwd)
-        case "stop":
-            runner.stop(buffer, driver, cwd=cwd)
-        case "terminate":
-            runner.terminate(buffer, driver)
-        case None:
-            if range_param is None:
-                raise ValueError("`range_param` is None")
-            line_range = LineRange(start=range_param.start, end=range_param.end)
-            runner.send(buffer, driver, line_range, cwd=cwd)
-        case _:
-            raise ValueError(f"Unknown command. {kind}")
+
+@app.command("ConsoleStop")
+def console_stop(buffer: Annotated[str, Option()] = "__TERMINAL__") -> None:
+    from pytoy.tools.console import ConsoleRunner
+
+    ConsoleRunner().stop(buffer)
+
+
+@app.command("ConsoleTerminate")
+def console_terminate(buffer: Annotated[str, Option()] = "__TERMINAL__") -> None:
+    from pytoy.tools.console import ConsoleRunner
+
+    ConsoleRunner().terminate(buffer)
 
 
 group = Group("Script")

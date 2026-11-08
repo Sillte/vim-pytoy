@@ -305,20 +305,22 @@ class CandidateFactory:
     ) -> CompletionCandidate:
         if (
             isinstance(current_token, CompletionToken)
-            and current_token.open_quote is not None
-            and current_token.open_quote_value_start is not None
+            and current_token.quote is not None
+            and current_token.quote_value_start is not None
         ):
-            logical_prefix = current_token.value[: current_token.open_quote_value_start]
+            logical_prefix = current_token.value[: current_token.quote_value_start]
             if candidate.value.startswith(logical_prefix):
                 quote_index = len(logical_prefix)
             elif logical_prefix.startswith("--") and "=" in logical_prefix:
                 quote_index = candidate.value.find("=") + 1
             else:
                 quote_index = 0
-            quote = current_token.open_quote
+            quote = current_token.quote
             value = (
                 candidate.value[:quote_index] + quote + self._encode_quoted_suffix(candidate.value[quote_index:], quote)
             )
+            if current_token.quote_end is not None:
+                value += quote
         else:
             prefix = leading if candidate.value.startswith(leading) else ""
             suffix = candidate.value[len(prefix) :]
