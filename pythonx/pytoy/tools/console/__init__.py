@@ -23,9 +23,9 @@ class ConsoleRunner:
 
     def open(self, buffer: str | None, driver: str | None = None, cwd: Path | str | None = None) -> None:
         current_window = PytoyWindow.get_current()
-        cwd = Path(cwd) if cwd else get_current_directory(current_window.buffer)
+        cwd = self._resolve_cwd(cwd)
         resolved_driver = driver or self.selector.get_preferrable_driver(current_window)
-        resolved_buffer = buffer or self.selector.get_preferrable_buffer(current_window)
+        resolved_buffer = buffer or self.selector.get_preferrable_buffer(resolved_driver)
         handler = self.controller.get_or_create_handler(resolved_driver, resolved_buffer, cwd=cwd)
         window = PytoyWindowProvider().open_window(
             resolved_buffer,
@@ -37,26 +37,35 @@ class ConsoleRunner:
 
     def run(self, cmd: str, buffer: str | None, driver: str | None = None, cwd: Path | str | None = None):
         current_window = PytoyWindow.get_current()
-        cwd = Path(cwd) if cwd else get_current_directory(current_window.buffer)
+        cwd = self._resolve_cwd(cwd)
         resolved_driver = driver or self.selector.get_preferrable_driver(current_window)
-        resolved_buffer = buffer or self.selector.get_preferrable_buffer(current_window)
+        resolved_buffer = buffer or self.selector.get_preferrable_buffer(resolved_driver)
         self.controller.send(resolved_driver, resolved_buffer, cmd, cwd=cwd)
 
     def stop(self, buffer: str | None, driver: str | None = None, cwd: Path | str | None = None):
-        input = driver or PytoyWindow.get_current()
-        resolved_buffer = buffer or self.selector.get_preferrable_buffer(input)
+        target_driver = driver or PytoyWindow.get_current()
+        resolved_buffer = buffer or self.selector.get_preferrable_buffer(target_driver)
         self.controller.stop(resolved_buffer)
 
     def terminate(self, buffer: str, driver: str | None = None):
         self.controller.terminate(buffer)
 
     def send(self, buffer: str | None, driver: str | None, line_range: LineRange, cwd: str | Path | None = None):
-        cwd = Path(cwd) if cwd else PytoyBuffer.get_current().file_path.parent
-        from pytoy.shared.ui.pytoy_window import PytoyWindow
-
-        input = driver or PytoyWindow.get_current()
-        resolved_driver = driver or self.selector.get_preferrable_driver(input)
+        cwd = self._resolve_cwd(cwd)
+        target_driver = driver or PytoyWindow.get_current()
+        resolved_driver = driver or self.selector.get_preferrable_driver(target_driver)
         resolved_buffer = buffer or self.selector.get_preferrable_buffer(resolved_driver)
         lines = PytoyBuffer.get_current().get_lines(line_range)
         content = "\n".join(lines)
         self.controller.send(resolved_driver, resolved_buffer, content=content, cwd=cwd)
+
+    def _resolve_cwd(self, cwd: str | Path | None) -> Path | None:
+        if cwd:
+            cwd = Path(cwd)
+        else:
+            current_buffer = PytoyBuffer.get_current()
+            if current_buffer.is_file:
+                cwd = current_buffer.file_path.parent
+            else:
+                cwd = None
+        return cwd

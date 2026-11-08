@@ -1,4 +1,4 @@
-from pytoy.commands.browser_commands import browser_command, browser_source_command
+from pytoy.commands.browser_commands import browser_source_command
 from pytoy.shared.command.core.models import CommandModel
 from pytoy.shared.command.core.tokenizer import InterpretedInput, ResolvedInput, tokenize
 from pytoy.tools.browser.browser_handler import _format_page_source
@@ -25,24 +25,6 @@ def test_source_is_preserved_without_simplify() -> None:
     source = _format_page_source("Example", html, simplify=False)
 
     assert source == f"<--- Example --->\n{html}"
-
-
-def test_browser_command_parses_simplify_boolean_option() -> None:
-    model = CommandModel.from_callable(browser_command)
-
-    parsed = InterpretedInput.from_tokens(tokenize("source --simplify"), model)
-    resolved = ResolvedInput.from_interpreted_input(model, parsed)
-
-    assert resolved.kwargs["simplify"] is True
-
-
-def test_browser_command_simplify_defaults_to_false() -> None:
-    model = CommandModel.from_callable(browser_command)
-
-    parsed = InterpretedInput.from_tokens(tokenize("source"), model)
-    resolved = ResolvedInput.from_interpreted_input(model, parsed)
-
-    assert resolved.kwargs["simplify"] is False
 
 
 def test_transform_runs_after_simplification_and_keeps_title_header() -> None:

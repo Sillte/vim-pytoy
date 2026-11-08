@@ -26,13 +26,6 @@ def mypy_command(target: Annotated[Literal["workspace", "current", "rerun"] | st
             checker.check(target)
 
 
-@app.command(name="CSpell")
-def cspell_command():
-    from pytoy.tools.python.cspell_runner import CSpellRunner
-
-    CSpellRunner().run()
-
-
 @app.command(name="RuffCheck")
 def ruff_check(
     target: Annotated[Literal["workspace", "current", "rerun"] | None | str, Argument()] = None,
