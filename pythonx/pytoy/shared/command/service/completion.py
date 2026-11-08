@@ -2,18 +2,26 @@ from dataclasses import dataclass, replace
 from typing import Literal, Mapping, Sequence, assert_never
 
 from pytoy.shared.command.core.models import ArgumentModel, BooleanOptions, CommandModel, OptionModel, Token
-from pytoy.shared.command.core.tokenizer import InterpretedInput, OptionValueMissingError, tokenize
+from pytoy.shared.command.core.tokenizer import InterpretedInput, OptionValueMissingError
+from pytoy.shared.command.service.completion_lexer import CompletionInputToken, CompletionToken, tokenize_for_completion
 
 # Input to the inside of the domain.
 
 
 @dataclass(frozen=True)
 class CompletionParam:
-    """Input to completion; cursor_pos is a 0-based insertion index in cmd_line."""
+    """Input to completion.
+
+    `cursor_pos` is a 0-based insertion index relative to `cmd_line`. `offset` is
+    the character offset from the original command line to `cmd_line`; the
+    service adds it to candidate ranges before returning them. For example, if
+    the original line is `Demo --opti`, `cmd_line` is ` --opti`, and `offset` is
+    4, a local candidate range `[1, 7)` becomes `[5, 11)`.
+    """
 
     cmd_line: str
     cursor_pos: int  # Insertion position in [0, len(cmd_line)], relative to cmd_line.
-    offset: int  # Required offset for response.
+    offset: int  # Shift applied to candidate ranges in the result.
 
 
 @dataclass(frozen=True)
@@ -25,9 +33,9 @@ class TokenInterval:
 @dataclass(frozen=True)
 class CursorTokenPosition:
     cursor_pos: int  # 0-based insertion index into the command line.
-    prev_token: Token | None = None
-    current_token: Token | None = None
-    next_token: Token | None = None
+    prev_token: CompletionInputToken | None = None
+    current_token: CompletionInputToken | None = None
+    next_token: CompletionInputToken | None = None
     end_of_current_token: bool = False
 
     @property
@@ -47,7 +55,7 @@ class CursorTokenPosition:
 class CmdlineStatus:
     cmd_line: str
     cursor_pos: int
-    tokens: Sequence[Token]
+    tokens: Sequence[CompletionInputToken]
     command_model: CommandModel
 
     @property
@@ -169,8 +177,14 @@ class NextTokenResolver:
 
 @dataclass(frozen=True)
 class CompletionCandidate:
-    """Replace [start, end) position's with `value`.
-    Note that `start` is inclusive, but `end` is exclusive.
+    """A completion value that replaces a half-open range in a command line.
+
+    `start` and `end` are 0-based Python `str` indices, with `end` exclusive.
+    CompletionService adds CompletionParam.offset to factory-local indices so
+    returned ranges address the caller's command line.
+
+    `kind` is optional classification metadata and currently does not affect
+    completion behavior.
     """
 
     start: int
@@ -253,18 +267,41 @@ class CandidateFactory:
         self, position: CursorTokenPosition, appeals: Sequence[Appeal], command_model: CommandModel
     ) -> Sequence[CompletionCandidate]:
 
-        if not position.current_token:
+        current_token = position.current_token
+        if not current_token:
             start = position.cursor_pos
             end = start
             leading = ""
         else:
-            start = position.current_token.start
-            end = position.current_token.end
-            leading = position.current_token.value[: position.cursor_pos - position.current_token.start]
+            start = current_token.start
+            end = current_token.end
+            if isinstance(current_token, CompletionToken):
+                leading = current_token.leading
+            else:
+                leading = current_token.value[: position.cursor_pos - current_token.start]
         candidates = []
 
         for appeal in appeals:
             candidates.extend(self._appeal_to_candidates(appeal, leading, start, end))
+
+        if (
+            isinstance(current_token, CompletionToken)
+            and current_token.open_quote is not None
+            and current_token.open_quote_value_start is not None
+        ):
+            logical_prefix = current_token.value[: current_token.open_quote_value_start]
+            quote = current_token.open_quote
+            quoted_candidates = []
+            for candidate in candidates:
+                if candidate.value.startswith(logical_prefix):
+                    quote_index = len(logical_prefix)
+                elif logical_prefix.startswith("--") and "=" in logical_prefix:
+                    quote_index = candidate.value.find("=") + 1
+                else:
+                    quote_index = 0
+                value = candidate.value[:quote_index] + quote + candidate.value[quote_index:]
+                quoted_candidates.append(replace(candidate, value=value))
+            candidates = quoted_candidates
 
         return self._to_unique(candidates)
 
@@ -281,7 +318,7 @@ class CompletionService:
         cursor_pos = completion_param.cursor_pos
         offset = completion_param.offset
 
-        tokens = tokenize(cmd_line)
+        tokens = tokenize_for_completion(cmd_line, cursor_pos)
         status = CmdlineStatus(
             cmd_line=cmd_line,
             cursor_pos=cursor_pos,
@@ -292,10 +329,11 @@ class CompletionService:
         current_position = status.current_position
         resolver = NextTokenResolver()
 
+        complete_tokens = [token for token in tokens if isinstance(token, Token)]
         if current_position.current_token:
-            prev_tokens = [t for t in tokens if t.end < current_position.cursor_pos]
+            prev_tokens = [token for token in complete_tokens if token.end < current_position.cursor_pos]
         else:
-            prev_tokens = tokens
+            prev_tokens = complete_tokens
         appeals = resolver.resolve_appeals(prev_tokens, command_model)
 
         factory = CandidateFactory()
