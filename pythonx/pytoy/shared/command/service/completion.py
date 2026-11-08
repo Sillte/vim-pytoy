@@ -162,8 +162,9 @@ class NextTokenResolver:
         appeals = []
 
         n_used_arguments = len(interp.arguments)
-        if n_used_arguments < len(command_model.arguments):
-            appeals.append(ArgumentAppeal(argument=command_model.arguments[n_used_arguments]))
+        positional_argument_order = command_model.positional_argument_order
+        if n_used_arguments < len(positional_argument_order):
+            appeals.append(ArgumentAppeal(argument=positional_argument_order[n_used_arguments]))
 
         option_map = {opt.name: opt for opt in command_model.options}
         unused_keys = option_map.keys() - interp.options.keys()

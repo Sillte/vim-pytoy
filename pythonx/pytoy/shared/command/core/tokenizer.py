@@ -138,15 +138,13 @@ class ResolvedInput:
 
         if len(interpreted_input.arguments) > len(command_model.arguments):
             raise ValueError("Too many arguments")
-        required_arguments = [elem for elem in command_model.arguments if elem.required]
-        non_required_arguments = [elem for elem in command_model.arguments if not elem.required]
+        positional_argument_order = command_model.positional_argument_order
+        required_count = sum(argument.required for argument in positional_argument_order)
 
-        if len(interpreted_input.arguments) < len(required_arguments):
+        if len(interpreted_input.arguments) < required_count:
             raise ValueError("Too little arguments")
-        given_arguments = (
-            required_arguments + non_required_arguments[: len(interpreted_input.arguments) - len(required_arguments)]
-        )
-        non_given_arguments = non_required_arguments[len(interpreted_input.arguments) - len(required_arguments) :]
+        given_arguments = positional_argument_order[: len(interpreted_input.arguments)]
+        non_given_arguments = positional_argument_order[len(interpreted_input.arguments) :]
         for i, arg_def in enumerate(given_arguments):
             val_str = interpreted_input.arguments[i]
             converted = cls._convert_element(val_str, arg_def.types, arg_def.literal_values, arg_def.only_literal)

@@ -315,6 +315,13 @@ class CommandModel:
     args_name: str | None = None
     kwargs_name: str | None = None
 
+    @property
+    def positional_argument_order(self) -> tuple[ArgumentModel, ...]:
+        """Return required arguments first, then defaulted arguments, preserving declaration order."""
+        required = tuple(argument for argument in self.arguments if argument.required)
+        optional = tuple(argument for argument in self.arguments if not argument.required)
+        return required + optional
+
     @classmethod
     def from_callable(cls, function: Callable) -> Self:
         from inspect import Parameter, signature
