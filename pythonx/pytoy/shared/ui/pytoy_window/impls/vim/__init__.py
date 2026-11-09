@@ -27,6 +27,34 @@ if TYPE_CHECKING:
     from pytoy.contexts.vim import GlobalVimContext
 
 
+def _to_vim_coords(lines: Sequence[str], cursor: CursorPosition) -> tuple[int, int]:
+    if not lines:
+        return (1, 1)
+    vim_line = min(max(0, cursor.line), len(lines) - 1) + 1
+    vim_col = len(lines[vim_line - 1][: cursor.col].encode("utf-8")) + 1
+    return (vim_line, vim_col)
+
+
+def _vim_string_literal(value: str) -> str:
+    escaped: list[str] = []
+    for char in value:
+        if char == "\\":
+            escaped.append("\\\\")
+        elif char == '"':
+            escaped.append('\\"')
+        elif char == "\n":
+            escaped.append("\\n")
+        elif char == "\r":
+            escaped.append("\\r")
+        elif char == "\t":
+            escaped.append("\\t")
+        elif ord(char) < 32 or ord(char) == 127:
+            escaped.append(f"\\x{ord(char):02x}")
+        else:
+            escaped.append(char)
+    return f'"{"".join(escaped)}"'
+
+
 class PytoyWindowVim(PytoyWindowProtocol):
     """
     Implementation of the PytoyWindowProtocol for the Vim editor.
@@ -119,6 +147,8 @@ class PytoyWindowVim(PytoyWindowProtocol):
         provider.retain_unique_window(self, within_tabs=within_tabs, within_windows=within_windows)
 
     def deduplicate(self, scope: Literal["buffer"] = "buffer") -> None:
+        if scope != "buffer":
+            raise ValueError(f"Invalid scope: {scope}")
         if not self.valid:
             return
         if not (vim_window := self.window):
@@ -161,7 +191,7 @@ class PytoyWindowVim(PytoyWindowProtocol):
         vim_line, vim_col = self._to_vim_coords(cursor)
         if not (vim_window := self.window):
             raise RuntimeError(f"Already Window is dead {self.winid}")
-        vim_window.cursor = (vim_line, vim_col)
+        vim_window.cursor = (vim_line, vim_col - 1)
 
         winid = self.winid
         match viewport_mode:
@@ -207,13 +237,7 @@ class PytoyWindowVim(PytoyWindowProtocol):
         1. 0-base -> 1-base.
         2. handling of bytes.
         """
-        lines = self.buffer.lines
-        max_line = len(lines)
-        if not max_line:
-            return (1, 1)
-        vim_line = min(max(0, cursor.line), max_line - 1) + 1
-        vim_col = len(lines[vim_line - 1][: cursor.col].encode("utf-8")) + 1
-        return (vim_line, vim_col)
+        return _to_vim_coords(self.buffer.lines, cursor)
 
 
 class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
@@ -242,10 +266,12 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
         if param.try_reuse:
             if window := self._get_window_by_bufname(source.name, type=source.type):
                 if param.cursor:
-                    line = param.cursor.line
-                    col = param.cursor.col
                     winid = window.winid
-                    vim.eval(f"win_execute({winid}, 'call cursor({line + 1}, {col + 1})')")
+                    vim_window = window.window
+                    if vim_window is None:
+                        raise RuntimeError("Window closed before cursor placement.")
+                    line, col = _to_vim_coords(list(vim_window.buffer[:]), param.cursor)
+                    vim.eval(f"win_execute({winid}, 'call cursor({line}, {col})')")
                 return window
 
         stored_winid = int(vim.eval("win_getid()"))
@@ -281,12 +307,14 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
             split_cmd = "vertical belowright split" if param.split_direction == "vertical" else "belowright split"
             vim.command(split_cmd)
 
-        bufno = int(vim.eval(f'bufnr("{target}")'))
+        target_expr = _vim_string_literal(target)
+        bufno = int(vim.eval(f"bufnr({target_expr})"))
 
         if bufno <= 0:
             # New buffer.
 
-            vim.command(f"edit {target}")
+            escaped_target = vim.eval(f"fnameescape({target_expr})")
+            vim.command(f"edit {escaped_target}")
             window = vim.current.window
             if not is_file:
                 window.buffer.options["buftype"] = "nofile"
@@ -297,8 +325,8 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
                 vim.command(f"buffer {bufno}")
             window = vim.current.window
         if cursor:
-            line, col = cursor.line, cursor.col
-            window.cursor = (line + 1, col)
+            vim_line, vim_col = _to_vim_coords(list(window.buffer[:]), cursor)
+            window.cursor = (vim_line, vim_col - 1)
         return window
 
     def _get_window_by_bufname(

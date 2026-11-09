@@ -31,14 +31,18 @@ class PytoyWindowDummy(PytoyWindowProtocol):
 
     @property
     def valid(self) -> bool:
-        return True
+        return not self._closed
 
     def is_left(self) -> bool:
         return True
 
     def close(self) -> bool:
+        if self._closed:
+            return True
+        self._closed = True
         provider = PytoyWindowProviderDummy()
         provider._windows = [w for w in provider._windows if w != self]
+        self.on_closed_emitter.fire(self._winid)
         return True
 
     def focus(self) -> bool:
@@ -48,9 +52,19 @@ class PytoyWindowDummy(PytoyWindowProtocol):
         return isinstance(other, PytoyWindowDummy) and other._winid == self._winid
 
     def unique(self, within_tabs: bool = False, within_windows: bool = True) -> None:
-        pass
+        # Dummy has no tab model, so only within-window uniqueness can remove peers.
+        if self._closed or not within_windows:
+            return
+        provider = PytoyWindowProviderDummy()
+        for window in list(provider._windows):
+            if window != self:
+                window.close()
 
     def deduplicate(self, scope: Literal["buffer"] = "buffer") -> None:
+        if scope != "buffer":
+            raise ValueError(f"Invalid scope: {scope}")
+        if not self.valid:
+            return
         windows = PytoyWindowProviderDummy().get_windows()
         for window in windows:
             if window != self:

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 class ViewportMoveMode(StrEnum):
     NONE = "none"
-    ENSURE_VISIBLE = "ensure_visibile"
+    ENSURE_VISIBLE = "ensure_visible"
     CENTER = "center"
     TOP = "top"
 
