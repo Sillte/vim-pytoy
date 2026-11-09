@@ -1,5 +1,7 @@
+import logging
 from queue import Empty, Queue
 
+from pytoy.shared.pytoy_configuration import PytoyConfiguration
 from pytoy.shared.timertask import TimerTask
 from pytoy.shared.ui.contract.buffer import BufferProtocol as PytoyBufferProtocol
 
@@ -18,21 +20,26 @@ class QueueUpdater:
         self._taskname = taskname
         self._queue = queue
         self._interval = interval
+        self._logger: logging.Logger | None = None
 
     @property
     def taskname(self) -> str | None:
         return self._taskname
 
     def _updater(self):
-        while self._queue.qsize():
+        while True:
             try:
                 lines: list[str] = self._queue.get_nowait()
-                content = "\n".join(lines)
-                self._buffer.append(content)
             except Empty:
                 break
-            except Exception as e:
-                print("_QueueUpdater", e)
+            content = "\n".join(lines)
+            try:
+                self._buffer.append(content)
+            except Exception:
+                if self._logger is None:
+                    self._logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
+                self._logger.exception("QueueUpdater failed to append queued content")
+                raise
 
     def register(self) -> str:
         self._taskname = TimerTask.register(self._updater, name=self._taskname)

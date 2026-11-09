@@ -38,5 +38,11 @@ Dummy implementation.
 - Keep backend-specific behavior behind the buffer facade.
 - Keep buffer mutation and range operations consistent with the observable
   `content` and `lines` state.
+- Normalize content line endings to LF. `content` is the exact normalized text,
+  and `lines` is `content.split("\n")`, including the empty line of an empty
+  buffer and trailing empty lines.
+- `init_buffer()` preserves the supplied text after line-ending normalization.
+  `append()` adds a line separator only when existing non-empty content does not
+  already end with one, and preserves trailing newlines in the appended text.
 - Treat the backend-independent buffer behavior as a contract shared by all
   supported backends.

@@ -174,7 +174,11 @@ class PytoyBufferProvider:
         if buffer_sources is None:
             return buffers
         result = []
+        seen_sources: set[BufferSource] = set()
         for source in buffer_sources:
+            if source in seen_sources:
+                continue
+            seen_sources.add(source)
             result += [elem for elem in buffers if elem.source == source]
         return result
 

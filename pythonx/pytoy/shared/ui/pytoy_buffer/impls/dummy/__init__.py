@@ -23,6 +23,11 @@ from pytoy.shared.ui.contract.buffer import (
 from pytoy.shared.ui.contract.buffer import (
     BufferProviderProtocol as PytoyBufferProviderProtocol,
 )
+from pytoy.shared.ui.pytoy_buffer.content_utils import (
+    normalize_buffer_content,
+    prepare_append_lines,
+    split_buffer_content,
+)
 
 if TYPE_CHECKING:
     from pytoy.shared.ui.contract.window import WindowProtocol as PytoyWindowProtocol
@@ -37,6 +42,8 @@ class RangeOperatorDummy(RangeOperatorProtocol):
 
     def replace_lines(self, line_range: LineRange, lines: Sequence[str]) -> LineRange:
         self._lines[line_range.start : line_range.end] = lines
+        if not self._lines:
+            self._lines.append("")
         return LineRange(line_range.start, line_range.start + len(lines))
 
     def get_text(self, character_range: CharacterRange) -> str:
@@ -46,11 +53,12 @@ class RangeOperatorDummy(RangeOperatorProtocol):
         return full_text[start:end]
 
     def replace_text(self, character_range: CharacterRange, text: str) -> CharacterRange:
+        text = normalize_buffer_content(text)
         full_text = "\n".join(self._lines)
         start = self._cursor_to_offset(character_range.start)
         end = self._cursor_to_offset(character_range.end)
         new_text = full_text[:start] + text + full_text[end:]
-        self._lines[:] = new_text.splitlines()
+        self._lines[:] = split_buffer_content(new_text)
         end_cursor = self._offset_to_cursor(start + len(text))
         return CharacterRange(character_range.start, end_cursor)
 
@@ -101,7 +109,7 @@ class RangeOperatorDummy(RangeOperatorProtocol):
 
 class PytoyBufferDummy(PytoyBufferProtocol):
     def __init__(self, buffer_source: BufferSource):
-        self._lines: list[str] = []
+        self._lines: list[str] = [""]
         self._buffer_source = buffer_source
         self._buffer_id = id(buffer_source)
         self.on_wiped_emitter = EventEmitter[BufferID]()
@@ -137,7 +145,7 @@ class PytoyBufferDummy(PytoyBufferProtocol):
         return self._buffer_id
 
     def init_buffer(self, content: str = ""):
-        self._lines[:] = content.splitlines()
+        self._lines[:] = split_buffer_content(content)
 
     @property
     def uri(self) -> URI:
@@ -164,7 +172,18 @@ class PytoyBufferDummy(PytoyBufferProtocol):
         return self._lines
 
     def append(self, content: str) -> None:
-        self._lines.extend(content.splitlines())
+        append = prepare_append_lines(
+            self._lines[-1],
+            content,
+            is_empty=len(self._lines) == 1 and not self._lines[0],
+        )
+        if append is None:
+            return
+        replace_last_line, lines = append
+        if replace_last_line:
+            self._lines[-1] = lines[0]
+            lines = lines[1:]
+        self._lines.extend(lines)
 
     @property
     def is_normal_type(self) -> bool:

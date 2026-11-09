@@ -19,6 +19,7 @@ from pytoy.shared.ui.contract.buffer import (
 )
 from pytoy.shared.ui.contract.buffer.models import URI as PytoyURI
 from pytoy.shared.ui.contract.buffer.models import BufferEvents, BufferID, BufferMetadata, BufferQuery, BufferSource
+from pytoy.shared.ui.pytoy_buffer.content_utils import normalize_buffer_content
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import VSCodeBufferKernel, normalize_lf_code
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.range_operator import RangeOperatorVSCode
 from pytoy.shared.ui.utils import to_filepath
@@ -127,9 +128,7 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
 
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
-        if content and content[-1] != "\n":
-            content += "\n"
-        self.document.content = content
+        self.document.content = normalize_buffer_content(content)
 
     @property
     def valid(self) -> bool:
@@ -140,12 +139,10 @@ class PytoyBufferVSCode(PytoyBufferProtocol):
         return bufnr is not None
 
     def append(self, content: str) -> None:
+        content = normalize_buffer_content(content)
         if not content:
             return
-        content = normalize_lf_code(content)
-        if self.document.content:
-            content = "\n" + content  # correspondence to `vim`.
-        self.document.append(content)
+        self.document.append(content, ensure_line_boundary=True)
 
     @property
     def content(self) -> str:

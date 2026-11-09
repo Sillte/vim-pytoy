@@ -1,5 +1,7 @@
 from collections.abc import Sequence
 
+import pytest
+
 from pytoy.shared.ui.pytoy_buffer import (
     BufferID,
     BufferQuery,
@@ -16,7 +18,7 @@ def test_buffer_facade_uses_product_selected_backend() -> None:
     assert buffer.buffer_id
     assert buffer.source == source
     assert buffer.content == ""
-    assert buffer.lines == []
+    assert buffer.lines == [""]
 
     buffer.append("more")
     buffer.init_buffer("new")
@@ -24,6 +26,54 @@ def test_buffer_facade_uses_product_selected_backend() -> None:
 
     assert buffer.content == "new"
     assert buffer.lines == ["new"]
+
+
+def test_buffer_content_preserves_newlines_and_normalizes_line_endings() -> None:
+    buffer = PytoyBuffer.get_current()
+
+    buffer.init_buffer("first\r\nsecond\r")
+
+    assert buffer.content == "first\nsecond\n"
+    assert buffer.lines == ["first", "second", ""]
+
+    buffer.init_buffer("")
+    buffer.append("first\r\n")
+    buffer.append("second")
+
+    assert buffer.content == "first\nsecond"
+    assert buffer.lines == ["first", "second"]
+
+
+@pytest.mark.parametrize(
+    ("initial", "chunks", "expected"),
+    [
+        ("", ["first"], "first"),
+        ("first", ["second"], "first\nsecond"),
+        ("first\n", ["second"], "first\nsecond"),
+        ("first", ["\nsecond"], "first\n\nsecond"),
+        ("", ["\nsecond"], "\nsecond"),
+        ("first", ["second\r\n"], "first\nsecond\n"),
+        ("first\n", ["\nsecond"], "first\n\nsecond"),
+    ],
+)
+def test_buffer_append_handles_tail_boundaries_without_reading_full_content(
+    initial: str,
+    chunks: list[str],
+    expected: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    buffer = PytoyBuffer.get_current()
+    buffer.init_buffer(initial)
+
+    def fail_full_content_read(_: object) -> str:
+        pytest.fail("append() must not read the full buffer content")
+
+    monkeypatch.setattr(type(buffer.impl), "content", property(fail_full_content_read))
+
+    for chunk in chunks:
+        buffer.append(chunk)
+
+    assert "\n".join(buffer.lines) == expected
 
 
 def test_buffer_basic_content_operations() -> None:
@@ -46,9 +96,11 @@ def test_provider_wraps_and_queries_buffers() -> None:
 
     buffers = provider.get_buffers()
     queried = provider.query(BufferQuery.from_source(source))
+    queried_with_repeated_source = provider.query(BufferQuery(buffer_sources=[source, source]))
 
     assert current.buffer_id in [buffer.buffer_id for buffer in buffers]
     assert [buffer.buffer_id for buffer in queried] == [current.buffer_id]
+    assert [buffer.buffer_id for buffer in queried_with_repeated_source] == [current.buffer_id]
 
 
 def test_provider_forwards_close_buffers() -> None:

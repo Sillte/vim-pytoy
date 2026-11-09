@@ -89,13 +89,14 @@ class Document(BaseModel):
         )
         return cls.model_validate(result)
 
-    def append(self, text: str) -> bool:
+    def append(self, text: str, *, ensure_line_boundary: bool = False) -> bool:
         """Append text at the end of the document."""
         api = Api()
         js_code = """
         (async (args) => {
             const uriKey = args.uriKey;
-            const text = args.text;
+            let text = args.text;
+            const ensureLineBoundary = args.ensureLineBoundary;
 
             const uri = vscode.Uri.parse(uriKey);
 
@@ -109,6 +110,9 @@ class Document(BaseModel):
                 // 最終行の行番号と、最終行のテキストの長さを取得
                 const lastLine = doc.lineCount - 1;
                 const lastLineText = doc.lineAt(lastLine).text;
+                if (ensureLineBoundary && lastLineText.length > 0) {
+                    text = "\\n" + text;
+                }
                 pos = new vscode.Position(lastLine, lastLineText.length);
             }
 
@@ -122,7 +126,13 @@ class Document(BaseModel):
         result = api.eval_with_return(
             js_code,
             with_await=True,
-            opts={"args": {"uriKey": self.uri.to_key_str(), "text": text}},
+            opts={
+                "args": {
+                    "uriKey": self.uri.to_key_str(),
+                    "text": text,
+                    "ensureLineBoundary": ensure_line_boundary,
+                }
+            },
         )
         return result
 

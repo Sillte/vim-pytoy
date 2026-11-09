@@ -23,6 +23,10 @@ from pytoy.shared.ui.contract.buffer import (
 from pytoy.shared.ui.contract.buffer import (
     BufferProviderProtocol as PytoyBufferProviderProtocol,
 )
+from pytoy.shared.ui.pytoy_buffer.content_utils import (
+    prepare_append_lines,
+    split_buffer_content,
+)
 from pytoy.shared.ui.pytoy_buffer.impls.vim.kernel import VimBufferKernel
 from pytoy.shared.ui.pytoy_buffer.impls.vim.range_operator import RangeOperatorVim
 
@@ -66,8 +70,7 @@ class PytoyBufferVim(PytoyBufferProtocol):
 
     def init_buffer(self, content: str = "") -> None:
         """Set the content of buffer"""
-        content = content.replace("\r\n", "\n")
-        self.buffer[:] = content.split("\n")
+        self.buffer[:] = split_buffer_content(content)
 
     @classmethod
     def get_current(cls) -> PytoyBufferProtocol:
@@ -119,15 +122,19 @@ class PytoyBufferVim(PytoyBufferProtocol):
             return False
 
     def append(self, content: str) -> None:
-        if not content:
+        last_line = self.buffer[-1]
+        append = prepare_append_lines(
+            last_line,
+            content,
+            is_empty=len(self.buffer) == 1 and not last_line,
+        )
+        if append is None:
             return
-        content = content.replace("\r\n", "\n")
-        lines = content.split("\n")
-        if self._is_empty():
-            self.buffer[:] = [lines[0]]
-        else:
-            self.buffer.append(lines[0])
-        for line in lines[1:]:
+        replace_last_line, lines = append
+        if replace_last_line:
+            self.buffer[-1] = lines[0]
+            lines = lines[1:]
+        for line in lines:
             self.buffer.append(line)
 
     @property
@@ -137,13 +144,6 @@ class PytoyBufferVim(PytoyBufferProtocol):
     @property
     def lines(self) -> list[str]:
         return self._kernel.lines
-
-    def _is_empty(self) -> bool:
-        if len(self.buffer) == 0:
-            return True
-        if len(self.buffer) == 1 and self.buffer[0] == "":
-            return True
-        return False
 
     @property
     def range_operator(self) -> RangeOperatorProtocol:

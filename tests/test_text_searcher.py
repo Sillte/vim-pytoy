@@ -99,3 +99,27 @@ def test_find_first_reverse():
 
     assert result is not None
     assert result.start == CursorPosition(0, 8)
+
+
+def test_find_within_entire_range_ending_after_last_line():
+    lines = ["abc", "def"]
+    target_range = CharacterRange(
+        start=CursorPosition(0, 0),
+        end=CursorPosition(2, 0),
+    )
+
+    searcher = TextSearcher.create(lines, target_range)
+
+    assert searcher.find_first("c\nd") == CharacterRange(CursorPosition(0, 2), CursorPosition(1, 1))
+
+
+def test_find_within_empty_range_at_end_of_lines():
+    lines = ["abc"]
+    target_range = CharacterRange(
+        start=CursorPosition(1, 0),
+        end=CursorPosition(1, 0),
+    )
+
+    searcher = TextSearcher.create(lines, target_range)
+
+    assert searcher.find_first("a") is None

@@ -36,9 +36,16 @@ class TextSearcher:
             return cls(lines=lines, line_offset=0, col_offset=0)
         start, end = target_range.start, target_range.end
 
+        if start.line == len(lines) and start.col == 0:
+            return cls(lines=[], line_offset=start.line, col_offset=0)
+
         if start.line == end.line:
             target_line = lines[start.line]
             return cls(lines=[target_line[start.col : end.col]], line_offset=start.line, col_offset=start.col)
+        elif end.line == len(lines) and end.col == 0:
+            first_line = lines[start.line][start.col :]
+            target = [first_line, *lines[start.line + 1 :]]
+            return cls(lines=target, line_offset=start.line, col_offset=start.col)
         else:
             first_line = lines[start.line][start.col :]
             final_line = lines[end.line][: target_range.end.col]

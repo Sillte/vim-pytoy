@@ -30,6 +30,16 @@ def test_range_operator_replaces_lines() -> None:
     assert buffer.lines == ["zero", "ONE", "TWO"]
 
 
+def test_replacing_all_lines_keeps_the_empty_buffer_representation() -> None:
+    buffer = PytoyBuffer.get_current()
+    buffer.init_buffer("only")
+
+    buffer.range_operator.replace_lines(LineRange(0, 1), [])
+
+    assert buffer.content == ""
+    assert buffer.lines == [""]
+
+
 def test_range_operator_replaces_text() -> None:
     buffer = PytoyBuffer.get_current()
     buffer.init_buffer("zero\none\ntwo")

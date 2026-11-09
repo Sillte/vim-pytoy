@@ -33,6 +33,9 @@ class MockVimModule:
         def __getitem__(self, idx):
             return self._content[idx]
 
+        def __len__(self):
+            return len(self._content)
+
         def __setitem__(self, idx, value):
             if isinstance(idx, slice):
                 if isinstance(value, str):

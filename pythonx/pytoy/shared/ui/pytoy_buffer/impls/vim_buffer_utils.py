@@ -3,6 +3,7 @@ from typing import Sequence
 import vim
 
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
+from pytoy.shared.ui.pytoy_buffer.content_utils import normalize_buffer_content
 
 
 class VimBufferRangeHandler:
@@ -93,6 +94,7 @@ class VimBufferRangeHandler:
         vim_buffer = self.buffer
 
         start, end = character_range.start, character_range.end
+        text = normalize_buffer_content(text)
         target_lines = text.split("\n")  # It assueres that `target_lines` is not empty.
         assert target_lines
         cr = _calc_replaced_range(start, target_lines)

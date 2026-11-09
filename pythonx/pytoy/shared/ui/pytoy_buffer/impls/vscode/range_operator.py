@@ -1,8 +1,11 @@
+import logging
 from typing import Sequence
 
 from pytoy.shared.lib.text import CharacterRange, CursorPosition, LineRange
+from pytoy.shared.pytoy_configuration import PytoyConfiguration
 from pytoy.shared.ui.contract.buffer import RangeOperatorProtocol
 from pytoy.shared.ui.contract.buffer.models import URI
+from pytoy.shared.ui.pytoy_buffer.content_utils import normalize_buffer_content
 from pytoy.shared.ui.pytoy_buffer.impls.text_searchers import TextSearcher
 from pytoy.shared.ui.pytoy_buffer.impls.vim_buffer_utils import VimBufferRangeHandler
 from pytoy.shared.ui.pytoy_buffer.impls.vscode.kernel import Document, VSCodeBufferKernel, VSCodeUri, normalize_lf_code
@@ -12,6 +15,12 @@ from pytoy.shared.ui.vscode.utils import wait_until_true
 class RangeOperatorVSCode(RangeOperatorProtocol):
     def __init__(self, kernel: VSCodeBufferKernel):
         self._kernel = kernel
+        self._logger: logging.Logger | None = None
+
+    def _get_logger(self) -> logging.Logger:
+        if self._logger is None:
+            self._logger = PytoyConfiguration().get_logger(location="global", level=logging.INFO)
+        return self._logger
 
     @property
     def kernel(self) -> VSCodeBufferKernel:
@@ -67,9 +76,13 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         flag = wait_until_true(_is_document_changed, timeout=0.5)
         if not flag:
             doc_lines = _get_doc_lines(lr)
-            print("Debug", "Document and Buffer is not equal", lr, flush=True)
-            print("text", lines, flush=True)
-            print("doc_lines", doc_lines, flush=True)
+            self._get_logger().error(
+                "VSCode document and Vim buffer lines differ after replacement "
+                "(range=%s, expected_line_count=%d, actual_line_count=%d)",
+                lr,
+                len(lines),
+                len(doc_lines),
+            )
 
         return lr
 
@@ -82,6 +95,7 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         #                                   end.line,
         #                                   end.col)
 
+        text = normalize_buffer_content(text)
         cr = VimBufferRangeHandler(self.bufnr).replace_text(character_range, text)
         # [TODO]: For synchronaization between `Document` and `vim.buffer`.
 
@@ -97,9 +111,13 @@ class RangeOperatorVSCode(RangeOperatorProtocol):
         flag = wait_until_true(_is_document_changed, timeout=1.0)
         if not flag:
             doc_text = _get_doc_text(cr)
-            print("Debug", "Document and Buffer is not equal", cr, flush=True)
-            print("text", text, flush=True)
-            print("doc_text", doc_text, flush=True)
+            self._get_logger().error(
+                "VSCode document and Vim buffer text differ after replacement "
+                "(range=%s, expected_length=%d, actual_length=%d)",
+                cr,
+                len(text),
+                len(doc_text),
+            )
 
         return cr
 
