@@ -287,11 +287,6 @@ class PytoyWindowProviderVim(PytoyWindowProviderProtocol):
         is_file = source.type == "file"
         if anchor is None:
             anchor = self.get_current()
-        from pytoy.shared.ui.pytoy_window import PytoyWindow
-
-        # [TODO]: PytoyWindowProviderVim should not know its facade...
-        if isinstance(anchor, PytoyWindow):
-            anchor = anchor.impl
         anchor = cast(PytoyWindowVim, anchor)
 
         if not (anchor_vim_window := anchor.window):

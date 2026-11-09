@@ -215,7 +215,7 @@ def make_duo_buffers(
     param = WindowCreationParam.for_split("vertical", try_reuse=True, anchor=None)
     stdout_window = provider.open_window(source1, param)
 
-    param = WindowCreationParam.for_split("horizontal", try_reuse=True, anchor=stdout_window.impl)
+    param = WindowCreationParam.for_split("horizontal", try_reuse=True, anchor=stdout_window)
     stderr_window = provider.open_window(source2, param)
 
     return (stdout_window.buffer, stderr_window.buffer)

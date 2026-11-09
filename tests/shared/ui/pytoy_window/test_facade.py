@@ -1,6 +1,35 @@
+from pathlib import Path
+from typing import Literal, Sequence
+
 from pytoy.shared.lib.text import CharacterRange, CursorPosition
+from pytoy.shared.ui.contract.window import PytoyWindowProtocol, PytoyWindowProviderProtocol
 from pytoy.shared.ui.pytoy_buffer import BufferSource, PytoyBuffer
-from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider
+from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider, WindowCreationParam
+from pytoy.shared.ui.pytoy_window.impls.dummy import PytoyWindowDummy
+
+
+class RecordingWindowProvider(PytoyWindowProviderProtocol):
+    def __init__(self) -> None:
+        self.window = PytoyWindowDummy(1)
+        self.received_param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] | None = None
+        self.received_source: str | Path | BufferSource | None = None
+
+    def get_current(self) -> PytoyWindowProtocol:
+        return self.window
+
+    def get_windows(self, only_normal_buffers: bool = True) -> Sequence[PytoyWindowProtocol]:
+        if only_normal_buffers:
+            return [self.window] if self.window.buffer.is_normal_type else []
+        return [self.window]
+
+    def open_window(
+        self,
+        source: str | Path | BufferSource,
+        param: WindowCreationParam | Literal["in-place", "vertical", "horizontal"] = "in-place",
+    ) -> PytoyWindowProtocol:
+        self.received_param = param
+        self.received_source = source
+        return self.window
 
 
 def test_window_facade_uses_product_selected_backend() -> None:
@@ -34,3 +63,19 @@ def test_window_provider_returns_opened_window() -> None:
 
     assert any(item == window for item in windows)
     assert provider.get_current().valid
+
+
+def test_window_provider_normalizes_facade_anchor_for_backend() -> None:
+    backend = RecordingWindowProvider()
+    provider = PytoyWindowProvider(backend)
+    anchor_impl = PytoyWindowDummy(2)
+    anchor = PytoyWindow(anchor_impl)
+    param = WindowCreationParam.for_split("vertical", anchor=anchor)
+
+    opened = provider.open_window(BufferSource.from_no_file("anchor-test"), param)
+
+    assert opened.impl is backend.window
+    assert isinstance(backend.received_param, WindowCreationParam)
+    assert backend.received_param is not param
+    assert backend.received_param.anchor is anchor_impl
+    assert param.anchor is anchor

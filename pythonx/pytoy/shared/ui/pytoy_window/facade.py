@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 from typing import Literal, Sequence
 
@@ -132,5 +133,7 @@ class PytoyWindowProvider:
     ) -> PytoyWindow:
         if isinstance(source, PytoyBuffer):
             source = source.source
+        if isinstance(param, WindowCreationParam) and isinstance(param.anchor, PytoyWindow):
+            param = replace(param, anchor=param.anchor.impl)
         impl_window = self._impl.open_window(source, param)
         return PytoyWindow(impl_window)

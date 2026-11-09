@@ -67,9 +67,9 @@ def _open_llm_dialog(handler) -> None:
     buffer_source = handler.buffer_provider.buffer_source
     is_left = current_window.is_left()
     if is_left:
-        param = WindowCreationParam.for_split(split_direction="vertical", try_reuse=True, anchor=current_window.impl)
+        param = WindowCreationParam.for_split(split_direction="vertical", try_reuse=True, anchor=current_window)
     else:
-        param = WindowCreationParam.for_in_place(try_reuse=True, anchor=current_window.impl)
+        param = WindowCreationParam.for_in_place(try_reuse=True, anchor=current_window)
     window = PytoyWindowProvider().open_window(buffer_source, param)
     window.focus()
 

@@ -200,12 +200,6 @@ class PytoyWindowProviderVSCode(PytoyWindowProviderProtocol):
 
         current = PytoyWindowProviderVSCode().get_current()
         anchor = param.anchor or current
-        # [TODO]: This is not appropriate.
-        from pytoy.shared.ui.pytoy_window import PytoyWindow
-
-        if isinstance(anchor, PytoyWindow):
-            anchor = anchor.impl
-
         anchor = cast(PytoyWindowVSCode, anchor)
         editor = self._create_editor(source, param, anchor)
         flag = wait_until_true(lambda: WindowURISolver.from_uri(editor.uri) is not None, timeout=1.0)
