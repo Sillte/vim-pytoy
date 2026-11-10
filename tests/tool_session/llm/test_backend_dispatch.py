@@ -9,10 +9,10 @@ from pytoy_llm.task.models import FunctionInvocationSpec, TaskContextState, Task
 from pytoy.contexts.core import GlobalCoreContext
 from pytoy.shared.lib.event import EventEmitter
 from pytoy.shared.lib.outcome import Error
-from pytoy.shared.timertask import TimerTask
-from pytoy.shared.timertask.domain import OnTaskCallback, TaskName
-from pytoy.shared.timertask.impls.dummy import TimerTaskImplDummy
-from pytoy.shared.timertask.manager import TimerTaskManager
+from pytoy.shared.timer_task import TimerTaskScheduler
+from pytoy.shared.timer_task.domain import OnTaskCallback, TaskName
+from pytoy.shared.timer_task.impls.dummy import TimerTaskImplDummy
+from pytoy.shared.timer_task.manager import TimerTaskManager
 from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler
 from pytoy.tool_execution.llm.manager import LLMExecutionManager
 from pytoy.tool_execution.llm.models import LLMExecution
@@ -117,7 +117,7 @@ class RecordingDriver:
         self.llm_message = None
 
     def make_progress(self, execution_creator, llm_buffer_provider, llm_message) -> None:
-        self.dispatch_thread = TimerTask.is_dispatch_thread()
+        self.dispatch_thread = TimerTaskScheduler.is_dispatch_thread()
         self.llm_message = llm_message
         self.execution_handler = execution_creator(self.task_request)
         self.called.set()

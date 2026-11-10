@@ -1,19 +1,19 @@
 from pytoy.contexts.core import GlobalCoreContext
-from pytoy.shared.timertask.domain import (
+from pytoy.shared.timer_task.domain import (
     OnErrorCallback,
     OnFinishCallback,
     OnTaskCallback,
     TaskName,
 )
-from pytoy.shared.timertask.manager import TimerTaskManager
+from pytoy.shared.timer_task.manager import TimerTaskManager
 
 
 def backend_thread_dispatch(func: OnTaskCallback, *, on_error: OnErrorCallback | None = None) -> None:
-    """Schedule a no-argument callback on the backend's TimerTask thread."""
-    TimerTask.register(func, interval=0, repeat=1, on_error=on_error)
+    """Schedule a no-argument callback on the backend's TimerTaskScheduler thread."""
+    TimerTaskScheduler.register(func, interval=0, repeat=1, on_error=on_error)
 
 
-class TimerTask:
+class TimerTaskScheduler:
     @classmethod
     def get_manager(cls) -> TimerTaskManager:
         return GlobalCoreContext.get().timer_task_manager
@@ -46,7 +46,7 @@ class TimerTask:
 
     @classmethod
     def is_dispatch_thread(cls) -> bool:
-        """Return whether the current thread executes TimerTask callbacks."""
+        """Return whether the current thread executes TimerTaskScheduler callbacks."""
         return cls.get_manager().is_dispatch_thread()
 
     @classmethod
@@ -59,4 +59,4 @@ if __name__ == "__main__":
     def hello():
         print("Hogege")
 
-    TimerTask.register(hello)
+    TimerTaskScheduler.register(hello)

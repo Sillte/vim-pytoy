@@ -2,8 +2,8 @@ from typing import Self, Sequence
 
 from pytoy.contexts.core import GlobalCoreContext
 from pytoy.shared.lib.event import Event
-from pytoy.shared.timertask.routine_session.unit.handler import RoutineUnitHandler
-from pytoy.shared.timertask.routine_session.unit.models import (
+from pytoy.shared.routine_session.unit.handler import RoutineUnitHandler
+from pytoy.shared.routine_session.unit.models import (
     RoutineUnitHooks,
     RoutineUnitName,
     RoutineUnitRequest,

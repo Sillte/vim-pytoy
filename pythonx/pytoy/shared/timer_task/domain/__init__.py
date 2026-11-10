@@ -67,7 +67,7 @@ class RegisteredTask:
 
 @dataclass
 class TaskStatus:
-    """Status of a TimerTask, which may change during execution."""
+    """Status of a scheduled task, which may change during execution."""
 
     repeat: int
 

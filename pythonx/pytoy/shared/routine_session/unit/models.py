@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Callable, Self
 
 from pytoy.shared.lib.outcome import Outcome
-from pytoy.shared.timertask.thread_execution import CancelToken
+from pytoy.shared.thread_execution import CancelToken
 
 type RoutineUnitName = str
 

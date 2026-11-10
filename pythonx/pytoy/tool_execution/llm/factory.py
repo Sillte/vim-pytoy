@@ -7,7 +7,7 @@ from pytoy_llm.task.execution.models import TaskExecutionExit
 
 from pytoy.shared.lib.event import EventEmitter
 from pytoy.shared.lib.outcome import Error, Success, is_error, is_success
-from pytoy.shared.timertask import backend_thread_dispatch
+from pytoy.shared.timer_task import backend_thread_dispatch
 from pytoy.tool_execution.llm.models import LLMExecutionExit, LLMExecutionKind, LLMExecutionResult
 
 from .logger import get_llm_logger

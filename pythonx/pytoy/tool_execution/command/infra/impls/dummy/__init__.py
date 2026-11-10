@@ -6,7 +6,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from pytoy.shared.timertask import TimerTask
+from pytoy.shared.timer_task import TimerTaskScheduler
 from pytoy.tool_execution.command.infra.contract import JobEvents, JobID, OutputJobProtocol
 from pytoy.tool_execution.command.infra.impls.core import OutputJobCore
 from pytoy.tool_execution.command.infra.models import OutputJobRequest, Snapshot, SpawnOption
@@ -29,7 +29,7 @@ class OutputJobDummy(OutputJobProtocol):
         self._reader_threads: list[threading.Thread] = []
 
     def _start_notification_dispatch(self) -> None:
-        """Dispatch worker-thread notifications through the TimerTask context."""
+        """Dispatch worker-thread notifications through the TimerTaskScheduler context."""
 
         def _dispatch_pending() -> None:
             while True:
@@ -48,12 +48,12 @@ class OutputJobDummy(OutputJobProtocol):
                 except queue.Empty:
                     break
 
-        self._notification_task_name = TimerTask.register(_dispatch_pending, interval=10)
+        self._notification_task_name = TimerTaskScheduler.register(_dispatch_pending, interval=10)
 
     def _stop_notification_dispatch(self) -> None:
         if self._notification_task_name is None:
             return
-        TimerTask.deregister(self._notification_task_name)
+        TimerTaskScheduler.deregister(self._notification_task_name)
         self._notification_task_name = None
 
     def _read_stdout(self) -> None:

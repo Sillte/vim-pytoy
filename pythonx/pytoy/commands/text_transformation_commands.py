@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from pytoy.shared.command import App, Argument, Option
-from pytoy.shared.timertask.thread_execution import ThreadExecutionHandler, ThreadExecutionHooks, ThreadExecutionRequest
+from pytoy.shared.thread_execution import ThreadExecutionHandler, ThreadExecutionHooks, ThreadExecutionRequest
 from pytoy.shared.ui import PytoyBuffer, make_buffer
 from pytoy.tools.text_transformation_plugin import TextTransformationHandler
 

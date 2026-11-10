@@ -7,7 +7,7 @@ Provide named, lifecycle-managed recurring routines by composing shared timer an
 ## Design
 
 - `RoutineSessionHandler` is the package's user-facing facade. A session owns its routine units; its manager retains active sessions and removes them when the session exits.
-- A routine unit's runner owns iteration counting and schedules each next iteration through `TimerTask`. Each worker invocation is executed through `ThreadExecution`; routine sessions must not implement their own thread or timer backends.
+- A routine unit's runner owns iteration counting and schedules each next iteration through `TimerTaskScheduler`. Each worker invocation is executed through `ThreadExecution`; routine sessions must not implement their own thread or timer backends.
 - A unit's `on_exit` reports an individual iteration. A session's `on_exit` reports termination of the whole session. Keep these event scopes distinct.
 - The session manager is an internal registry. Handlers use the core context's manager by default; explicit manager injection is for isolated composition and tests.
 

@@ -1,5 +1,5 @@
 from pytoy.shared.lib.event import Event
-from pytoy.shared.timertask.thread_execution import (
+from pytoy.shared.thread_execution import (
     ThreadExecutionHandler,
 )
 

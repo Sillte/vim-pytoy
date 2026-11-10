@@ -4,7 +4,7 @@ from typing import Self, Sequence
 
 from pytoy.shared.lib.text import CharacterRange
 from pytoy.shared.pytoy_configuration import PytoyConfiguration
-from pytoy.shared.timertask.thread_execution import add_log_message
+from pytoy.shared.thread_execution import add_log_message
 from pytoy.shared.ui.notifications import EphemeralNotification
 from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
 from pytoy.tool_execution.llm import LLMExecutionHooks, LLMExecutionRequest, LLMExecutor

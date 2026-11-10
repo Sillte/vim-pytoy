@@ -15,7 +15,7 @@ thread execution and result delivery separate.
 
 - Cancellation is cooperative. A cancellation request does not forcibly
   terminate the executing function.
-- Completion is transferred from the worker thread to the TimerTask dispatch
+- Completion is transferred from the worker thread to the TimerTaskScheduler dispatch
   thread before it is observed by the execution layer.
 - A completed execution produces either a result or an exception.
   These are delivered to the caller through separate callbacks.
@@ -24,7 +24,7 @@ thread execution and result delivery separate.
 ## Rules
 
 - Execution creation and discarding an unstarted execution are restricted to
-  the main thread or the TimerTask dispatch thread.
+  the main thread or the TimerTaskScheduler dispatch thread.
 - Starting an execution is serialized by the manager lock and may be requested
   from any thread.
 - A cancellation request may be issued from any thread.

@@ -7,7 +7,7 @@ import vim
 
 from pytoy.shared.lib.event.domain import Event
 from pytoy.shared.lib.function import FunctionRegistry
-from pytoy.shared.timertask import TimerTask, backend_thread_dispatch
+from pytoy.shared.timer_task import TimerTaskScheduler, backend_thread_dispatch
 from pytoy.tool_execution.command.infra.contract import JobEvents, JobID, OutputJobProtocol
 from pytoy.tool_execution.command.infra.impls.core import OutputJobCore
 from pytoy.tool_execution.command.infra.models import OutputJobRequest, Snapshot, SpawnOption

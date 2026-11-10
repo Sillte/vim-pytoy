@@ -6,7 +6,7 @@ from typing import Callable, cast
 from pytoy.shared.lib.backend import can_use_vim
 from pytoy.shared.lib.event import Disposable, EventProtocol
 from pytoy.shared.lib.outcome import is_error, is_success
-from pytoy.shared.timertask.domain import (
+from pytoy.shared.timer_task.domain import (
     NormalStopReason,
     OnErrorCallback,
     OnFinishCallback,
@@ -51,10 +51,10 @@ def _bypass_exception[T, R](func: Callable[[T], R]) -> Callable[[T], R | None]:
 
 def get_timer_task_impl() -> TimerTaskImplProtocol:
     if can_use_vim():
-        from pytoy.shared.timertask.impls.vim.timertask_impl import TimerTaskImplVim
+        from pytoy.shared.timer_task.impls.vim.timertask_impl import TimerTaskImplVim
 
         return TimerTaskImplVim()
-    from pytoy.shared.timertask.impls.dummy import TimerTaskImplDummy
+    from pytoy.shared.timer_task.impls.dummy import TimerTaskImplDummy
 
     return TimerTaskImplDummy()
 

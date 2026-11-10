@@ -10,7 +10,7 @@ from pytoy_llm.task.models import TaskCanceledException
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
 from pytoy.shared.lib.outcome import is_error, is_success
-from pytoy.shared.timertask import backend_or_main_thread_only, backend_thread_dispatch
+from pytoy.shared.timer_task import backend_or_main_thread_only, backend_thread_dispatch
 
 from .factory import LLMExecutionFactory
 from .logger import get_llm_logger

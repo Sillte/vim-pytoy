@@ -2,7 +2,7 @@ from pytoy.commands.browser_commands import browser_source_command
 from pytoy.shared.command.core.models import CommandModel
 from pytoy.shared.command.core.tokenizer import InterpretedInput, ResolvedInput, tokenize
 from pytoy.shared.lib.outcome import Success
-from pytoy.shared.timertask.thread_execution import ThreadExecutionExit
+from pytoy.shared.thread_execution import ThreadExecutionExit
 from pytoy.shared.ui.contract.window.models import WindowCreationParam
 from pytoy.tools.browser.browser_handler import BrowserHandler, _format_page_source
 

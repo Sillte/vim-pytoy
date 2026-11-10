@@ -1,5 +1,5 @@
 from pytoy.contexts.pytoy import GlobalPytoyContext
-from pytoy.shared.timertask import backend_or_main_thread_only
+from pytoy.shared.timer_task import backend_or_main_thread_only
 from pytoy.tool_execution.llm.manager import LLMExecutionManager
 from pytoy.tool_execution.llm.models import (
     LLMExecutionHooks,

@@ -2,13 +2,13 @@ import threading
 
 import pytest
 
-from pytoy.shared.timertask import TimerTask
-from pytoy.shared.timertask.thread_execution import (
+from pytoy.shared.thread_execution import (
     ThreadExecutionHandler,
     ThreadExecutionHooks,
     ThreadExecutionRequest,
     ThreadExecutor,
 )
+from pytoy.shared.timer_task import TimerTaskScheduler
 
 
 def test_thread_executor_accepts_timer_task_dispatch_thread() -> None:
@@ -25,7 +25,7 @@ def test_thread_executor_accepts_timer_task_dispatch_thread() -> None:
             ThreadExecutionHooks.from_any(on_result=on_result),
         )
 
-    TimerTask.execute_oneshot(start_execution, interval=0)
+    TimerTaskScheduler.execute_oneshot(start_execution, interval=0)
 
     assert result_received.wait(timeout=5)
     assert results == [42]

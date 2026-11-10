@@ -2,7 +2,7 @@ from typing import Annotated, Literal
 
 from pytoy.devtools import PluginRebooter
 from pytoy.shared.command import App, Argument
-from pytoy.shared.timertask import TimerTask
+from pytoy.shared.timer_task import TimerTaskScheduler
 
 app = App()
 
@@ -25,21 +25,21 @@ DEBUG_TIMER_TASK_NAME = "TimerTaskManagerDebug"
 @app.command("TimerTaskStart")
 def timer_task_start():
     name = DEBUG_TIMER_TASK_NAME
-    if TimerTask.is_registered(name):
+    if TimerTaskScheduler.is_registered(name):
         print("Already Registered.")
         return
 
     def _func():
-        print("TimerTask Hello.")
+        print("TimerTaskScheduler Hello.")
 
-    TimerTask.register(_func, interval=1000, name=name)
+    TimerTaskScheduler.register(_func, interval=1000, name=name)
 
 
 @app.command("TimerTaskStop")
 def timer_task_stop():
     name = DEBUG_TIMER_TASK_NAME
-    if TimerTask.is_registered(name):
-        TimerTask.deregister(name=name)
+    if TimerTaskScheduler.is_registered(name):
+        TimerTaskScheduler.deregister(name=name)
         print("Deregistered.")
     else:
         print("NotStarted")

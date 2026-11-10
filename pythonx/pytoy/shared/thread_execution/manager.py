@@ -3,8 +3,8 @@ from threading import RLock
 from typing import Callable, Sequence
 
 from pytoy.shared.lib.backend import can_use_vim
-from pytoy.shared.timertask import TimerTask, backend_thread_dispatch
-from pytoy.shared.timertask.domain import BackendThreadUtilProtocol
+from pytoy.shared.timer_task import TimerTaskScheduler, backend_thread_dispatch
+from pytoy.shared.timer_task.domain import BackendThreadUtilProtocol
 
 from .models import ThreadExecution, ThreadExecutionExit, ThreadExecutionID, ThreadExecutionQuery, ThreadExecutionStatus
 
@@ -89,11 +89,11 @@ def add_log_message(message: str) -> None:
 def get_backend_thread_util() -> BackendThreadUtilProtocol:
     """Get the backend thread util implementation."""
     if can_use_vim():
-        from pytoy.shared.timertask.impls.vim.stdout_rescuer import VimThreadUtil
+        from pytoy.shared.timer_task.impls.vim.stdout_rescuer import VimThreadUtil
 
         return VimThreadUtil()
     else:
-        from pytoy.shared.timertask.impls.dummy import DummyThreadUtil
+        from pytoy.shared.timer_task.impls.dummy import DummyThreadUtil
 
         return DummyThreadUtil()
 
@@ -111,12 +111,12 @@ class _ThreadExecutionConsumer:
         self._interval = interval
         self._backend_thread_util = backend_thread_util or get_backend_thread_util()
         self._started: bool = False
-        self._timertask_name: None | str = None
+        self._timer_task_name: None | str = None
         self._start()
 
     def _start(self) -> None:
         if not self._started:
-            self._timertask_name = TimerTask.register(self._polling, interval=self._interval)
+            self._timer_task_name = TimerTaskScheduler.register(self._polling, interval=self._interval)
             self._started = True
             self._backend_thread_util.prepare()
 

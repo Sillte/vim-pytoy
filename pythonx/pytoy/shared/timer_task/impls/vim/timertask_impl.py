@@ -6,7 +6,7 @@ import vim
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
 from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.shared.lib.outcome import Error, Success
-from pytoy.shared.timertask.domain import (
+from pytoy.shared.timer_task.domain import (
     FunctionName,
     OnTaskCallback,
     RegisteredTask,

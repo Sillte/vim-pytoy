@@ -2,12 +2,12 @@ import logging
 from queue import Empty, Queue
 
 from pytoy.shared.pytoy_configuration import PytoyConfiguration
-from pytoy.shared.timertask import TimerTask
+from pytoy.shared.timer_task import TimerTaskScheduler
 from pytoy.shared.ui.contract.buffer import BufferProtocol as PytoyBufferProtocol
 
 
 class QueueUpdater:
-    """Update buffer from `threading.Queue` and `TimerTask`."""
+    """Update buffer from `threading.Queue` and `TimerTaskScheduler`."""
 
     def __init__(
         self,
@@ -42,12 +42,12 @@ class QueueUpdater:
                 raise
 
     def register(self) -> str:
-        self._taskname = TimerTask.register(self._updater, name=self._taskname)
+        self._taskname = TimerTaskScheduler.register(self._updater, name=self._taskname)
         return self._taskname
 
     def deregister(self):
         if not self.taskname:
-            raise ValueError("`QueueUpdater`: TimerTask is not yet registered.`")
+            raise ValueError("`QueueUpdater`: TimerTaskScheduler is not yet registered.`")
         # In order to acquire the info as much as possible.
         self._updater()
-        TimerTask.deregister(self.taskname)
+        TimerTaskScheduler.deregister(self.taskname)

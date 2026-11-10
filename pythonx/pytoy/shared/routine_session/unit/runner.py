@@ -2,13 +2,13 @@ from threading import RLock
 from typing import Literal
 
 from pytoy.shared.lib.event import Disposable, Event, EventEmitter
-from pytoy.shared.timertask.thread_execution import (
+from pytoy.shared.thread_execution import (
     CancelToken,
     ThreadExecutionHandler,
     ThreadExecutionHooks,
     ThreadExecutionRequest,
 )
-from pytoy.shared.timertask.timertask import TimerTask
+from pytoy.shared.timer_task import TimerTaskScheduler
 
 from .models import (
     RoutineContext,
@@ -51,7 +51,7 @@ class RoutineUnitRunner:
                 return
             self._status = "starting"
         try:
-            TimerTask.execute_oneshot(self._make_next_work, interval=0)
+            TimerTaskScheduler.execute_oneshot(self._make_next_work, interval=0)
         except BaseException:
             with self._lock:
                 if self._status == "starting":
@@ -100,7 +100,7 @@ class RoutineUnitRunner:
                     self._status = "waiting"
         try:
             if should_continue:
-                TimerTask.execute_oneshot(self._make_next_work, interval=self._routine_unit.delay)
+                TimerTaskScheduler.execute_oneshot(self._make_next_work, interval=self._routine_unit.delay)
             else:
                 self.terminate()
         except Exception as error:

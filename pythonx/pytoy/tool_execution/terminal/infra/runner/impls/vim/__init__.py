@@ -9,7 +9,7 @@ import vim
 
 from pytoy.shared.lib.function import FunctionRegistry, RegisteredFunction
 from pytoy.shared.lib.text import CursorPosition
-from pytoy.shared.timertask import backend_thread_dispatch
+from pytoy.shared.timer_task import backend_thread_dispatch
 from pytoy.tool_execution.terminal.contract.models import (
     ConsoleSnapshot,
     InputOperation,

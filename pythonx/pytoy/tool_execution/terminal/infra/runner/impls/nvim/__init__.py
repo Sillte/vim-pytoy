@@ -175,7 +175,7 @@ class TerminalJobNvim(TerminalJobProtocol):
             self._input_task.queue.put(None)
         self._core.dispose()
 
-        from pytoy.shared.timertask import backend_thread_dispatch
+        from pytoy.shared.timer_task import backend_thread_dispatch
 
         def _inner():
             if self._on_exit is not None:

@@ -5,7 +5,7 @@ from typing import Self, Sequence
 from pytoy.contexts.core import GlobalCoreContext
 from pytoy.shared.lib.event import Disposable, Event
 from pytoy.shared.lib.outcome import is_error, is_success
-from pytoy.shared.timertask import backend_or_main_thread_only
+from pytoy.shared.timer_task import backend_or_main_thread_only
 
 from .factory import ThreadExecutionFactory
 from .manager import ThreadExecutionManager

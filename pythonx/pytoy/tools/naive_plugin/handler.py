@@ -62,7 +62,7 @@ def example2(context: NaivePluginContext) -> None:
             "slow_process.py": """import subprocess
 import sys
 
-from pytoy.shared.timertask.thread_execution import ThreadExecutionHandler, ThreadExecutionHooks, ThreadExecutionRequest
+from pytoy.shared.thread_execution import ThreadExecutionHandler, ThreadExecutionHooks, ThreadExecutionRequest
 from pytoy.shared.ui import make_buffer
 from pytoy.tools.naive_plugin import NaivePluginContext, register_naive_plugin
 

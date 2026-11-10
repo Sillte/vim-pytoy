@@ -11,7 +11,7 @@ from fairybrowser.plugins.readers import PageReaderPluginRegistry
 
 from pytoy import TERM_STDOUT
 from pytoy.shared.lib.outcome import is_error
-from pytoy.shared.timertask.thread_execution import ThreadExecutionExit, ThreadExecutionHandler, ThreadExecutionRequest
+from pytoy.shared.thread_execution import ThreadExecutionExit, ThreadExecutionHandler, ThreadExecutionRequest
 from pytoy.shared.ui import BufferSource
 from pytoy.shared.ui.pytoy_window import PytoyWindow, PytoyWindowProvider, WindowCreationParam
 

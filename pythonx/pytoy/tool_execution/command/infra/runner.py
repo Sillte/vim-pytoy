@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 
 from pytoy.shared.lib.backend import BackendEnum, get_backend_enum
-from pytoy.shared.timertask import backend_thread_dispatch
+from pytoy.shared.timer_task import backend_thread_dispatch
 from pytoy.shared.ui import PytoyBuffer
 from pytoy.shared.ui.pytoy_buffer import BufferSource, make_buffer, make_duo_buffers
 from pytoy.tool_execution.command.infra.contract import JobEvents, JobID, OutputJobProtocol

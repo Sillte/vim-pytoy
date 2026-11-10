@@ -11,7 +11,7 @@ execution lifecycle and completion notification.
   `CommandExecutionRequest`.
 - `Execution`: A single concrete attempt to execute a command.
 - `Backend execution context`: The execution context in which the backend
-  invokes `TimerTask` callbacks. The `TimerTask` implementation determines
+  invokes `TimerTaskScheduler` callbacks. The `TimerTaskScheduler` implementation determines
   this context for each backend.
 
 ## Design
@@ -32,7 +32,7 @@ execution lifecycle and completion notification.
 - Command creation, handler creation, execution start, and termination must be
   performed from the main thread.
 - Backend implementations must emit command events and invoke event callbacks
-  from the backend execution context defined by `TimerTask`. This context is
+  from the backend execution context defined by `TimerTaskScheduler`. This context is
   backend-specific and is not required to be `threading.main_thread()`.
 - Hook callbacks are user-provided callbacks. They must not raise exceptions;
   handling exceptions raised by hooks is the responsibility of the caller.

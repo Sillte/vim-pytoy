@@ -6,7 +6,7 @@ import pytest
 from pytoy_llm.task.models import FunctionInvocationSpec, TaskCanceledException, TaskSpec
 
 from pytoy.shared.lib.outcome import is_error
-from pytoy.shared.timertask import TimerTask
+from pytoy.shared.timer_task import TimerTaskScheduler
 from pytoy.tool_execution.llm import (
     LLMExecutionHandler,
     LLMExecutionHooks,
@@ -202,7 +202,7 @@ def test_handler_can_be_created_and_started_on_backend_thread() -> None:
             errors.append(error)
             completed.set()
 
-    TimerTask.register(start_execution, interval=0, repeat=1, on_error=errors.append)
+    TimerTaskScheduler.register(start_execution, interval=0, repeat=1, on_error=errors.append)
 
     assert completed.wait(5)
     assert errors == []

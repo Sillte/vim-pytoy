@@ -4,7 +4,7 @@ from typing import Self
 from pytoy_llm.idea import IdeaSpace
 
 from pytoy.shared.lib.outcome import is_error
-from pytoy.shared.timertask.routine_session import (
+from pytoy.shared.routine_session import (
     RoutineContext,
     RoutineSessionHandler,
     RoutineSessionQuery,

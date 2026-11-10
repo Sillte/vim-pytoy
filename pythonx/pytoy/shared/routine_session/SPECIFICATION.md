@@ -33,14 +33,14 @@ The public API is exported from `__init__.py`. The main user-facing types are
 - If `on_execution_preparing` raises before the first execution starts, the
   execution is discarded and the unit returns to an unstarted, retryable state.
   Since preparation is dispatched asynchronously, the error is handled by the
-  TimerTask dispatch and is not raised synchronously by `start()`. If preparing
+  TimerTaskScheduler dispatch and is not raised synchronously by `start()`. If preparing
   a later iteration raises, the unit is terminated before the error is handed
-  back to TimerTask dispatch.
+  back to TimerTaskScheduler dispatch.
 - For each iteration, the `RoutineUnitHooks.on_exit` callback runs before the
   `on_iteration_exit` event. Callback errors do not prevent iteration-count
   updates, scheduling, or unit termination. A single error propagates after
   that processing; multiple errors are raised as an `ExceptionGroup`.
-- Event listener exceptions follow the [`Event` contract](../../lib/events/SPECIFICATION.md):
+- Event listener exceptions follow the [`Event` contract](../lib/events/SPECIFICATION.md):
   dispatch stops at the first failing listener, and the exception propagates
   after routine processing.
 

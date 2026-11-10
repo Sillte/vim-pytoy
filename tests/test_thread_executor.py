@@ -3,8 +3,8 @@ def test_naive2():
     import threading
     from unittest.mock import MagicMock
 
-    from pytoy.shared.timertask.thread_execution import ThreadExecutionHooks, ThreadExecutionRequest, ThreadExecutor
-    from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
+    from pytoy.shared.thread_execution import ThreadExecutionHooks, ThreadExecutionRequest, ThreadExecutor
+    from pytoy.shared.thread_execution.manager import ThreadExecutionManager
 
     # 簡単な task
     def simple_task(cancel_token):

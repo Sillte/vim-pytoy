@@ -8,7 +8,7 @@ from pytoy_llm.task.models import TaskRequest
 
 from pytoy.contexts.pytoy import GlobalPytoyContext
 from pytoy.shared.lib.event import Event
-from pytoy.shared.timertask import backend_thread_dispatch
+from pytoy.shared.timer_task import backend_thread_dispatch
 from pytoy.tool_execution.llm import LLMExecutionExit, LLMExecutionHandler, LLMExecutionHooks
 
 from .manager import LLMSessionManager

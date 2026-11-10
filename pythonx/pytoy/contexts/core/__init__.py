@@ -8,9 +8,9 @@ if TYPE_CHECKING:
     from pytoy.bootstrap.import_resolvers import LLMImportResolver
     from pytoy.shared.lib.events.action_events import KeyEventManager
     from pytoy.shared.lib.function.manager import FunctionManager
-    from pytoy.shared.timertask.manager import TimerTaskManager
-    from pytoy.shared.timertask.routine_session.manager import RoutineSessionManager
-    from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
+    from pytoy.shared.routine_session.manager import RoutineSessionManager
+    from pytoy.shared.thread_execution.manager import ThreadExecutionManager
+    from pytoy.shared.timer_task.manager import TimerTaskManager
     from pytoy.tool_execution.execution_environment import EnvironmentManager
 
     ...
@@ -45,19 +45,19 @@ class GlobalCoreContext:
 
     @cached_property
     def thread_execution_manager(self) -> ThreadExecutionManager:
-        from pytoy.shared.timertask.thread_execution.manager import ThreadExecutionManager
+        from pytoy.shared.thread_execution.manager import ThreadExecutionManager
 
         return ThreadExecutionManager()
 
     @cached_property
     def routine_session_manager(self) -> RoutineSessionManager:
-        from pytoy.shared.timertask.routine_session.manager import RoutineSessionManager
+        from pytoy.shared.routine_session.manager import RoutineSessionManager
 
         return RoutineSessionManager()
 
     @cached_property
     def timer_task_manager(self) -> TimerTaskManager:
-        from pytoy.shared.timertask.manager import TimerTaskManager
+        from pytoy.shared.timer_task.manager import TimerTaskManager
 
         return TimerTaskManager()
 

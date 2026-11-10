@@ -6,7 +6,7 @@ from typing import Callable
 
 from pytoy.shared.lib.event import Event, EventEmitter
 from pytoy.shared.lib.outcome import Error, Success
-from pytoy.shared.timertask.domain import (
+from pytoy.shared.timer_task.domain import (
     BackendThreadUtilProtocol,
     NormalStopReason,
     OnTaskCallback,

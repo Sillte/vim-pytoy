@@ -2,7 +2,7 @@ import threading
 import time
 
 from pytoy.shared.lib.outcome import Success
-from pytoy.shared.timertask.routine_session import (
+from pytoy.shared.routine_session import (
     RoutineSessionHandler,
     RoutineSessionRequest,
     RoutineUnitHooks,

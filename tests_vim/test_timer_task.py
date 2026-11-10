@@ -1,4 +1,4 @@
-from pytoy.shared.timertask import TimerTask
+from pytoy.shared.timer_task import TimerTaskScheduler
 
 global MY_NUMBER
 MY_NUMBER = 100
@@ -18,7 +18,7 @@ def on_error_timer(e: Exception):
     print("Timer error:", e, MY_NUMBER)
 
 
-TimerTask.register(
+TimerTaskScheduler.register(
     func,
     interval=10,
     on_finish=on_finish_timer,

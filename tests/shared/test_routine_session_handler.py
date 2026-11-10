@@ -3,7 +3,7 @@ import uuid
 
 import pytest
 
-from pytoy.shared.timertask.routine_session import (
+from pytoy.shared.routine_session import (
     RoutineSessionHandler,
     RoutineSessionQuery,
     RoutineSessionRequest,
