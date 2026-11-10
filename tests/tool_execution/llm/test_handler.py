@@ -202,7 +202,7 @@ def test_handler_can_be_created_and_started_on_backend_thread() -> None:
             errors.append(error)
             completed.set()
 
-    TimerTaskScheduler.register(start_execution, interval=0, repeat=1, on_error=errors.append)
+    TimerTaskScheduler().register(start_execution, interval=0, repeat=1, on_error=errors.append)
 
     assert completed.wait(5)
     assert errors == []

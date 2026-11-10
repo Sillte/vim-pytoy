@@ -9,18 +9,16 @@ from pytoy.shared.timer_task.manager import TimerTaskManager
 
 
 def backend_thread_dispatch(func: OnTaskCallback, *, on_error: OnErrorCallback | None = None) -> None:
-    """Schedule a no-argument callback on the backend's TimerTaskScheduler thread."""
-    TimerTaskScheduler.register(func, interval=0, repeat=1, on_error=on_error)
+    """Schedule a callback on the dispatch thread of the context's TimerTaskManager."""
+    GlobalCoreContext.get().timer_task_manager.register(func, interval=0, repeat=1, on_error=on_error)
 
 
 class TimerTaskScheduler:
-    @classmethod
-    def get_manager(cls) -> TimerTaskManager:
-        return GlobalCoreContext.get().timer_task_manager
+    def __init__(self, manager: TimerTaskManager | None = None) -> None:
+        self._manager = manager if manager is not None else GlobalCoreContext.get().timer_task_manager
 
-    @classmethod
     def register(
-        cls,
+        self,
         func: OnTaskCallback,
         interval: int = 100,
         name: TaskName | None = None,
@@ -34,24 +32,20 @@ class TimerTaskScheduler:
         run the task once; positive values greater than one run it that many
         times.
         """
-        return cls.get_manager().register(func, interval, name, repeat, on_finish, on_error)
+        return self._manager.register(func, interval, name, repeat, on_finish, on_error)
 
-    @classmethod
-    def deregister(cls, name: TaskName, *, strict: bool = False):
-        cls.get_manager().deregister(name, strict=strict)
+    def deregister(self, name: TaskName, *, strict: bool = False) -> None:
+        self._manager.deregister(name, strict=strict)
 
-    @classmethod
-    def is_registered(cls, name: str) -> bool:
-        return cls.get_manager().is_registered(name)
+    def is_registered(self, name: str) -> bool:
+        return self._manager.is_registered(name)
 
-    @classmethod
-    def is_dispatch_thread(cls) -> bool:
+    def is_dispatch_thread(self) -> bool:
         """Return whether the current thread executes TimerTaskScheduler callbacks."""
-        return cls.get_manager().is_dispatch_thread()
+        return self._manager.is_dispatch_thread()
 
-    @classmethod
-    def execute_oneshot(cls, func, interval: int = 100, name: str | None = None) -> TaskName:
-        return cls.get_manager().execute_oneshot(func, interval=interval, name=name)
+    def execute_oneshot(self, func: OnTaskCallback, interval: int = 100, name: str | None = None) -> TaskName:
+        return self._manager.execute_oneshot(func, interval=interval, name=name)
 
 
 if __name__ == "__main__":
@@ -59,4 +53,4 @@ if __name__ == "__main__":
     def hello():
         print("Hogege")
 
-    TimerTaskScheduler.register(hello)
+    TimerTaskScheduler().register(hello)

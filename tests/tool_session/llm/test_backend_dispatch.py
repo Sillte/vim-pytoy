@@ -117,7 +117,7 @@ class RecordingDriver:
         self.llm_message = None
 
     def make_progress(self, execution_creator, llm_buffer_provider, llm_message) -> None:
-        self.dispatch_thread = TimerTaskScheduler.is_dispatch_thread()
+        self.dispatch_thread = TimerTaskScheduler().is_dispatch_thread()
         self.llm_message = llm_message
         self.execution_handler = execution_creator(self.task_request)
         self.called.set()

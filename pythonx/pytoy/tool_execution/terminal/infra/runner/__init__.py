@@ -28,6 +28,6 @@ if __name__ == "__main__":
     )
     job_runner.run()
 
-    TimerTaskScheduler.execute_oneshot(lambda: job_runner.send("dir"), interval=500)
-    TimerTaskScheduler.execute_oneshot(lambda: job_runner.send("echo BAfAFAF"), interval=1200)
-    TimerTaskScheduler.execute_oneshot(lambda: print(job_runner.snapshot.content), interval=3000)  # type: ignore
+    TimerTaskScheduler().execute_oneshot(lambda: job_runner.send("dir"), interval=500)
+    TimerTaskScheduler().execute_oneshot(lambda: job_runner.send("echo BAfAFAF"), interval=1200)
+    TimerTaskScheduler().execute_oneshot(lambda: print(job_runner.snapshot.content), interval=3000)  # type: ignore

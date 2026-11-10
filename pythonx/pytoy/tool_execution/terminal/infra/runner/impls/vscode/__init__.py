@@ -25,7 +25,7 @@ class TerminalJobVSCode(TerminalJobProtocol):
             self._core.exit_emitter.fire(0)
             self.dispose()
 
-        TimerTaskScheduler.execute_oneshot(lambda: _inner())
+        TimerTaskScheduler().execute_oneshot(lambda: _inner())
 
     def _schedule_update(self):
         if self._update_scheduled:
@@ -37,7 +37,7 @@ class TerminalJobVSCode(TerminalJobProtocol):
             self._update_scheduled = False
             self._core.update_emitter.fire(self.pid)
 
-        TimerTaskScheduler.execute_oneshot(lambda: _fire(), interval=500)
+        TimerTaskScheduler().execute_oneshot(lambda: _fire(), interval=500)
 
     def __init__(self, request: TerminalJobRequest, spawn_option: SpawnOption | None = None):
         self._request = request

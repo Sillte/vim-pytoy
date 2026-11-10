@@ -51,7 +51,7 @@ class RoutineUnitRunner:
                 return
             self._status = "starting"
         try:
-            TimerTaskScheduler.execute_oneshot(self._make_next_work, interval=0)
+            TimerTaskScheduler().execute_oneshot(self._make_next_work, interval=0)
         except BaseException:
             with self._lock:
                 if self._status == "starting":
@@ -100,7 +100,7 @@ class RoutineUnitRunner:
                     self._status = "waiting"
         try:
             if should_continue:
-                TimerTaskScheduler.execute_oneshot(self._make_next_work, interval=self._routine_unit.delay)
+                TimerTaskScheduler().execute_oneshot(self._make_next_work, interval=self._routine_unit.delay)
             else:
                 self.terminate()
         except Exception as error:

@@ -116,7 +116,7 @@ class _ThreadExecutionConsumer:
 
     def _start(self) -> None:
         if not self._started:
-            self._timer_task_name = TimerTaskScheduler.register(self._polling, interval=self._interval)
+            self._timer_task_name = TimerTaskScheduler().register(self._polling, interval=self._interval)
             self._started = True
             self._backend_thread_util.prepare()
 

@@ -42,7 +42,7 @@ class QueueUpdater:
                 raise
 
     def register(self) -> str:
-        self._taskname = TimerTaskScheduler.register(self._updater, name=self._taskname)
+        self._taskname = TimerTaskScheduler().register(self._updater, name=self._taskname)
         return self._taskname
 
     def deregister(self):
@@ -50,4 +50,4 @@ class QueueUpdater:
             raise ValueError("`QueueUpdater`: TimerTaskScheduler is not yet registered.`")
         # In order to acquire the info as much as possible.
         self._updater()
-        TimerTaskScheduler.deregister(self.taskname)
+        TimerTaskScheduler().deregister(self.taskname)

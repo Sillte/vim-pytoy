@@ -4,11 +4,12 @@ import threading
 from collections.abc import Callable
 from functools import wraps
 
-from .scheduler import TimerTaskScheduler
+from pytoy.contexts.core import GlobalCoreContext
 
 
 def is_backend_or_main_thread() -> bool:
-    return threading.current_thread() is threading.main_thread() or TimerTaskScheduler.is_dispatch_thread()
+    manager = GlobalCoreContext.get().timer_task_manager
+    return threading.current_thread() is threading.main_thread() or manager.is_dispatch_thread()
 
 
 def assert_backend_or_main_thread() -> None:

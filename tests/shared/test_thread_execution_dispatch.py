@@ -25,7 +25,7 @@ def test_thread_executor_accepts_timer_task_dispatch_thread() -> None:
             ThreadExecutionHooks.from_any(on_result=on_result),
         )
 
-    TimerTaskScheduler.execute_oneshot(start_execution, interval=0)
+    TimerTaskScheduler().execute_oneshot(start_execution, interval=0)
 
     assert result_received.wait(timeout=5)
     assert results == [42]

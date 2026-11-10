@@ -3,8 +3,8 @@ from queue import Empty, Full, Queue
 from typing import Any, Literal
 
 import vim
+from pytoy.shared.timer_task import TimerTaskScheduler
 from pytoy.shared.timer_task.domain import BackendThreadUtilProtocol
-from pytoy.shared.timer_task.scheduler import TimerTaskScheduler
 
 
 # If you would like to Thread,
@@ -59,7 +59,7 @@ class StdoutProxy:
         """
         cls._started = False
         assert cls._timer_taskname is not None
-        TimerTaskScheduler.deregister(cls._timer_taskname)
+        TimerTaskScheduler().deregister(cls._timer_taskname)
 
         sys.stdout = cls._original_stdout
         sys.stderr = cls._original_stderr
@@ -77,7 +77,7 @@ class StdoutProxy:
         sys.stdout = _DummyPipe(cls._stdout_queue)
         sys.stderr = _DummyPipe(cls._stderr_queue)
 
-        cls._timer_taskname = TimerTaskScheduler.register(cls.loop_function, interval=500, repeat=-1)
+        cls._timer_taskname = TimerTaskScheduler().register(cls.loop_function, interval=500, repeat=-1)
         cls._started = True
 
     @classmethod

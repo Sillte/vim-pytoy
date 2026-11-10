@@ -24,28 +24,38 @@ def dummy_impl():
             context.timer_task_manager = previous_manager
 
 
-def test_execute_oneshot_runs_and_deregisters(dummy_impl):
+@pytest.fixture
+def scheduler(dummy_impl):
+    return TimerTaskScheduler(manager=GlobalCoreContext.get().timer_task_manager)
+
+
+def test_scheduler_defaults_to_core_context_manager(dummy_impl):
+    context = GlobalCoreContext.get()
+    scheduler = TimerTaskScheduler()
+
+    assert scheduler._manager is context.timer_task_manager
+
+
+def test_execute_oneshot_runs_and_deregisters(dummy_impl, scheduler):
     completed = threading.Event()
     calls = []
 
-    name = TimerTaskScheduler.execute_oneshot(
-        lambda: (calls.append("called"), completed.set()), interval=1, name="oneshot"
-    )
+    name = scheduler.execute_oneshot(lambda: (calls.append("called"), completed.set()), interval=1, name="oneshot")
 
     assert name == "oneshot"
     assert completed.wait(1)
     assert calls == ["called"]
-    assert not TimerTaskScheduler.is_registered(name)
+    assert not scheduler.is_registered(name)
 
 
-def test_backend_thread_dispatch_runs_callback_and_returns_none(dummy_impl):
+def test_backend_thread_dispatch_runs_callback_and_returns_none(dummy_impl, scheduler):
     completed = threading.Event()
     callback_threads = []
     dispatch_thread_states = []
 
     def callback() -> None:
         callback_threads.append(threading.current_thread())
-        dispatch_thread_states.append(TimerTaskScheduler.is_dispatch_thread())
+        dispatch_thread_states.append(scheduler.is_dispatch_thread())
         completed.set()
 
     result = backend_thread_dispatch(callback)
@@ -54,10 +64,10 @@ def test_backend_thread_dispatch_runs_callback_and_returns_none(dummy_impl):
     assert completed.wait(1)
     assert callback_threads == [dummy_impl.backend_thread]
     assert dispatch_thread_states == [True]
-    assert not TimerTaskScheduler.is_dispatch_thread()
+    assert not scheduler.is_dispatch_thread()
 
 
-def test_backend_thread_dispatch_reports_callback_errors(dummy_impl):
+def test_backend_thread_dispatch_reports_callback_errors(dummy_impl, scheduler):
     failed = threading.Event()
     errors = []
 
@@ -75,7 +85,7 @@ def test_backend_thread_dispatch_reports_callback_errors(dummy_impl):
     assert isinstance(errors[0], ValueError)
 
 
-def test_repeat_runs_requested_number_of_times_and_finishes(dummy_impl):
+def test_repeat_runs_requested_number_of_times_and_finishes(dummy_impl, scheduler):
     completed = threading.Event()
     calls = []
 
@@ -83,13 +93,13 @@ def test_repeat_runs_requested_number_of_times_and_finishes(dummy_impl):
         assert reason == "finished"
         completed.set()
 
-    TimerTaskScheduler.register(lambda: calls.append("called"), interval=1, repeat=3, on_finish=on_finish)
+    scheduler.register(lambda: calls.append("called"), interval=1, repeat=3, on_finish=on_finish)
 
     assert completed.wait(1)
     assert calls == ["called", "called", "called"]
 
 
-def test_zero_repeat_runs_once_and_finishes(dummy_impl):
+def test_zero_repeat_runs_once_and_finishes(dummy_impl, scheduler):
     completed = threading.Event()
     calls = []
 
@@ -97,13 +107,13 @@ def test_zero_repeat_runs_once_and_finishes(dummy_impl):
         assert reason == "finished"
         completed.set()
 
-    TimerTaskScheduler.register(lambda: calls.append("called"), interval=1, repeat=0, on_finish=on_finish)
+    scheduler.register(lambda: calls.append("called"), interval=1, repeat=0, on_finish=on_finish)
 
     assert completed.wait(1)
     assert calls == ["called"]
 
 
-def test_callback_error_invokes_on_error_and_deregisters(dummy_impl):
+def test_callback_error_invokes_on_error_and_deregisters(dummy_impl, scheduler):
     failed = threading.Event()
     errors = []
 
@@ -114,14 +124,14 @@ def test_callback_error_invokes_on_error_and_deregisters(dummy_impl):
         errors.append(error)
         failed.set()
 
-    name = TimerTaskScheduler.register(task, interval=1, name="failing", on_error=on_error)
+    name = scheduler.register(task, interval=1, name="failing", on_error=on_error)
 
     assert failed.wait(1)
     assert isinstance(errors[0], ValueError)
-    assert not TimerTaskScheduler.is_registered(name)
+    assert not scheduler.is_registered(name)
 
 
-def test_callbacks_are_not_mixed_between_tasks(dummy_impl):
+def test_callbacks_are_not_mixed_between_tasks(dummy_impl, scheduler):
     first_finished = threading.Event()
     second_finished = threading.Event()
     first_reasons = []
@@ -135,8 +145,8 @@ def test_callbacks_are_not_mixed_between_tasks(dummy_impl):
         second_reasons.append(reason)
         second_finished.set()
 
-    TimerTaskScheduler.register(lambda: None, interval=1, name="first", repeat=1, on_finish=on_first_finish)
-    TimerTaskScheduler.register(lambda: None, interval=10, name="second", repeat=1, on_finish=on_second_finish)
+    scheduler.register(lambda: None, interval=1, name="first", repeat=1, on_finish=on_first_finish)
+    scheduler.register(lambda: None, interval=10, name="second", repeat=1, on_finish=on_second_finish)
 
     assert first_finished.wait(1)
     assert second_finished.wait(1)
@@ -144,7 +154,7 @@ def test_callbacks_are_not_mixed_between_tasks(dummy_impl):
     assert second_reasons == ["finished"]
 
 
-def test_finished_callback_subscription_is_released(dummy_impl):
+def test_finished_callback_subscription_is_released(dummy_impl, scheduler):
     first_finished = threading.Event()
     second_finished = threading.Event()
     first_reasons = []
@@ -156,15 +166,15 @@ def test_finished_callback_subscription_is_released(dummy_impl):
         else:
             second_finished.set()
 
-    TimerTaskScheduler.register(lambda: None, interval=1, name="first", repeat=1, on_finish=on_first_finish)
+    scheduler.register(lambda: None, interval=1, name="first", repeat=1, on_finish=on_first_finish)
     assert first_finished.wait(1)
 
-    TimerTaskScheduler.register(lambda: None, interval=1, name="second", repeat=1)
+    scheduler.register(lambda: None, interval=1, name="second", repeat=1)
     assert not second_finished.wait(0.2)
     assert first_reasons == ["finished"]
 
 
-def test_exit_event_contains_outcome_without_legacy_callbacks(dummy_impl):
+def test_exit_event_contains_outcome_without_legacy_callbacks(dummy_impl, scheduler):
     completed = threading.Event()
     exits = []
 
@@ -184,28 +194,28 @@ def test_exit_event_contains_outcome_without_legacy_callbacks(dummy_impl):
     assert isinstance(exits[-1].outcome.exception, ValueError)
 
 
-def test_deregister_strict_rejects_unknown_name(dummy_impl):
+def test_deregister_strict_rejects_unknown_name(dummy_impl, scheduler):
     with pytest.raises(KeyError):
-        TimerTaskScheduler.deregister("missing", strict=True)
+        scheduler.deregister("missing", strict=True)
 
 
-def test_register_rejects_duplicate_name(dummy_impl):
-    TimerTaskScheduler.register(lambda: None, interval=1000, name="duplicate")
+def test_register_rejects_duplicate_name(dummy_impl, scheduler):
+    scheduler.register(lambda: None, interval=1000, name="duplicate")
 
     with pytest.raises(ValueError, match="already registered"):
-        TimerTaskScheduler.register(lambda: None, interval=1000, name="duplicate")
+        scheduler.register(lambda: None, interval=1000, name="duplicate")
 
 
-def test_manager_maps_public_name_to_unique_impl_name(dummy_impl):
-    TimerTaskScheduler.register(lambda: None, interval=1000, name="same")
-    TimerTaskScheduler.register(lambda: None, interval=1000, name="other")
+def test_manager_maps_public_name_to_unique_impl_name(dummy_impl, scheduler):
+    scheduler.register(lambda: None, interval=1000, name="same")
+    scheduler.register(lambda: None, interval=1000, name="other")
 
     assert set(dummy_impl.tasks) != {"same", "other"}
-    assert TimerTaskScheduler.is_registered("same")
-    assert TimerTaskScheduler.is_registered("other")
+    assert scheduler.is_registered("same")
+    assert scheduler.is_registered("other")
 
 
-def test_timer_stop_exception_finishes_as_stopped(dummy_impl):
+def test_timer_stop_exception_finishes_as_stopped(dummy_impl, scheduler):
     completed = threading.Event()
     reasons = []
 
@@ -216,13 +226,13 @@ def test_timer_stop_exception_finishes_as_stopped(dummy_impl):
         reasons.append(reason)
         completed.set()
 
-    TimerTaskScheduler.register(task, interval=1, on_finish=on_finish)
+    scheduler.register(task, interval=1, on_finish=on_finish)
 
     assert completed.wait(1)
     assert reasons == ["stopped"]
 
 
-def test_finish_callback_error_does_not_invoke_error_callback(dummy_impl):
+def test_finish_callback_error_does_not_invoke_error_callback(dummy_impl, scheduler):
     finished = threading.Event()
     errors = []
 
@@ -233,7 +243,7 @@ def test_finish_callback_error_does_not_invoke_error_callback(dummy_impl):
     def on_error(error):
         errors.append(error)
 
-    TimerTaskScheduler.register(lambda: None, interval=1, repeat=1, on_finish=on_finish, on_error=on_error)
+    scheduler.register(lambda: None, interval=1, repeat=1, on_finish=on_finish, on_error=on_error)
 
     assert finished.wait(1)
     assert errors == []

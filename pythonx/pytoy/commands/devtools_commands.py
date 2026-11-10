@@ -1,5 +1,6 @@
 from typing import Annotated, Literal
 
+from pytoy.contexts.core import GlobalCoreContext
 from pytoy.devtools import PluginRebooter
 from pytoy.shared.command import App, Argument
 from pytoy.shared.timer_task import TimerTaskScheduler
@@ -25,21 +26,23 @@ DEBUG_TIMER_TASK_NAME = "TimerTaskManagerDebug"
 @app.command("TimerTaskStart")
 def timer_task_start():
     name = DEBUG_TIMER_TASK_NAME
-    if TimerTaskScheduler.is_registered(name):
+    scheduler = TimerTaskScheduler()
+    if scheduler.is_registered(name):
         print("Already Registered.")
         return
 
     def _func():
         print("TimerTaskScheduler Hello.")
 
-    TimerTaskScheduler.register(_func, interval=1000, name=name)
+    scheduler.register(_func, interval=1000, name=name)
 
 
 @app.command("TimerTaskStop")
 def timer_task_stop():
     name = DEBUG_TIMER_TASK_NAME
-    if TimerTaskScheduler.is_registered(name):
-        TimerTaskScheduler.deregister(name=name)
+    scheduler = TimerTaskScheduler()
+    if scheduler.is_registered(name):
+        scheduler.deregister(name=name)
         print("Deregistered.")
     else:
         print("NotStarted")
@@ -72,7 +75,6 @@ def pytoy_log(location: Annotated[Literal["local", "global"] | None, Argument()]
     import logging
     from pathlib import Path
 
-    from pytoy.contexts.core import GlobalCoreContext
     from pytoy.shared.pytoy_configuration import PytoyConfiguration
     from pytoy.shared.ui.pytoy_buffer import PytoyBuffer
     from pytoy.shared.ui.pytoy_window import PytoyWindow

@@ -18,7 +18,7 @@ def on_error_timer(e: Exception):
     print("Timer error:", e, MY_NUMBER)
 
 
-TimerTaskScheduler.register(
+TimerTaskScheduler().register(
     func,
     interval=10,
     on_finish=on_finish_timer,

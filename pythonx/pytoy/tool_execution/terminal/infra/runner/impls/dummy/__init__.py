@@ -40,7 +40,7 @@ class TerminalJobDummy(TerminalJobProtocol):
             if not self._disposed:
                 self._core.update_emitter.fire(self.pid)
 
-        TimerTaskScheduler.execute_oneshot(lambda: _fire())
+        TimerTaskScheduler().execute_oneshot(lambda: _fire())
 
     def __init__(self, request: TerminalJobRequest, spawn_option: SpawnOption | None = None):
         self._request = request
