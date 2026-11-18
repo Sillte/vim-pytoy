@@ -223,7 +223,7 @@ function! pytoy#update_python_environment(...) abort
         return 0
     endif
 
-    let l:uv = exepath('uv')
+    let l:uv = s:find_uv()
     if empty(l:uv)
         call s:error('uv was not found in PATH.')
         return 0
@@ -265,6 +265,22 @@ function! s:append_upgrade_option(args, user_args) abort
     endif
 
     call extend(a:args, a:user_args)
+endfunction
+
+function! s:find_uv() abort
+    let l:uv = exepath('uv')
+    if !empty(l:uv)
+        return l:uv
+    endif
+
+    let l:uv_dir = expand('~/.local/bin')
+    let l:uv_executable = l:uv_dir . (has('win32') || has('win64') ? '/uv.exe' : '/uv')
+    if !executable(l:uv_executable)
+        return ''
+    endif
+
+    let $PATH = l:uv_dir . (has('win32') || has('win64') ? ';' : ':') . $PATH
+    return exepath('uv')
 endfunction
 
 function! s:report_uv_error(result, command) abort
